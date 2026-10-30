@@ -101,20 +101,23 @@ def _vggt_opencv_to_yup_rt(camera_rt: torch.Tensor) -> torch.Tensor:
 def _load_vggt_model(checkpoint_path: str, device: Any, camera_only: bool = False) -> Any:
     key = (osp.abspath(checkpoint_path), str(device), camera_only)
     if key in _VGGT_MODEL_CACHE:
-        return _VGGT_MODEL_CACHE[key]
+        return _VGGT_MODEL_CACHE[key].to(device) # cpu -> device
     if not osp.isfile(checkpoint_path):
         raise FileNotFoundError(f"VGGT-Omega checkpoint not found: {checkpoint_path}")
 
     from vggt_omega.models import VGGTOmega
-
-    model = VGGTOmega(enable_depth=not camera_only).eval()
+    with torch.device("meta"): 
+        model = VGGTOmega(enable_depth=not camera_only)
     state_dict = torch.load(checkpoint_path, map_location="cpu", mmap=camera_only)
     if camera_only:
         state_dict = {k:v for k,v in state_dict.items() if not k.startswith("dense_head.")}
-    model.load_state_dict(state_dict)
-    model = model.to(device)
-    _VGGT_MODEL_CACHE[key] = model
-    return model
+    model.load_state_dict(state_dict,assign=True)
+    del state_dict
+    
+    model = model.eval()
+    _VGGT_MODEL_CACHE[key] = model  # cache the model on CPU to avoid reloading from disk
+    
+    return model.to(device)
 
 
 def _save_video_frames(
@@ -254,6 +257,7 @@ def extract_vggt_camera(
         print(f"  [vggt] sampled {len(frame_paths)}/{target_len} frames (interval={frame_interval})")
 
         model = _load_vggt_model(checkpoint_path, device_obj, camera_only=camera_only)
+        
         images = load_and_preprocess_images(
             frame_paths,
             mode=preprocess_mode,
@@ -261,11 +265,12 @@ def extract_vggt_camera(
         ).to(device_obj)
 
         with torch.inference_mode():
-            predictions = model(images)
-            extrinsic, intrinsic = encoding_to_camera(
-                predictions["pose_enc"],
-                original_image_size_hw,
-            )
+            with _model_ctx(model, device=device_obj,streaming_prefetch_count=1) as model:
+                predictions = model(images)
+                extrinsic, intrinsic = encoding_to_camera(
+                    predictions["pose_enc"],
+                    original_image_size_hw,
+                )
 
         # Remove batch dimension from README-style outputs.
         extrinsic = extrinsic[0] if extrinsic.ndim == 4 else extrinsic
@@ -353,3 +358,214 @@ def load_or_extract_vggt_camera_rt(
     )
     raw_rt = torch.from_numpy(result.camera_RT).to(torch.float32)
     return _vggt_opencv_to_yup_rt(raw_rt)
+
+
+
+
+#####  Add streaming model wrapper for vggt-omega ,use for low Vram  #####
+
+from contextlib import  contextmanager
+import gc
+import functools
+import itertools
+from collections.abc import Iterator
+from torch import nn
+from typing import TypeVar
+_M = TypeVar("_M", bound=torch.nn.Module)
+T = TypeVar("T")
+
+def cleanup_memory() -> None:
+    gc.collect()
+    torch.cuda.empty_cache()
+    torch.cuda.synchronize()
+
+class _SimpleLayerStore:
+
+    def __init__(self, layers: nn.ModuleList, target_device: torch.device) -> None:
+        self.target_device = target_device
+        self.num_layers = len(layers)
+        self._resident: set[int] = set()
+        self._cpu_params: list[dict[str, torch.Tensor]] = []
+        for layer in layers:
+            cpu_copy = {}
+            for name, tensor in itertools.chain(layer.named_parameters(), layer.named_buffers()):
+                if tensor is None:
+                    continue
+                t = tensor.data
+                if t.device.type != 'cpu':
+                    t = t.to('cpu')
+                cpu_copy[name] = t
+            self._cpu_params.append(cpu_copy)
+
+    def set_resident(self, resident: set[int]) -> None:
+        self._resident = resident
+
+    def is_resident(self, idx: int) -> bool:
+        return idx in self._resident
+
+    def load_layer_to_gpu(self, idx: int, layer: nn.Module, force: bool = False) -> None:
+        if idx in self._resident and not force:
+            return
+        for name, param in itertools.chain(layer.named_parameters(), layer.named_buffers()):
+            if param is None:
+                continue
+            if name in self._cpu_params[idx]:
+                param.data = self._cpu_params[idx][name].to(self.target_device)
+
+    def unload_layer_from_gpu(self, idx: int, layer: nn.Module) -> None:
+        if idx in self._resident:
+            return
+        for name, param in itertools.chain(layer.named_parameters(), layer.named_buffers()):
+            if param is None:
+                continue
+            if name in self._cpu_params[idx]:
+                param.data = self._cpu_params[idx][name]  # 恢复为CPU副本（同一引用，不新建）
+
+def _resolve_attr(module: nn.Module, dotted_path: str) -> nn.ModuleList:
+    """Resolve a dotted attribute path like ``'model.language_model.layers'``."""
+    obj: Any = module
+    for part in dotted_path.split("."):
+        obj = getattr(obj, part)
+    if not isinstance(obj, nn.ModuleList):
+        raise TypeError(f"Expected nn.ModuleList at '{dotted_path}', got {type(obj).__name__}")
+    return obj
+
+    
+class SimpleLayerStreamingWrapper(nn.Module):
+    
+    def __init__(
+        self,
+        model: nn.Module,
+        layers_attr: str,
+        target_device: torch.device,
+        active_count: int = 0,  
+    ) -> None:
+        super().__init__()
+        self._model = model
+        self._layers = _resolve_attr(model, layers_attr)
+        self._target_device = target_device
+        self._active_count = active_count
+        self._store = _SimpleLayerStore(self._layers, self._target_device)
+        self._non_layer_cpu_refs: dict[int, torch.Tensor] = {}
+
+        n = len(self._layers)
+        if active_count is not None and active_count >= 0:
+            resident_count = min(active_count, n)
+            self._resident = set(range(resident_count))
+        else:
+            self._resident = set()
+        self._store.set_resident(self._resident)
+        self._move_non_layer_params_to_gpu()
+        for idx in sorted(self._resident):
+            self._store.load_layer_to_gpu(idx, self._layers[idx], force=True)
+        self._register_simple_hooks()
+    
+    def _move_non_layer_params_to_gpu(self) -> None:
+        layer_tensor_ids = set()
+        for layer in self._layers:
+            for t in itertools.chain(layer.parameters(), layer.buffers()):
+                layer_tensor_ids.add(id(t))
+
+        def _ensure(param: torch.Tensor) -> None:
+            pid = id(param)
+            if pid not in self._non_layer_cpu_refs:
+                self._non_layer_cpu_refs[pid] = param.data  
+            param.data = self._non_layer_cpu_refs[pid].to(self._target_device)
+
+        for p in self._model.parameters():
+            if id(p) not in layer_tensor_ids:
+                _ensure(p)
+        for b in self._model.buffers():
+            if id(b) not in layer_tensor_ids:
+                _ensure(b)
+    
+    def _register_simple_hooks(self) -> None:
+        idx_map = {id(layer): idx for idx, layer in enumerate(self._layers)}
+        
+        def _pre_hook(module: nn.Module, input, *, idx: int):
+            self._store.load_layer_to_gpu(idx, module)
+            for param in itertools.chain(module.parameters(), module.buffers()):
+                param.data.record_stream(torch.cuda.current_stream(self._target_device))
+        
+        def _post_hook(module: nn.Module, input, output, *, idx: int):
+            event = getattr(self, "_events", {}).get(idx)
+            if event is not None:
+                event.record(torch.cuda.current_stream(self._target_device))
+                event.synchronize()
+            self._store.unload_layer_from_gpu(idx, module)
+
+            torch.cuda.empty_cache()
+        
+        for layer in self._layers:
+            idx = idx_map[id(layer)]
+            if idx in self._resident:
+                continue  
+            pre_hook = layer.register_forward_pre_hook(functools.partial(_pre_hook, idx=idx))
+            post_hook = layer.register_forward_hook(functools.partial(_post_hook, idx=idx))
+    
+    def to(self, *args: Any, **kwargs: Any) -> "SimpleLayerStreamingWrapper":
+        target = None
+        if args:
+            a = args[0]
+            if isinstance(a, (str, torch.device)):
+                target = torch.device(a)
+        if target is not None and target.type == "cpu":
+            for idx in range(len(self._layers)):
+                if not self._store.is_resident(idx):
+                    self._store.unload_layer_from_gpu(idx, self._layers[idx])
+        else:
+            self._move_non_layer_params_to_gpu()
+        return self
+
+    def forward(self, *args: Any, **kwargs: Any) -> Any:
+        return self._model(*args, **kwargs)
+    
+    def __getattr__(self, name: str) -> Any:
+        try:
+            return super().__getattr__(name)
+        except AttributeError:
+            return getattr(self._model, name)
+        
+@contextmanager
+def _streaming_model(
+    model: _M,
+    layers_attr: str,
+    target_device: torch.device,
+    prefetch_count: int,
+    empty_cache: bool = False,
+) -> Iterator[_M]:
+    """Wrap *model* with :class:`LayerStreamingWrapper`, yield it, then tear down."""
+    wrapped = SimpleLayerStreamingWrapper(
+        model,
+        layers_attr=layers_attr,
+        target_device=target_device,
+        active_count=prefetch_count,
+    )
+    try:
+        yield wrapped  # type: ignore[misc]
+    finally:
+       
+        wrapped.to("cpu")
+        cleanup_memory()
+        # Flush the host (pinned) memory cache so that freed pinned pages are
+        # returned to the OS.  Without this, sequential streaming models
+        # (e.g. text encoder then transformer) exhaust host memory because the
+        # CachingHostAllocator keeps freed blocks cached indefinitely.
+        if empty_cache:
+            torch.cuda.synchronize(device=target_device)
+            try:
+                if hasattr(torch._C, "_host_emptyCache"):
+                    torch._C._host_emptyCache()
+            except Exception:
+                print("Host empty cache cleanup failed; ignoring.", exc_info=True)
+
+def _model_ctx(model,device=torch.device("cuda:0"),streaming_prefetch_count=None,) :
+    if streaming_prefetch_count is not None:
+        return _streaming_model(
+            model,
+            layers_attr="aggregator.frame_blocks",
+            target_device=device,
+            prefetch_count=streaming_prefetch_count,
+        )
+
+    return model
