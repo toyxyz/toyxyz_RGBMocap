@@ -11,7 +11,7 @@ saved selection. Only implemented tools appear in the list.
 | GVHMR | One video; SMPL-X | Optional HandFlow | [GVHMR](GVHMR.md) |
 | MAMMA | Two or more synchronized fixed-camera videos; SMPL-X | Included | [MAMMA](../MAMMA.md) |
 | PromptHMR | One fixed-camera video; jointly reconstructed people; SMPL-X | Not generated | [PromptHMR](PROMPTHMR.md) |
-| PEAR | Live preview of one person from a webcam or video timeline | Included | [PEAR](PEAR.md) |
+| PEAR | Experimental live preview of one person from a webcam or video timeline; may be unstable | Included | [PEAR](PEAR.md) |
 
 One-video input does not mean one-person output. ExMR, FlowHMR and GVHMR can
 process checked people independently after **Find person**. Without discovery,

@@ -1,5 +1,7 @@
 # PEAR: live pose preview
 
+**Experimental support. Tracking and pose estimates may be unstable.**
+
 [Original PEAR project](https://github.com/Pixel-Talk/PEAR) · [Official checkpoint](https://huggingface.co/BestWJH/PEAR_models)
 
 [Paper and BibTeX](../CITATIONS.md#pear) · [Upstream source license](https://github.com/Pixel-Talk/PEAR/blob/8e915f8c3dfae4063d66763e6296b2b0b02eb303/LICENSE.txt)
@@ -25,7 +27,7 @@ only the input. Models remain loaded until Stop, leaving PEAR or app close.
    pure-Python PyTorch3D utilities. It checks CUDA operations and reuses the existing
    shared Python/Torch runtime without upgrading its packages. No CUDA Toolkit,
    C++ compiler, separate Torch installation or native PyTorch3D build is needed.
-2. Open `RGBMoCap.cmd`, select **PEAR · Live**, and open **Model Manager**.
+2. Open `RGBMoCap.cmd`, select **PEAR · Live (Experimental)**, and open **Model Manager**.
 3. Download/import `pear_model.pt` and **PEAR Person Detection / YOLOv8s**
    (`yolov8s.pt`). Model Manager verifies the supported official files.
 4. In the geometry row, use **Manual Download**. Follow the upstream Preparation

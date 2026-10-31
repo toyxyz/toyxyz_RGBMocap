@@ -225,7 +225,7 @@ class PearWorkspace:
         self.mamma_thumbnails.hide()
         self.timeline_help_dialog.setText("PEAR live video preview\n\nOpen a video or select a webcam, then click Start Live Tracking. Stop releases the models and webcam.\n\nFor video, click or drag the frame ruler to infer the current frame. During playback, the processed video frame and its pose appear together with a small delay. Old requests are skipped. Pause or seek to inspect an exact frame.\n\nSelecting a webcam disables video timeline controls. No motion is recorded or exported in this mode.")
         self.video_overlay.hide();self.slider.contact_edit_enabled=False
-        self.status.setText("PEAR live preview · Choose an input, then click Start Live Tracking.")
+        self.status.setText("PEAR experimental preview · Tracking and pose estimates may be unstable.")
         self.pear_header.show();self.model_pages.setCurrentWidget(self.pear_page);self.model_pages.show()
         for widget in (self.people_panel,self.find_person_button,self.correction_group,self.compute_mode.parentWidget(),self.run_button,self.mesh_button,self.cancel_button,self.htd_refine,self.refine_description,self.footmr_refine,self.handflow_refine,self.footmr_description,self.refine_preview_note,self.analyze_button):widget.hide()
         self.models_group.setTitle('PEAR Models');self.readiness.setText('PEAR: '+('models ready' if not unavailable else str(len(unavailable))+' files missing'))

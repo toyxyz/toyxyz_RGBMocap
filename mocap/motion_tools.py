@@ -23,7 +23,7 @@ class MotionTool:
                 *(("correct",) if correction else ()), "export"]
 
 
-MOTION_TOOLS = {"pear": MotionTool("pear", "PEAR · Live", (), live=True),"gvhmr": MotionTool("gvhmr", "GVHMR", ("track", "gvhmr"), ("pva", "refine")),
+MOTION_TOOLS = {"pear": MotionTool("pear", "PEAR · Live (Experimental)", (), live=True),"gvhmr": MotionTool("gvhmr", "GVHMR", ("track", "gvhmr"), ("pva", "refine")),
                 "flowhmr": MotionTool("flowhmr", "FlowHMR", ("track", "flow_camera", "flow_features", "flowhmr")),
                 "exmr": MotionTool("exmr", "ExMR", ("track", "exmr_preprocess", "exmr_features", "exmr")),
                 "mamma": MotionTool("mamma", "MAMMA", ("mamma_prepare","mamma_masks","mamma_landmarks","mamma_camera","mamma_fit","mamma_publish")),

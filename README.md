@@ -137,7 +137,7 @@ do not put passwords or account tokens in the agent chat.
 3. Review the motion, edit contacts if needed and **Apply Correction**.
 4. Export FBX, or import a character, retarget the motion and export it.
 
-For **PEAR · Live**, choose a webcam or open a video, then click **Start Live
+For **PEAR · Live (Experimental)**, choose a webcam or open a video, then click **Start Live
 Tracking**. It provides a bone preview without recording, correction or export.
 See the [PEAR guide](docs/models/PEAR.md) for its controls.
 
@@ -149,7 +149,7 @@ motion quality was lower than **ExMR**. It does not support finger tracking.
 
 | Model / original project | Body representation | Fingers | Setup and use |
 | --- | --- | --- | --- |
-| [PEAR](https://github.com/Pixel-Talk/PEAR) · live preview | SMPL-X / FLAME | Included | [PEAR guide](docs/models/PEAR.md) |
+| [PEAR](https://github.com/Pixel-Talk/PEAR) · experimental live preview; may be unstable | SMPL-X / FLAME | Included | [PEAR guide](docs/models/PEAR.md) |
 | [ExMR](https://github.com/twehrbein/ExMR) | SMPL-X | Included | [ExMR guide](docs/models/EXMR.md) |
 | [FlowHMR](https://github.com/flowhmr/flowhmr) | SMPL-H | Included | [FlowHMR guide](docs/models/FLOWHMR.md) |
 | [GVHMR](https://github.com/zju3dv/GVHMR) | SMPL-X | Optional HandFlow add-on | [GVHMR guide](docs/models/GVHMR.md) |

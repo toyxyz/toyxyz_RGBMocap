@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 10187,
-      "sha256": "3724de7094cde62a721598faffbfe1f7e063f5f01794129581d5e5a45e92a79d"
+      "bytes": 10232,
+      "sha256": "63d449f2040bcb70642bf99b40b94b5dff917aa4b59036899abb71f302bc8d3f"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -96,8 +96,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 38876,
-      "sha256": "02a866bd8c217360d9e71887bfe1008d12f5b3bf144357b745ca87087fdea7e3"
+      "bytes": 39037,
+      "sha256": "069de4070e7163226aaa76aa14b4887f83949d57980ccd291cf515c94f4dc665"
     },
     {
       "path": "docs/BUILD.md",
@@ -126,8 +126,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 45953,
-      "sha256": "1edebd2e80c44b5954675fe953173e351a5e3f402edab15b10173cc0439714ec"
+      "bytes": 46042,
+      "sha256": "5f94910678bf6defa3cc0b4fa4c4bffdf9e3c0e5d488425f3627ebce17b7c78e"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -171,8 +171,8 @@
     },
     {
       "path": "docs/models/PEAR.md",
-      "bytes": 11649,
-      "sha256": "3ac4f37547c15e48bba444514ec4d59204e2c72bed4c5dc51dbe46a93de16554"
+      "bytes": 11738,
+      "sha256": "57a26ed95be324d184ea9dc582db733553ee83429f727e99634c2dfb675db809"
     },
     {
       "path": "docs/models/PROMPTHMR.md",
@@ -181,8 +181,8 @@
     },
     {
       "path": "docs/models/README.md",
-      "bytes": 5892,
-      "sha256": "07e197c0203bd6a006d809d76e500fd0f190beefc26274fc3d11a6896dce59aa"
+      "bytes": 5922,
+      "sha256": "3be817b61b7bc4d955796957990cb34e400e184c5fd02a72d30de616f391a358"
     },
     {
       "path": "docs/samples/character-retargeting.jpg",
@@ -1411,8 +1411,8 @@
     },
     {
       "path": "mocap/model_guide.py",
-      "bytes": 9200,
-      "sha256": "9d3c46b118eba16d1c514b17509513d5b508d50fc6fa5edcbb3a3c39cbbfbe76"
+      "bytes": 9267,
+      "sha256": "57aae368202a75f565168d9dff6c98154d306f9b099c2d1d4bd86f199ea07e44"
     },
     {
       "path": "mocap/model_session.py",
@@ -1426,8 +1426,8 @@
     },
     {
       "path": "mocap/motion_tools.py",
-      "bytes": 11043,
-      "sha256": "7c74a02b8417618385aaa349c3d04d6f506139952fd3dcc62a8fe42f735ae48f"
+      "bytes": 11058,
+      "sha256": "17a8d9bb43ce84075d77f6451bd9021d311b6cfe903a36706712f61db9fb286f"
     },
     {
       "path": "mocap/multilevel_contacts.py",
@@ -1536,8 +1536,8 @@
     },
     {
       "path": "mocap/pear_ui.py",
-      "bytes": 29232,
-      "sha256": "670920bf957604bb9f721dbbce8a7658d865693d77a109fb1a54e922cc70563c"
+      "bytes": 29236,
+      "sha256": "686bf359438d8175419bf76f6749780c0f2a36960a0a30df01393c65695cd4b8"
     },
     {
       "path": "mocap/people_store.py",

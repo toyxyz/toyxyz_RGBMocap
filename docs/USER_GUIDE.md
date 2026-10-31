@@ -634,10 +634,12 @@ terms; see [Third-party notices](../THIRD_PARTY_NOTICES.md).
 
 ## PEAR live preview
 
+**Experimental support. Tracking and pose estimates may be unstable.**
+
 Run `install.cmd` with the app closed; PEAR support is included. PEAR reuses
 the shared runtime and adds only pinned source/utilities; no compiler is required.
 Prepare its checkpoint and registered SMPL-X 2020/FLAME bundle in Model Manager.
-Select **PEAR · Live** and click **Start Live Tracking** to load the models.
+Select **PEAR · Live (Experimental)** and click **Start Live Tracking** to load the models.
 **Stop** ends tracking and releases the models and webcam. With **Webcam: None**,
 open a video and seek/play its timeline to infer the current frame. Alternatively,
 select a connected webcam before starting. While tracking is running, input

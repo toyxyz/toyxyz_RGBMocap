@@ -272,6 +272,9 @@ Inspect [BUILD.md](BUILD.md), [VALIDATION.md](VALIDATION.md) and relevant code b
 
 ## PEAR live mode
 
+PEAR support is **experimental**. Tracking and pose estimates may be unstable;
+describe it as an experimental preview, not a production-ready capture workflow.
+
 Close the app and run `install.cmd`. The base installer also downloads
 pinned source, pure-Python PyTorch3D utilities and RoMa into `runtime_pear/`,
 validates CUDA kernels, and preserves the shared runtime packages. Do not install
