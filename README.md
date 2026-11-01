@@ -1,3 +1,5 @@
+Edited for custom use. Original by: [https://github.com/toyxyz/toyxyz_RGBMocap](https://github.com/toyxyz/toyxyz_RGBMocap)
+
 # RGB MoCap
 
 ![RGB MoCap workspace showing video tracking and a 3D motion preview](docs/images/rgbmocap-workspace.png)
@@ -19,6 +21,15 @@ https://github.com/user-attachments/assets/1759f1bf-a0d0-409f-84d8-dde9409cfe6f
 
 [Download original sample](docs/samples/character-retargeting.mp4)
 
+### Camera view
+
+Preview the animated skeleton over the source video using the export camera,
+with optional background rotation refinement.
+
+https://github.com/user-attachments/assets/b93775d2-c63e-441f-8f8a-84391b229154
+
+[Download original sample](docs/samples/camera-view.mp4)
+
 ### Multi Cam MoCap
 
 https://github.com/user-attachments/assets/4c0b290b-4a65-4287-8d22-c63c96b3d080
@@ -31,7 +42,7 @@ https://github.com/user-attachments/assets/4c0b290b-4a65-4287-8d22-c63c96b3d080
    in a writable folder where you want to install RGB MoCap, then clone the repository:
 
    ```cmd
-   git clone https://github.com/toyxyz/toyxyz_RGBMocap.git
+   git clone https://github.com/D8mat/toyxyz_RGBMocap.git
    cd toyxyz_RGBMocap
    ```
 
@@ -225,3 +236,12 @@ be smaller. Batch selection and OOM retry messages appear in Console and CMD.
 
 Original RGB MoCap code and documentation use the [MIT License](LICENSE).
 Third-party components and model files retain their own licenses.
+
+
+## Custom export and camera tools
+
+This fork retains FBX, generic/Biped BVH and portable Blender project export,
+optional T-pose at frame 0, explicit output selection, relative video bundles,
+Camera Preview, tracked Blender cameras and optional background rotation refinement.
+Experimental FlowHMR camera translation remains optional and is not metric calibrated.
+MAMMA preview/export uses the primary calibrated camera and its video.

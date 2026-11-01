@@ -529,3 +529,11 @@ Cyrillic, Korean, Chinese, combining accents and emoji paths on one Windows PC.
 Hostile parent encodings were simulated; different OS languages, clean installs
 and fresh CUDA compilation in every such path were not independently tested.
 See the [validation record](VALIDATION.md#international-windows-paths-and-output-2026-11-02).
+
+## Custom export and camera tools
+
+This fork retains FBX, generic/Biped BVH and portable Blender project export,
+optional T-pose at frame 0, explicit output selection, relative video bundles,
+Camera Preview, tracked Blender cameras and optional background rotation refinement.
+Experimental FlowHMR camera translation remains optional and is not metric calibrated.
+MAMMA preview/export uses the primary calibrated camera and its video.

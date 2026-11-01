@@ -45,7 +45,7 @@ def run(request, emit=lambda *a, **k:None):
                 write(temporary,info['names'],a['parents'],a['fbx_rest'],a['fbx_rest_frames'],
                       a['fbx_display_frames'],a['fbx_tip_local'],frames,info['fps'],
                       transform=None if scene is None else scene['transform'],progress=progress,
-                      rig_name=row.get('rig_name','SourceAnimation'))
+                      rig_name=row.get('rig_name','SourceAnimation'),prepend_tpose=row.get('prepend_tpose',False))
             finally:frames._mmap.close()
         for _,_,project,kind,paths,stamps,scene in staged:
             if [file_stat(p) for p in paths]!=stamps or selected_export(project,kind)!=paths[1]:

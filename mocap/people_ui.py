@@ -706,13 +706,16 @@ class PeopleWorkspace:
                 from .person_names import export_stem
                 stem=export_stem(person['name'])+(f'_take_{number:02d}' if len(takes)>1 else '')
                 files.append((source,stem))
-        folder=QFileDialog.getExistingDirectory(self,'Export Checked People')
+        folder=QFileDialog.getExistingDirectory(self,'Choose output folder — Export Checked People',
+            str(getattr(self,'_motion_export_folder',None) or self.workspace_root or self.project),
+            QFileDialog.ShowDirsOnly | QFileDialog.DontUseNativeDialog)
+        if folder:self._motion_export_folder=folder
         if folder:
             copies=[]
             from .person_names import export_path
             used={p.name.casefold() for p in Path(folder).iterdir()}
             for source,name in files:
-                target=export_path(folder,name,used)
+                target=export_path(folder,name,used,suffix='.'+getattr(self,'_source_export_options',{}).get('format','fbx'))
                 copies.append((source.parent,self.active_result,source,target))
             self.submit_fbx_exports(copies)
         return True

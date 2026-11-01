@@ -128,6 +128,9 @@ class PearWorkspace(PearMultiWorkspace):
                 self.model_choice.blockSignals(True);self.model_choice.setCurrentIndex(self.model_choice.findData(self._selected_tool));self.model_choice.blockSignals(False);return True
             if not self._pear_active:
                 self.stop_playback();self.remember_workspace_model()
+                if hasattr(self,"camera_preview"):
+                    self.camera_preview.mode.setCurrentIndex(0)
+                    self.camera_preview.mode.setEnabled(False)
                 self._pear_active=True;self._pear_running=False;self._pear_last=None
                 self._pear_media_restore=dict(info=self.info,video_path=self.video_path,source_offset=self.source_offset,source_end=self.source_end,
                     value=self.slider.value(),minimum=self.slider.minimum(),maximum=self.slider.maximum(),clip_in=self.slider.clip_in,clip_out=self.slider.clip_out,
@@ -145,6 +148,7 @@ class PearWorkspace(PearMultiWorkspace):
 
     def pear_leave(self):
         if not self._pear_active:return
+        if hasattr(self,"camera_preview"):self.camera_preview.mode.setEnabled(True)
         self._pear_active=False;self.pear_poll_timer.stop();self.pear_close_session();self.pear_shutdown_multi()
         if self.pear_inputs and self._pear_media_restore:
             saved=self._pear_media_restore;self.info=saved['info'];self.video_path=saved['video_path'];self.source_offset=saved['source_offset'];self.source_end=saved['source_end']

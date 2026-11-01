@@ -1596,3 +1596,74 @@ still blocked Start, and all five Model Manager rows remained available with
 alignment rows marked optional. Console/CMD routing, alignment failures, retry
 and Stop regression checks were repeated. This does not make alignment optional
 for calibrated fusion or live foot locking, and is not a new inference benchmark.
+
+
+
+
+## Local background camera refinement (2026-10-30)
+
+- A 354-frame FlowHMR take accepted 40 of 59 rotation-fit samples. Across accepted
+  samples the median held-out background error changed from 4.52 to 1.22 pixels
+  at 960-pixel analysis width. Rejected samples retain the original rotation;
+  these numbers do not describe every interpolated frame or physical accuracy.
+- Synthetic tests covered rotation recovery with mismatches, no-change/static
+  rejection, insufficient matches and scale/parallax rejection. Real-take checks
+  confirmed unchanged camera centers and initial pose, proper rotations and
+  agreement of preview/export coordinates with experimental translation enabled.
+- An actual Blender bundle was reopened and all 354 camera matrices matched;
+  the optional initial T-pose held the first camera pose and video remained relative.
+- Three offscreen worker/decode/seek/close cycles passed with background fitting
+  enabled. The largest sampled event-loop gap was 141 ms including opening,
+  grabbing and cleanup, so this is not a real-time playback performance guarantee.
+  Main-window construction and empty-project toggling also passed.
+- No model inference, metric camera translation reconstruction, full 6DoF solve
+  or validation across other videos was performed. Test artifacts remain outside
+  the source checkout. Existing model and motion files were not regenerated.
+
+
+## Local MAMMA integration (2026-11-01)
+
+The optional upstream MAMMA integration was ported with current camera memory
+routing helpers. Local checks covered model switching, missing-runtime handling,
+calibration parsing/name matching, common frame timing and path guards. Three
+synthetic 25 fps camera videos loaded onto the common 30 fps timeline; thumbnail
+switching and three open/close cycles passed. The largest sampled event-loop gap
+was 71.7 ms in this short offscreen check, not a playback guarantee.
+Custom Blender/BVH/T-pose export controls remain present. Exact compatibility
+hash pairs preserve earlier previews for unchanged non-MAMMA body dispatch.
+No MAMMA inference, native CUDA compilation, model loading or MAMMA result export
+was run: the optional runtime/models were absent. Existing upstream validation
+records elsewhere do not certify this local integration.
+
+
+## Full upstream integration (2026-11-01)
+
+Integrated ab80ced732 with the custom export and camera features. Source audit,
+six-model GUI switching, PEAR/camera-preview isolation, calibration/path guards,
+three-camera decode/thumbnail/close cycles, VGGT loading policy tests and
+52-bone BVH rotation/translation/T-pose checks passed locally. A legacy export
+worker fixture was unavailable; its inference/export check was not completed.
+No new model inference or native optional-runtime compilation was tested.
+
+
+## Blender MAMMA whole scene (2026-11-01)
+
+A local 383-frame MAMMA result exported two people and four calibrated cameras.
+Blender 4.5 reopened the completed bundle after staging-folder relocation.
+PC2 evaluated mesh vertices matched first, middle and final cached frames;
+independent native SMPL-X evaluation matched the source surface within 1e-6 m
+at the sampled frame. All camera matrices and projected sample pixels matched
+calibration (pixel tolerance 0.01). Per-camera resolutions, relative movie
+paths and body/armature counts passed. An overview render was inspected.
+GUI checks covered the new format, disabled inserted T-pose and preserved
+existing Blender export controls. No new inference or real-time playback
+benchmark was run; this clip does not test disjoint actor take intervals.
+
+
+## Fork PR preparation
+
+Custom features were rebased onto upstream 828ec93727cf74241a3be2470280d9ee48c5d830.
+Earlier local integration tests above used ab80ced732 as the upstream base;
+they are not new model-inference validation of the later PEAR multiview changes.
+
+PR-base smoke checks passed: GUI construction, six-model switching, PEAR/camera-preview isolation, calibration/path validation and custom export controls. Source audit covered 2,571 files without errors.

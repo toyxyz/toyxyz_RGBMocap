@@ -23,10 +23,10 @@ def export_stem(name):
     return stem
 
 
-def export_path(folder,stem,used):
+def export_path(folder,stem,used,suffix='.fbx'):
     """Reserve names across both this batch and existing files on Windows."""
-    candidate=Path(folder)/(stem+'.fbx');number=2
+    candidate=Path(folder)/(stem+suffix);number=2
     while candidate.name.casefold() in used or candidate.exists():
-        candidate=Path(folder)/(stem+f'_{number}.fbx');number+=1
+        candidate=Path(folder)/(stem+f'_{number}'+suffix);number+=1
     used.add(candidate.name.casefold())
     return candidate

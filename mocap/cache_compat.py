@@ -34,6 +34,10 @@ COMPATIBLE_CODE = {
 }
 
 
+# Exact MAMMA-only body dispatch additions; existing model math is unchanged.
+for _name, _pairs in {'mixamo_data.py': {'f6b587d201585b58e12e65205b5deec959a2237bd4e24abf01d1f1c3e4b6d54a': 'a6d8e9a4dfd89d9b4f9103b23be2ad558e55e1831094954a6e2a03cb0f62940a'}, 'correction.py': {'a445fee2991c18962a9354bc88d481dbc4769d9c6b12fc05fb437740f92f5e21': 'a9399bb6e66506981d76113f433f012223b172aec245554c692334d7233f9150'}}.items():
+    COMPATIBLE_CODE.setdefault(_name, {}).update(_pairs)
+
 @lru_cache(maxsize=16)
 def _digest(path, stamp):
     return sha256(path)

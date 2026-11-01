@@ -96,6 +96,11 @@
       "path": "docs/samples/multi-cam-mocap.mp4",
       "bytes": 3633370,
       "sha256": "0657ff52fb4f5e8c9464d4601f28233867ffd07f894ee71d31c08e6625cb0d6d"
+    },
+    {
+      "path": "docs/samples/camera-view.mp4",
+      "bytes": 24571079,
+      "sha256": "7596f58f97d5eacd8093ab47175c184f3c1ddf05e1df364e66264eba910d42b8"
     }
   ]
 }

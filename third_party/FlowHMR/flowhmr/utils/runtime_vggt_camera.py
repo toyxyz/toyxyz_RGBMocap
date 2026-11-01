@@ -99,7 +99,9 @@ def _vggt_opencv_to_yup_rt(camera_rt: torch.Tensor) -> torch.Tensor:
 
 
 def _load_vggt_model(checkpoint_path: str, device: Any, camera_only: bool = False) -> Any:
-    key = (osp.abspath(checkpoint_path), str(device), camera_only)
+    # Port of toyxyz c0d5f30: retain copy loading in Low Memory mode.
+    meta_assign = camera_only and os.environ.get('RGB_MOCAP_COMPUTE_MODE', 'auto') != 'low_memory'
+    key = (osp.abspath(checkpoint_path), str(device), camera_only, meta_assign)
     if key in _VGGT_MODEL_CACHE:
         return _VGGT_MODEL_CACHE[key]
     if not osp.isfile(checkpoint_path):
@@ -107,11 +109,21 @@ def _load_vggt_model(checkpoint_path: str, device: Any, camera_only: bool = Fals
 
     from vggt_omega.models import VGGTOmega
 
-    model = VGGTOmega(enable_depth=not camera_only).eval()
+    if meta_assign:
+        with torch.device('meta'):
+            model = VGGTOmega(enable_depth=False).eval()
+    else:
+        model = VGGTOmega(enable_depth=not camera_only).eval()
     state_dict = torch.load(checkpoint_path, map_location="cpu", mmap=camera_only)
     if camera_only:
         state_dict = {k:v for k,v in state_dict.items() if not k.startswith("dense_head.")}
-    model.load_state_dict(state_dict)
+    if meta_assign:
+        model.load_state_dict(state_dict, assign=True)
+        if any(t.is_meta for t in (*model.parameters(), *model.buffers())):
+            raise RuntimeError('VGGT camera checkpoint left uninitialized tensors. Repair its checkpoint or runtime.')
+    else:
+        model.load_state_dict(state_dict)
+    del state_dict
     model = model.to(device)
     _VGGT_MODEL_CACHE[key] = model
     return model

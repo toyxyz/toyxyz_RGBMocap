@@ -133,7 +133,7 @@ def emit(kind: str, **data) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("stage", choices=["diagnose", "prepare", "download", "import_model", "mesh", "rig", "save_fbx", "track", "pva", "features", "gvhmr", "refine", "footmr", "handflow", "correct", "export", "people", "person", 'flow_camera','flow_features','flowhmr','flow_export','exmr_preprocess','exmr_features','exmr'])
+    parser.add_argument("stage", choices=["diagnose", "prepare", "download", "import_model", "mesh", "rig", "save_fbx", "save_blend", "save_blend_scene", "camera_preview", "copy_bvh", "track", "pva", "features", "gvhmr", "refine", "footmr", "handflow", "correct", "export", "people", "person", 'flow_camera','flow_features','flowhmr','flow_export','exmr_preprocess','exmr_features','exmr'])
     parser.add_argument("--project", type=Path)
     parser.add_argument("--video", type=Path)
     parser.add_argument("--start", type=float, default=0)
@@ -142,6 +142,7 @@ def main() -> int:
     parser.add_argument("--motion-tool", choices=list(MOTION_TOOLS))
     parser.add_argument("--result", choices=["auto", *RESULTS], default="auto")
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--background-refine", action="store_true")
     parser.add_argument("--force", action="store_true", help="Recompute a completed stage for verification.")
     parser.add_argument('--person-id',type=int)
     parser.add_argument('--first-frame',type=int,default=0)
@@ -198,6 +199,25 @@ def main() -> int:
             from .models import import_model_file
             result=import_model_file(args.model,args.video)
             emit('downloaded',path=str(result),model=args.model)
+            return 0
+        if args.stage=='camera_preview':
+            from .camera_preview_data import run
+            run(args.project,args.result,args.output,background_refine=args.background_refine)
+            return 0
+        if args.stage=='save_blend_scene':
+            from .blend_multicam_export import run
+            count=run(args.output,emit)
+            emit('complete',stage='save_blend_scene',files=count,elapsed=time.monotonic()-started)
+            return 0
+        if args.stage=='save_blend':
+            from .blend_export import run
+            count=run(args.output,emit)
+            emit('complete',stage='save_blend',files=count,elapsed=time.monotonic()-started)
+            return 0
+        if args.stage=='copy_bvh':
+            from .export_copy import run
+            count=run(args.output,emit)
+            emit('complete',stage='copy_bvh',files=count,elapsed=time.monotonic()-started)
             return 0
         if args.stage=='save_fbx':
             from .fbx_export import run

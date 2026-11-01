@@ -32,6 +32,9 @@ from .theme import STYLE
 STAGES["mesh"] = "Prepare SMPL-X Mesh"
 STAGES['rig']='Prepare Bone Preview'
 STAGES['save_fbx']='Save FBX'
+STAGES['copy_bvh']='Save BVH'
+STAGES['save_blend']='Save Blender Project'
+STAGES['save_blend_scene']='Save MAMMA Blender Scene'
 STAGES["footmr"] = "Refine Ankles / FootMR"
 STAGES["handflow"] = "Infer Fingers / HandFlow"
 STAGES['correct'] = 'Motion Correction'
@@ -476,9 +479,9 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.reset_footlocks_button.setEnabled(self.slider.contact_edit_enabled)
         self.reset_trim_button.setEnabled(self.slider.trim_enabled)
         character=self.selected_character()
-        self.export_action.setText('Export Character...' if character else 'Export FBX...')
-        self.export_action.setEnabled(not self.busy and (bool(character.get('takes')) and not character.get('needs_retarget') if character else self.project is not None and self.current_export() is not None))
-        self.export_action.setToolTip(tooltip_text("Choose a character export format and whether to include its mesh. PMX characters also support VMD motion." if character else "Save the displayed skeleton animation as FBX. For multiple people, each checked person gets a separate named file and rig."))
+        self.export_action.setText('Export Character...' if character else 'Export Motion...')
+        self.export_action.setEnabled(not self.busy and (bool(character.get('takes')) and not character.get('needs_retarget') if character else self.project is not None))
+        self.export_action.setToolTip(tooltip_text("Choose a character export format and whether to include its mesh. PMX characters also support VMD motion." if character else "Save the displayed skeleton animation as FBX or BVH, optionally with a T-pose first frame. For multiple people, each checked person gets a separate named file and rig."))
         self.play_button.setEnabled(self.info is not None and self.video_readable)
         for action in self.open_actions:
             action.setEnabled(not self.busy)
@@ -493,6 +496,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.exmr_smoothing.setEnabled(not self.busy)
         self.analyze_button.setVisible(tool.key=='gvhmr')
         self.sync_correction_floor_preview()
+        if hasattr(self,'camera_preview'):self.camera_preview.check()
         self.sync_mamma_controls()
         self.sync_prompthmr_controls()
 
@@ -873,6 +877,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         # 3D and overlays advance only when the corresponding decoded image is ready.
         self.motion_view.index = index
         self.motion_view.scene_time=self.source_offset+index/(self.info['fps'] if self.info else 30)
+        if hasattr(self,'camera_preview'):self.camera_preview.seek()
         self.motion_view.update()
         if self.timer.isActive():
             now = time.perf_counter()
@@ -939,6 +944,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
     def shutdown_preview(self):
         self.shutdown_mamma()
         self.stop_playback()
+        if hasattr(self,'camera_preview'):self.camera_preview.close()
         if hasattr(self,'character_loader'):
             self.character_loader.close();self.character_assets.clear()
         self.scene_loader.stop()
@@ -1250,10 +1256,14 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
                                    (f' · Elapsed {duration(elapsed)}' if elapsed is not None else ''))
             self.progress.setRange(0, 100)
             self.progress.setValue(0 if self.failed or self.cancelled else 100)
-            if self.current_stage=='save_fbx':
+            if self.current_stage in ('save_fbx','copy_bvh','save_blend','save_blend_scene'):
                 # Saving a derived file does not replace scene/preview data.
                 # Reloading the people scene here moves a following camera.
-                if not self.failed and not self.cancelled:self.status.setText('FBX export complete.')
+                if not self.failed and not self.cancelled:
+                    targets=getattr(self,'_motion_export_targets',[])
+                    destination=targets[0] if len(targets)==1 else str(Path(targets[0]).parent) if targets else ''
+                    self.status.setText('Exported '+str(len(targets))+' file(s) to: '+destination)
+                    QMessageBox.information(self,'Motion export complete','Saved to:\n'+'\n'.join(targets))
                 self.update_readiness()
                 return
             if self.current_stage=='save_project':
@@ -1719,12 +1729,44 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
     def save_fbx(self):
         if self.selected_character() is not None:
             self.export_character(self.selected_character());return
+        from .source_export_dialog import SourceExportDialog
+        dialog=SourceExportDialog(self)
+        self.camera_preview.apply_export(dialog)
+        if dialog.exec()!=QDialog.Accepted:return
+        self._source_export_options=dialog.options()
+        if self._source_export_options['format']=='blend_scene':
+            from .blend_multicam_ui import export_scene
+            export_scene(self);return
         if self.export_checked_people():return
         source = self.current_export()
+        if source is None:
+            info=self.contact_tracks.get(base_result(self.active_result),{})
+            if self.contact_saving:
+                message='Contact edits are still being saved. Wait a moment and export again.'
+            elif self.active_result.startswith('corrected_') and (info.get('unsaved') or not result_is_current(self.project,self.active_result)):
+                message='The selected corrected motion is not ready. Click Apply Correction, wait for it to finish, then export again.'
+            elif not (self.project/RESULTS[base_result(self.active_result)][0]).is_file():
+                message='Select a reconstructed person/take in the People list. If it has no motion yet, run Reconstruct 3D first.'
+            else:
+                message='The export skeleton is missing or out of date. Click Prepare Preview, wait for it to finish, then export again.'
+            self.status.setText(message)
+            QMessageBox.information(self,'Motion export unavailable',message)
+            return
         if source:
             from .person_names import export_stem
-            default=export_stem(self.export_person_name(self.project))+'.fbx'
-            name, _ = QFileDialog.getSaveFileName(self, "Export FBX", default, "FBX (*.fbx)")
+            fmt=self._source_export_options['format']
+            default=export_stem(self.export_person_name(self.project))+'.'+fmt
+            folder=getattr(self,'_motion_export_folder',None) or self.workspace_root or self.project
+            picker=QFileDialog(self,'Choose output file — '+fmt.upper(),str(Path(folder)/default))
+            picker.setOption(QFileDialog.DontUseNativeDialog,True)
+            picker.setAcceptMode(QFileDialog.AcceptSave)
+            picker.setFileMode(QFileDialog.AnyFile)
+            picker.setNameFilter(fmt.upper()+' (*.'+fmt+')')
+            picker.setDefaultSuffix(fmt)
+            picker.setLabelText(QFileDialog.Accept,'Export')
+            name=picker.selectedFiles()[0] if picker.exec()==QDialog.Accepted else ''
+            if name:self._motion_export_folder=str(Path(name).parent)
+            if name and not name.lower().endswith('.'+fmt):name+='.'+fmt
             if name:
                 self.submit_fbx_exports([(self.project,self.active_result,source,Path(name))])
 
@@ -1734,10 +1776,25 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         from .storage import atomic_json
         request=self.project/('.fbx-export-'+uuid.uuid4().hex+'.json')
         rows=[]
+        if files and files[0][3].suffix.lower()=='.blend':
+            bundles=[];used=set()
+            for project,kind,source,target in files:
+                folder=target.with_suffix('');number=2
+                while folder.exists() or str(folder).casefold() in used:
+                    folder=target.parent/(target.stem+'_'+str(number));number+=1
+                used.add(str(folder).casefold())
+                bundles.append((project,kind,source,folder/target.name))
+            files=bundles
         try:
             for project,kind,source,target in files:
                 row=dict(project=str(project),kind=kind,source=str(source),target=str(target))
                 row['rig_name']=self.export_person_name(project)
+                row['prepend_tpose']=getattr(self,'_source_export_options',{}).get('prepend_tpose',False)
+                row['bvh_profile']=getattr(self,'_source_export_options',{}).get('bvh_profile','generic')
+                row['animate_camera']=getattr(self,'_source_export_options',{}).get('animate_camera',True)
+                row['camera_translation']=getattr(self,'_source_export_options',{}).get('camera_translation',False)
+                row['background_refine']=getattr(self,'_source_export_options',{}).get('background_refine',False)
+                row['camera_translation_scale']=getattr(self,'_source_export_options',{}).get('camera_translation_scale',1.0)
                 if self.people_root is not None:
                     from .scene_export import context
                     row['scene']=context(self.people_root,project)
@@ -1745,15 +1802,23 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         except (OSError,ValueError,KeyError) as error:
             self.status.setText('Cannot export shared scene: '+str(error));return
         atomic_json(request,rows)
+        self._motion_export_targets=[str(target) for _,_,_,target in files]
         self._fbx_export_cleanup=(request,[target.with_name('.'+target.name+'.rgbmocap-'+request.stem+'.partial') for _,_,_,target in files])
-        self.start_jobs([('save_fbx',['--project',str(self.project),'--output',str(request)])])
+        stage={'.blend':'save_blend','.bvh':'copy_bvh'}.get(files[0][3].suffix.lower(),'save_fbx')
+        if stage=='save_blend':
+            self._fbx_export_cleanup=(request,[target.parent.with_name('.'+target.parent.name+'.rgbmocap-'+request.stem+'.partial') for _,_,_,target in files])
+        self.start_jobs([(stage,['--project',str(self.project),'--output',str(request)])])
 
     def cleanup_fbx_export(self):
         pending=getattr(self,'_fbx_export_cleanup',None)
         if pending:
             request,paths=pending
             for path in [request,*paths]:
-                try:path.unlink(missing_ok=True)
+                try:
+                    if path.is_dir() and path.resolve().parent==path.parent.resolve() and path.name.startswith('.') and path.name.endswith('.rgbmocap-'+request.stem+'.partial'):
+                        import shutil
+                        shutil.rmtree(path)
+                    else:path.unlink(missing_ok=True)
                 except OSError:pass
             self._fbx_export_cleanup=None
 

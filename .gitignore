@@ -106,3 +106,5 @@ third_party/**/.git/
 
 # Local temporary shader/kernel caches
 /temp/
+
+!/docs/samples/camera-view.mp4
