@@ -97,8 +97,12 @@ Do not promise a 5090-only test validates a 4090, 3090 or every 50-series GPU.
 Measured optional runtime: **6.19 GiB**. Allow about **18 GiB free during setup**,
 excluding separately installed compiler tools, models and projects. Downloaded
 package/source archives are about **3.57 GiB**, excluding Python and weights.
-The nine models total **7.69 GiB**, or **3.42 GiB additional** if shared VGGT is
-already available. Confirm space on the app drive, not just a different drive.
+The ten models total about **7.80 GiB**, or **3.53 GiB additional** if shared VGGT is
+already available. GeoCalib is also shared with PEAR (about 0.108 GiB); count it
+once. Automatic camera gravity uses the base Flow/Python 3.10 alignment overlay
+installed by `install.cmd`, in a separate child process before 3D fitting. Do not
+inject its cp310 packages into MAMMA's Python 3.11 runtime. Manual camera data
+bypasses both automatic camera models. Confirm space on the app drive, not just a different drive.
 
 ## 4. Supported automatic installation
 

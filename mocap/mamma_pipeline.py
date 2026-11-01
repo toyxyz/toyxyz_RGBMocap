@@ -81,7 +81,7 @@ def prepare(path, job):
     n = round((job['end']-job['start'])*30)
     if not 4 <= n <= 1800:
         raise ValueError('Use 4–1,800 frames for the MAMMA integration; no frames were dropped.')
-    if any(m.key!='flow_vggt' or job['options']['camera_mode']!='manual' for m in missing('mamma_assets')):
+    if any(m.key not in {'flow_vggt','pear_geocalib'} or job['options']['camera_mode']!='manual' for m in missing('mamma_assets')):
         raise ValueError('Prepare the missing MAMMA models in Model Manager first.')
     options = job['options']
     if options['camera_mode'] == 'manual':
@@ -95,12 +95,17 @@ def prepare(path, job):
     from .models import BY_KEY, STAGE_REQUIREMENTS
     identity = dict(version=1, inputs=[dict(path=str(Path(v['path']).resolve()),stat=file_stat(v['path']),id=v['id']) for v in job['inputs']],
                     start=job['start'], end=job['end'], frames=n, options=options,
-                    engine=runtime['engine_files'], models={k:file_stat(BY_KEY[k].path) for k in STAGE_REQUIREMENTS['mamma_assets'] if options['camera_mode']!='manual' or k!='flow_vggt'})
+                    engine=runtime['engine_files'], models={k:file_stat(BY_KEY[k].path) for k in STAGE_REQUIREMENTS['mamma_assets'] if options['camera_mode']!='manual' or k not in {'flow_vggt','pear_geocalib'}})
+    if options['camera_mode']!='manual':
+        from .mamma_gravity import support_identity
+        try:identity['gravity_support']=support_identity()
+        except (OSError,ValueError,KeyError,TypeError) as error:
+            raise RuntimeError('MAMMA background gravity support is unavailable. Close RGB MoCap and run install.cmd, then prepare Scene Gravity / GeoCalib in Model Manager.') from error
     identity['runtime']=dict(packages=runtime['packages'],managed_id=runtime.get('managed_id'))
     # All connector code contributes, not just the model prediction script.
     from .paths import ROOT
     from .storage import sha256
-    identity['code']={name:sha256(ROOT/'mocap'/name) for name in ('mamma_pipeline.py','mamma_camera.py','mamma_inputs.py','image_io.py','memory_mode.py','gpu_offload.py')}
+    identity['code']={name:sha256(ROOT/'mocap'/name) for name in ('mamma_pipeline.py','mamma_camera.py','mamma_gravity.py','mamma_gravity_worker.py','mamma_inputs.py','image_io.py','memory_mode.py','gpu_offload.py','worker_progress.py','runtime_registry.py','pear/alignment_support.py')}
     token=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()[:24]
     slot=job['root']/'mamma'/'inference'/token
     cached=False

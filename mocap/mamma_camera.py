@@ -70,6 +70,8 @@ def infer(work,job,emit):
         centres=-np.einsum('nij,nj->ni',es[:,:,:3].transpose(0,2,1),es[:,:,3])
         RR.append(r);tt.append(-r@np.median(centres,0));KK.append(np.median(K[ci==c],0))
     RR,tt,KK=np.array(RR),np.array(tt),np.array(KK)
+    from .mamma_gravity import infer as background_gravity
+    up=background_gravity(work,entries,selected,RR,KK,emit)
     uv=[];vis=[]
     for entry in entries:
         with np.load(work/'landmarks/motion'/(entry['id']+'.npz'),allow_pickle=False) as z:
@@ -95,10 +97,11 @@ def infer(work,job,emit):
     lens=np.linalg.norm(vectors,axis=-1)
     valid=(lens>max(1e-6,np.percentile(lens,10)*.5))&(lens<np.percentile(lens,90)*2)
     if not valid.any():raise ValueError('Cannot estimate camera scale from visible standing subjects.')
-    up=np.median((vectors/np.maximum(lens[...,None],1e-9))[valid],axis=0);up/=np.linalg.norm(up)
-    forward=RR[0].T@np.array([0.,0.,1.]);forward-=up*np.dot(forward,up);forward/=np.linalg.norm(forward)
-    right=np.cross(forward,up);right/=np.linalg.norm(right);Q=np.stack([right,forward,up])
-    heights=heads@up-feet@up;height=float(np.median(heights[valid]))
+    from .mamma_gravity import world_basis
+    Q=world_basis(up,RR[0])
+    # Reference size remains a human-height assumption, independent of gravity.
+    # Do not use body lean to rotate the camera world or shrink projected height.
+    height=float(np.median(lens[valid]))
     ratio=(np.median(neutral[head,1])-np.median(neutral[sole,1]))/np.ptp(neutral[:,1])
     scale=float(job['options'].get('height_m',1.7))*ratio/height
     if not np.isfinite(scale) or scale<=0:raise ValueError('Invalid estimated metric camera scale.')
@@ -108,7 +111,8 @@ def infer(work,job,emit):
         r=RR[c]@Q.T;t=scale*tt[c]+r@origin
         cameras[entry['id']]=dict(intrinsic_matrix=KK[c].tolist(),extrinsics_matrix=np.column_stack((r,t)).tolist(),image_size=entry['size'],distortion_coeffs=[0.]*4)
     atomic_json(work/'camera-estimation.json',dict(assumed_height_m=job['options'].get('height_m',1.7),scale=scale,
-        initial_frames=train.tolist(),floor_is_measured=False,warning='VGGT metric scale/up/floor assume visible, initially standing people. They are not measured camera calibration or ground truth.'))
+        initial_frames=train.tolist(),gravity_source='GeoCalib background consensus',gravity_applied_before_3d_fit=True,
+        floor_is_measured=False,warning='VGGT-Omega camera geometry and GeoCalib background gravity are estimates. Metric scale assumes the reference person height; the initial sole datum is not measured ground.'))
     return cameras
 
 

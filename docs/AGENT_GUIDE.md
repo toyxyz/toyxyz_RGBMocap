@@ -10,7 +10,7 @@ This guide is for agents helping users operate or modify RGB MoCap. It describes
 - Base worker commands use explicit `-X utf8`, including isolated `-I` launches. Isolated mode ignores `PYTHONIOENCODING`/`PYTHONUTF8` from the parent environment. Any redirected/discarded text log stream must also specify UTF-8. Keep byte-oriented PEAR IPC unchanged.
 - Close the app before `update.cmd`. The updater requires a clean tracked worktree and the `main` branch, uses `git pull --ff-only`, then verifies/repairs runtime configuration. It refuses tracked local edits. A plain `git pull` does not perform runtime repair; use `install.cmd` after dependency changes when needed. Do not discard local edits or force an update.
 - For setup failure, read the message, check connectivity and free space, then retry `install.cmd`. Preserve models, projects and `.setup` state. Do not repeatedly reinstall or redownload models without evidence.
-- Base installation currently estimates at least 32.4 GiB free before models; ExMR/FlowHMR/GVHMR and add-ons were previously measured around 29 GiB of weights. Optional MAMMA and PromptHMR add separate runtimes and model files; see [MAMMA](MAMMA.md) and [PromptHMR](models/PROMPTHMR.md). The five offline model/runtime sets total about **63.11 GiB (67.8 GB)** excluding caches, projects, downloads and compiler tools, counting shared files once. See the [installed-size table](USER_GUIDE.md#installed-size); installed size and temporary setup headroom are different. Measurements are not guarantees.
+- Base installation currently estimates at least 32.4 GiB free before models; ExMR/FlowHMR/GVHMR and add-ons were previously measured around 29 GiB of weights. Optional MAMMA and PromptHMR add separate runtimes and model files; see [MAMMA](MAMMA.md) and [PromptHMR](models/PROMPTHMR.md). The five offline model/runtime sets total about **63.22 GiB (67.9 GB)** excluding caches, projects, downloads and compiler tools, counting shared files once. See the [installed-size table](USER_GUIDE.md#installed-size); installed size and temporary setup headroom are different. Measurements are not guarantees.
 
 Multi-person reconstruction groups supported ExMR, FlowHMR and GVHMR phases
 into sequential, bounded worker requests. `mocap/queue_groups.py` builds the queue;
@@ -69,7 +69,7 @@ input. Do not replace the YAML or invalidate motion to add this metadata.
 | ExMR | Default; generally fast, good quality in the project's subjective tests. SMPL-X. | Fingers included; static/moving camera and smoothing options. |
 | FlowHMR | Slower; best overall quality in those tests, not a universal ranking. SMPL-H. | Fingers included; Fast SAM and camera/sampling choices. Moving camera needs VGGT-Omega. |
 | GVHMR | Lower overall quality in those tests but sometimes better for unusual poses such as backflips. SMPL-X. | Fingers via optional HandFlow. HTD refines body motion; FootMR refines ankles. Both are separate from contact correction. |
-| MAMMA | Optional multi-view SMPL-X capture from two or more synchronized fixed cameras, without a fixed camera-count maximum. Practical capacity depends on RAM/VRAM. Not part of the single-video quality ranking. | Fingers included; separate setup and locked-head body assets. VGGT or compatible manual calibration. |
+| MAMMA | Optional multi-view SMPL-X capture from two or more synchronized fixed cameras, without a fixed camera-count maximum. Practical capacity depends on RAM/VRAM. Not part of the single-video quality ranking. | Fingers included; separate setup and locked-head body assets. VGGT-Omega + GeoCalib or compatible manual calibration. |
 | PromptHMR | Multiple people reconstructed jointly from one video; can improve relative placement and interactions. Overall motion quality was lower than ExMR in our subjective tests. Fixed-camera Windows path, up to eight people; placement can still be wrong. | No finger tracking; fixed neutral fingers. Setup_PromptHMR.cmd; People defaults to 2, Interaction Prompt on. |
 | PEAR | Live single-person bone preview from a webcam or the video timeline; transient, with lightweight live foot lock and no recording/export or offline correction. | Fingers included; Start/Stop, fixed lengths/Reset Bones, One Euro filter, Rotation and default-on World Position. Shared support is installed by install.cmd. |
 
@@ -155,7 +155,16 @@ trim and thumbnail preview switching. There is no fixed camera-count maximum;
 retain existing RAM/Windows allocation-headroom monitoring, CUDA allocator
 budgets and OOM failure handling. Do not replace the removed camera-count cap
 with another arbitrary count limit. See [MAMMA scope](MAMMA.md).
-VGGT is the default; compatible manual calibration is optional. Original and
+VGGT-Omega plus GeoCalib is the automatic default; compatible manual calibration is optional.
+GeoCalib supplies background gravity before MAMMA 3D fitting, replacing the
+initial person's head-to-sole vertical axis. Run it in the pinned Flow/Python 3.10
+alignment overlay from `install.cmd`, never inside MAMMA's Python 3.11 process.
+Model Manager exposes its shared `pear_geocalib` checkpoint. Manual camera data
+bypasses both VGGT-Omega and GeoCalib; do not rotate supplied calibration.
+Unreliable gravity must fail clearly rather than silently reverting to a person's
+pose. The initial reference-height scale and sole height are still estimates.
+Keep support/model/code identities in inference receipts and preserve old results
+until the user explicitly reconstructs. Original and
 corrected native actors feed the usual contact editing and FBX paths. See
 [MAMMA.md](MAMMA.md) for the exact environment, registered assets, scale/world
 assumptions and adapter limits. The optional setup downloads official restricted source and builds native

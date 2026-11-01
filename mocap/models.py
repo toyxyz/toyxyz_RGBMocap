@@ -249,7 +249,7 @@ STAGE_REQUIREMENTS = {
     'mamma_prepare': MAMMA_KEYS,
     'mamma_masks': ('mamma_sam2','mamma_yolo','mamma_clip'),
     'mamma_landmarks': ('mamma','mamma_vertices'),
-    'mamma_camera': ('flow_vggt',),
+    'mamma_camera': ('flow_vggt','pear_geocalib'),
     'mamma_fit': ('mamma_vertices','mamma_body','mamma_body_male','mamma_body_female'),
     'mamma_publish': ('mamma_body','mamma_vertices'),
 }

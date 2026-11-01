@@ -1,5 +1,38 @@
 # Source package validation
 
+## MAMMA background gravity before fitting (2026-11-02)
+
+Automatic calibration now uses VGGT-Omega camera placement with GeoCalib
+background gravity before MAMMA 3D fitting. GeoCalib executes in the existing
+Flow/Python 3.10 support overlay in a separate process; the optional MAMMA
+Python 3.11 environment is unchanged. Manual calibration bypasses both models.
+The camera-balanced gravity estimator rejects uncertain/conflicting samples;
+there is no silent person-direction fallback. Its acceptance thresholds have
+limited scene coverage, not universal calibration guarantees.
+
+On the documented test PC, the integrated camera path was exercised on an
+outdoor four-camera, 450-frame sequence. It loaded both camera models afresh,
+reused the existing masks/landmarks and completed in 47.59 seconds. Up-axis
+difference from the dataset calibration was 0.75 degrees, versus approximately
+11.09 degrees in the prior person-direction result. Full 450-frame MAMMA 3D
+fitting then completed in 120.09 seconds with finite output. Peak PyTorch
+allocated VRAM was 1.57 GiB and peak process RSS 2.19 GiB during fitting.
+These are camera/fitting measurements, not end-to-end reconstruction timings
+or total desktop GPU memory. Reference-height scale and initial sole height
+remain estimates; a known camera calibration is not ground-truth human motion.
+
+A second indoor four-camera, 422-frame camera-path check completed in 46.34
+seconds, with a 0.76-degree up-axis difference from its dataset calibration.
+Three cameras supported the accepted gravity consensus; the remaining camera's
+uncertain observations were rejected. This was a camera-path check, not a second
+complete fitting or end-to-end reconstruction benchmark.
+
+Targeted checks cover manual-camera extrinsic preservation and pixel resizing,
+Unicode camera IDs, vertical-looking reference cameras, conflicting gravity,
+invalid background/duplicate observations, model scoping and isolated worker
+routing. Existing runtime pins and other models' inference paths were retained.
+Tests and generated data remain outside the publishable source checkout.
+
 The Git-based distribution was tested on the Windows PC listed in the
 [user guide](USER_GUIDE.md#install). It has not been tested on a clean Windows
 installation or on other GPUs or drivers.

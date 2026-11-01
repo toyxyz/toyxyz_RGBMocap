@@ -21,6 +21,9 @@ MAMMA detects and matches people across views during reconstruction; its
 PromptHMR also tracks people during reconstruction. It defaults to two people
 and Interaction Prompt on; see its guide for setup and fixed-camera limits.
 For manual MAMMA cameras, see the [calibration format and JSON example](../MAMMA.md#manual-cameras).
+Automatic MAMMA cameras combine VGGT-Omega placement with GeoCalib background
+vertical direction before 3D fitting; both checkpoints appear in its Model Manager.
+GeoCalib reuses the base Flow support overlay rather than MAMMA's separate runtime.
 PEAR support is prepared by `install.cmd` and `update.cmd` over the shared runtime;
 its weights/body data are obtained separately. It is a live preview without motion
 recording, offline contact correction, retargeting or export. Camera Align is

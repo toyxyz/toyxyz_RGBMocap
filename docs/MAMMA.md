@@ -50,15 +50,18 @@ and other GPUs have not been verified.
 | Item | Storage |
 | --- | ---: |
 | Active runtime excluding caches / earlier setup-report size | 6.11 GiB / 6.19 GiB |
-| Model files, when the shared VGGT-Omega model is already installed | 3.42 GiB additional |
-| Model files including VGGT-Omega | 7.69 GiB |
+| Model files, when the shared VGGT-Omega model is already installed | About 3.53 GiB additional |
+| Model files including VGGT-Omega | About 7.80 GiB |
 | Free space needed during runtime setup, before models and compiler tools | About 18 GiB |
 
 The setup downloads approximately 3.57 GiB of package/source archives, excluding
 Python and models. Retained downloads, videos and generated projects use extra
 space. These figures are separate from the base installation's storage estimate.
-The latest cache-free additional runtime/model total is about **9.54 GiB** when
-VGGT is already installed. See the [all-model inventory](USER_GUIDE.md#installed-size)
+The cache-free additional runtime/model total is about **9.65 GiB** when
+VGGT is already installed. GeoCalib adds about 0.108 GiB of weights if PEAR has
+not already installed that shared checkpoint. The existing base camera-alignment
+support is reused; MAMMA's Python 3.11 environment is not upgraded.
+See the [all-model inventory](USER_GUIDE.md#installed-size)
 for shared-file accounting and setup versus installed-space differences.
 
 ## Install the runtime
@@ -97,7 +100,8 @@ public files. For registered files, choose **Manual Download...**, register or
 sign in on the provider's site and accept its terms, then use **Import...** in
 that window or in the model list. The app does not ask for provider passwords.
 
-The manager lists nine assets. The paths below are relative to the app's
+The manager lists ten assets. Automatic cameras require both VGGT-Omega and
+GeoCalib; manual cameras do not require either checkpoint. The paths below are relative to the app's
 `models/` folder; importing places the file in its expected location.
 
 | Asset | How to obtain it | Destination inside `models/` |
@@ -109,6 +113,7 @@ The manager lists nine assets. The paths below are relative to the app's
 | YOLO12x | Automatic download | `mamma/yolo12x.pt` |
 | OpenCLIP ViT-B/32 | Automatic download | `mamma/open_clip_model.safetensors` |
 | VGGT-Omega 512 | Model Manager's manual download instructions; shared with FlowHMR | `flowhmr/vggt_omega_1b_512.pt` |
+| Scene Gravity / GeoCalib | Automatic download; shared with PEAR | `pear/geocalib-pinhole.tar` |
 
 For the MAMMA checkpoint and surface landmarks, open the
 [official MAMMA website](https://mamma.is.tue.mpg.de/) and click **Data**.
@@ -151,14 +156,13 @@ every clip fits memory; the full 60-second limit has not been validated.
    fit per row. One common 30 fps timeline and trim applies to every video;
    duration is limited by the shortest input. Drag the ends of the timeline's
    **Video** track to trim all views together without modifying the originals.
-3. Keep **VGGT (Automatic)** or use **Import Camera Data...**. **People: 0**
+3. Keep **VGGT-Omega + GeoCalib (Automatic)** or use **Import Camera Data...**. **People: 0**
    automatically detects the count; specify 1–8 if someone is missed or background people interfere.
    MAMMA finds people during reconstruction, so **Find person** is hidden.
    Enter only the number in **Reference Height (m)**, for example `1.70` for
-   170 cm. It sets approximate VGGT
-   scale using initially standing people;
-   it is an assumption, not a measured height or a reliable gravity estimate for
-   an initially crouching scene.
+   170 cm. It sets approximate metric scale from the initial head-to-sole distance.
+   This still assumes a suitable reference pose and height; crouching, occlusion
+   or uncertain landmarks can bias scale. It is not used to infer the vertical axis.
 4. **Reconstruct 3D** prepares aspect-preserving inputs within 1920×1080, creates
    SAM 2.1 masks, predicts FP32 landmarks, estimates/loads cameras, runs the full
    MAMMA body fit, then prepares native people, correction and export bones.
@@ -233,10 +237,34 @@ reliable speed improvement. It can require more RAM. The mode does not reduce
 views, fitting iterations or precision, and cannot guarantee that fitting fits.
 See [common benchmark conditions and memory definitions](PERFORMANCE.md).
 
+## Automatic camera orientation
+
+VGGT-Omega estimates relative fixed-camera placement and intrinsics. GeoCalib
+estimates background gravity at the sampled times, with the VGGT focal length
+held fixed and detected people excluded from the geometric confidence maps.
+The camera rotations carry these directions into one common world. A
+camera-balanced spherical estimate rejects unreliable or conflicting samples.
+This does not guarantee that every background provides reliable gravity.
+
+The resulting vertical axis aligns the camera world **before MAMMA 3D fitting**.
+There is no additional GeoCalib rotation after fitting and no automatic fallback
+to a head-to-foot vertical axis. If background gravity cannot be estimated
+reliably, processing stops with an actionable message to import manual calibration
+or use clearer background views. GeoCalib does not measure absolute floor height:
+the initial sole datum and reference-height metric scale remain estimates.
+
+GeoCalib runs sequentially in the already installed Flow/Python 3.10 camera
+support overlay. Its packages are not imported into MAMMA's Python 3.11 process.
+If support is missing, close the app and run `install.cmd`; obtain its shared
+checkpoint through Model Manager. `Setup_MAMMA.cmd` still prepares the separate
+MAMMA/SAM 2/SDF runtime. Existing saved results are not changed just by opening
+them; an explicit new reconstruction uses the new camera-generation identity.
+
 ## Manual cameras
 
-Selecting Manual Camera Data disables the reference-height control: metric
-calibration supplies scale. With VGGT, Reference Height accepts 0.50–2.50 m
+Selecting Manual Camera Data bypasses VGGT-Omega and GeoCalib, and disables the
+reference-height control: supplied calibration defines orientation and scale.
+With automatic cameras, Reference Height accepts 0.50–2.50 m
 (default 1.70 m); it is an approximate scene-scale assumption, not a measurement.
 Reconstruct after changing camera, count or height settings; Apply Correction
 does not re-estimate cameras or poses.

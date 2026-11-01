@@ -170,8 +170,8 @@ other PCs; connection speed and storage performance affect the time.
 
 ### Installed size
 
-The current registered model files and active runtimes measured approximately
-**67.8 GB (63.1 GiB)** with the five offline models and supported add-ons installed.
+The measured model/runtime inventory, plus GeoCalib for automatic MAMMA gravity, totals approximately
+**67.9 GB (63.2 GiB)** with the five offline models and supported add-ons installed.
 Blender and FFmpeg are included. The inventory excludes projects, imported
 characters, exports, caches (including Python bytecode), retained download
 archives, obsolete runtime generations and separately installed compiler tools.
@@ -180,10 +180,10 @@ Shared model files and hardlinks are counted once.
 | Configuration | Runtime | Models | Total |
 | --- | ---: | ---: | ---: |
 | ExMR + FlowHMR + GVHMR, including supported add-ons | 12.35 GiB | 28.89 GiB | 41.23 GiB |
-| MAMMA additional files | 6.11 GiB | 3.42 GiB | 9.54 GiB |
+| MAMMA additional files | 6.11 GiB | 3.53 GiB | 9.65 GiB |
 | PromptHMR additional files | 6.22 GiB | 6.13 GiB | 12.34 GiB |
-| **Five offline models** | **24.68 GiB** | **38.44 GiB** | **63.11 GiB** |
-| PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.95 GiB | ~2.96 GiB |
+| **Five offline models** | **24.68 GiB** | **38.55 GiB** | **63.22 GiB** |
+| PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.84 GiB | ~2.85 GiB |
 
 Adding PEAR to all five offline sets gives an estimated combined total of about
 **66.07 GiB (70.9 GB)**. This includes about **0.11 GiB** of required GeoCalib weights; existing VGGT weights are reused. The approximately
@@ -193,7 +193,7 @@ geometry ZIP needs additional download space.
 Totals use unrounded bytes; rounded cells may not sum exactly. These are local
 observations, not universal requirements. App source files add space beyond this
 model/runtime inventory. MAMMA's added model size assumes the base installation's
-VGGT-Omega is present; without it, its model set totals about 7.69 GiB. PromptHMR's
+VGGT-Omega is present; without it, its model set totals about 7.80 GiB. GeoCalib adds about 0.108 GiB for automatic gravity, counted once between MAMMA and PEAR. These totals include that addition to the earlier measured inventory. PromptHMR's
 added model size includes SMPL Neutral, while its standard SMPL-X Neutral is
 already counted in the base set. Its specific weights/support files alone total
 about 6.09 GiB. Installed Python packages remain separate; verified identical
@@ -442,10 +442,11 @@ The app does not need your provider password or access token.
 | ExMR / GVHMR HandFlow | [MANO](https://mano.is.tue.mpg.de/download.php): `MANO_RIGHT.pkl` from `mano_v1_2.zip`. |
 | ExMR / FlowHMR | [SAM 3D Body](https://huggingface.co/facebook/sam-3d-body-dinov3): supported `model.ckpt`, `model_config.yaml` and `assets/mhr_model.pt`, each in its matching row. |
 | FlowHMR moving camera / MAMMA automatic cameras | [VGGT-Omega](https://huggingface.co/facebook/VGGT-Omega): supported `vggt_omega_1b_512.pt`, shared under `models/flowhmr/`. Not needed for FlowHMR Static Camera or MAMMA Manual Camera Data. |
+| MAMMA automatic cameras / PEAR Camera Align | [GeoCalib](https://github.com/cvg/GeoCalib): background vertical direction, shared `models/pear/geocalib-pinhole.tar`. MAMMA manual calibration bypasses it. |
 | MAMMA | [Registered MAMMA downloads](https://mamma.is.tue.mpg.de/): `mamma_mask_full_cvpr.ckpt` and `verts_512.pkl`. Follow the matching Model Manager rows. |
 | MAMMA | [SMPL-X with removed head bun (NPZ, 392 MB)](https://smpl-x.is.tue.mpg.de/download.php): import the neutral, male and female locked-head bodies into `models/mamma/smplx/`. Standard SMPL-X v1.1 is not interchangeable. |
 
-MAMMA's [complete nine-asset checklist](MAMMA.md#prepare-model-files) also covers
+MAMMA's [complete ten-asset checklist](MAMMA.md#prepare-model-files) also covers
 SAM 2.1, YOLO12x and OpenCLIP. Its runtime setup and model imports are separate
 steps; a ready runtime does not mean the models are ready.
 
@@ -492,7 +493,7 @@ selected result is missing, reconstruct it; the app reports it as unavailable.
 | **GVHMR → FootMR** | Refine ankle angles from foot observations. Separate from foot contact locking. |
 | **GVHMR → HandFlow** | Add finger tracking while preserving the selected body and wrist motion. Requires additional weights and MANO. |
 | **Analyze 2D** | Prepare GVHMR refinement observations separately. Reconstruct 3D includes this step when needed. |
-| **MAMMA → Camera Calibration** | VGGT (Automatic) estimates fixed cameras. Manual Camera Data uses an imported compatible JSON/MAMMA YAML file for the selected videos. |
+| **MAMMA → Camera Calibration** | VGGT-Omega + GeoCalib estimates fixed-camera placement and background vertical direction before 3D fitting. Manual Camera Data uses your compatible JSON/MAMMA YAML calibration without automatic gravity changes. |
 | **MAMMA → Import Camera Data...** | Import calibration with camera names matching video filenames without extensions, original pixel intrinsics and metric translations. See the exact [camera format](MAMMA.md#manual-cameras). |
 | **MAMMA → People** | Default 0 automatically detects people during reconstruction; set 1–8 if someone is missed or background people are included. Count each person once across all cameras. Find person is hidden. |
 | **MAMMA → Reference Height (m)** | Numeric approximate standing height, default 1.70 m. Sets VGGT scene scale, not every actor's height; unused with metric manual calibration. |

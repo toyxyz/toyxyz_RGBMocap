@@ -131,7 +131,7 @@ do not put passwords or account tokens in the agent chat.
    videos; thumbnails switch the preview and one timeline trim applies to all views.
 2. For ExMR, FlowHMR or GVHMR, optionally use **Find person** to select people.
    PromptHMR tracks people together during reconstruction.
-   MAMMA detects people during reconstruction; keep **VGGT (Automatic)** and
+   MAMMA detects people during reconstruction; keep **VGGT-Omega + GeoCalib (Automatic)** and
    enter an approximate **Reference Height (m)**, or import camera calibration.
    Click **Reconstruct 3D**.
 3. Review the motion, edit contacts if needed and **Apply Correction**.
@@ -162,21 +162,21 @@ motion quality was lower than **ExMR**. It does not support finger tracking.
 Requires 64-bit Windows, a compatible NVIDIA GPU/driver and OpenGL 4.3.
 Model files are acquired separately; some require registration and license acceptance.
 
-**Installed models and runtimes:** approximately **67.8 GB (63.1 GiB)** for the
-five offline models, including supported add-ons, Blender and FFmpeg. Measured without
+**Installed models and runtimes:** approximately **67.9 GB (63.2 GiB)** for the
+five offline models, including supported add-ons, Blender and FFmpeg. Based on the measured inventory plus GeoCalib for automatic MAMMA gravity, excluding
 projects, caches or retained downloads; shared files are counted once.
 
 | Configuration | Runtime | Models | Total |
 | --- | ---: | ---: | ---: |
 | ExMR + FlowHMR + GVHMR and supported add-ons | 12.35 GiB | 28.89 GiB | 41.23 GiB |
-| MAMMA additional files | 6.11 GiB | 3.42 GiB | 9.54 GiB |
+| MAMMA additional files | 6.11 GiB | 3.53 GiB | 9.65 GiB |
 | PromptHMR additional files | 6.22 GiB | 6.13 GiB | 12.34 GiB |
-| **Five offline models** | **24.68 GiB** | **38.44 GiB** | **63.11 GiB** |
-| PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.95 GiB | ~2.96 GiB |
+| **Five offline models** | **24.68 GiB** | **38.55 GiB** | **63.22 GiB** |
+| PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.84 GiB | ~2.85 GiB |
 
 Including PEAR, the estimated combined model/runtime total is about
-**66.07 GiB (70.9 GB)**, before the additional space listed below. PEAR includes about **0.11 GiB** for GeoCalib weights and reuses VGGT; see its
-[detailed guide](docs/models/PEAR.md#multiple-fixed-cameras-and-camera-align).
+**66.07 GiB (70.9 GB)**, before the additional space listed below. GeoCalib weights (about **0.11 GiB**) are shared by MAMMA and PEAR and counted once; both also reuse VGGT. See the
+[PEAR camera guide](docs/models/PEAR.md#multiple-fixed-cameras-and-camera-align).
 
 **MAMMA and PromptHMR require separate runtime installation:** run
 `Setup_MAMMA.cmd` or `Setup_PromptHMR.cmd` after `install.cmd`, as described

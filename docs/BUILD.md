@@ -210,6 +210,13 @@ weights are obtained in Model Manager. This support enables camera alignment;
 if it is unavailable, PEAR can still track the selected camera with a warning,
 provided its base support and model files are ready.
 
+MAMMA automatic cameras reuse this overlay through the `flow_mamma_gravity`
+child worker. Its numeric gravity result is passed back to MAMMA before 3D
+fitting; cp310 GeoCalib/Kornia packages must not enter MAMMA's Python 3.11
+environment. Missing or unreliable gravity is an actionable failure for MAMMA
+automatic cameras. Manual camera data bypasses this support and both camera
+checkpoints. A separate GeoCalib package installation into MAMMA is not needed.
+
 Changed upstream files receive an adaptation notice. Each support generation
 also records pinned source URLs/hashes and the adapter hash in
 `RGB_MOCAP_PROVENANCE.json`, alongside the retained provider license files.

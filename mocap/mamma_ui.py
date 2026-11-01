@@ -102,15 +102,15 @@ class MammaWorkspace:
         box.setSpacing(10);box.setAlignment(Qt.AlignTop)
         box.addWidget(QLabel('Camera Calibration'))
         self.mamma_camera_mode=QComboBox()
-        self.mamma_camera_mode.addItem('VGGT (Automatic)','vggt')
+        self.mamma_camera_mode.addItem('VGGT-Omega + GeoCalib (Automatic)','vggt')
         self.mamma_camera_mode.addItem('Manual Camera Data','manual')
-        self.mamma_camera_mode.setToolTip('VGGT estimates fixed camera positions from the videos. Manual uses a calibration file for these exact camera videos.')
+        self.mamma_camera_mode.setToolTip('VGGT-Omega estimates fixed-camera placement. GeoCalib estimates background vertical direction before MAMMA 3D fitting. Manual uses your calibration without automatic gravity changes.')
         self.mamma_camera_mode.currentIndexChanged.connect(self.mamma_settings_changed)
         box.addWidget(self.mamma_camera_mode)
         self.mamma_camera_import=QPushButton('Import Camera Data...')
         self.mamma_camera_import.setToolTip('Load JSON or MAMMA YAML calibration for these videos. Camera names must match filenames without extensions; use original image sizes and metres. See docs/MAMMA.md for the format and docs/samples/mamma-camera-example.json for a synthetic example.')
         self.mamma_camera_import.clicked.connect(self.choose_mamma_calibration);box.addWidget(self.mamma_camera_import)
-        self.mamma_camera_note=QLabel('VGGT (Automatic)');self.mamma_camera_note.setWordWrap(True)
+        self.mamma_camera_note=QLabel('VGGT-Omega + GeoCalib (Automatic)');self.mamma_camera_note.setWordWrap(True)
         self.mamma_camera_note.setMaximumHeight(72)
         self.mamma_camera_note.setTextFormat(Qt.PlainText)
         box.addWidget(self.mamma_camera_note)
@@ -367,7 +367,12 @@ class MammaWorkspace:
             configuration()
             options=self.mamma_options()
             if options['camera_mode']=='manual':match_calibration(options['calibration'],self.mamma_inputs)
-            absent=[m for m in missing('mamma_assets') if options['camera_mode']!='manual' or m.key!='flow_vggt']
+            else:
+                from .mamma_gravity import support_identity
+                try:support_identity()
+                except (OSError,ValueError,KeyError,TypeError) as error:
+                    raise ValueError('Automatic MAMMA cameras need background gravity support. Close RGB MoCap and run install.cmd, then prepare Scene Gravity / GeoCalib in Model Manager.') from error
+            absent=[m for m in missing('mamma_assets') if options['camera_mode']!='manual' or m.key not in {'flow_vggt','pear_geocalib'}]
             if absent:
                 self.status.setText('Prepare the missing MAMMA models first.');self.open_model_manager();return
             first,end=self.processing_range()

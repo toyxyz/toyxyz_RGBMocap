@@ -10,7 +10,7 @@ setup from custom builds and requires actual CUDA verification before registerin
 a manually built environment. For optional PromptHMR setup and its separate SAM2
 build, follow [docs/models/PROMPTHMR.md](docs/models/PROMPTHMR.md).
 
-- This is the Windows Git/CMD distribution. Preserve the separate pinned runtimes and model-specific behavior. `install.cmd` covers ExMR/FlowHMR/GVHMR and PEAR's small shared-runtime support overlay; MAMMA and PromptHMR remain optional through their separate setup commands. Do not merge their packages or assume `update.cmd` installs them.
+- This is the Windows Git/CMD distribution. Preserve the separate pinned runtimes and model-specific behavior. `install.cmd` covers ExMR/FlowHMR/GVHMR and the small shared-runtime camera support overlay used by PEAR and MAMMA gravity; MAMMA and PromptHMR remain optional through their separate setup commands. Do not merge their packages or assume `update.cmd` installs them.
 - PEAR is a transient single-person bone preview. Selecting it must not start models or modify an offline project. Start/Stop controls the resident worker; see `docs/models/PEAR.md` for fixed bones, Reset Bones, One Euro filtering and World Position. Keep inference and capture off the GUI thread, use bounded latest-frame queues and preserve offline state on exit.
 - Treat local `models/`, `projects/`, `cache/`, `character_scenes/`, runtime folders, external project folders and registered model data as user-owned. Do not delete, overwrite, upload or migrate them without appropriate user authorization. Ignore rules are not backups.
 - Preserve inference and selected-result behavior when working on preview, contacts or export. Review the relevant code and validation records before changing numerical processing.

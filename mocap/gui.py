@@ -444,7 +444,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         from .models import STAGE_REQUIREMENTS, BY_KEY
         required = {key for stage in stages for key in STAGE_REQUIREMENTS.get(stage, ())}
         if tool.key=='flowhmr' and self.flow_sampling.currentData()==-1:required.discard('flow_vggt')
-        if tool.key=='mamma' and self.mamma_camera_mode.currentData()=='manual':required.discard('flow_vggt')
+        if tool.key=='mamma' and self.mamma_camera_mode.currentData()=='manual':required.difference_update(('flow_vggt','pear_geocalib'))
         unavailable = [BY_KEY[key] for key in sorted(required) if not ready(BY_KEY[key])]
         count = len(required) - len(unavailable)
         text = f"{tool.label}: {count}/{len(required)} models ready"

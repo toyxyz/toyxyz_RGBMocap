@@ -85,7 +85,7 @@ body data is neither committed nor redistributed by RGB MoCap. See the
 [PEAR guide](docs/models/PEAR.md) and [PEAR paper citation](docs/CITATIONS.md#pear).
 
 
-PEAR's automatic Camera Align uses [GeoCalib](https://github.com/cvg/GeoCalib)
+PEAR's automatic Camera Align and MAMMA's automatic pre-fitting gravity use [GeoCalib](https://github.com/cvg/GeoCalib)
 (Apache-2.0), with original license retained beside the downloaded source;
 Kornia/Kornia-rs keep their wheel licenses. Setup pins sources/wheels in
 `installer/pear-alignment.json` and installs a separate support overlay over the

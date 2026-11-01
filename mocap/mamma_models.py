@@ -29,7 +29,7 @@ ASSETS = (
          url='https://smpl-x.is.tue.mpg.de/', minimum_bytes=137193916,
          expected_sha256='a32f91b24e13023b979ec0b5c8e9086f5918197132329c8a258ad1f1c6c557f6'),
 )
-KEYS = tuple(entry['key'] for entry in ASSETS)+('flow_vggt',)
+KEYS = tuple(entry['key'] for entry in ASSETS)+('flow_vggt','pear_geocalib')
 
 INSTRUCTIONS = {
     'mamma': '1. Open the official MAMMA website below and click Data.\n2. Register for an account if needed, review and accept the provider terms, then sign in.\n3. On the download page, download mamma_mask_full_cvpr.ckpt.\n4. Return to this window, click Import and select the single CKPT file.\nThe app does not request your password or account token.',

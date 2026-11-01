@@ -12,6 +12,9 @@ def emit(kind,**value):
 
 def main():
     stage=sys.argv[1] if len(sys.argv)>1 else ''
+    if stage=='flow_mamma_gravity':
+        from .mamma_gravity_worker import main as gravity_main
+        return gravity_main()
     if stage=='pear_camera_preview':
         from .pear.camera_preview import main as camera_main
         return camera_main()

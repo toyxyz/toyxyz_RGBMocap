@@ -145,7 +145,7 @@ application's use of Kimodo MotionCorrection does not imply use of the Kimodo
 text-to-motion generator.
 
 
-## GeoCalib (PEAR Camera Align)
+## GeoCalib (PEAR Camera Align and MAMMA background gravity)
 
 [Original project and citation](https://github.com/cvg/GeoCalib) ·
 [Code license](https://github.com/cvg/GeoCalib/blob/1dedb29f94fc11b896c5f572005978aeebccd67f/LICENSE) ·
