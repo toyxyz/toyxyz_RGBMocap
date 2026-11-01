@@ -30,8 +30,8 @@ def extract_batch(extractor, images, boxes, intrinsics, gpu_crops=False, placeme
     from sam_3d_body.models.meta_arch.sam3d_body import _prepare_hand_batches_gpu
 
     count = len(images)
-    if not 1 <= count <= 4 or len(boxes) != count:
-        raise ValueError('Fast SAM requires one tracked body per frame, in batches of at most four')
+    if not 1 <= count <= 16 or len(boxes) != count:
+        raise ValueError('Fast SAM requires one tracked body per frame, in batches of at most sixteen')
     if any(image.shape != images[0].shape for image in images):
         raise ValueError('Fast SAM frame sizes must match')
     estimator = extractor.estimator
@@ -56,7 +56,7 @@ def extract_batch(extractor, images, boxes, intrinsics, gpu_crops=False, placeme
         return recursive_to(left_batch, camera.device), recursive_to(right_batch, camera.device), flipped
 
     try:
-        with torch.no_grad(), open(os.devnull, 'w') as quiet, contextlib.redirect_stdout(quiet):
+        with torch.no_grad(), open(os.devnull, 'w', encoding='utf-8') as quiet, contextlib.redirect_stdout(quiet):
             batch = merge_batches([prepare_batch(frame, estimator.transform, boxes[i:i+1],
                 cam_int=intrinsics) for i, frame in enumerate(images)])
             batch = recursive_to(batch, 'cuda')

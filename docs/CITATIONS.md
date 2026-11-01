@@ -143,3 +143,23 @@ When using ExMR, also cite FootMR and the original GVHMR work.
 Cite optional HTD-Refine and HandFlow when using those add-ons. The
 application's use of Kimodo MotionCorrection does not imply use of the Kimodo
 text-to-motion generator.
+
+
+## GeoCalib (PEAR Camera Align)
+
+[Original project and citation](https://github.com/cvg/GeoCalib) ·
+[Code license](https://github.com/cvg/GeoCalib/blob/1dedb29f94fc11b896c5f572005978aeebccd67f/LICENSE) ·
+[Weight license](https://github.com/cvg/GeoCalib/blob/1dedb29f94fc11b896c5f572005978aeebccd67f/LICENSE-WEIGHTS)
+
+```bibtex
+@inproceedings{veicht2024geocalib,
+  author = {Alexander Veicht and Paul-Edouard Sarlin and Philipp Lindenberger and Marc Pollefeys},
+  title = {{GeoCalib: Single-image Calibration with Geometric Optimization}},
+  booktitle = {ECCV},
+  year = {2024}
+}
+```
+
+Camera Align also uses VGGT-Omega with its existing source/model acknowledgements.
+Its background-floor estimation and fixed-rig multiview fusion are application
+features, not an official PEAR multiview inference mode.

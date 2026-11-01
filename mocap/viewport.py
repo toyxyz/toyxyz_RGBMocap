@@ -3,11 +3,12 @@ from __future__ import annotations
 
 import math
 import os
+import time
 import zipfile
 from pathlib import Path
 
 import numpy as np
-from PySide6.QtCore import Qt, QPointF, QRectF, QLineF, Signal
+from PySide6.QtCore import Qt, QPointF, QRectF, QLineF, Signal, QTimer
 from PySide6.QtGui import QColor, QFont, QPainter, QPen, QPolygonF, QRadialGradient, QSurfaceFormat
 from PySide6.QtWidgets import QWidget,QLabel
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
@@ -68,6 +69,11 @@ class MotionView(ViewportBase):
         self.body_height = 1.7
         self.scene_center = np.zeros(3)
         self.drag_point = None
+        self._camera_paint_at = 0.
+        self._camera_update_timer = QTimer(self)
+        self._camera_update_timer.setSingleShot(True)
+        self._camera_update_timer.setTimerType(Qt.PreciseTimer)
+        self._camera_update_timer.timeout.connect(self.update)
         self.auto_fit = True
         self.view_name = "Perspective"
         self.show_grid = True
@@ -404,6 +410,22 @@ class MotionView(ViewportBase):
 
     def mouseReleaseEvent(self, event):
         self.drag_point = None
+        if self._camera_update_timer.isActive():
+            self._camera_update_timer.stop()
+            self.update()
+
+    def request_camera_update(self):
+        # Keep every input delta, but submit only the latest camera per display
+        # interval. A single timer bounds work without an idle render loop.
+        screen = self.screen()
+        rate = screen.refreshRate() if screen is not None else 60.
+        rate = min(240., max(30., rate if math.isfinite(rate) and rate > 0 else 60.))
+        remaining = 1. / rate - (time.monotonic() - self._camera_paint_at)
+        if remaining <= 0:
+            self._camera_update_timer.stop()
+            self.update()
+        elif not self._camera_update_timer.isActive():
+            self._camera_update_timer.start(max(1, math.ceil(remaining * 1000)))
 
     def mouseMoveEvent(self, event):
         if self.drag_point is None:
@@ -424,12 +446,12 @@ class MotionView(ViewportBase):
             self.pan += (-basis[0] * delta.x() + basis[1] * delta.y()) * scale
         self.auto_fit = False
         self.drag_point = event.position()
-        self.update()
+        self.request_camera_update()
 
     def wheelEvent(self, event):
         self.distance = np.clip(self.distance * math.exp(-event.angleDelta().y() / 120 * 0.12), 0.4, 80)
         self.auto_fit = False
-        self.update()
+        self.request_camera_update()
         event.accept()
 
     def mouseDoubleClickEvent(self, event):
@@ -441,6 +463,7 @@ class MotionView(ViewportBase):
         super().resizeEvent(event)
 
     def closeEvent(self, event):
+        self._camera_update_timer.stop()
         self.set_motion(None)
         self.cleanup_gl()
         super().closeEvent(event)
@@ -502,6 +525,7 @@ class MotionView(ViewportBase):
         return drawn
 
     def paintEvent(self,event):
+        self._camera_paint_at = time.monotonic()
         if OPENGL_VIEW:
             super().paintEvent(event)
         else:

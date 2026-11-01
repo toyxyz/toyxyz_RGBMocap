@@ -122,7 +122,7 @@ def extract_source(archive_path,spec,destination):
 
 
 def setup(args):
-    lock=json.loads((ROOT/'installer/mamma-runtime-lock.json').read_text())
+    lock=json.loads((ROOT/'installer/mamma-runtime-lock.json').read_text(encoding='utf-8'))
     uv=ROOT/'.setup/bootstrap-git/uv.exe'
     if not uv.is_file() or engine.sha(uv)!=lock['uv_sha256']:
         raise RuntimeError('Run install.cmd first to prepare the verified setup helper.')
@@ -131,7 +131,7 @@ def setup(args):
         configuration=ROOT/'.setup/mamma-runtime.json'
         if configuration.is_file():
             try:
-                previous=json.loads(configuration.read_text())
+                previous=json.loads(configuration.read_text(encoding='utf-8'))
                 candidate=Path(previous['python']).parent
                 if previous.get('managed_id')==tag and candidate.is_relative_to(ROOT/'runtime_mamma'):
                     dest=candidate
@@ -176,8 +176,8 @@ def setup(args):
             adapt_engine(sources/'mamma',ROOT/'installer/mamma_helpers')
             adapt_sdf(sources/'sdf')
             os.replace(sources/'mamma',stage/'engine')
-            cap=subprocess.run([str(py),'-I','-c',"import torch;assert torch.cuda.is_available();print('.'.join(map(str,torch.cuda.get_device_capability())))"],
-                capture_output=True,text=True,check=True,creationflags=0x08000000).stdout.strip()
+            cap=subprocess.run([str(py),'-I','-X','utf8','-c',"import torch;assert torch.cuda.is_available();print('.'.join(map(str,torch.cuda.get_device_capability())))"],
+                capture_output=True,text=True,encoding='utf-8',errors='replace',check=True,creationflags=0x08000000).stdout.strip()
             if not __import__('re').fullmatch(r'\d+\.\d+',cap):raise ValueError('Invalid CUDA architecture.')
             build=stage/'build-native.cmd'
             lines=['@echo off','setlocal DisableDelayedExpansion','chcp 65001 >nul','call '+quoted(vc),'if errorlevel 1 exit /b 1',
@@ -215,9 +215,9 @@ def setup(args):
 
 def verify(folder,lock):
     report=folder/'verification.json'
-    run_step([folder/'python.exe','-I',ROOT/'installer/verify_mamma.py','--lock',ROOT/'installer/mamma-runtime-lock.json',
+    run_step([folder/'python.exe','-I','-X','utf8',ROOT/'installer/verify_mamma.py','--lock',ROOT/'installer/mamma-runtime-lock.json',
                 '--output',report],ROOT,None,ROOT/'.setup/logs/mamma-verify.log')
-    return json.loads(report.read_text())
+    return json.loads(report.read_text(encoding='utf-8'))
 
 
 if __name__=='__main__':

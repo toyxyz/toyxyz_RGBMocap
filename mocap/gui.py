@@ -4,6 +4,7 @@ from .ui_refresh import batch_readiness
 from .validation_snapshot import read_only_checks
 
 import json
+import codecs
 import math
 import os
 from collections import deque
@@ -129,6 +130,8 @@ class ModelsDialog(QDialog):
         from .models import STAGE_REQUIREMENTS
         keys = ({key for key in STAGE_REQUIREMENTS[self.tool.key+'_assets']} if self.tool.key in ('mamma','prompthmr','pear') else
                 {key for stage in (*self.tool.stages(refine=True, footmr=True, handflow=True),'people') for key in STAGE_REQUIREMENTS.get(stage, ())})
+        if self.tool.key=='pear':keys.update(STAGE_REQUIREMENTS['pear_align'])
+        if self.tool.key=='flowhmr':keys.add('flow_metadata')
         # Keep public automatic downloads together, followed by manual-only files.
         # Stable sorting preserves the existing component order within each group.
         self.models = sorted((model for model in MODELS_LIST if model.key in keys),
@@ -147,7 +150,7 @@ class ModelsDialog(QDialog):
             layout.addWidget(runtime_panel(self))
         elif self.tool.key=='pear':
             from .pear_runtime import status
-            note=QLabel(status()[1]+'\nPEAR support is included in install.cmd and update.cmd. Uses the existing shared runtime; no CUDA compiler is needed. Model files are prepared separately below.')
+            note=QLabel(status()[1]+'\nPEAR support is included in install.cmd and update.cmd. Uses the existing shared runtime; Camera Align uses a small Flow-runtime support overlay. No CUDA compiler is needed. VGGT and GeoCalib are optional for multiple fixed views; model files are prepared separately below.')
             note.setWordWrap(True);layout.addWidget(note)
         self.table = QTableWidget(len(self.models), 3)
         self.table.setHorizontalHeaderLabels(["Model", "Status", "Action"])
@@ -194,8 +197,10 @@ class ModelsDialog(QDialog):
         self.refresh()
 
     def refresh(self):
+        from .models import STAGE_REQUIREMENTS
         for i, model in enumerate(self.models):
             name = model.name + (" (Optional: HTD / 2D)" if self.tool.key == "gvhmr" and model.key == "pva" else "")
+            if self.tool.key=='pear' and model.key in STAGE_REQUIREMENTS['pear_align']:name+=' (Optional: Camera Align)'
             available = ready(model)
             for column, text in ((0, name), (1, "Ready" if available else "Missing")):
                 item = self.table.item(i, column)
@@ -635,6 +640,10 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.update_readiness()
 
     def choose_video(self):
+        if self._pear_active:
+            names,_=QFileDialog.getOpenFileNames(self,'Open PEAR Camera Videos','', 'Videos (*.mp4 *.mov *.avi *.mkv *.webm)')
+            if names:self.load_pear_videos(names)
+            return
         if self.model_choice.currentData()=='mamma':
             names,_=QFileDialog.getOpenFileNames(self,'Open MAMMA Camera Videos','', 'Videos (*.mp4 *.mov *.avi *.mkv *.webm)')
             if names:self.load_mamma_videos(names)
@@ -644,13 +653,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
             self.load_video(Path(name))
 
     def load_video(self, path):
-        if self._pear_active:
-            self.stop_playback()
-            self.pear_camera.blockSignals(True)
-            self.pear_camera.setCurrentIndex(0)
-            self.pear_camera.blockSignals(False)
-            self.video_readable=False
-            self.pear_source_changed()
+        if self._pear_active:return self.load_pear_videos([path])
         if self.model_choice.currentData()=='mamma':
             return self.load_mamma_videos([path])
         try:
@@ -689,6 +692,8 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
             QMessageBox.warning(self, "Video Error", str(error))
 
     def video_ready(self, info):
+        if self.pear_restore_media_ready():return
+        if self.pear_video_ready(info):return
         if self.mamma_video_ready(info):return
         self.video_readable = True
         self.slider.set_media(self.info["fps"] if self.info else info["fps"])
@@ -898,12 +903,12 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.play_button.setAccessibleName(label)
 
     def step_frames(self, amount):
-        if self._pear_active and self.pear_camera.currentData() is not None:return
+        if self._pear_active and self.pear_using_webcams():return
         self.stop_playback()
         self.slider.setValue(max(0, min(self.slider.maximum(), self.slider.value() + amount)))
 
     def toggle_play(self):
-        if self._pear_active and self.pear_camera.currentData() is not None:return
+        if self._pear_active and self.pear_using_webcams():return
         if self.timer.isActive():
             self.stop_playback()
         elif self.video_path and self.info and self.video_readable:
@@ -1317,6 +1322,9 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.task_timer.start();self.update_task_progress()
         self.progress.setRange(0, 0)
         self.buffer = ""
+        self._stdout_decoder = codecs.getincrementaldecoder("utf-8")("replace")
+        self._stderr_decoder = codecs.getincrementaldecoder("utf-8")("replace")
+        self._stderr_buffer = ""
         if stage in ('flow_batch','exmr_batch','gvhmr_batch'):
             from .queue_groups import write_request
             try:
@@ -1371,9 +1379,10 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
                     atomic_json(path,state)
                 except (OSError,ValueError) as error:self.log.append('Could not save stopped stage: '+str(error))
 
-    def read_stdout(self):
+    def read_stdout(self, final=False):
         if self.processing_guard:self.processing_guard.output()
-        self.buffer += bytes(self.process.readAllStandardOutput()).decode("utf-8", errors="replace")
+        self.buffer += self._stdout_decoder.decode(bytes(self.process.readAllStandardOutput()), final=final)
+        if final and self.buffer and not self.buffer.endswith("\n"):self.buffer += "\n"
         if len(self.buffer) > 65536 and "\n" not in self.buffer:
             self.buffer = self.buffer[-65536:]
         while "\n" in self.buffer:
@@ -1386,9 +1395,14 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
             elif line.strip():
                 self.log.append(line.rstrip())
 
-    def read_stderr(self):
+    def read_stderr(self, final=False):
         if self.processing_guard:self.processing_guard.output()
-        self.log.append(bytes(self.process.readAllStandardError()).decode("utf-8", errors="replace").strip()[-8192:])
+        text = self._stderr_decoder.decode(bytes(self.process.readAllStandardError()), final=final)
+        self._stderr_buffer = (self._stderr_buffer + text.replace("\r", "\n"))[-65536:]
+        lines = self._stderr_buffer.split("\n");self._stderr_buffer = lines.pop()
+        if final and self._stderr_buffer:lines.append(self._stderr_buffer);self._stderr_buffer = ""
+        for line in lines:
+            if line.strip():self.log.append(line[-8192:])
 
     def handle_event(self, event):
         kind = event["type"]
@@ -1423,7 +1437,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         elif kind == 'save_cancelled':
             self.cancelled=True
             self.status.setText(event['message'])
-        elif kind == 'resource_mode':
+        elif kind in ('resource_mode', 'info'):
             self.log.append(event['message'])
         elif kind == "progress":
             message=event.get('message','Processing...')
@@ -1447,8 +1461,8 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.log.ensureCursorVisible()
 
     def process_finished(self, code, _):
-        self.read_stdout()
-        self.read_stderr()
+        self.read_stdout(final=True)
+        self.read_stderr(final=True)
         if code != 0 and not self.cancelled:
             self.failed = True
             if "failed" not in self.status.text():
@@ -1756,7 +1770,8 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
     def dropEvent(self, event):
         urls = event.mimeData().urls()
         if urls and not self.busy:
-            if self.model_choice.currentData()=='mamma':self.load_mamma_videos([Path(url.toLocalFile()) for url in urls])
+            if self._pear_active:self.load_pear_videos([Path(url.toLocalFile()) for url in urls])
+            elif self.model_choice.currentData()=='mamma':self.load_mamma_videos([Path(url.toLocalFile()) for url in urls])
             else:self.load_video(Path(urls[0].toLocalFile()))
 
     def closeEvent(self, event):

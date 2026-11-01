@@ -122,7 +122,7 @@ do not put passwords or account tokens in the agent chat.
 - Export source animation as FBX; export characters as FBX with or without meshes,
   or PMX character motion as VMD for MMD.
 - Save projects with separate results for each AI model.
-- Preview one person's live body/finger bones from a webcam or video with PEAR.
+- Track webcam or video input in real time with PEAR's experimental body/finger bone preview; tracking and poses may be unstable.
 
 ## How it works
 
@@ -137,8 +137,11 @@ do not put passwords or account tokens in the agent chat.
 3. Review the motion, edit contacts if needed and **Apply Correction**.
 4. Export FBX, or import a character, retarget the motion and export it.
 
-For **PEAR · Live (Experimental)**, choose a webcam or open a video, then click **Start Live
-Tracking**. It provides a bone preview without recording, correction or export.
+**PEAR · Live (Experimental)** tracks webcam or video input in real time. Tracking
+and pose estimates may be unstable. Click **Start Live Tracking** to attempt camera
+alignment and begin the bone preview. If alignment fails, tracking continues from
+the selected camera with a warning; camera fusion and aligned foot lock are unavailable.
+Recording, offline correction and export are unavailable in this live mode.
 See the [PEAR guide](docs/models/PEAR.md) for its controls.
 
 ## Supported AI models
@@ -169,10 +172,11 @@ projects, caches or retained downloads; shared files are counted once.
 | MAMMA additional files | 6.11 GiB | 3.42 GiB | 9.54 GiB |
 | PromptHMR additional files | 6.22 GiB | 6.13 GiB | 12.34 GiB |
 | **Five offline models** | **24.68 GiB** | **38.44 GiB** | **63.11 GiB** |
-| PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.84 GiB | ~2.84 GiB |
+| PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.95 GiB | ~2.96 GiB |
 
 Including PEAR, the estimated combined model/runtime total is about
-**65.95 GiB (70.8 GB)**, before the additional space listed below.
+**66.07 GiB (70.9 GB)**, before the additional space listed below. PEAR includes about **0.11 GiB** for GeoCalib weights and reuses VGGT; see its
+[detailed guide](docs/models/PEAR.md#multiple-fixed-cameras-and-camera-align).
 
 **MAMMA and PromptHMR require separate runtime installation:** run
 `Setup_MAMMA.cmd` or `Setup_PromptHMR.cmd` after `install.cmd`, as described
@@ -199,6 +203,11 @@ processing phases cut worker time by **44% for ExMR** and **24% for FlowHMR**,
 with unchanged measured peak VRAM. These are different tests, not full-job
 speed guarantees. See [resource modes, measured savings and acceleration](docs/PERFORMANCE.md)
 for conditions, per-model results and output differences.
+
+FlowHMR's **Adaptive Batching** selects 1–16 Fast SAM frames from available memory;
+Low Memory uses one. Warm feature tests took 16–23% less time at batch 16 than at
+batch 4, with peak allocated VRAM rising from 3.84 to 5.43 GiB. Whole-job gains can
+be smaller. Batch selection and OOM retry messages appear in Console and CMD.
 
 ## Documentation
 

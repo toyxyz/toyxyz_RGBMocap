@@ -64,7 +64,7 @@ def extract_keypoints(project, plan, emit):
     from .paths import UPSTREAM
     signature.append(sha256(UPSTREAM / "FootMR/hmr4d/utils/preproc/vitpose_pytorch/src/vitpose_infer/model_builder.py"))
     signature = json.loads(json.dumps(signature))
-    if target.exists() and info_path.exists() and json.loads(info_path.read_text()) == signature:
+    if target.exists() and info_path.exists() and json.loads(info_path.read_text(encoding='utf-8')) == signature:
         return torch.load(target, map_location="cpu", weights_only=False), True
     with np.load(project / "tracking.npz") as tracking:
         boxes = get_bbx_xys_from_xyxy(torch.from_numpy(tracking["boxes"]), base_enlarge=1.2)

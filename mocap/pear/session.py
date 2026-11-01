@@ -5,7 +5,7 @@ from ..paths import ROOT,worker_command
 from .wire import receive
 
 class Session:
-    def __init__(self):
+    def __init__(self,stage="pear_live"):
         self.lock=threading.Condition();self.latest=None;self.command=None;self.closed=False;self.topology=None
         folder=ROOT/'cache/pear/sessions';folder.mkdir(parents=True,exist_ok=True)
         # One bounded log per session; retain only the most recent eight sessions.
@@ -14,7 +14,7 @@ class Session:
             except OSError:pass
         self.log=folder/(uuid.uuid4().hex+'.log')
         log=self.log.open('wb');env=os.environ.copy();env['PYTHONDONTWRITEBYTECODE']='1';env['PYTHONUNBUFFERED']='1'
-        try:self.process=subprocess.Popen(worker_command('pear_live'),cwd=ROOT,env=env,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=log,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+        try:self.process=subprocess.Popen(worker_command(stage),cwd=ROOT,env=env,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=log,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
         finally:log.close()
         from ..processing_guard import ProcessingGuard
         self.guard=ProcessingGuard(self.process.pid)
@@ -29,7 +29,7 @@ class Session:
                     else:self.latest=(meta,arrays)
         except Exception as exc:
             with self.lock:
-                if not self.closed and not (self.latest and self.latest[0]['type']=='error'):
+                if not self.closed and not (self.latest and self.latest[0]['type'] in ('error','alignment')):
                     self.latest=({'type':'error','text':'PEAR worker stopped. See '+str(self.log)}, {})
         finally:self.process.stdout.close()
     def write(self):

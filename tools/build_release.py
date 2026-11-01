@@ -7,7 +7,7 @@ from build_setup import build as setup
 from build_character_runtime import discover as discover_blender,stage as stage_blender
 
 def source_resources():
-    rows=json.loads((ROOT/'installer/source-resources.json').read_text())['files']
+    rows=json.loads((ROOT/'installer/source-resources.json').read_text(encoding='utf-8'))['files']
     allowed=set()
     for row in rows:
         path=(ROOT/row['path']).resolve()
@@ -77,14 +77,14 @@ def main():
         source=(a.ffmpeg_dir/(name+'.exe')) if a.ffmpeg_dir else Path(shutil.which(name) or '')
         if not source.is_file():raise FileNotFoundError('Install FFmpeg and put ffmpeg/ffprobe on PATH, or use --ffmpeg-dir')
         shutil.copy2(source,video/(name+'.exe'))
-    commit=subprocess.run(['git','rev-parse','HEAD'],cwd=ROOT,capture_output=True,text=True)
+    commit=subprocess.run(['git','rev-parse','HEAD'],cwd=ROOT,capture_output=True,text=True,encoding='utf-8',errors='replace')
     source_commit=commit.stdout.strip() if commit.returncode==0 else None
-    (app/'BUILD_INFO.json').write_text(json.dumps(dict(version=version,source_build=True,source_commit=source_commit,runtime_setup=True,models_bundled=False,character_runtime=character),indent=2))
+    (app/'BUILD_INFO.json').write_text(json.dumps(dict(version=version,source_build=True,source_commit=source_commit,runtime_setup=True,models_bundled=False,character_runtime=character),indent=2), encoding='utf-8')
     manifest=[dict(path=f.relative_to(app).as_posix(),bytes=f.stat().st_size,sha256=sha(f)) for f in app.rglob('*') if f.is_file()]
-    (work/'application-manifest.json').write_text(json.dumps(dict(app=str(app),files=manifest),indent=2))
+    (work/'application-manifest.json').write_text(json.dumps(dict(app=str(app),files=manifest),indent=2), encoding='utf-8')
     print('APP_READY',app,flush=True)
     if not a.app_only:
         report=setup(app,a.output,work/'setup',a.uv)
-        (work/'build-report.json').write_text(json.dumps(report,indent=2));print(json.dumps(report,indent=2))
+        (work/'build-report.json').write_text(json.dumps(report,indent=2), encoding='utf-8');print(json.dumps(report,indent=2))
 
 if __name__=='__main__':main()

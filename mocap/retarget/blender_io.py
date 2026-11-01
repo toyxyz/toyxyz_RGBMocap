@@ -132,7 +132,7 @@ def vertex_colors(obj):
 def preview(out,arm,keyed,n):
     from .selective_fbx import body_dependencies
     metadata=Path(io_path(out/'import.json'))
-    kind=json.loads(metadata.read_text())['kind'] if metadata.exists() else next(p.stem.split('-')[0] for p in Path(io_path(out)).glob('*-rig.json'))
+    kind=json.loads(metadata.read_text(encoding='utf-8'))['kind'] if metadata.exists() else next(p.stem.split('-')[0] for p in Path(io_path(out)).glob('*-rig.json'))
     dynamic=set(keyed or [])|body_dependencies(kind,arm)
     if not keyed:dynamic={b.name for b in arm.data.bones}
     dynamic={name for name in dynamic if name in arm.data.bones}

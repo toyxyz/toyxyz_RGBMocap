@@ -376,9 +376,9 @@ def build_workspace(w):
     flow_camera.addWidget(w.fast_sam)
     acceleration=group('Fast SAM Acceleration',flow_camera)
     w.flow_acceleration=acceleration.parentWidget()
-    w.flow_batch4=QCheckBox('4-Frame Batching')
+    w.flow_batch4=QCheckBox('Adaptive Batching')
     w.flow_gpu_crop=QCheckBox('GPU Hand Crops')
-    w.flow_batch4.setToolTip(tooltip_text('Process up to four frames together. Short tests: about 2-2.4x faster SAM features, with about 0.4 GiB more allocated VRAM (0.7 GiB more reserved). Small numerical pose differences are possible. Low Memory uses one frame. Applies on Reconstruct 3D; speed varies by PC and clip.'))
+    w.flow_batch4.setToolTip(tooltip_text('Automatic selects 1-16 frames from available VRAM/RAM and image size. Tests of 4 to 16 frames reduced warm SAM feature time by 16-23%, with allocated VRAM about 3.84 to 5.43 GiB. Low Memory and this option off use one frame. Small numerical motion differences are possible. Applies on Reconstruct 3D; whole-job gains vary.'))
     w.flow_gpu_crop.setToolTip(tooltip_text('Prepare hand crops on the GPU. Short tests: about 10-15% faster SAM features, with little extra VRAM beyond the selected batch size. Different image interpolation can change motion (about 1 mm at the 95th percentile; up to 5 mm in these tests). Model precision stays unchanged. Applies on Reconstruct 3D; results vary.'))
     for check in (w.flow_batch4,w.flow_gpu_crop):
         check.setChecked(True)

@@ -85,7 +85,7 @@ def build_extractor(device, fast=True, low_memory=False):
         raise RuntimeError('The selected SAM package could not be activated.')
     # Preimport chooses the package before FlowHMR inserts its original path.
     from flowhmr.utils.runtime_sam_features import build_sam3d_extractor
-    with open(os.devnull, 'w') as quiet, contextlib.redirect_stdout(quiet):
+    with open(os.devnull, 'w', encoding='utf-8') as quiet, contextlib.redirect_stdout(quiet):
         if not low_memory:
             extractor = build_sam3d_extractor(device)
         else:
@@ -121,7 +121,7 @@ def extract_tokens(extractor, img, boxes, k, placement=False):
         body.clear()
         hands.clear()
         try:
-            with torch.no_grad(), open(os.devnull, 'w') as quiet, contextlib.redirect_stdout(quiet):
+            with torch.no_grad(), open(os.devnull, 'w', encoding='utf-8') as quiet, contextlib.redirect_stdout(quiet):
                 outputs = extractor.estimator.process_one_image(img, bboxes=boxes, cam_int=k, inference_type='full')
             if not body or len(hands) != 1 or hands[0].shape[0] != 2:
                 raise ValueError('Fast SAM did not return the expected body and left/right hand tokens')

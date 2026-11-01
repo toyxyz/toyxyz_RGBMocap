@@ -39,10 +39,11 @@ def command(root,stage,args=(),*,frozen):
         python=root/base['folder']/'python.exe'
         if not (root/spec['folder']).is_dir() or not python.is_file():
             raise RuntimeError(key+' runtime is missing. Run Setup to repair this installation.')
-        return [str(python),'-I',str(root/'worker_boot.py'),stage,*map(str,args)]
+        # Isolated mode ignores PYTHONIOENCODING/PYTHONUTF8 from the GUI.
+        return [str(python),'-I','-X','utf8',str(root/'worker_boot.py'),stage,*map(str,args)]
     python=root/spec['dev']/'Scripts/python.exe'
     if not python.is_file(): raise RuntimeError(key+' development runtime is missing. Prepare its pinned environment.')
-    return [str(python),'-m','mocap.worker_progress',stage,*map(str,args)]
+    return [str(python),'-X','utf8','-m','mocap.worker_progress',stage,*map(str,args)]
 
 def activate(root,key,base_root=None):
     """Validate effective imports before loading model or CUDA modules."""

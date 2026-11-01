@@ -46,7 +46,7 @@ def main(args):
     else:
         from .source import prepare,stamp
         from .pipeline import run
-        asset=Path(job['asset']);kind=json.loads((asset/'import.json').read_text())['kind'];takes=[]
+        asset=Path(job['asset']);kind=json.loads((asset/'import.json').read_text(encoding='utf-8'))['kind'];takes=[]
         for i,take in enumerate(job['takes']):
             folder=out/f'take-{i}';folder.mkdir()
             report(f'Take {i+1}/{len(job["takes"])}: preparing selected source')

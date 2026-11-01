@@ -12,8 +12,8 @@ def main():
     errors=[];count=0
     try:cache_dependency_files(ROOT)
     except (OSError,ValueError) as exc:errors.append(str(exc))
-    resources={r['path']:r for r in json.loads((ROOT/'installer/source-resources.json').read_text())['files']}
-    auxiliary={r['path']:r for r in json.loads((ROOT/'installer/external-assets.json').read_text())['files']}
+    resources={r['path']:r for r in json.loads((ROOT/'installer/source-resources.json').read_text(encoding='utf-8'))['files']}
+    auxiliary={r['path']:r for r in json.loads((ROOT/'installer/external-assets.json').read_text(encoding='utf-8'))['files']}
     def files():
         # Audit the publishable checkout, not ignored local runtime/model data.
         # Source ZIPs have no Git metadata and are scanned in full below.
@@ -44,7 +44,7 @@ def main():
             except (SyntaxError,UnicodeError) as exc:errors.append(str(exc))
     for name in ['README.md','LICENSE','THIRD_PARTY_NOTICES.md','docs/USER_GUIDE.md','docs/BUILD.md','installer/runtime-lock.json','installer/external-assets.json']:
         if not (ROOT/name).is_file():errors.append('Missing '+name)
-    lock=json.loads((ROOT/'installer/runtime-lock.json').read_text())
+    lock=json.loads((ROOT/'installer/runtime-lock.json').read_text(encoding='utf-8'))
     registry=ROOT/'mocap/runtime_registry.py'
     if not registry.is_file() or hashlib.sha256(registry.read_bytes()).hexdigest()!=lock.get('registry_sha256'):
         errors.append('Runtime registry differs from installer/runtime-lock.json. Review the registry change and update its locked hash before distributing.')

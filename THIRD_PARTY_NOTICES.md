@@ -83,3 +83,13 @@ YOLOv8s/Ultralytics retain their existing AGPL/provider terms. PEAR weights,
 SMPL-X 2020 and FLAME geometry retain separate provider conditions; registered
 body data is neither committed nor redistributed by RGB MoCap. See the
 [PEAR guide](docs/models/PEAR.md) and [PEAR paper citation](docs/CITATIONS.md#pear).
+
+
+PEAR's automatic Camera Align uses [GeoCalib](https://github.com/cvg/GeoCalib)
+(Apache-2.0), with original license retained beside the downloaded source;
+Kornia/Kornia-rs keep their wheel licenses. Setup pins sources/wheels in
+`installer/pear-alignment.json` and installs a separate support overlay over the
+existing Flow runtime. VGGT retains its existing upstream/model terms; its weight
+file is reused, not bundled again. GeoCalib's public checkpoint is obtained
+separately through Model Manager under CC BY 4.0; the upstream
+LICENSE-WEIGHTS is retained with support files. No TensorRT engine/runtime is distributed.

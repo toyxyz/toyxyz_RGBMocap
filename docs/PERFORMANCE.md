@@ -185,7 +185,9 @@ output disagreements, not accuracy against ground-truth capture.
 ### FlowHMR Fast SAM switches
 
 Both switches default on for new work; saved off settings remain off. They work
-only with Fast SAM and can be controlled independently:
+only with Fast SAM and can be controlled independently. The following records
+describe the earlier 4-frame implementation; the current Adaptive Batching
+policy and its additional measurements follow below:
 
 - **4-Frame Batching:** warm feature extraction was about **2.0–2.4 times faster**
   than one-frame processing. Peak allocated VRAM rose **3.44 → 3.84 GiB** and
@@ -201,6 +203,57 @@ differs from CPU OpenCV cropping; combined output differences reached about
 1.1–1.3 mm at the 95th percentile and 4.8 mm maximum joint displacement in the
 tested clips. This is a separate comparison from the sub-millimetre prefetch
 test above. Inspect your motion/contact timings rather than assuming bit identity.
+
+### FlowHMR adaptive batches (2026-11-02)
+
+**Adaptive Batching** replaces the 4-Frame Batching label while retaining its
+saved boolean. Automatic checks free VRAM, reusable allocator cache, the process
+allocation cap, free RAM and image dimensions after model loading. It selects
+1/2/4/8/16 frames and rechecks headroom between prepared batches. The existing
+Windows GPU reserve is retained, not subtracted twice. Low Memory and a disabled
+batching checkbox always use one frame. Decoder precision, crop resolution,
+temporal context, frame count and the first 30 placement anchors are unchanged.
+
+On the same RTX 5090/Windows test PC, two 1080p landscape/portrait clips gave:
+
+| Measurement | Previous batch 4 | Batch 16 |
+| --- | ---: | ---: |
+| Warm features, 60 frames | 4.71 s | 3.98 s |
+| Warm features, 120 frames | 9.86 s | 7.63 s |
+| Peak allocated VRAM | 3.84 GiB | 5.43 GiB |
+| Peak reserved VRAM | 4.34 GiB | 6.81 GiB |
+| Warm RAM working set, 60 frames | 2.54 GiB | 2.74 GiB |
+| Warm RAM working set, 120 frames | 2.89 GiB | 3.08 GiB |
+
+Warm timers exclude initialization and decoding; they are the second complete
+sequence pass after warmup, not full-job acceleration guarantees. Fresh app
+feature jobs including initialization were 34.80 → 34.88 s and
+39.77 → 38.74 s; their RAM peaks remained about 6.5 GiB. At batch 32, allocated
+VRAM reached 7.56 GiB and the 120-frame warm pass took 7.32 s, only about 4%
+less than 16. The current ceiling therefore favors 16's measured efficiency.
+Other GPUs, drivers, inputs and concurrent applications can differ.
+
+Across the actual app paths, final joint disagreements against the previous
+batch-4 output were p95/max **0.15/0.59 mm** and **0.44/1.63 mm**. Placement
+offset changes were below 0.08 mm. Existing repeat extractions also had small
+numerical differences; these are output disagreements, not ground-truth error.
+Low Memory remained one frame and measured 1.91 GiB allocated in both versions.
+Cache reuse, sequential actor/model reuse and interrupted-job recovery were
+exercised. A controlled 4.4 GiB allocator cap triggered 16 → 8 → 4 retries
+without dropping frames or publishing a partial feature file. This is a local
+allocation-failure test, not a clean-PC or physically exhausted-GPU test.
+
+The [FlowHMR team's performance proposal](https://github.com/toyxyz/toyxyz_RGBMocap/issues/17)
+and [upstream measurements](https://github.com/flowhmr/flowhmr/blob/main/docs/performance.md)
+also motivated separate Lite SAM and OpenCV-style GPU body/hand crop tests.
+At batch 16, official Lite GPU extraction took 4.11/8.69 s on the two clips,
+versus Fast SAM's 3.98/7.63 s. Its full-output placement path was also slower.
+The exact-coordinate crop candidate over the existing Fast path took 4.50 s
+on the 60-frame clip. Neither candidate is enabled; Fast SAM remains the app
+backend. Body-only cropping was not isolated in that combined crop test.
+Compilation, TensorRT, model weights and installed dependencies are
+unchanged. The upstream A100 report compares against an unaccelerated original
+baseline, so its 5–10× claim must not be applied to this app's previous Fast path.
 
 ### MAMMA
 

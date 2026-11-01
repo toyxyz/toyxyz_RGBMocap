@@ -22,6 +22,9 @@ class AdaptiveFilter:
     def reset(self):self.raw=None;self.value=None;self.derivative=None
     def update(self,value,dt):
         x=np.asarray(value,dtype=np.float64)
+        # A paused frame/control refresh has no elapsed source time. Retain the
+        # unaffected channel instead of reseeding it from an unsmoothed sample.
+        if self.raw is not None and dt==0 and self.raw.shape==x.shape:return self.value.astype(np.float32)
         if self.raw is None or not 0<dt<=.25 or self.raw.shape!=x.shape:
             self.raw=x.copy();self.value=x.copy()
             self.derivative=np.zeros(x.shape[:-2]+(3,)) if self.rotation else np.zeros_like(x)
@@ -63,7 +66,7 @@ class ParameterFilter:
                 if axis_angle:x=Rotation.from_rotvec(x.reshape(-1,3)).as_matrix()
                 entries.append((prefix,key,x,original,axis_angle,x.shape[-2:]==(3,3)))
         schema=tuple((p,k,x.shape,shape,aa,rot) for p,k,x,shape,aa,rot in entries)
-        if not 0<dt<=.25 or schema!=self.schema:self.filters={};dt=0.
+        if not 0<=dt<=.25 or schema!=self.schema:self.filters={};dt=0.
         self.last_time=timestamp;self.schema=schema
         result={'body':{},'flame':{}}
         for rotation in (True,False):

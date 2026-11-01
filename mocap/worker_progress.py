@@ -12,6 +12,12 @@ def emit(kind,**value):
 
 def main():
     stage=sys.argv[1] if len(sys.argv)>1 else ''
+    if stage=='pear_camera_preview':
+        from .pear.camera_preview import main as camera_main
+        return camera_main()
+    if stage=='flow_pear_align':
+        from .pear.align_worker import main as align_main
+        return align_main()
     if stage=='pear_live':
         from .pear.worker import main as live_main
         return live_main()

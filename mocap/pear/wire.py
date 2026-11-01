@@ -38,7 +38,7 @@ def receive(stream):
             if a.dtype.kind=='f' and not np.isfinite(a).all():raise ValueError('Nonfinite live array')
             arrays[key]=a
     kind=meta.get('type') if isinstance(meta,dict) else None
-    if kind not in ('status','topology','frame','missing','error'):raise ValueError('Unknown live packet')
+    if kind not in ('status','topology','frame','missing','error','alignment','camera_preview'):raise ValueError('Unknown live packet')
     if kind=='topology':
         p=arrays['parents']
         if p.dtype!=np.int32 or p.shape!=(55,) or p[0]!=-1 or np.any(p[1:]<0) or np.any(p[1:]>=np.arange(1,55)):raise ValueError('Invalid PEAR hierarchy')
@@ -65,6 +65,9 @@ def receive(stream):
         r=arrays['bone_facing']
         if r.dtype!=np.float32 or r.shape!=(52,3,3) or np.max(abs(r.swapaxes(-1,-2)@r-np.eye(3)))>.005 or np.linalg.det(r).min()<.99:
             raise ValueError('Invalid live bone facing')
+    if 'thumbnails' in arrays:
+        a=arrays['thumbnails']
+        if a.dtype!=np.uint8 or a.ndim!=4 or not 1<=len(a)<=32 or a.shape[1:]!=(72,128,3):raise ValueError('Invalid camera thumbnails')
     if 'image' in arrays:
         a=arrays['image']
         if a.dtype!=np.uint8 or a.ndim!=3 or a.shape[2]!=3 or not 0<a.shape[0]<=720 or not 0<a.shape[1]<=1280:raise ValueError('Invalid camera image')

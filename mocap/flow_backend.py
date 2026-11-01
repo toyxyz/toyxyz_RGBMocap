@@ -11,6 +11,7 @@ from .storage import atomic_json, sha256
 from .model_session import set_memory_budget
 from .compute_policy import gpu_memory_fraction
 from .result_artifacts import file_stat
+from .resource_cache import code_hash
 
 VERSION=1
 MAX_FRAMES=5000  # Pinned FlowHMR per-branch RoPE table; 30 fps.
@@ -128,7 +129,7 @@ def identity(project,stage):
         for name in ('memory_mode.py','gpu_offload.py','model_session.py'):code[name]=sha256(ROOT/'mocap'/name)
     if stage in ('flow_camera','flowhmr'):code['flow_camera.py']=sha256(ROOT/'mocap/flow_camera.py')
     if stage=='flow_features':
-        for name in ('flow_sam.py','flow_fast_sam.py','batch_prefetch.py'):code[name]=sha256(ROOT/'mocap'/name)
+        for name in ('flow_sam.py','flow_fast_sam.py','flow_sam_batch.py','batch_prefetch.py'):code[name]=code_hash(ROOT/'mocap'/name)
     if stage=='flow_features':
         from .flow_sam import saved_fast_sam, source_identity, acceleration_options
         code['sam_source']=source_identity(saved_fast_sam(project,state))
@@ -200,7 +201,7 @@ def features(project,emit):
     from .memory_mode import run as memory_run
     from .flow_sam import acceleration_options
     state=json.loads((project/'project.json').read_text(encoding='utf-8'))
-    estimate=5.5 if acceleration_options(project,state)['sam_batch4'] else 4.5
+    estimate=4.5  # Admission for the one-frame fast path; batching adapts after loading.
     return memory_run('FlowHMR SAM features',lambda low:_features(project,emit,low),estimate,emit)
 
 
@@ -222,7 +223,10 @@ def _features(project,emit,low_memory):
     from .flow_sam import extract_tokens
     tokens=torch.empty((n,3072),dtype=torch.float32);anchors=[]
     try:
-        batch_size = 4 if options['sam_batch4'] and not low_memory else 1
+        from .flow_sam_batch import current_batch_size, extract_bounded
+        batch_size = current_batch_size(n,state['width'],state['height'],enabled=options['sam_batch4'],
+                                       low_memory=low_memory,gpu_crops=options['sam_gpu_crop'])
+        batch_limit = batch_size
         if fast:
             emit('info', message=f"Fast SAM acceleration: {batch_size} frame(s) per batch; GPU hand crops {'on' if options['sam_gpu_crop'] else 'off'}.")
         if options['sam_batch4'] and low_memory:
@@ -239,9 +243,11 @@ def _features(project,emit,low_memory):
         with batch_source(cpu_batches(), batch_bytes=batch_size*state['width']*state['height']*3) as batches:
             for begin,count,images in batches:
                 if any(options.values()):
-                    from .flow_fast_sam import extract_batch
-                    values, outputs = extract_batch(extractor, images, boxes[begin:begin+count],
-                        torch.from_numpy(k[None]), gpu_crops=options['sam_gpu_crop'], placement=begin<30)
+                    batch_limit = min(batch_limit,current_batch_size(n,state['width'],state['height'],
+                        enabled=options['sam_batch4'],low_memory=low_memory,gpu_crops=options['sam_gpu_crop']))
+                    values, outputs, batch_limit = extract_bounded(extractor, images, boxes[begin:begin+count],
+                        torch.from_numpy(k[None]), gpu_crops=options['sam_gpu_crop'], placement=begin<30,
+                        limit=batch_limit,emit=emit)
                 else:
                     token, outputs = extract_tokens(extractor, images[0], boxes[begin:begin+1],
                         torch.from_numpy(k[None]), placement=begin<30)

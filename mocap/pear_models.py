@@ -13,8 +13,10 @@ ASSETS=[dict(key='pear',name='Live Pose / PEAR',relative='pear/pear_model.pt',ur
         download_url='https://github.com/ultralytics/assets/releases/download/v8.3.0/yolov8s.pt',
         expected_sha256='1f47a78bf100391c2a140b7ac73a1caae18c32779be7d310658112f7ac9aa78a'),
     dict(key='pear_geometry',name='PEAR / SMPL-X 2020 + FLAME Geometry',relative='pear/geometry.json',url='https://github.com/Pixel-Talk/PEAR#-preparation',minimum_bytes=1)]
-KEYS=('pear','pear_geometry','pear_yolo')
-INSTRUCTIONS={'pear':'Download pear_model.pt from the linked official checkpoint, then import it here.',
+ASSETS.append(dict(key='pear_geocalib',name='PEAR Camera Align / GeoCalib',relative='pear/geocalib-pinhole.tar',url='https://github.com/cvg/GeoCalib',minimum_bytes=116074121,download_url='https://github.com/cvg/GeoCalib/releases/download/v1.0/geocalib-pinhole.tar',expected_sha256='86d6aeacd8bbd974c59ce39f61854e00d36911c732ad89be471476fd708722ac'))
+KEYS=('pear','pear_geometry','pear_yolo','flow_vggt','pear_geocalib')
+INSTRUCTIONS={'pear_geocalib':'Used by automatic Camera Align, including one camera. Alignment is optional for tracking: if its support or models are missing, PEAR continues in the selected camera view with a warning, without fusion or aligned foot lock. Download geocalib-pinhole.tar from the official v1.0 release, then import the original TAR file here without extracting it. Code: Apache-2.0; checkpoint: CC BY 4.0. See the official GeoCalib LICENSE-WEIGHTS. Existing VGGT weights are reused.',
+    'pear':'Download pear_model.pt from the linked official checkpoint, then import it here.',
     'pear_geometry':'1. Review and accept the SMPL-X and FLAME provider terms; register or sign in where required. PEAR needs SMPL-X 2020 and FLAME 2020, not the standard SMPL-X v1.1 or MAMMA locked-head models.\n2. Open PEAR Preparation below. Use its official Google Drive assets bundle link to obtain assets.zip.\n3. Import the original assets.zip here. The app validates its SHA-256 and extracts only the required geometry files. The source ZIP is left unchanged and is not copied into the models folder.\n4. The geometry bundle has separate provider restrictions; it is not redistributed by RGB MoCap.'}
 
 def spec():return json.loads((ROOT/'installer/pear-assets.json').read_text(encoding='utf8'))

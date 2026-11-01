@@ -38,12 +38,12 @@ def run(command,log):
 
 def verify(folder):
     report=folder/'verification.json'
-    run([folder/'python.exe','-I',ROOT/'installer/verify_prompthmr.py','--lock',ROOT/'installer/prompthmr-runtime-lock.json','--output',report],ROOT/'.setup/logs/prompthmr-verify.log')
+    run([folder/'python.exe','-I','-X','utf8',ROOT/'installer/verify_prompthmr.py','--lock',ROOT/'installer/prompthmr-runtime-lock.json','--output',report],ROOT/'.setup/logs/prompthmr-verify.log')
     return json.loads(report.read_text(encoding='utf8'))
 
 
 def setup():
-    lock=json.loads((ROOT/'installer/prompthmr-runtime-lock.json').read_text())
+    lock=json.loads((ROOT/'installer/prompthmr-runtime-lock.json').read_text(encoding='utf-8'))
     uv=ROOT/'.setup/bootstrap-git/uv.exe'
     if not uv.is_file() or engine.sha(uv)!=lock['uv_sha256']:raise RuntimeError('Run install.cmd first.')
     with app_lock(ROOT):
@@ -92,10 +92,10 @@ def setup():
             adapt_engine(sources/'prompthmr');os.replace(sources/'prompthmr',stage/'engine')
             install_python_source(sources/'detectron2',target,'detectron2')
             run([uv,'pip','install','--python',py,'--target',target,'--no-deps','--no-build-isolation','--no-index','--offline','--link-mode','copy',sources/'chumpy'],logs/'prompthmr-chumpy.log')
-            cap=subprocess.run([str(py),'-I','-c',"import torch;assert torch.cuda.is_available();print('.'.join(map(str,torch.cuda.get_device_capability())))"],capture_output=True,text=True,check=True,creationflags=0x08000000).stdout.strip()
+            cap=subprocess.run([str(py),'-I','-X','utf8','-c',"import torch;assert torch.cuda.is_available();print('.'.join(map(str,torch.cuda.get_device_capability())))"],capture_output=True,text=True,encoding='utf-8',errors='replace',check=True,creationflags=0x08000000).stdout.strip()
             if not __import__('re').fullmatch(r'\d+\.\d+',cap):raise ValueError('Invalid CUDA architecture.')
             build=stage/'build-native.cmd'
-            lines=['@echo off','setlocal DisableDelayedExpansion','call '+quoted(vc),'if errorlevel 1 exit /b 1',
+            lines=['@echo off','setlocal DisableDelayedExpansion','chcp 65001 >nul','call '+quoted(vc),'if errorlevel 1 exit /b 1',
                 'set "CUDA_HOME='+str(cuda).replace('%','%%')+'"','set "TORCH_CUDA_ARCH_LIST='+cap+'"',
                 'set "MAX_JOBS=2"','set "DISTUTILS_USE_SDK=1"','set "MSSdk=1"','set "FORCE_CUDA=1"','set "SAM2_BUILD_ALLOW_ERRORS=0"','set "SAM2_BUILD_CUDA=1"',
                 ' '.join(quoted(x) for x in [uv,'pip','install','--python',py,'--target',target,'--no-deps','--no-build-isolation','--no-index','--offline','--no-cache','--link-mode','copy',sources/'sam2']),'if errorlevel 1 exit /b 1','exit /b 0']

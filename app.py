@@ -29,10 +29,16 @@ def main():
         except (AttributeError, OSError):
             pass
     from PySide6.QtWidgets import QApplication
-    from PySide6.QtGui import QIcon
+    from PySide6.QtGui import QIcon, QSurfaceFormat
     from PySide6.QtCore import QTimer
     from mocap.gui import MainWindow
     from mocap.theme import configure_application
+    # QOpenGLWidget's private FBO format does not configure the top-level
+    # window's composition context. Avoid blocking input on that context's
+    # default swap interval; camera redraws are paced in MotionView.
+    surface = QSurfaceFormat.defaultFormat()
+    surface.setSwapInterval(0)
+    QSurfaceFormat.setDefaultFormat(surface)
     app = QApplication(sys.argv[:1])
     app.setWindowIcon(QIcon(str(Path(__file__).resolve().parent / "assets" / "rgbmocap-icon.png")))
     configure_application(app)

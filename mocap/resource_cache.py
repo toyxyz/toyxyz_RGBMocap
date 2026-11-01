@@ -1,4 +1,4 @@
-"""Cache aliases for the reviewed memory-policy-only transition.
+"""Cache aliases for reviewed policy/logging-only changes.
 
 Match complete file bytes: later numerical edits automatically invalidate caches.
 Do not add aliases for changed inference algorithms or settings.
@@ -19,6 +19,14 @@ POLICY_ONLY = {
 }
 
 
+# UTF-8 log streams change no SAM features. Complete-byte matching means
+# any subsequent numerical edit still invalidates the affected cache.
+LOGGING_ONLY = {
+    "db6fd57ca78c6dfab27142b9e99db207fcc1021933f1c4cfeb599c5fdad321ed": "c1abd10ec3143cfa7d7b97283a461fa858b73f55338cde7d7842cf030eff0b95",
+    "141809da55236c2cbbf3f26f9e925362bcac6197d3883406347fa6b3ac7b7174": "319f211033a21d0fa1a83dd01a45676844df93cf95680e0d9fb7242883e3ba42"
+}
+
+
 def code_hash(path):
     actual=sha256(path)
-    return POLICY_ONLY.get(actual,actual)
+    return LOGGING_ONLY.get(actual,POLICY_ONLY.get(actual,actual))

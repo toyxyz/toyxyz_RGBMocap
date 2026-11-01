@@ -3,7 +3,7 @@ $root = Split-Path -Parent $PSScriptRoot
 $setup = Join-Path $root '.setup'
 $resources = Join-Path $setup 'bootstrap-git'
 New-Item -ItemType Directory -Force -Path $resources | Out-Null
-$lock = Get-Content -LiteralPath (Join-Path $root 'installer/runtime-lock.json') -Raw | ConvertFrom-Json
+$lock = Get-Content -LiteralPath (Join-Path $root 'installer/runtime-lock.json') -Encoding UTF8 -Raw | ConvertFrom-Json
 $uv = Join-Path $resources 'uv.exe'
 function Get-Sha256([string]$path) {
     $stream = [System.IO.File]::OpenRead($path)
@@ -33,5 +33,5 @@ $env:PYTHONUTF8 = '1'
 & $uv python install 3.10.22 --install-dir $pythonDir --no-bin --no-registry --no-config --cache-dir $env:UV_CACHE_DIR
 if ($LASTEXITCODE -ne 0) { throw 'Private Python setup failed.' }
 $python = Join-Path $pythonDir 'cpython-3.10.22-windows-x86_64-none/python.exe'
-& $python -I -B (Join-Path $root 'tools/git_managed_install.py') @args
+& $python -I -X utf8 -B (Join-Path $root 'tools/git_managed_install.py') @args
 exit $LASTEXITCODE

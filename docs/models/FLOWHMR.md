@@ -15,6 +15,7 @@ C++/CUDA native-build prerequisites. Key assets are:
 | Asset | Location under the app's `models/` folder |
 | --- | --- |
 | Supported FlowHMR latest checkpoint and configuration | `flowhmr/flowhmr_latest.ckpt`, `flowhmr/config.yml` |
+| Official checkpoint metadata (public automatic download) | `flowhmr/config.json` |
 | SAM 3D Body model, configuration and MHR | `flowhmr/sam/model.ckpt`, `flowhmr/sam/model_config.yaml`, `flowhmr/sam/assets/mhr_model.pt` |
 | AMASS SMPL-H neutral body, 16 shape components | `body_models/smplh/neutral/model.npz` |
 | VGGT-Omega 512, for camera estimation | `flowhmr/vggt_omega_1b_512.pt` |
@@ -26,12 +27,18 @@ registration/access steps; use **Manual Download... > Import...** for the exact
 file. The current checkpoint is `flowhmr_latest`, not an arbitrary base model.
 See [model preparation](../USER_GUIDE.md#prepare-models).
 
+Downloading the FlowHMR checkpoint also fetches the official 25-byte
+`config.json` from the same pinned Hugging Face revision, with SHA-256 checking.
+Existing installations can obtain it using its separate Model Manager row.
+It identifies the checkpoint for Hugging Face download accounting; it does not
+replace `config.yml`, change inference settings or invalidate existing motion.
+
 ## Controls
 
 | Control | Default for new work | Meaning |
 | --- | --- | --- |
 | **Fast SAM** | On | Speed up feature extraction using the same supported weights. Small numerical differences can affect motion or automatic contact timings. |
-| **Fast SAM Acceleration > 4-Frame Batching** | On | Process up to four frames together. Short tests measured about 2–2.4× faster SAM features, with about 0.4 GiB more allocated VRAM (0.7 GiB more reserved). Small numerical differences are possible. Low Memory uses one frame per batch. |
+| **Fast SAM Acceleration > Adaptive Batching** | On | Automatic selects 1, 2, 4, 8 or 16 frames from current GPU allocation headroom, free RAM and image size. Short tests of 4 to 16 frames reduced warm feature time by 16–23%; allocated VRAM rose from 3.84 to 5.43 GiB. Off and Low Memory use one frame. Small numerical differences are possible. |
 | **Fast SAM Acceleration > GPU Hand Crops** | On | Prepare hand crops on the GPU. Tests on top of 4-frame batching measured about 8–11% less feature time, with unchanged allocated VRAM at that batch size. Image interpolation differs from CPU crops, so the resulting motion can differ slightly. |
 | **Camera / Sampling** | Moving / Unknown - Auto | Automatically choose camera-estimation sampling when the camera moves or its behavior is uncertain. |
 | **Camera / Sampling > Static Camera** | Optional | Skip camera estimation for a fixed camera without zooming. This path does not require the VGGT weight. |
@@ -50,6 +57,15 @@ with differences up to 5 mm; this measures disagreement with CPU crops, not
 accuracy against ground truth. Speed figures describe feature extraction after
 warm-up, not the whole reconstruction, and vary with the PC and video. CUDA
 memory pressure can retry with Low Memory and a smaller batch.
+
+Adaptive Batching preserves the previous batching checkbox's saved on/off value.
+Memory is checked again between prepared batches. CUDA allocation failures retry
+only unpublished frames with a smaller batch after releasing the failed call;
+if one frame still fails, the existing Automatic-to-Low-Memory retry applies.
+RAM/prefetch limits, full resolution, original precision, every motion frame and
+the first 30 placement-anchor frames are retained. The 16-frame ceiling favors
+measured efficiency: 32 added only about 4% over 16 on the longer short clip but
+used another 2.13 GiB of allocated VRAM. These are one-PC observations.
 
 ## Capture and export
 
@@ -77,6 +93,24 @@ two CPU image batches ahead when memory is available; Low Memory disables this
 overlap. This does not change the Fast SAM switches, resolution or precision.
 
 ### Measured effects
+
+The 2026-11-02 paired checks used 60- and 120-frame 1080p landscape/portrait
+clips on the test PC below. Warm feature-only time changed **4.71 → 3.98 s**
+and **9.86 → 7.63 s** for 4 → 16 frames; peak allocated VRAM was
+**3.84 → 5.43 GiB**, reserved VRAM **4.34 → 6.81 GiB**, and warm worker RAM
+increased by about **0.20 GiB**. Fresh app feature jobs, including initialization,
+took **34.80 → 34.88 s** and **39.77 → 38.74 s**: short whole jobs benefit much
+less than warm extraction. Final joint disagreements were **0.15 / 0.44 mm at
+the 95th percentile**, with maxima **0.59 / 1.63 mm**. These are differences
+from the previous implementation, not ground-truth accuracy. Low Memory's
+peak allocated VRAM remained **1.91 GiB** in its paired 60-frame check.
+
+The newer official Lite SAM and OpenCV-style GPU body/hand crops were also
+tested as separate candidates. The crop trial changed body and hand crops together;
+body-only cropping was not isolated. Both candidates were slower than the existing
+optimized Fast SAM path on this PC, so they are not substituted into the app. No new package,
+model, TensorRT engine or compilation step is required. See
+[the adaptive-batch review](../PERFORMANCE.md#flowhmr-adaptive-batches-2026-11-02).
 
 Automatic's VGGT camera-only loader skips temporary initial weights using meta
 initialization and direct checkpoint assignment. A paired camera-component test
@@ -114,6 +148,22 @@ can still exceed available memory. Historical [time/VRAM records](../USER_GUIDE.
 include camera estimation and predate Fast SAM; they are not predictions or
 minimum specifications. See [validation](../VALIDATION.md) and
 [upstream licenses](../../THIRD_PARTY_NOTICES.md).
+
+## Windows console encoding
+
+The app Console and the CMD window report the selected Fast SAM batch size, GPU
+hand-crop setting and Low Memory single-frame selection. CUDA OOM retries report
+the reduced batch size. Available memory can further reduce the effective batch;
+the selected size is an upper bound, and a final partial batch may be smaller.
+Cached features skip extraction, so they do not select a new SAM batch.
+
+A `UnicodeEncodeError` mentioning `cp1252` and SAM timing/box-drawing output
+is a log-encoding failure. The corrected version starts base workers in explicit
+UTF-8 mode and uses UTF-8 for discarded Fast SAM logs, including batched
+batches. Windows language/console code-page changes are not required. Close the
+app and use `update.cmd` to install a version containing the fix; for an already
+updated source checkout, `install.cmd` refreshes runtime verification. Matching
+package profiles and model files are retained. Valid feature caches remain usable.
 
 ## Citation
 

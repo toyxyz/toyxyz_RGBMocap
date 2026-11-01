@@ -59,4 +59,4 @@ def activate():
 
 
 def command(stage,args):
-    return [configuration()['python'],'-I','-u',str(ROOT/'prompthmr_worker_boot.py'),stage,*map(str,args)]
+    return [configuration()['python'],'-I','-X','utf8','-u',str(ROOT/'prompthmr_worker_boot.py'),stage,*map(str,args)]

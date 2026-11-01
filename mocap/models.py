@@ -55,6 +55,8 @@ MODELS_LIST.extend([
           download_url=f'https://huggingface.co/fafsaf1/flowhmr-0.46B/resolve/{FLOW_REV}/flowhmr_latest/flowhmr_latest.ckpt', expected_sha256='b7eb06b119feaf5ad7287bafdb2fff38d42dfc22ea9d256f8cdd2ada26dfc53a'),
     Model('flow_config', 'FlowHMR configuration', 'flowhmr/config.yml', 'https://github.com/flowhmr/flowhmr', minimum_bytes=3067,
           download_url=f'https://huggingface.co/fafsaf1/flowhmr-0.46B/resolve/{FLOW_REV}/flowhmr_latest/config.yml', expected_sha256='5deae01800c031975558bf9675819e8d1e24803414f692b8b5c2196b266c64d7'),
+    Model('flow_metadata', 'FlowHMR checkpoint metadata', 'flowhmr/config.json', 'https://huggingface.co/fafsaf1/flowhmr-0.46B', minimum_bytes=25,
+          download_url=f'https://huggingface.co/fafsaf1/flowhmr-0.46B/resolve/{FLOW_REV}/config.json', expected_sha256='dd387080edacff4092e6d663e3d7ff04b848700711b113ad3cec9681bf11b8c1'),
     Model('flow_sam', 'Body / Hand Features / SAM 3D Body', 'flowhmr/sam/model.ckpt', 'https://huggingface.co/facebook/sam-3d-body-dinov3', minimum_bytes=2109129346,
           expected_sha256='b5a2f9d305dd02626b967aa2e86021fba07065df66ce7a7e00ffb9664f150abf'),
     Model('flow_sam_config', 'SAM 3D Body configuration', 'flowhmr/sam/model_config.yaml', 'https://huggingface.co/facebook/sam-3d-body-dinov3', minimum_bytes=1488,
@@ -104,6 +106,7 @@ MODELS_LIST.extend(Model(**entry) for entry in PHMR_ASSETS)
 BY_KEY = {model.key: model for model in MODELS_LIST}
 if len(BY_KEY)!=len(MODELS_LIST):raise ValueError('Duplicate model identifiers in the model registry.')
 MANUAL_INSTRUCTIONS = {
+    'flow_metadata': 'Download config.json from the root of the supported FlowHMR Hugging Face revision. Auto Download can fetch this small public file. Import the original JSON in this row. This checkpoint metadata is separate from flowhmr_latest/config.yml; do not replace the inference YAML with it.',
     'exmr_config': 'Download config.json using the Supported file link below. It is the official ExMR checkpoint metadata, pinned to the same revision as exmr.safetensors. Return to the ExMR configuration row and click Import. Import the original JSON file without editing or renaming it. Auto Download can obtain this small public file directly.',
     'mano_right': '1. Open the Recommended download link below, or click Open Download Page. This opens the official download server for the exact archive. Sign in and accept the provider terms; register on the official MANO website if needed.\n2. Download mano_v1_2.zip. If browsing the MANO website instead, this is Models & Code > Models & Code.\n3. Extract the ZIP and open mano_v1_2/models.\n4. Return to Hand Model / MANO Right, click Import and select MANO_RIGHT.pkl. Keep this PKL file intact.\nHandFlow uses a right-hand canonical model for both hands, reflecting the left result back. The separate SMPL-H downloads cannot replace this hand model.',
     'smplx': '1. Open the SMPL-X download page below. Register or sign in and accept the provider terms.\n2. In the "SMPL-X Model" section, choose "Download SMPL-X v1.1 (NPZ+PKL, 830 MB)". Choose the standard v1.1 download listed above.\n3. Download models_smplx_v1_1.zip and extract the outer ZIP archive.\n4. Inside the extracted folder, open models, then smplx. Choose SMPLX_NEUTRAL.npz. Leave this NPZ file intact.\n5. Return to the Body Model / SMPL-X Neutral row and click Import. Select that single NPZ file; Missing changes to Ready after validation.',
@@ -151,6 +154,8 @@ MANUAL_DETAILS = {
         location='flowhmr_latest/flowhmr_latest.ckpt',avoid='flowhmr_base or another checkpoint revision.'),
     'flow_config': dict(selection='flowhmr_latest > config.yml',
         location='flowhmr_latest/config.yml',avoid='The flowhmr_base configuration, config.json, an HTML page, or a configuration from a different revision.'),
+    'flow_metadata': dict(selection='Files and versions > config.json (repository root)',
+        location='config.json',avoid='config.yml, edited JSON, an HTML page, or a different revision.'),
 }
 for _key, _file in SAM_MANUAL_FILES.items():
     MANUAL_DETAILS[_key] = dict(selection='facebook/sam-3d-body-dinov3 > ' + _file,
@@ -223,7 +228,8 @@ def manual_instructions_html(key: str) -> str:
 
 
 STAGE_REQUIREMENTS = {
-    'pear_assets': PEAR_KEYS,
+    'pear_assets': ('pear','pear_geometry','pear_yolo'),
+    'pear_align': ('flow_vggt','pear_geocalib'),
     "people": ("yolo", "person_reid"),
     "track": ("yolo",), "pva": ("pva",),
     "features": ("hmr2", "vitpose"),
@@ -271,6 +277,10 @@ def missing(stage: str,tool=None) -> list[Model]:
 
 def download(key: str, progress=None) -> Path:
     import gdown
+    if key == 'flowhmr':
+        # Hugging Face checkpoint metadata uses the same pinned revision. It is
+        # not the inference YAML and must not invalidate existing motion caches.
+        download('flow_metadata', progress)
     model = BY_KEY[key]
     if not model.drive_id and not model.download_url:
         raise ValueError("Obtain this model from its official website, then import it.")

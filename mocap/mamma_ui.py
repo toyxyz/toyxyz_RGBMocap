@@ -67,7 +67,7 @@ class InputInspector(QThread):
                             im=cv2.resize(im,(max(1,round(w*scale)),max(1,round(h*scale))))
                             im=cv2.cvtColor(im,cv2.COLOR_BGR2RGB)
                             image=QImage(im.data,im.shape[1],im.shape[0],im.strides[0],QImage.Format_RGB888).copy()
-                            result.append((dict(id=path.stem,path=str(path),metadata=dict(width=w,height=h,fps=fps,frames=frames,duration=frames/fps)),image))
+                            result.append((dict(id=path.stem,path=str(path),**({'file_stamp':[path.stat().st_size,path.stat().st_mtime_ns]} if kind=='pear_videos' else {}),metadata=dict(width=w,height=h,fps=fps,frames=frames,duration=frames/fps)),image))
                         finally:cap.release()
                     if not self.obsolete(kind,token):common_media([e for e,image in result])
                 if not self.obsolete(kind,token):self.finished_input.emit(kind,token,result)

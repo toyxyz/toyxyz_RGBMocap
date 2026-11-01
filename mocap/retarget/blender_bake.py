@@ -52,7 +52,7 @@ def bake(kind, label, method):
     rest = np.array([arm.matrix_world @ b.head_local for b in bones])
     R0 = np.array([rotation(np.array(arm.matrix_world @ b.matrix_local)[:3, :3]) for b in bones])
     parents = np.array([indices[b.parent.name] if b.parent else -1 for b in bones])
-    source_entry = next((e for e in json.loads(Path(io_path(OUT / 'sources.json')).read_text()) if e['label'] == label))
+    source_entry = next((e for e in json.loads(Path(io_path(OUT / 'sources.json')).read_text(encoding='utf-8')) if e['label'] == label))
     folder = Path(source_entry['folder'])
     info = source_entry['info']
     source_frames = np.load(io_path(folder / info['frames_file']), mmap_mode='r')

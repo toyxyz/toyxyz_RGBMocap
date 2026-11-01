@@ -8,7 +8,7 @@ def build(app,output,work,uv=None):
     if not (app/'RGBMoCap.exe').is_file():raise FileNotFoundError('Build the GUI application first')
     cache_dependency_files(app)
     version=application_version()
-    if json.loads((app/'BUILD_INFO.json').read_text())['version']!=version:raise ValueError('Application and installer versions do not match')
+    if json.loads((app/'BUILD_INFO.json').read_text(encoding='utf-8'))['version']!=version:raise ValueError('Application and installer versions do not match')
     lock=prepared_lock(work/'resources');uv=find_uv(uv)
     if lock['version']!=version:raise ValueError('Release metadata and runtime lock versions do not match')
     if sha(uv)!=lock['uv_sha256']:raise ValueError('Pinned uv helper hash mismatch')
@@ -32,7 +32,7 @@ def build(app,output,work,uv=None):
     character_bytes=sum(row['bytes'] for row in manifest if row['path'].startswith('runtime_character/'))
     summary['installed_bytes_estimate']+=character_bytes
     summary['fresh_free_bytes_required']+=character_bytes*2
-    (work/'setup.json').write_text(json.dumps(summary))
+    (work/'setup.json').write_text(json.dumps(summary), encoding='utf-8')
     compiler=Path('C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe')
     if not compiler.is_file():raise FileNotFoundError('The Windows .NET Framework C# compiler is required')
     stub=work/'Setup.stub.exe'

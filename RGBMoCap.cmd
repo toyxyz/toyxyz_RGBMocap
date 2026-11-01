@@ -1,5 +1,5 @@
 @echo off
-setlocal
+setlocal DisableDelayedExpansion
 cd /d "%~dp0"
 if not exist "runtime\python.exe" (
   echo RGB MoCap is not installed. Run install.cmd first.

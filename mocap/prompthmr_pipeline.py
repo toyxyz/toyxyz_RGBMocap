@@ -62,7 +62,7 @@ def prepare(path,job):
         raise ValueError('Use a trim of 4–1,800 frames (at 30 fps) within the source video. No frames were dropped.')
     identity=dict(version=1,input=dict(path=job['video'],stat=file_stat(job['video'])),start=job['start'],frames=n,
         options=job['options'],models={k:file_stat(BY_KEY[k].path) for k in KEYS},runtime=cfg['managed_id'],engine=cfg['engine_files'],
-        code={'prompthmr_pipeline.py':sha256(ROOT/'mocap/prompthmr_pipeline.py')})
+        code={name:sha256(ROOT/'mocap'/name) for name in ('prompthmr_pipeline.py','image_io.py')})
     token=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()[:24]
     work=job['root']/'prompthmr/inference'/token;cached=False
     try:
@@ -187,7 +187,10 @@ def _run(argv=None,engine=None):
 
 
 def main(argv=None,engine=None):
-    try:return _run(argv,engine)
+    try:
+        from .image_io import unicode_image_paths
+        with unicode_image_paths():
+            return _run(argv,engine)
     except Exception as error:
         import traceback
         traceback.print_exc()

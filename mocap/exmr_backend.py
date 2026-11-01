@@ -104,7 +104,7 @@ def camera(project,emit):
     config=saved(root,state);context=dict(input=file_stat(root/'input.mp4'),frames=state['frames'],static=config['static_camera'],version=3,odometry=sha256(UPSTREAM/'ExMR/exmr/preprocessing/visual_odometry.py'),reader=sha256(Path(__file__).with_name('exmr_camera.py')))
     receipt=root/'exmr_camera.json';path=root/'exmr_camera.npy'
     valid=False
-    try:valid=json.loads(receipt.read_text())['identity']==context and json.loads(receipt.read_text())['output']==file_stat(path)
+    try:valid=json.loads(receipt.read_text(encoding='utf-8'))['identity']==context and json.loads(receipt.read_text(encoding='utf-8'))['output']==file_stat(path)
     except (OSError,ValueError,KeyError):pass
     if valid:
         rotations=np.load(path,allow_pickle=False)
@@ -159,7 +159,7 @@ def frame_dir(project,n):
     directory=project/'exmr_frames';directory.mkdir(exist_ok=True)
     identity=dict(input=file_stat(project/'input.mp4'),frames=n,version=1)
     try:
-        if json.loads((directory/'receipt.json').read_text())==identity and len(list(directory.glob('*.jpg')))==n:return directory
+        if json.loads((directory/'receipt.json').read_text(encoding='utf-8'))==identity and len(list(directory.glob('*.jpg')))==n:return directory
     except (OSError,ValueError):pass
     for path in directory.glob('*.jpg'):path.unlink()
     subprocess.run([executable('ffmpeg'),'-v','error','-i',str(project/'input.mp4'),'-vsync','0','-q:v','2','-start_number','0','-threads','2','-y',str(directory/'%06d.jpg')],check=True,creationflags=0x08000000)

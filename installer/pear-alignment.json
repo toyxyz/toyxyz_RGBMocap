@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "sources": {
+    "kornia": {
+      "url": "https://files.pythonhosted.org/packages/d8/cf/a61ef6f7faf98edadf4ce8094873d298f8582a3ec59b65c9174c516926e8/kornia-0.7.4-py2.py3-none-any.whl",
+      "filename": "kornia-0.7.4-py2.py3-none-any.whl",
+      "bytes": 899442,
+      "sha256": "1b816b4c45878a73531a500a46dbf61e646ec7a749bf8a4dd7a5833a04e28808"
+    },
+    "kornia_rs": {
+      "url": "https://files.pythonhosted.org/packages/77/81/53c882f3b93474a025302aead72b361128a0620dd629a17c86408fadfe31/kornia_rs-0.1.9-cp310-cp310-win_amd64.whl",
+      "filename": "kornia_rs-0.1.9-cp310-cp310-win_amd64.whl",
+      "bytes": 2276544,
+      "sha256": "511d0487c853792f816c3a8bc8edbd550fe9160c6de0a22423c2161fac29d814"
+    },
+    "geocalib": {
+      "url": "https://codeload.github.com/cvg/GeoCalib/zip/1dedb29f94fc11b896c5f572005978aeebccd67f",
+      "filename": "geocalib.zip",
+      "bytes": 24657350,
+      "sha256": "8d1d32af3782b95a3f8215b8214159728d4e7ef4b1bfe2943d6ad785d15be08a"
+    }
+  }
+}

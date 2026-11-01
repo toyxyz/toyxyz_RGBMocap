@@ -9,6 +9,7 @@ import sys
 import numpy as np
 from scipy.spatial.transform import Rotation
 from .storage import atomic_json
+from .image_io import read_image, write_image
 
 
 def infer(work,job,emit):
@@ -39,12 +40,12 @@ def infer(work,job,emit):
             im=frame(entry,f);h,w=im.shape[:2]
             if not .5<=h/w<=2:raise ValueError('VGGT camera calibration currently requires image aspect ratios between 1:2 and 2:1.')
             for mask in (work/'clean-masks/motion'/entry['id']/'masks').glob(f'mask_{f:04}_*.png'):
-                m=cv2.imread(str(mask),0)
+                m=read_image(str(mask),0)
                 if m is None:raise ValueError('Unreadable camera exclusion mask.')
                 y,x=np.where(m>127)
                 if len(x):im[max(0,y.min()-18):min(h,y.max()+19),max(0,x.min()-18):min(w,x.max()+19)]=0
             path=images_dir/f'{f:06}-{c}.png'
-            if not cv2.imwrite(str(path),im):raise OSError('Cannot prepare a VGGT input image.')
+            if not write_image(str(path),im):raise OSError('Cannot prepare a VGGT input image.')
             paths.append(str(path));sizes.append((w,h,_balanced_target_shape(h/w,512,16)));camera_ids.append(c)
     emit('progress',current=0,total=0,message=f'VGGT: estimate {len(entries)} fixed cameras from {len(paths)} background images')
     from .memory_mode import run as memory_run

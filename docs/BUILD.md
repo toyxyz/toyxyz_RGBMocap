@@ -202,6 +202,14 @@ a source/base change or damaged support stages and CUDA-verifies a new generatio
 before replacing the pointer. Failure leaves prior support and the install retry
 marker intact. No weights or registered geometry are acquired by this step.
 
+`tools/setup_pear_alignment.py` additionally stages the pinned GeoCalib/Kornia
+support from `installer/pear-alignment.json`, over the existing Flow runtime,
+without upgrading shared packages. It verifies imports/CUDA availability and
+writes a separate `.setup/pear-alignment.json` inventory. VGGT/GeoCalib model
+weights are obtained in Model Manager. This support enables camera alignment;
+if it is unavailable, PEAR can still track the selected camera with a warning,
+provided its base support and model files are ready.
+
 Changed upstream files receive an adaptation notice. Each support generation
 also records pinned source URLs/hashes and the adapter hash in
 `RGB_MOCAP_PROVENANCE.json`, alongside the retained provider license files.

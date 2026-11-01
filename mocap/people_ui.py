@@ -285,6 +285,7 @@ class PeopleWorkspace:
         video.setMinimumWidth(260)
         movie_layout.addWidget(video,1)
         self.build_mamma_thumbnails(movie_layout)
+        self.build_pear_thumbnails(movie_layout)
         footer = QWidget();footer.setObjectName('editorHeader')
         bar = QHBoxLayout(footer);bar.setContentsMargins(7,3,7,3)
         self.find_person_button = QPushButton('Find person')

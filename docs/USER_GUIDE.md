@@ -183,10 +183,12 @@ Shared model files and hardlinks are counted once.
 | MAMMA additional files | 6.11 GiB | 3.42 GiB | 9.54 GiB |
 | PromptHMR additional files | 6.22 GiB | 6.13 GiB | 12.34 GiB |
 | **Five offline models** | **24.68 GiB** | **38.44 GiB** | **63.11 GiB** |
-| PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.84 GiB | ~2.84 GiB |
+| PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.95 GiB | ~2.96 GiB |
 
 Adding PEAR to all five offline sets gives an estimated combined total of about
-**65.95 GiB (70.8 GB)**. Its original geometry ZIP needs additional download space.
+**66.07 GiB (70.9 GB)**. This includes about **0.11 GiB** of required GeoCalib weights; existing VGGT weights are reused. The approximately
+11.3 MiB support overlay is included in base setup. Its original
+geometry ZIP needs additional download space.
 
 Totals use unrounded bytes; rounded cells may not sum exactly. These are local
 observations, not universal requirements. App source files add space beyond this
@@ -227,7 +229,7 @@ may be outside the installation folder.
 | `<install folder>\.setup\downloads\`, `.setup\uv-cache\` and `.setup\tmp\` | Downloaded wheels and temporary cache can be removed only after installation or update completes. They are reused for repair and updates; deleting them may require downloading files again. Keep the rest of `.setup`, including the private Python and installation state. |
 | `<install folder>\.setup\mamma-downloads\` | Optional MAMMA package/source download cache. Its contents can be removed after MAMMA setup finishes; repair may need to download them again. Keep `runtime_mamma` and `.setup/mamma-runtime.json`. |
 | `<install folder>\.setup\prompthmr-downloads\` | Optional PromptHMR package/source download cache. Remove contents only after setup finishes; repair may need to download them again. Keep `runtime_prompthmr` and `.setup/prompthmr-runtime.json`. |
-| `<install folder>\.setup\pear-downloads\` | PEAR source/support archives. Contents can be removed after installation/update finishes; repair may download them again. Keep `runtime_pear` and `.setup/pear-runtime.json`. |
+| `<install folder>\.setup\pear-downloads\` | PEAR source/support and camera-alignment archives. Contents can be removed after installation/update finishes; repair may download them again. Keep `runtime_pear`, `.setup/pear-runtime.json` and `.setup/pear-alignment.json`. |
 | `<install folder>\temp\` | Local PEAR Torch/kernel temporary cache. Contents can be removed after closing the app and its workers; the next run can recreate them. |
 
 Repeated work mainly grows project data: each model has its own result folder.
@@ -318,7 +320,7 @@ opening a project restores its saved model. **Prepare Preview**, below
 | **GVHMR** | Lowest overall quality in our tests, but sometimes better for unusual poses such as backflips. | Optional **HandFlow**; not inferred by GVHMR itself. |
 | **MAMMA** | Multi-view capture of human motion and interactions. Needs separate setup and overlapping synchronized views; outside the quality ranking above. | Included. |
 | **PromptHMR** | Can improve relative placement and interactions between multiple people in one fixed-camera video. Overall motion quality was lower than ExMR in our subjective tests; contacts and depth can still be wrong. Separate setup. | No finger tracking; fixed neutral pose. |
-| **PEAR** | Live single-person bone preview from a webcam or video. No motion recording, correction, retargeting or export in this mode. | Included. |
+| **PEAR** | Live single-person bone preview from a webcam or video. Lightweight live foot lock; no offline correction, recording, retargeting or export. | Included. |
 
 The five offline models support contact correction, a 52-bone overlay and FBX export.
 ExMR/FlowHMR/GVHMR use **Find person** for explicit people selection; MAMMA
@@ -484,7 +486,7 @@ selected result is missing, reconstruct it; the app reports it as unavailable.
 | **ExMR → Camera** | Static Camera for a camera that stays still without zooming; Moving Camera / SimpleVO when it moves. |
 | **ExMR → Smooth Motion** | Reduce small changes between frames. Off keeps the unsmoothed result. |
 | **FlowHMR → Fast SAM** | Speed up body/hand image processing with the same model files. Small numerical differences can affect motion and automatic contacts. |
-| **FlowHMR → Fast SAM Acceleration** | Two independent, default-on switches: **4-Frame Batching** and **GPU Hand Crops**. Use them only with Fast SAM. Tooltips explain measured speed, VRAM and output differences; see the [FlowHMR guide](models/FLOWHMR.md#controls). Low Memory reduces the batch to one frame. Applies on Reconstruct 3D. |
+| **FlowHMR → Fast SAM Acceleration** | Two independent, default-on switches: **Adaptive Batching** and **GPU Hand Crops**. Automatic selects 1, 2, 4, 8 or 16 frames from memory headroom and image size; Low Memory or disabling batching uses one frame. Used only with Fast SAM, on Reconstruct 3D. Tooltips and the [FlowHMR guide](models/FLOWHMR.md#controls) explain speed, VRAM and output differences. Batch selection and OOM retry messages appear in Console and CMD. |
 | **FlowHMR → Camera / Sampling** | Start with Moving / Unknown - Auto for moving or uncertain cameras. Static Camera skips camera estimation for locked footage. Explicit frame intervals control camera analysis only; denser sampling uses more memory. |
 | **GVHMR → HTD Refine** | Improve body-motion consistency over time. Runs before FootMR when both are enabled. |
 | **GVHMR → FootMR** | Refine ankle angles from foot observations. Separate from foot contact locking. |
@@ -638,17 +640,55 @@ terms; see [Third-party notices](../THIRD_PARTY_NOTICES.md).
 
 Run `install.cmd` with the app closed; PEAR support is included. PEAR reuses
 the shared runtime and adds only pinned source/utilities; no compiler is required.
-Prepare its checkpoint and registered SMPL-X 2020/FLAME bundle in Model Manager.
-Select **PEAR · Live (Experimental)** and click **Start Live Tracking** to load the models.
+PEAR tracks webcam or video input in real time; it may skip frames to limit delay.
+Prepare its checkpoint, detector and registered SMPL-X 2020/FLAME bundle in Model
+Manager. VGGT and GeoCalib are additional files for Camera Align.
+Select **PEAR · Live (Experimental)** and click **Start Live Tracking**. It attempts
+to align one or more fixed cameras before tracking; keep the person and floor
+visible during alignment. If alignment fails or its support/models are missing,
+tracking continues from the selected camera with a visible warning. It does not
+fuse unaligned views or apply aligned live foot lock. Retry with **Camera Align**.
 **Stop** ends tracking and releases the models and webcam. With **Webcam: None**,
 open a video and seek/play its timeline to infer the current frame. Alternatively,
 select a connected webcam before starting. While tracking is running, input
-changes reuse the loaded models. Rotation and smoothing apply to both sources.
+changes automatically align the new configuration. Ordinary seeks and thumbnail changes reuse the loaded tracking model. Rotation and smoothing apply to both sources. Under **One Euro Filter**, select
+**Bone Rotation** and **World Position** independently (both default on). Its
+World Position checkbox controls position smoothing; the separate top-level
+World Position switch controls whether the pelvis moves at all.
+Selecting a webcam shows an image preview without loading PEAR; Start is needed
+for pose tracking. After Stop, reselect a webcam or Refresh to preview again.
+Webcam capture stays connected during Start, model loading and Camera Align.
+Opened videos can play, pause and seek during loading/alignment; alignment uses
+the sample time selected when Camera Align was clicked.
+All webcam selectors are grouped below the video in a numbered Camera / Device /
+Rotation table, with Count and Refresh together above it. Each webcam has its own
+Rotation field beside its selector. For
+videos, select a thumbnail and use the first Rotation field; other videos retain
+their angles. Changing any angle requires Camera Align again.
 The live view shows fixed-length body and finger bones without per-frame body
 mesh calculation. **Reset Bones** recalibrates their lengths from the displayed
-pose, pauses video playback and retains the loaded models and viewport camera.
+pose, pauses video playback and realigns cameras while preserving the viewport camera.
 **World Position** is on by default. Turn it off to hold the pelvis at its current
 position, including height, while retaining pelvis rotation and joint motion.
-There is no Find person, recording, correction, retargeting or animation export
+**Foot Lock** defaults on, becomes active after successful alignment and applies small causal leg/pelvis corrections with smooth lock/release transitions. Fixed lengths and ankle/toe orientations remain; turning World Position off keeps the pelvis fixed, even if a foot cannot reach. Poor calibration and source jitter can still cause sliding. There is no Find person, recording, offline correction, retargeting or animation export
 in this live mode. Switching models releases the live worker and device.
-See the [PEAR guide](models/PEAR.md) for setup, resources and limitations.
+For multiple fixed views, select several synchronized videos or set the webcam
+**Count** and assign distinct devices to its slots. Thumbnails select the main
+preview. Start attempts **Camera Align** using VGGT/GeoCalib, including one camera;
+alignment errors no longer block selected-camera tracking. Reset Bones also
+triggers an alignment attempt. Synchronization and
+background camera/floor estimates are approximate. See the
+[PEAR guide](models/PEAR.md) for setup, resources and limitations.
+
+
+## International filenames
+
+Video, project, character and export paths support Unicode filenames, including
+Japanese, Korean, Chinese, Cyrillic and Western European accents. The Windows
+launchers and Python workers use explicit UTF-8, and image file I/O avoids
+OpenCV's Windows filename code-page limitation. The interface remains English.
+
+If a text-encoding error occurs, record the complete error and the operation
+that triggered it. Updating code is preferable to renaming all files or changing
+the Windows system language. VMD retains its format-defined CP932 name fields;
+this restriction is separate from the filename used to save it.

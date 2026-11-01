@@ -41,7 +41,7 @@ def configuration(root=ROOT):
 
 def command(stage, args):
     cfg = configuration()
-    return [cfg['python'], '-I', '-u', str(ROOT/'mamma_worker_boot.py'), stage, *map(str, args)]
+    return [cfg['python'], '-I','-X','utf8', '-u', str(ROOT/'mamma_worker_boot.py'), stage, *map(str, args)]
 
 
 def activate():
@@ -88,7 +88,7 @@ def configure(python, engine, root=ROOT, managed_id=None):
     code = ('import sys,json,importlib.metadata as m;'
             'import torch,numpy,scipy,smplx,timm,torchvision,sam2,pytorch_sdf,open_clip;'
             'print(json.dumps(dict(python=list(sys.version_info[:3]),packages={n:m.version(n) for n in '+repr(list(PACKAGES))+'},cuda=torch.cuda.is_available(),compute_capability=list(torch.cuda.get_device_capability()) if torch.cuda.is_available() else None)))')
-    result = subprocess.run([str(python), '-I', '-c', code], capture_output=True, text=True,
+    result = subprocess.run([str(python), '-I','-X','utf8', '-c', code], capture_output=True, text=True,
                             encoding='utf-8', errors='replace', timeout=120, creationflags=0x08000000)
     if result.returncode:
         raise RuntimeError('MAMMA runtime import check failed:\n'+result.stderr[-4000:])

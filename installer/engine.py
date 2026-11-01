@@ -121,7 +121,7 @@ def verify_group(stage,group,root,cancel,logs):
     report=logs/(group['key']+'-verify.log')
     scripts=Path(__file__).resolve().parent
     request=logs/(group['key']+'-verify-input.json');atomic_json(request,group)
-    run([py,'-I',scripts/'verify_runtime.py',stage,request,scripts/'runtime_registry.py',root],root,cancel,report)
+    run([py,'-I','-X','utf8',scripts/'verify_runtime.py',stage,request,scripts/'runtime_registry.py',root],root,cancel,report)
     lines=report.read_text(encoding='utf8').strip().splitlines();return json.loads(lines[-1])
 
 

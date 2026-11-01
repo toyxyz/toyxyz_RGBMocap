@@ -1281,3 +1281,318 @@ and credential candidates, and excluded runtime/model/project/test payloads.
 Private tests and derived files remain outside the source checkout. These are
 tests on the existing Windows PC, not a fresh OS, alternate GPU or new physical
 webcam certification. Short playback checks do not establish long-term leak freedom.
+
+
+## PEAR fixed-camera multiview preview (2026-11-01)
+
+Added multiple synchronized video inputs with a common 30 fps trim, four-column
+preview thumbnails, distinct webcam assignment slots, and explicit Camera Align.
+The latter runs person-masked VGGT camera/depth and GeoCalib gravity sequentially
+in a separate Flow-profile worker, then restarts PEAR to avoid GPU overlap.
+Scale is inferred from fixed bone lengths; background depth estimates the floor.
+No upright-pose constraint or foot lock is added. These are estimates, not measured
+calibration. More physical webcams and other GPUs remain unverified.
+
+The production multiview path uses FP32 YOLOv8s, exact BGR crops, four bounded CPU
+threads and at most four GPU rows, with the existing FP16 PEAR encoder/FP32 head.
+Fixed-size padded rows avoid graph recapture during occlusion; they are excluded
+from output/fusion. No TensorRT package or engine is required. Setup staged the
+pinned GeoCalib/Kornia overlay and verified imports on the existing Windows Flow
+runtime. SHA-256 checked model import, optional manager rows and existing base
+PEAR startup were exercised; this is not a clean-PC installation test.
+
+On the previously documented RTX 5090 test PC, a 12-frame/four-view port check
+against cached single-view PEAR predictions measured root-relative joint
+position differences of 0.755 mm p95 / 2.871 mm maximum and local rotation
+0.101 degrees p95 / 0.408 degrees maximum. Detector-box differences were at most
+0.0292 pixels. This compares predictions, not ground-truth accuracy. Warm batched
+prediction/crop time was 21.37 ms median / 22.04 ms p95, excluding decode, fusion,
+IPC and GUI; peak PyTorch allocated memory was 1.524 GiB in that run.
+
+A native GUI run completed alignment and tracking restart, displayed 168 paired
+frames in eight seconds, switched the preview without reloading the resident
+model, invalidated calibration on rotation change, and exercised cancel/Stop.
+During that playback sample the GUI timer had 15.90 ms median, 23.25 ms p95 and
+141.46 ms maximum spacing. Startup and calibration were excluded from this timer
+sample. One cold alignment-plus-tracking-restart took 81.3 seconds; VGGT/GeoCalib
+work alone was approximately 26 seconds in a separate run, with respective peak
+allocated CUDA memory around 6.54/0.59 GiB. Scope and startup costs differ.
+
+A separate paced video-backed simulation exercised four camera capture slots,
+one continuing command and temporary loss of a view. It delivered 203 paired
+sets in 8.016 seconds; processing time was 34.42 ms mean, 40.19 ms p95 and 46.40 ms
+maximum after warmup. Three/four available views remained explicit. Sampled peak
+worker working set was about 5.65 GiB; the worker exited normally. This is not
+physical-webcam FPS, synchronization accuracy or camera-driver validation.
+
+Five repeated four-decoder open/seek/close cycles retained 555 handles after each
+cycle. Partial camera-open failure cleanup, bounded parameter archives, malformed
+calibration/path rejection, thumbnail/slot validation and selected-pose bone-tail
+errors (below 0.000001 m) passed. These short tests do not prove universal leak
+freedom. Cached ExMR, FlowHMR, GVHMR, MAMMA and PromptHMR projects retained their
+project/result, frame, trim and viewport camera after opening PEAR multi-inputs
+and returning. No new offline AI-inference/export equivalence claim is made.
+
+Reset Bones followed by 4-to-2-to-1-to-4 input switching retained the resident
+worker and accepted the new rig baseline. Stop/restart after a reset also
+passed without replaying an expired displayed-pose reset.
+
+### Independent input rotation controls
+
+Rotation now sits beside each webcam selector. Native and offscreen GUI checks
+verified independent angles, preservation by device identity after refresh and
+slot reordering/resizing, selected-video angle restoration, and camera-alignment
+invalidation after editing any input angle. Thumbnail selection retained valid
+alignment; no tracking was automatically started by editing controls.
+
+Four real video decoders and four simulated webcam slots applied 0/90/180/-90
+degrees independently, with exact pixel agreement against the existing rotation
+operation. Both Camera Align sample times retained each input's angle and rotated
+dimensions. A real CUDA worker displayed all four rotated inputs, returned to a
+single input and exited normally while retaining one resident model process.
+These are input-routing checks, not physical multi-webcam driver certification
+or a new pose-accuracy/performance benchmark.
+
+### Webcam image preview before tracking
+
+Webcam selection now opens a separate capture-only worker before Start, without
+loading PEAR, its weights or Torch. A native GUI test with video-backed simulated
+cameras verified partial four-slot assignment, all four thumbnail images,
+per-device rotation and preview switching without reopening the capture process,
+capture shutdown before model handoff, Stop remaining stopped, None releasing
+devices, offline return and a visible failure without automatic retry loops.
+Worker logs confirmed Torch was not imported. Sampled preview working set was
+about 191 MiB; a three-second GUI timer sample measured 16 ms median, 31 ms p95
+and 141 ms maximum spacing. Five separate 30-frame open/close cycles retained
+219 parent-process handles and 27 threads after each close; delivered packet
+spacing ranged up to 94 ms in that simulation. These short tests are not physical
+webcam FPS or long-term leak certification. The screenshot's NDI Webcam was not
+present in the subsequent device probe, so its driver/feed was not verified.
+
+The webcam controls were subsequently consolidated below the video into one
+Camera / Device / Rotation table, with Count and Refresh in the same panel.
+Native layout checks covered 1, 2, 4, 8 and 32 slots and shrinking back to one:
+columns/row centres aligned, one-camera selection remained visible, horizontal
+scrolling stayed unnecessary and longer lists scrolled within a 220-pixel table.
+The camera-only preview, thumbnail, rotation, Start/Stop handoff and failure-path
+simulation passed again after moving the controls. Capture/inference math and
+worker ownership were unchanged by this layout edit.
+
+### Continuous capture through Start and Camera Align
+
+This supersedes the earlier capture-worker handoff. The capture-only process
+now remains the sole owner of webcams during model loading and alignment.
+Independent model readers copy its latest raw BGR frames through fixed Windows
+shared-memory allocations protected by named mutexes; no per-frame disk cache
+is introduced. Stop/None/leave still release capture. Device/resolution changes
+may reopen it; an inference or calibration restart does not.
+
+A native two-view GUI test used deterministic initial dataset frames repeatedly
+published by simulated camera producers, plus a changing corner marker. Actual
+PEAR inference, VGGT/GeoCalib alignment and the following PEAR restart succeeded.
+The capture PID and shared-frame names remained unchanged: two device opens,
+zero device closes during Start/alignment, and zero blank-image observations.
+Image updates continued through loading, sample preparation, GPU shutdown and
+alignment. Calibration completed in about 36 seconds and the first aligned pose
+after restart arrived around 73 seconds after the click in that run. These are
+workflow checks, not physical-camera timing, pose accuracy or universal FPS.
+
+Five repeated shared-frame reader open/close cycles retained 224 parent handles;
+frames remained complete under concurrent publishing, and a closed owner was
+rejected. A native real-video decoder test with delayed mocked model/alignment
+workers displayed 62 distinct frames during loading and 91 during the alignment
+phase, retained play/pause/seek and fixed the alignment sample at the click's
+frame/epoch. Its GUI timer measured 16 ms median, 31 ms p95 and 203 ms maximum
+spacing in that short test. Raw-preview rotation and reset on leaving PEAR passed.
+An injected sample failure exited alignment, retained its error notice and kept
+the same capture process displaying frames (29 image updates in one second).
+Physical multi-webcam drivers and long-duration behavior remain unverified.
+
+
+## PEAR automatic alignment and causal live Foot Lock (2026-11-01)
+
+This revision supersedes the earlier optional/manual-only Camera Align and
+no-live-contact behavior. Start aligns one or more fixed views before tracking.
+VGGT and GeoCalib are required; their model-manager readiness is checked.
+Single-view scale is estimated from inferred body geometry and person depth,
+not a triangulation baseline. Failed alignment keeps an actionable error.
+
+Validation used private tests outside the repository and preserved source videos:
+
+- Real PEAR + VGGT + GeoCalib completed automatic Start for one and two simulated
+  camera streams. Capture process/shared buffers were retained and no blank
+  preview samples were observed. These were dataset frames through the capture
+  protocol, not physical webcams.
+- Four real synchronized video files aligned and played in the app. The eight-
+  second observation contained 180 paired results. Worker median/p95/max were
+  39.56/44.72/692.92 ms, including first-frame overhead. Tracking peak CUDA
+  allocation/RSS were 1.57/2.32 GiB. Calibration VGGT peak allocation was 6.53 GiB;
+  tracking and alignment GPU models run sequentially.
+- A final 450-frame cached four-view replay reduced locked-frame mean ankle
+  displacement from 3.46 to 1.95 mm; knee-angle second-difference p95 stayed
+  4.02 degrees. Single-view replay had only seven contact frames, so its contact
+  improvement is not broad evidence. Original pose noise remains.
+- Fixed leg/toe lengths, ankle/toe world rotations, finite orthogonal rotations,
+  input-array immutability, root-fixed behavior, seek/disabled reset and invalid
+  single-camera depth rejection passed. A 240-frame near-straight perturbation
+  case had 0.17 mm maximum knee step after extension resistance was added.
+- Real video decoding continued during mocked alignment/loading, including seeks,
+  input rotation and a frozen alignment sample time. GUI timer p95 was 31 ms;
+  its maximum was 422 ms including startup/transition work. This does not prove
+  stutter-free playback on other systems.
+- Intentional sampling failure exited alignment and kept its error visible while
+  camera preview continued. Stop during alignment and Reset Bones triggering
+  realignment passed UI contract checks.
+- Existing ExMR, PromptHMR, FlowHMR, GVHMR and MAMMA cached projects retained
+  selection, timeline trim, displayed result and viewport camera after entering
+  and leaving PEAR. Their AI inference was not rerun for this isolated change.
+
+The live constraint is deliberately conservative: it allows reach/floor residuals
+instead of stretching bones or forcing nearly straight knees to bend. World
+Position off prohibits pelvis translation. It does not replace offline contact
+editing, solve bad calibration or guarantee removal of inferred motion jitter.
+
+
+## PEAR independent One Euro components (2026-11-02)
+
+One Euro Filter now exposes default-on Bone Rotation and World Position
+checkboxes. The parent switch gates both; their selections are retained while
+it is off. World-position filtering is separate from the world-movement switch
+and from lightweight Foot Lock. Runtime flags default to both on when absent.
+Changing a component does not change source epoch, camera calibration, resident
+model, capture identity or the other component's filter history.
+
+A cached replay tested all four component combinations for 120 frames each with
+one, two and four views. Both-on results exactly matched the previous solver
+and temporal filter reconstructed and verified against the prior source-manifest
+hashes (maximum numeric difference zero). Both-off matched the parent-disabled
+path. Position-filter selection left rotation outputs and root-relative pose
+unchanged. Fixed lengths, valid rotation matrices, missing-input resets,
+re-enable behavior and same-timestamp history retention passed. No AI inference
+was rerun; these are filter/fusion regression checks, not a new inference or
+webcam throughput benchmark.
+
+Native UI checks passed for component defaults, request forwarding, master-off
+selection retention, Filter Strength availability, no model reload/realignment,
+and layout at 1100/1500-pixel window widths. The five offline models' cached
+project restoration checks also passed. Test scripts and cached data remain
+outside the source distribution. Source inference, calibration, foot-lock math
+and installed dependencies are unchanged by this component split.
+
+
+## FlowHMR Unicode progress output fix (2026-11-02)
+
+Fast SAM loading, single-frame and four-frame wrappers now explicitly open
+UTF-8 discard streams. Base managed/development worker commands select Python
+UTF-8 mode; `-I` otherwise ignores parent UTF-8 environment variables. Standard
+worker stdout/stderr already had UTF-8 reconfiguration, so the independently
+opened locale-encoded discard stream was the critical remaining failure path.
+
+Private regression checks reproduced all three prior discard-stream failures
+with simulated cp1252 defaults and box-drawing output. All corrected paths
+passed, including collector cleanup. Actual managed interpreter probes verified
+UTF-8 mode despite hostile cp1252 environment variables for shared, Flow, Hand,
+HTD and ExMR profiles; their runtime boots passed. Binary pipe bytes were retained.
+Development command construction was checked separately.
+
+Real CUDA Fast SAM extraction passed for one frame and four-frame batches with
+CPU/GPU hand crops. Same-input repeat controls showed existing token variation:
+single-frame patched/control maximum difference was below 1e-6; batch differences
+were within the observed baseline repeat maxima (0.01623 with CPU hand crops and
+0.00750 with GPU crops). This was a feature-extraction check, not a full motion
+quality or timing benchmark. SAM syntax trees differ only in the log encoding
+keywords; model operations, precision and input settings are unchanged.
+
+The full feature cache identity matched before/after on a private cached project.
+Two complete-byte source aliases preserve valid preprocessing caches for this
+logging-only change; unknown subsequent source edits still invalidate them.
+Runtime package/profile pins remain unchanged; the reviewed registry hash and
+source-lock identity were updated for the new worker launch flags. Tests, images,
+models and cached project data remain outside the source distribution.
+
+The normal managed installer reused all six verified base profiles, refreshed
+the source/launch receipts and passed PEAR CUDA support verification. The actual
+launch-source admission checks passed with GUI main stubbed, and the Flow feature
+identity remained unchanged after installation. No inference dependency versions
+or model files were replaced.
+
+
+## International Windows paths and output (2026-11-02)
+
+The encoding audit expanded beyond Fast SAM to optional MAMMA/PromptHMR workers,
+scene-camera preparation, setup/verifier commands, character jobs, JSON metadata
+and chunked GUI process output. Python launches explicitly select UTF-8 even
+under isolated mode. CMD entry points disable delayed expansion; PromptHMR's
+generated UTF-8 native-build script now selects code page 65001, as MAMMA's did.
+Dependency/package pins and optional runtime identities remain unchanged.
+
+Seven independent path cases covered ASCII English, Western European accents,
+Japanese, Russian Cyrillic, Korean, Chinese and combining-accent/emoji names with
+spaces, brackets, ampersand, exclamation mark and percent sign. Each passed real
+FFmpeg probing/preparation/trimming, PyAV/OpenCV video decoding, UTF-8 metadata,
+NumPy archive/mapping reads and project Save As/reopen checks. Fifty interpreter
+probes passed with hostile parent encodings (CP1252, CP932, CP1251, CP949, CP936
+and ASCII), including separate optional-runtime probes. Byte-fragmented GUI
+protocol and character-progress messages retained complete Unicode values and
+EOF tails. Model import/hash rejection and Torch tensor file round trips passed.
+
+The old native OpenCV image path API failed in twelve non-ASCII RGB/mask cases
+on this PC. Python byte I/O plus the same OpenCV codecs passed all cases and
+preserved PNG bytes/pixels, uint16 masks and RGBA data. Upstream image entry
+points are bridged only within isolated MAMMA/PromptHMR scopes and restored on
+errors. A 1080p PNG read check measured 9.31 ms median, 10.57 ms p95 and 11.32 ms
+maximum versus 10.87 ms native ASCII-path median in this short run. Fifty reads
+showed zero net handle growth and about 0.004 MiB retained RSS growth after
+warm-up. This is not a universal speed or long-session leak guarantee.
+
+Real Blender FBX/VRM/PMX imports passed in ASCII and mixed-language output
+folders, with identical compared numerical canonical rig arrays. The existing
+PMX motion exported to mixed-language FBX paths both with and without mesh, and
+to VMD. Reimport/parsing passed: FBX retained its Unicode armature name and
+bone-only animation channels; VMD retained its specified CP932 data encoding.
+Twenty-one entry-point CMD path-dispatch tests passed under inherited delayed
+expansion, using private standard-library-only runtime copies and stubbed app,
+installer and updater bodies. These do not constitute clean installation or
+remote-update tests. Restricted data and original user projects were not changed
+or included in source; private fixtures, logs and generated files remain outside
+the distribution.
+
+The contact solver source, numerical inference settings, body data and source
+motion were retained. New image adapters participate in MAMMA/PromptHMR cache
+identities, so new inference validates the changed connector instead of silently
+reusing a receipt for different code. Existing committed results are preserved.
+These checks used one Windows PC without changing its system locale. They do
+not certify every Windows language edition, GPU, new native build or third-party
+file format. No full-model inference benchmark was repeated for this text/I/O
+change.
+
+## PEAR alignment fallback and single-view scale (2026-11-02)
+
+Camera Align is attempted before tracking; failures now retain a visible warning
+and continue with the selected camera, without calibrated fusion or aligned foot
+lock. GUI checks covered missing alignment prerequisites, sample/solve/launch
+failures, explicit retry, successful calibration and Stop. Actual PEAR workers
+returned finite poses from an unaligned single video and from selected view 2 of
+a two-slot input. The latter reused one source video to exercise dispatch, not
+independent-view reconstruction quality. The worker exited after testing.
+
+In a real single-view alignment, the old whole-image confidence percentile
+discarded all 24 person-depth samples despite passing reprojection checks
+(95th-percentile errors about 11 pixels, limit 38.4 pixels). Ranking confidence
+within valid person samples retained 18, with a relative scale spread of 4.7%.
+The complete VGGT/GeoCalib/floor run then succeeded; estimated floor residual
+p95 was 15.9 mm. This is internal consistency, not ground-truth camera accuracy.
+Missing depth, nonfinite/constant confidence, invalid observations and inconsistent
+scale remained rejected. Multi-view calibration/fusion math was unchanged.
+No clean-install, physical-webcam or sustained-playback benchmark was repeated
+for this change. Private samples and test code remain outside the distribution.
+
+The final publish check separated PEAR's core required assets (checkpoint,
+geometry and YOLOv8s) from optional Camera Align weights. Missing VGGT/GeoCalib
+now reaches the warning/fallback path rather than failing the core-model check.
+GUI checks used the real stage dependency lookup with only model readiness
+simulated: absent alignment weights allowed tracking, an absent PEAR checkpoint
+still blocked Start, and all five Model Manager rows remained available with
+alignment rows marked optional. Console/CMD routing, alignment failures, retry
+and Stop regression checks were repeated. This does not make alignment optional
+for calibrated fusion or live foot locking, and is not a new inference benchmark.

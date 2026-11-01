@@ -25,6 +25,7 @@ class VideoView(QWidget):
         self.setMinimumSize(440, 280)
         cv2.setNumThreads(1)  # Preview uses one decoder, not a pool for each resize.
         self.external_mode=False
+        self.preview_rotation=0.
         self._external_saved=None
         self.frame = None
         self.boxes = self.observed = self.keypoints = self.confidence = None
@@ -53,10 +54,17 @@ class VideoView(QWidget):
     def image_rect(self):
         """One source-coordinate mapping for the image and every observation."""
         w, h = self.source_size
+        angle=0. if self.external_mode else self.preview_rotation%360
+        if angle:
+            a=math.radians(angle);w,h=abs(w*math.cos(a))+abs(h*math.sin(a)),abs(w*math.sin(a))+abs(h*math.cos(a))
         scale = min(self.width() / w, self.height() / h) * self.zoom
         return QRectF((self.width() - w * scale) / 2 + self.pan.x(),
                       (self.height() - h * scale) / 2 + self.pan.y(),
                       w * scale, h * scale)
+
+    def set_preview_rotation(self,angle):
+        angle=float(angle)
+        if angle!=self.preview_rotation:self.preview_rotation=angle;self.update()
 
     def wheelEvent(self, event):
         if self.frame is None:
@@ -225,7 +233,11 @@ class VideoView(QWidget):
             painter.drawText(self.rect(), Qt.AlignCenter, "Open a video to begin\nMP4 · MOV · AVI")
             return
         rect = self.image_rect()
-        ratio = rect.width() / self.source_size[0]
+        angle=0. if self.external_mode else self.preview_rotation%360
+        if angle:
+            w,h=self.source_size;a=math.radians(angle);ratio=rect.width()/(abs(w*math.cos(a))+abs(h*math.sin(a)))
+            painter.translate(rect.center());painter.rotate(angle);rect=QRectF(-w*ratio/2,-h*ratio/2,w*ratio,h*ratio)
+        else:ratio = rect.width() / self.source_size[0]
         offset_x, offset_y = rect.x(), rect.y()
         painter.drawImage(rect, self.frame)
         if self.show_observations and self.boxes is not None and self.index < len(self.boxes):

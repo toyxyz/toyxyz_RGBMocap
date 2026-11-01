@@ -33,7 +33,7 @@ class FixedRig(SkeletonLayout):
         self.revision=0;self.clear()
 
     def clear(self):
-        self.rest=None;self.tip_offsets=None;self.basis=None
+        self.rest=None;self.tip_offsets=None;self.basis=None;self.sole_offsets=None
 
     def calibrate(self,body,flame):
         """Publish a complete replacement only after validating the current pose's anatomy."""
@@ -62,6 +62,15 @@ class FixedRig(SkeletonLayout):
         offsets={native:(j[tip]-rest[native]).astype('float32') for native,tip in TIPS.items()}
         if not np.isfinite(basis).all() or np.max(abs(basis.swapaxes(-1,-2)@basis-np.eye(3)))>1e-4:
             raise ValueError('Invalid bone calibration. Try Reset Bones on another frame.')
+        # One neutral rigid sole proxy per foot; no skin evaluation at runtime.
+        weights=self.calibrator.smplx.lbs_weights.detach().cpu().numpy()
+        sole=[];up=unit(rest[3]-rest[0])
+        for ankle,toe in ((7,10),(8,11)):
+            patch=v[(weights[:,ankle]+weights[:,toe])>.65]
+            if len(patch)<8:raise ValueError('Cannot calibrate the foot sole from this body model.')
+            height=patch@up;low=patch[height<=np.percentile(height,8)]
+            sole.append(np.median(low,axis=0)-rest[ankle])
+        self.sole_offsets=np.asarray(sole,dtype='float32')
         self.rest=rest.astype('float32');self.tip_offsets=offsets;self.basis=basis;self.revision+=1
 
     def pose(self,body,camera):

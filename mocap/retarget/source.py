@@ -88,7 +88,7 @@ def prepare(project,kind,out):
         raw._mmap.close()
     else:
         ep,_=smplx_endpoints(project,kind,n)
-        mi=json.loads((project/(kind+'_mesh.json')).read_text());ma=np.load(resolve_reference(project,mi['asset']));mf=np.load(project/mi['frames_file'],mmap_mode='r')
+        mi=json.loads((project/(kind+'_mesh.json')).read_text(encoding='utf-8'));ma=np.load(resolve_reference(project,mi['asset']));mf=np.load(project/mi['frames_file'],mmap_mode='r')
         ids=[np.flatnonzero(weights[:,[7+s,10+s]].sum(1)>.7) for s in [0,1]]
         for i in range(n):
             v=reference_vertices(ma['packed'],mf[i],int(ma['vertex_count']))

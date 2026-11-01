@@ -1,5 +1,5 @@
 """Imported targets are distinct from source people and extraction selections."""
-import json,os,sys,time,uuid,shutil
+import json,os,sys,time,uuid,shutil,codecs
 from pathlib import Path
 import numpy as np
 from PySide6.QtCore import Qt,QProcess,QTimer,QProcessEnvironment
@@ -244,6 +244,7 @@ class CharacterWorkspace:
             self.character_refresh_queue=[]
             self.status.setText(str(exc));return
         self.stop_playback();self.character_job=job;self.character_started=time.monotonic();self.character_line='Starting character processing...';self.character_buffer='';self.character_cancelled=False
+        self._character_decoder=codecs.getincrementaldecoder("utf-8")("replace");self._character_pending=""
         p=QProcess(self);self.character_process=p
         env=QProcessEnvironment.systemEnvironment();env.insert('PYTHONUTF8','1');env.insert('PYTHONIOENCODING','utf-8');p.setProcessEnvironment(env)
         p.setWorkingDirectory(str(ROOT));p.setProcessChannelMode(QProcess.MergedChannels)
@@ -253,11 +254,14 @@ class CharacterWorkspace:
         self.busy=True;self.progress.setRange(0,0);self.character_timer.start();self.character_progress();self.update_readiness()
         p.start(cmd[0],cmd[1:])
 
-    def character_output(self):
+    def character_output(self, final=False):
         if not self.character_process:return
-        text=bytes(self.character_process.readAllStandardOutput()).decode('utf8',errors='replace')
+        text=self._character_decoder.decode(bytes(self.character_process.readAllStandardOutput()),final=final)
         self.character_buffer=(self.character_buffer+text)[-16000:]
-        for line in text.splitlines():
+        self._character_pending=(self._character_pending+text)[-16000:]
+        lines=self._character_pending.split("\n");self._character_pending=lines.pop()
+        if final and self._character_pending:lines.append(self._character_pending);self._character_pending=""
+        for line in lines:
             if line.startswith('CHARACTER:'):
                 self.character_line=line.partition(':')[2].strip()
                 self.log.status_terminal(line.strip())
@@ -270,7 +274,7 @@ class CharacterWorkspace:
 
     def character_finished(self,code,*args):
         if self.character_process is None:return
-        self.character_output();p=self.character_process;self.character_process=None;p.deleteLater();self.character_timer.stop();self.busy=False
+        self.character_output(final=True);p=self.character_process;self.character_process=None;p.deleteLater();self.character_timer.stop();self.busy=False
         job=self.character_job;complete=Path(job['output'])/'complete.json'
         if code==0 and complete.is_file() and not self.character_cancelled:
             result=json.loads(complete.read_text(encoding='utf8'))

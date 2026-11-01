@@ -10,13 +10,14 @@ from tools.session_lock import app_lock
 def prepare(cache=None):
     """Called under the installer lock, after committing the shared base."""
     from tools.support_components import download
-    lock=json.loads((ROOT/'installer/pear-sources.json').read_text())
+    lock=json.loads((ROOT/'installer/pear-sources.json').read_text(encoding='utf-8'))
     if not (ROOT/'runtime/python.exe').is_file():raise RuntimeError('Run install.cmd first.')
     try:current=configuration()
     except (OSError,ValueError,KeyError,TypeError):current=None
     if current is not None:
         print('Keeping verified PEAR support over the shared runtime.',flush=True)
-        return current
+        from tools.setup_pear_alignment import prepare as prepare_alignment
+        prepare_alignment(cache);return current
     base=base_identity()
     folder=ROOT/'runtime_pear'/('support-'+identity()[:20]+'-'+uuid.uuid4().hex[:8]);folder.mkdir(parents=True)
     cache=Path(cache) if cache else ROOT/'.setup/pear-downloads';cache.mkdir(parents=True,exist_ok=True)
@@ -45,11 +46,12 @@ def prepare(cache=None):
             changes='Windows live-inference imports; shared runtime and pure-Python geometry constructor helpers. Original licenses retained.'))
         print('Verifying PEAR shared-runtime imports and CUDA kernels...',flush=True)
         code='import sys; sys.path[:0]='+repr([str(ROOT),str(folder/'packages'),str(folder/'engine')])+'; from mocap.runtime_registry import activate; activate('+repr(str(ROOT))+', "shared"); import torch, numpy, scipy, timm, cv2, roma; from pytorch3d.transforms import axis_angle_to_matrix; from torchvision.ops import nms; assert torch.cuda.is_available(), \"Compatible NVIDIA GPU required\"; x=torch.zeros((1,3),device=\"cuda\"); assert axis_angle_to_matrix(x).isfinite().all(); assert nms(torch.tensor([[0.,0.,1.,1.]],device=\"cuda\"),torch.ones(1,device=\"cuda\"),.5).numel()==1; print(\"PEAR CUDA verification passed\")'
-        subprocess.run([str(ROOT/'runtime/python.exe'),'-I','-B','-c',code],check=True,timeout=180)
+        subprocess.run([str(ROOT/'runtime/python.exe'),'-I','-X','utf8','-B','-c',code],check=True,timeout=180)
         files={p.relative_to(folder).as_posix():[p.stat().st_size,p.stat().st_mtime_ns] for p in folder.rglob('*') if p.is_file() and '__pycache__' not in p.parts and p.suffix not in ('.pyc','.pyo')}
         atomic_json(ROOT/'.setup/pear-runtime.json',dict(version=2,identity=identity(),base_identity=base,folder=folder.relative_to(ROOT).as_posix(),files=files))
         print('PEAR support ready. Existing runtime packages, models and projects were not changed.',flush=True)
-        return folder
+        from tools.setup_pear_alignment import prepare as prepare_alignment
+        prepare_alignment(cache);return folder
     except Exception:
         # Keep failed staging for diagnosis; no previous configuration is overwritten.
         print('PEAR setup failed. Existing support generations were preserved.',flush=True);raise

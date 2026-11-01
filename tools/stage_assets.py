@@ -4,7 +4,7 @@ import argparse,json,shutil,urllib.request
 from runtime_support import ROOT,sha
 
 def stage(source,dest,download=False):
-    source=Path(source).resolve() if source else None;dest=Path(dest).resolve();rows=json.loads((ROOT/'installer/external-assets.json').read_text())['files'];copied=[]
+    source=Path(source).resolve() if source else None;dest=Path(dest).resolve();rows=json.loads((ROOT/'installer/external-assets.json').read_text(encoding='utf-8'))['files'];copied=[]
     for r in rows:
         target=dest/r['path'];original=(source/r['path']) if source else target
         if not target.resolve().is_relative_to(dest) or (source and not original.resolve().is_relative_to(source)):raise ValueError('Auxiliary asset leaves its root')

@@ -2,6 +2,15 @@
 import math
 import cv2
 
+def input_rotations(request,count):
+    """Normalize per-input angles; retain scalar compatibility for old requests."""
+    values=request.get('rotations')
+    if values is None:values=[request.get('rotation',0.)]*count
+    if not isinstance(values,(list,tuple)) or len(values)!=count:raise ValueError('Each input needs its own rotation value')
+    values=tuple(float(v) for v in values)
+    if not all(math.isfinite(v) and -360<=v<=360 for v in values):raise ValueError('Input rotation must be finite and between −360 and 360 degrees')
+    return values
+
 def rotate_frame(frame, clockwise_degrees):
     angle=float(clockwise_degrees)
     if not math.isfinite(angle):raise ValueError('Input rotation must be finite')
