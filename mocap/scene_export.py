@@ -33,7 +33,7 @@ def context(root,project):
                 sources=camera['sources'],anchor_sources=anchor['sources'],model=camera.get('model'))
 
 
-def transform_motion(inp,out,transform,progress=lambda:None):
+def transform_motion(inp,out,transform,progress=lambda:None,prepend_tpose=False):
     """Stream only root channels in bounded blocks; keep the hierarchy byte-for-byte."""
     from scipy.spatial.transform import Rotation
     import warnings
@@ -58,7 +58,8 @@ def transform_motion(inp,out,transform,progress=lambda:None):
         raise ValueError('Invalid BVH motion header')
     count=int(count_line.split(b':',1)[1]);step=float(time_line.split(b':',1)[1])
     if count<1 or not np.isfinite(step) or step<=0:raise ValueError('Invalid BVH timing')
-    out.write(count_line);out.write(time_line);previous=np.zeros(3)
+    out.write(f'Frames: {count+1}\n'.encode('ascii') if prepend_tpose else count_line)
+    out.write(time_line);previous=np.zeros(3)
     for first in range(0,count,128):
         rows=[]
         for _ in range(min(128,count-first)):
@@ -73,6 +74,13 @@ def transform_motion(inp,out,transform,progress=lambda:None):
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore',message='Gimbal lock detected')
             angles=Rotation.from_matrix(rotation@Rotation.from_euler(root_order,values[:,3:6],degrees=True).as_matrix()).as_euler(root_order)
+        if first==0 and prepend_tpose:
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore',message='Gimbal lock detected')
+                reference=Rotation.from_matrix(rotation).as_euler(root_order)
+            pose=np.zeros(channels);pose[:3]=positions[0];pose[3:6]=np.rad2deg(reference)
+            out.write((' '.join(f'{v:.9f}' for v in pose)+'\n').encode('ascii'))
+            previous=reference
         for index,(fields,_) in enumerate(rows):
             aa=angles[index].copy();bb=aa.copy();bb[0]+=np.pi;bb[1]=np.pi-bb[1];bb[2]+=np.pi
             aa+=2*np.pi*np.round((previous-aa)/(2*np.pi));bb+=2*np.pi*np.round((previous-bb)/(2*np.pi))

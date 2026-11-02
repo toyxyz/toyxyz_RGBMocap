@@ -56,7 +56,7 @@ Existing projects retain their saved selections.
 3. Prepare models for enabled add-ons and run **Reconstruct 3D**.
 4. Review the selected result and correction. Foot contacts and palm support
    are edited on the timeline; **Apply Correction** reuses inferred motion.
-5. **File > Export FBX** follows the displayed applied result, including its
+5. **File > Export...** (FBX, BVH or Blender) follows the displayed applied result, including its
    enabled add-ons. [Character retargeting](../USER_GUIDE.md#character-retargeting)
    uses that source motion and applied contact timings.
 

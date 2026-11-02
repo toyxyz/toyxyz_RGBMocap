@@ -176,7 +176,13 @@ every clip fits memory; the full 60-second limit has not been validated.
    do not need new MAMMA inference. Foot correction is on and hand correction is
    off by default; enable **Hand** when palm support is needed. The viewport
    **Lock** checkbox only shows or hides contact markers.
-6. Use **File > Export FBX** for the displayed, applied motion. It uses the
+6. Use **File > Export...** for the displayed, applied motion. Choose FBX or BVH
+   for skeleton animation, or Blender for a portable project. Blender also offers
+   **MAMMA whole scene: body meshes and all cameras** for checked people, baked
+   PC2 surfaces, reference skeletons and every synchronized camera/video.
+   Whole-scene export preserves the common timeline without an added T-pose;
+   keep its `videos/` and `meshes/` folders beside the `.blend`. See
+   [portable Blender export](USER_GUIDE.md#portable-blender-projects). Skeleton export uses the
    existing 52-bone source-export convention. Use **File > Save Project As** to
    keep a named copy; reopen its `project.json` with **File > Open Project**.
 

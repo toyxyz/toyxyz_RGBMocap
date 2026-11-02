@@ -134,7 +134,7 @@ from an arbitrary machine or edit registration files to mark them Ready.
 - Check People rows to show/hide actors and select a row to edit contacts.
   **Enable Correction** switches original/corrected motion. **Apply Correction**
   does not rerun PromptHMR and refreshes linked characters. Correction may
-  intentionally change poses. Export through **File > Export FBX**, or retarget
+  intentionally change poses. Export through **File > Export...** (FBX, BVH or Blender), or retarget
   to an imported character.
 
 The working video is sampled at 30 fps. The current adapter accepts **4–1,800

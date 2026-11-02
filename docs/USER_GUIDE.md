@@ -260,7 +260,7 @@ For ExMR, FlowHMR and GVHMR:
    who to reconstruct. MAMMA/PromptHMR track people during reconstruction.
 5. Click **Reconstruct 3D**. Review the video, mesh and **Bone Overlay** together.
 6. Adjust correction settings or contact timings, then click **Apply Correction**.
-7. **File → Export FBX** saves the displayed, applied animation.
+7. **File → Export...** saves the displayed, applied animation.
 
 For synchronized multi-camera capture, select MAMMA before opening videos and
 follow the [MAMMA workflow](MAMMA.md#reconstruct-and-export). It detects people
@@ -322,7 +322,7 @@ opening a project restores its saved model. **Prepare Preview**, below
 | **PromptHMR** | Can improve relative placement and interactions between multiple people in one fixed-camera video. Overall motion quality was lower than ExMR in our subjective tests; contacts and depth can still be wrong. Separate setup. | No finger tracking; fixed neutral pose. |
 | **PEAR** | Live single-person bone preview from a webcam or video. Lightweight live foot lock; no offline correction, recording, retargeting or export. | Included. |
 
-The five offline models support contact correction, a 52-bone overlay and FBX export.
+The five offline models support contact correction, a 52-bone overlay, FBX/BVH export and portable Blender bundles.
 ExMR/FlowHMR/GVHMR use **Find person** for explicit people selection; MAMMA
 and PromptHMR track people during reconstruction. The viewport shows the selected
 source mesh: SMPL-X for ExMR/GVHMR/MAMMA/PromptHMR,
@@ -484,6 +484,7 @@ selected result is missing, reconstruct it; the app reports it as unavailable.
 
 | Setting | Function and when to use it |
 | --- | --- |
+| **FlowHMR / ExMR → Refine Camera Rotation** | Optional background refinement of the saved moving-camera display track. Default off. Validates small rotation corrections; unreliable samples retain the original. No motion re-inference. |
 | **ExMR → Camera** | Static Camera for a camera that stays still without zooming; Moving Camera / SimpleVO when it moves. |
 | **ExMR → Smooth Motion** | Reduce small changes between frames. Off keeps the unsmoothed result. |
 | **FlowHMR → Fast SAM** | Speed up body/hand image processing with the same model files. Small numerical differences can affect motion and automatic contacts. |
@@ -606,16 +607,44 @@ depth and contacts between people are estimates; collision avoidance is not prov
 
 ## FBX and Blender
 
-**File → Export FBX** follows the displayed, applied result. Each checked
+**File → Export...** opens source-motion options: choose **FBX (.fbx)**,
+**BVH (.bvh)** or **Blender project + video (.blend)**. The optional
+**Add T-pose before motion** defaults off.
+For BVH, choose **Generic / Blender** (default) or **3ds Max Biped** in the
+**BVH profile** list.
+The selected, applied result is exported. Each checked
 person/take gets a separate named file and rig; duplicate filenames get suffixes.
 People exports use the viewport's shared placement. Takes retain their own frame
 counts; align their start times when combining different source intervals.
 
 Source-person exports use a 52-bone hierarchy with **Hips** as root and plain
-anatomical names. It retains
+anatomical names by default. The Biped profile renames exported joints as described
+below. It retains
 actor lengths, SMPL-neutral curved limbs/feet, calibrated rest axes and straight
-open fingers. FBX stores rest transforms separately; no T-pose frame is inserted.
-BVH is internal compatibility data only.
+open fingers. FBX stores rest transforms separately. With the T-pose option off,
+no extra frame is inserted. When enabled, one reference animation frame is placed
+before the original motion, at its initial root position; original frames shift
+by one and retain their poses, frame rate and intervals. The option does not
+replace the bind pose or edit project motion/contact timings.
+
+BVH uses the same 52-bone hierarchy, metre units and Y up, including finger bones
+and terminal tips. Import into Blender with **Scale 1 / Forward -Z / Up Y**.
+The **3ds Max Biped** profile follows the PR #18 conversion: it uses Character
+Studio names (for example, Spine becomes Chest and LeftArm becomes LeftShoulder)
+and uniform **ZXY** rotation channels. All 52 joints, fingers, offsets, terminal
+tips and keyed poses are retained, with no unit conversion or source-cache edits.
+Changing Euler order can change interpolation between keys. Use Generic/Blender
+when preserving the existing channel encoding is important. The optional leading
+T-pose works with either profile and retains the first motion frame's root position.
+
+In 3ds Max, create a Biped and load the file through **Motion > Motion Capture**.
+See [Autodesk's BVH import steps](https://download.autodesk.com/global/docs/motionbuilder2014/en_us/files/Importing_Importing_.bvh_files_into_3ds_Max.htm).
+This compatibility profile was checked numerically and imported in Blender;
+3ds Max itself was not available for validation. Biped's own retargeting and limb
+constraints may affect the result.
+
+BVH cannot store FBX Pre/PostRotation or arbitrary rest-bone roll; the rest axes
+can consequently look different. Use FBX when explicit rest transforms are needed.
 
 **Export Character...** preserves the imported target character's own hierarchy
 and original rest pose; it does not replace them with the 52-bone source rig.
@@ -627,6 +656,127 @@ frame rate and axes. **Armature Data → Rest Position** shows the rest pose.
 The first frame in **Pose Position** shows animation, which can differ from rest.
 Use the character workflow above for supported humanoids, or retarget the source
 FBX in your animation software.
+
+### Portable Blender projects
+
+Choose **Blender project + video (.blend)** in **File > Export...**, then choose
+an output filename. The exporter creates a **new subfolder** containing the
+`.blend`, `video.mp4`, `camera_report.json` and instructions. Existing folders are
+retained; a numbered folder is chosen when needed. For several checked people
+or takes, each gets its own portable folder. The selected applied motion and
+shared placement are preserved. Original inference, project files, contacts and
+camera receipts are not rewritten; stale results remain blocked.
+
+Open the `.blend` in Blender 4.5 or newer. **Numpad 0** enters the source-camera
+view and **Space** plays. The skeleton is editable; its object has no animated
+transform. The synchronized source video is a viewport camera background, not
+a render background. Move the **whole folder**, keeping the video beside the
+project. The app uses its existing Blender runtime to build the bundle; no
+additional runtime or AI inference is needed.
+
+**Export saved camera tracking** defaults on. FlowHMR/ExMR can use the saved
+rotation and approximate movement estimate. **Camera movement scale** defaults
+to the current display scale; 0 fixes the center. **Refine Camera Rotation**
+starts with the corresponding sidebar setting and exports only validated
+background corrections. Disabling tracking exports the first saved camera as a
+fixed camera. These choices affect only the exported camera, never body motion.
+Movement scale and reconstruction error can prevent exact video alignment; this
+is not measured camera calibration. The export report records the choices.
+An optional T-pose adds one animation frame and delays the video/camera timeline
+by one to keep the original motion and video paired.
+
+### MAMMA whole-scene Blender projects
+
+When MAMMA is selected, the Blender format also shows **MAMMA whole scene: body
+meshes and all cameras**. Check it to export checked people and their visible
+takes together, all saved calibrated cameras, synchronized video panels, and a
+separate camera-view scene for each camera. The original common timeline is
+retained; the T-pose option is unavailable for this export.
+
+Body surfaces are baked **PC2 mesh caches**, including the selected applied
+correction. Reference armatures are separate editable skeletons; they are **not
+deformation rigs** for the meshes. Keep the `.blend`, `videos/` and `meshes/`
+together. Changing a reference skeleton does not deform its cached body.
+The presentation floor/lights are aids, not reconstructed scene geometry.
+Camera backgrounds are viewport references; the overview's video panels are
+image-textured geometry. Each camera scene excludes those panels.
+
+This mode needs the saved MAMMA inference/calibration, matching undistorted
+working videos and current body-mesh/skeleton previews. Use Apply Correction or
+Prepare Preview if requested; export does not rerun MAMMA. Nonzero distortion
+or unsupported camera skew is rejected rather than silently exported incorrectly.
+PC2 disk usage is about **120 KiB per frame per person** (10,475 vertices),
+in addition to videos, skeleton animation and the Blender file. Copies and
+mesh baking run outside the GUI with visible activity/progress and cancellation.
+
+## Saved cameras and Camera Preview
+
+For reconstructed offline motion, **Overlays** above the left video preview also
+shows the reconstructed skeleton projected through the selected saved camera.
+It defaults on and is independent of the right viewport's **Bone Overlay** and
+**Camera** switches. MAMMA projects all visible people into the selected camera
+thumbnail. No new reconstruction or Camera Preview selection is needed to enable it.
+
+For a separate alignment view, choose **Camera Preview** in the 3D viewport's
+view selector. It shows the current source video with the displayed source
+skeleton projected through the saved camera. **Bone Overlay** controls the bones.
+Playback and seeking share the existing decoded video frame; no second video
+is decoded. For MAMMA, select a camera thumbnail to inspect that view. Middle-drag
+and wheel pan/zoom the preview; **Frame All** restores its image framing. Choosing
+a normal view returns to the 3D scene.
+
+Enable **Camera** below the 3D viewport to show saved cameras as wire frustums
+with an image-top triangle. This switch defaults off and affects display only.
+It does not recalibrate cameras, alter motion/correction or reframe the 3D view.
+Camera motion follows the source timeline; available displacement paths are
+bounded display samples. Saved cameras can be outside the current 3D framing;
+zoom out or orbit to inspect them.
+
+- MAMMA displays all saved fixed camera calibrations in the fitted shared world.
+- FlowHMR displays saved rotation and the estimated VGGT displacement path.
+  Its displacement has no measured metric scale, so the path is approximate.
+- ExMR in Moving Camera mode can estimate camera displacement from the original
+  paired world/camera root positions. This includes inference error and is not a
+  measured camera trajectory. Static Camera mode retains a fixed position.
+- When **Camera** is enabled in the ordinary 3D view, **Motion x** controls the
+  estimated movement display: 1 uses the estimate, 0 keeps the camera center fixed.
+  The default is 1. This affects camera gizmos and their path only; source video
+  overlays keep the calibrated projection and exports/motion remain unchanged.
+  ExMR movement requires a reference take covering the complete video; otherwise
+  the app shows rotation only with a notice.
+- Other offline results display their committed reference camera when available;
+  this does not imply a complete moving-camera reconstruction.
+
+FlowHMR and ExMR offer **Refine Camera Rotation** below their camera setting.
+It defaults off. When enabled, the app optionally post-processes saved moving-camera
+rotation using background features, following PR #18. It excludes known actor boxes,
+validates against held-out matches, accepts corrections up to 2 degrees, and
+interpolates corrections between sampled frames. Rejected samples retain the
+original rotation. This can help small camera errors but may do nothing when
+background texture/matching is poor or camera motion is large. Static-camera
+results are skipped.
+
+The operation runs on the CPU when saved cameras are needed for an enabled video
+overlay, Camera Preview or camera gizmo. Progress and elapsed time are visible;
+the accepted count and processing time appear in Console/CMD. Disabling the option
+restores the original saved camera immediately through the background loader.
+Validated results are reused within the session while input stamps remain current.
+The checkbox is kept in workspace view settings when the workspace is saved.
+No extra models, packages or runtime installation are required.
+
+Refinement affects the video bone overlay, Camera Preview and displayed camera
+orientation only. Camera centers/movement scale, original camera files, source
+poses, contact correction and FBX/BVH animation remain unchanged. With the option
+off, FlowHMR retains its saved VGGT-Omega tracking and ExMR its saved SimpleVO
+tracking without this additional operation. Failures keep the original camera
+and display a notice.
+
+The preview uses the saved calibration (or its optional display-only background
+rotation refinement), without fitting cameras to corrected bodies. Correction can intentionally move bones away from the video. Inference,
+calibration and body-fit errors remain visible. Calibrations with lens distortion
+currently use a pinhole overlay and show a limitation warning. Missing/stale
+camera data shows a notice; prepare the selected preview instead of substituting
+another result. Camera Preview is unavailable in PEAR live mode.
 
 ## Development and license
 

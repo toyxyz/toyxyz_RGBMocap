@@ -119,8 +119,10 @@ do not put passwords or account tokens in the agent chat.
 - Reconstruct one or several people and preview the body mesh and animation bones.
 - Reduce sliding with foot/palm contact correction and editable contact timings.
 - Retarget motion to Mixamo FBX, VRM and PMX humanoid characters.
-- Export source animation as FBX; export characters as FBX with or without meshes,
+- Export source animation as FBX or BVH (Generic/Blender or 3ds Max Biped), with an optional leading T-pose; export characters as FBX with or without meshes,
   or PMX character motion as VMD for MMD.
+- Export portable Blender projects with source animation, video and saved cameras; MAMMA can include animated body meshes and every camera.
+- Inspect source-video/bone alignment in Camera Preview and display saved cameras in 3D, with optional background rotation refinement for FlowHMR/ExMR.
 - Save projects with separate results for each AI model.
 - Track webcam or video input in real time with PEAR's experimental body/finger bone preview; tracking and poses may be unstable.
 
@@ -135,7 +137,7 @@ do not put passwords or account tokens in the agent chat.
    enter an approximate **Reference Height (m)**, or import camera calibration.
    Click **Reconstruct 3D**.
 3. Review the motion, edit contacts if needed and **Apply Correction**.
-4. Export FBX, or import a character, retarget the motion and export it.
+4. Use **File > Export...** to choose FBX, BVH or a portable Blender project, or import a character, retarget the motion and export it.
 
 **PEAR · Live (Experimental)** tracks webcam or video input in real time. Tracking
 and pose estimates may be unstable. Click **Start Live Tracking** to attempt camera

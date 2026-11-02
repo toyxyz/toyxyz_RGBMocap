@@ -59,7 +59,7 @@ Camera and smoothing changes take effect on **Reconstruct 3D**, not on
 3. Prepare models, choose camera settings and run **Reconstruct 3D**.
 4. Review the original and corrected motion. Edit foot/palm support intervals
    and **Apply Correction** when needed. This reuses inference results.
-5. Use **File > Export FBX** for the displayed applied source motion, or
+5. Use **File > Export...** (FBX, BVH or Blender) for the displayed applied source motion, or
    [import and retarget a character](../USER_GUIDE.md#character-retargeting).
 
 Processing uses a 30 fps working clip and preserves the source video. Saved
@@ -134,3 +134,32 @@ Please also credit FootMR and the original GVHMR work.
     year      = {2026},
 }
 ```
+
+
+### Camera display
+
+The viewport Camera switch can show estimated movement for Moving Camera mode.
+Camera rotation comes from the stored SimpleVO track; approximate displacement
+is derived from the ORIGINAL paired world/camera body-root predictions, without
+rerunning inference. Body prediction errors can appear as camera movement.
+Static Camera retains a fixed position. Motion x controls the gizmo/path distance
+scale (default 1; 0 fixes the center), independently of the video overlay and
+exported animation. A full-video reference take is required for displacement;
+otherwise a notice identifies rotation-only display.
+
+
+### Optional background camera rotation refinement
+
+**Refine Camera Rotation** is a default-off checkbox below the camera setting.
+It uses PR #18's background-feature method to validate corrections of up to
+2 degrees to the saved moving-camera rotation. It masks known actors and keeps
+unreliable samples unchanged; static-camera results are skipped. Fast movement,
+parallax or sparse/blurred backgrounds may prevent any correction from being accepted.
+
+This is CPU post-processing for video bone overlays, Camera Preview and camera
+gizmos. It runs when a camera display is needed and does not rerun motion inference
+or modify original tracking files, camera centers, motion/contact results or
+FBX/BVH animation. Off restores the original saved camera path. Workspace view
+settings preserve the checkbox; verified session results can be reused. No extra
+runtime/models are needed. Progress, accepted counts and time are reported in the
+app/Console/CMD. See [the camera preview guide](../USER_GUIDE.md#saved-cameras-and-camera-preview).

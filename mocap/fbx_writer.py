@@ -66,7 +66,7 @@ def _euler(matrix):
 
 
 def write(path, names, parents, rest, rest_frames, display, tip_local, frames, fps,
-          transform=None, progress=lambda *args:None, rig_name='SourceAnimation'):
+          transform=None, progress=lambda *args:None, rig_name='SourceAnimation', prepend_tpose=False):
     """Write one committed mapped take; working rotation arrays are one bone wide."""
     from .person_names import validate_name
     rig_name=validate_name(rig_name)
@@ -122,7 +122,8 @@ def write(path, names, parents, rest, rest_frames, display, tip_local, frames, f
         pose_nodes.append(node('PoseNode',children=[node('Node',int(ids[j])),node('Matrix',M.T.reshape(-1))]))
     objects.append(node('Pose',5000,'BindPose\0\1Pose','BindPose',children=[node('Type','BindPose'),node('Version',100),node('NbPoseNodes',len(pose_nodes)),*pose_nodes]))
     # Zero-based file times import at frame 1 with Blender's default offset 1.
-    times=np.rint(np.arange(n)*TICKS/fps).astype(np.int64)
+    key_count=n+int(bool(prepend_tpose))
+    times=np.rint(np.arange(key_count)*TICKS/fps).astype(np.int64)
     stop=int(times[-1]);stack=6000;layer=6001
     objects.append(node('AnimationStack',stack,'Motion\0\1AnimStack','',children=[properties(
         prop('LocalStart','KTime',0),prop('LocalStop','KTime',stop),prop('ReferenceStart','KTime',0),prop('ReferenceStop','KTime',stop))]))
@@ -152,7 +153,7 @@ def write(path, names, parents, rest, rest_frames, display, tip_local, frames, f
                 uid=nextid;nextid+=1
                 _element(out,node('AnimationCurve',uid,'\0\1AnimCurve','',children=[node('Default',float(values[0,axis])),node('KeyVer',4008),
                     node('KeyTime',times),node('KeyValueFloat',values[:,axis].astype(np.float32)),
-                    node('KeyAttrFlags',np.array([4],np.int32)),node('KeyAttrDataFloat',np.zeros(4,np.float32)),node('KeyAttrRefCount',np.array([n],np.int32))]))
+                    node('KeyAttrFlags',np.array([4],np.int32)),node('KeyAttrDataFloat',np.zeros(4,np.float32)),node('KeyAttrRefCount',np.array([key_count],np.int32))]))
                 link(uid,cid,'d|'+a)
         for j,p in enumerate(parents):
             world=np.asarray(frames[:,j,:3,:3],float)@display[j]
@@ -160,6 +161,7 @@ def write(path, names, parents, rest, rest_frames, display, tip_local, frames, f
                 local=transform[:3,:3]@world
                 positions=np.asarray(frames[:,0,:3,3],float)@transform[:3,:3].T+transform[:3,3]
                 if not np.isfinite(positions).all():raise ValueError('Non-finite FBX root')
+                if prepend_tpose:positions=np.concatenate((positions[:1],positions))
                 curves(j,'Lcl Translation',positions)
             else:
                 parent=np.asarray(frames[:,p,:3,:3],float)@display[p]
@@ -168,6 +170,11 @@ def write(path, names, parents, rest, rest_frames, display, tip_local, frames, f
                 if not np.isfinite(actual).all() or np.max(abs(actual-offsets[j]))>2e-5:
                     raise ValueError('Non-rigid bone offset in committed source animation')
             if not np.isfinite(local).all():raise ValueError('Non-finite FBX animation')
+            if prepend_tpose:
+                # Identity BVH world frames describe the straight-arm export bind.
+                # Display axes transport that T-pose into the FBX bone basis.
+                pose=transform[:3,:3]@display[j] if p<0 else display[p].T@display[j]
+                local=np.concatenate((pose[None],local))
             angles=np.degrees(continuous_angles(np.radians(_euler(np.asarray(local_rest[j]).T@local))))
             curves(j,'Lcl Rotation',angles);progress(j+1,52)
         out.write(b'\0'*13);end=out.tell();out.seek(start);out.write(struct.pack('<IIIB',end,0,0,7));out.seek(end)

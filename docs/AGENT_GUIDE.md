@@ -185,7 +185,7 @@ test a new native module, or use cached inference as evidence of a new build.
 3. Choose camera and processing settings, then **Reconstruct 3D**. Processing runs on a 30 fps working clip, without changing the original video. Progress and cancellation are in the app. **Prepare Preview** rebuilds previews from existing motion without rerunning inference.
 4. Review motion and contacts. **Enable Correction** selects corrected output; Foot defaults on and Hand off for new work. Flat Ground uses a common floor; Multi Level retains inferred contact heights and does not reconstruct terrain. Inspect automatic contacts; hand contacts represent support, not hanging/object tracking.
 5. Edit L/R foot and hand intervals on the timeline, then **Apply Correction**. Pending changes are not applied until then; stale corrected export is blocked. Applying also refreshes linked retargeted characters. Correction and preview do not require fresh AI inference.
-6. **File > Export FBX** exports displayed applied source-person motion. Multiple checked people/takes produce separate named files. Source FBX uses a 52-bone Hips-root hierarchy; BVH files may exist internally but are not the public export option.
+6. **File > Export...** opens FBX/BVH/Blender format selection, the BVH-only Generic/Blender (default) or 3ds Max Biped profile, and the default-off **Add T-pose before motion** option. Multiple checked people/takes produce separate named files. Source skeleton exports use the committed 52-bone Hips hierarchy; the Biped profile renames joints in the exported copy. Optional T-pose export adds one reference frame without editing the cached motion or contacts; original motion shifts by one frame. Blender creates portable video/camera bundles; MAMMA additionally offers whole-scene PC2 bodies and every calibrated camera without a T-pose. Character exports keep their separate FBX/VMD dialog.
 
 See [the full workflow and controls](USER_GUIDE.md#start-here). Do not confuse viewport toggles, automatic detection and applied motion corrections. No general scene geometry or collision reconstruction is implied.
 
@@ -197,6 +197,123 @@ the only publisher of leg rotations. Planning-limit warnings are real residual
 notices. Existing saved previews are not automatically replaced; use Apply
 Correction to recompute without inference. See the v9 measurements and limits
 in [validation](VALIDATION.md#contact-correction-v9-coherent-root-and-swing-transitions-2026-10-30).
+
+### Saved camera display and source export implementation
+
+`mocap/camera_tracks.py` adapts committed camera receipts without inference or
+body-based camera refitting. Single-person FlowHMR may have no
+`scene_camera.json`; use its validated `flow_world.json` basis/height and native
+`flow_camera.npz` without creating a scene receipt or fitting the corrected pose. MAMMA native Z-up calibration is transported to the
+app's Y-up world. FlowHMR/ExMR use saved rotation tracks. Flow gizmos additionally display
+unscaled VGGT displacement; moving-camera ExMR gizmos use estimated displacement
+from ORIGINAL paired world/camera root positions, never corrected poses.
+Motion x defaults to 1, with 0 retaining a fixed center. Video overlay projection
+remains unchanged when this display scale changes. MAMMA/GVHMR remain fixed. Other models expose their saved reference camera only. Do not interpret
+an extrinsic translation vector as the camera center: use `-R.T @ t`.
+
+Single-person ExMR/GVHMR may also have no shared-scene camera receipt.
+`mocap/camera_reference.py` reads the original paired global/camera parameters
+in a cancellable shared-runtime CPU subprocess, with weights-only memory-mapped
+tensor loading. It derives the shape-dependent pelvis pivot from the committed
+original joint cache and never fits to corrected bodies. Camera references are
+kept in a maximum-eight-entry in-memory loader cache, validated against original
+source stamps. Do not import Torch into the editor, write scene/floor receipts,
+run inference or change motion to display a missing camera.
+
+`mocap/camera_ui.py` owns one coalescing camera loader and a Camera Preview canvas
+sharing the existing source QImage. Its video paint callback also projects the
+reconstructed skeleton into the left video view when **Overlays** is on,
+independently of the right Bone Overlay/Camera switches. Keep image, camera and actor skeletons paired
+at frame delivery, including camera switches and rapid seeks. Do not load camera
+files in painting, add a decoder, run Torch in the GUI or alter source camera
+receipts, floor or poses when a display checkbox changes. Camera gizmos/path samples are bounded;
+missing/stale inputs must be visible. Camera Preview is disabled for PEAR.
+
+FlowHMR/ExMR's default-off **Refine Camera Rotation** is an explicit exception
+for derived camera display matrices, not source processing. `camera_background.py`
+adapts PR #18's masked first-frame feature tracking, held-out validation, 2-degree
+limit and sampled interpolation. Failed/rejected observations retain the saved
+rotation, and static-camera results skip the operation. Preserve its acceptance
+thresholds rather than forcing a correction when texture or parallax is unsuitable.
+
+`camera_background_worker.py` uses the existing shared runtime in an isolated
+CPU-only process; `worker_progress.py` routes the stage before inference/cache
+fingerprinting. One coalescing camera loader owns it, cancels/reaps it on toggle,
+replacement or close, and never imports Torch into the GUI. Windows progress is
+read from a bounded, atomically replaced transient file at no more than 5 Hz plus
+phase/final updates. Opaque startup remains active with elapsed time. Temporary
+input/output files live under `cache/camera_background/job-*` and are cleaned
+when the request ends; stale directories after an abrupt application termination
+are disposable with the app closed.
+
+The session refinement cache is limited to four entries and 32 MiB of changed
+matrices, validated against input stamps and the camera/core/worker code digest.
+Unchanged results do not store another matrix copy. Matrix payloads are limited
+to 32 MiB, reports to 1 MiB, captured logs to 512 KiB, fitting samples to 600 and
+worker runtime to 180 seconds. Known actors must have usable tracking boxes.
+Temporary preparation can use additional bounded memory beyond the cache limit.
+No new model/runtime packages, inference signatures, source camera receipts,
+source poses, contacts or FBX/BVH animation may change. Checkbox state belongs
+only in workspace view metadata (`camera_background`). Test accepted and rejected
+cases, exact off restoration, cache invalidation, cancellation, source preservation
+and frame/image/camera pairing separately.
+
+`mocap/source_export_dialog.py` supplies source export options.
+`biped_bvh.py` adapts PR #18's Character Studio naming and uniform ZXY
+conversion for all 52 joints, including fingers. `bvh_profile` propagates through
+every person/take export request; reject unknown profiles. Generic output remains
+a byte copy when no placement/T-pose preparation is needed. Biped uses bounded
+128-frame batches; only placement/T-pose preparation needs a temporary intermediate
+file, which is closed on success/error/cancellation. Preserve original offsets,
+units, timing, physical keyed rotations and source caches. Uniform Euler order can
+change fractional interpolation; do not claim identical between-key motion or
+verified 3ds Max behavior from the Blender/numerical checks alone.
+
+`source_export_worker.py` routes BVH saves through the cancellable worker without
+changing AI worker/cache fingerprints. Keep selected-result, pending contact and
+shared-scene guards, generation checks and atomic destination replacement in
+`fbx_export.py`/`export_copy.py`. Unchecked FBX output must remain identical.
+The optional leading pose is animation, not a replacement bind pose; validate
+both original-frame and fractional-frame suffix poses in Blender after changes.
+
+### Portable Blender export implementation
+
+`blend_export_ui.py` constructs requests and selects new, collision-free bundle
+folders. `blend_export_worker.py` routes `save_blend`/`save_blend_scene` through
+`worker_progress.py` before inference fingerprinting. Keep the existing runtime
+registry and inference worker untouched. General bundles in `blend_export.py`
+reuse `camera_tracks.load` and the isolated original-reference loader; never
+re-estimate the camera from a corrected body. Export only the requested take
+interval, transport the skeleton once through its existing shared placement, and
+use cameras already in that common world without applying the placement twice.
+Optional camera tracking, movement scale and background refinement affect only
+exported cameras. T-pose shifts both motion and video by one frame.
+
+`blend_multicam_export.py` adapts PR #18's full-scene pipeline: current checked
+MAMMA people/takes, full selected SMPL-X LBS surfaces streamed one frame at a
+time into PC2, source skeleton FBX, saved fixed calibration and working videos.
+`blend_multicam_scene.py` builds an overview plus per-camera linked scenes.
+Preserve half-open take visibility and the original shared timeline. Body meshes
+use caches, not armature deformation. Keep model-derived asset inputs private;
+do not distribute body files or model assets with application source. Only the
+user-requested animated scene is exported. Registered assets retain their terms.
+
+The builders `blend_export_scene.py`/`blend_multicam_scene.py` run only in the
+existing Blender 4.5 runtime, with autoexec disabled and bounded CPU threads.
+They install no frame handlers/scripts. Movies and PC2 use relative paths; test
+relocation including Unicode folders. Verify imported bone matrices, actual
+PC2 evaluated vertices, camera projection (including unequal fx/fy and shifted
+principal point), frame timing and object-transform key exclusion.
+
+`blend_support.py` owns exclusive sibling staging directories, bounded video
+copying and log reads, free-space checks, progress forwarding, and native-process
+termination on errors/cancellation. Remove only exact owned staging paths with
+the matching request marker; never remove completed bundles or existing user
+folders. GUI cancellation terminates the worker tree and cleans its known staging
+directory. Revalidate source/stat/generation/scene receipts before publishing.
+MAMMA currently bounds the common trim to 1800 frames/eight people; geometry
+baking must not accumulate whole mesh sequences in RAM. No new inference,
+runtime dependency, source motion or contact change is part of export.
 
 ## Character retargeting and export
 

@@ -70,7 +70,9 @@ checking existing models.
 | Contact correction | `mocap/correction.py`, `contact_trajectory.py`, `contact_pose_plan.py`, `contact_arm_plan.py` |
 | Skeleton and surface fitting | `mocap/source_animation.py`, `source_surface.py`, `surface_roll.py` |
 | Preview and playback | `mocap/viewport.py`, `preview_data.py`, `playback.py`, `video_preview.py` |
-| FBX | `mocap/fbx_export.py`, `fbx_bind.py`, `fbx_writer.py`, `scene_export.py` |
+| Source export | `mocap/source_export_dialog.py`, `fbx_export.py`, `fbx_writer.py`, `scene_export.py`, `export_copy.py`, `biped_bvh.py` |
+| Blender bundles | `mocap/blend_export.py`, `blend_multicam_export.py`, `blend_export_worker.py`, `blend_support.py`, `blend_export_scene.py`, `blend_multicam_scene.py` |
+| Camera preview/overlay | `mocap/camera_tracks.py`, `camera_ui.py`, `camera_reference.py`, `camera_background.py`, `camera_background_worker.py` |
 | Git setup/update | `install.cmd`, `update.cmd`, `tools/git_bootstrap.ps1`, `tools/git_managed_install.py`, `tools/git_update.py`, `installer/runtime-lock.json` |
 
 Run `app.py` from `.venv` while editing. Worker changes are loaded by their own

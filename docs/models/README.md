@@ -55,7 +55,7 @@ MAMMA is a separate multi-view workflow rather than another single-video option.
    and license acceptance; Google Drive downloads may need manual import.
 4. Open footage, trim, reconstruct and review. Contact correction defaults on;
    Foot defaults on and Hand off. Edit contact timings and **Apply Correction**
-   without rerunning AI inference. Export the displayed applied motion as FBX.
+   without rerunning AI inference. **File > Export...** offers FBX, BVH or a portable Blender project for the displayed applied motion. MAMMA also offers checked bodies and all cameras in one Blender scene; see [export options](../USER_GUIDE.md#fbx-and-blender).
 
 For PEAR, use **Start Live Tracking** instead of reconstruction. It displays
 live bones only; offline contact, project-save, retarget and export steps do not

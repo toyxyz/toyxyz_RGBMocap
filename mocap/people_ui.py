@@ -233,6 +233,7 @@ class PeopleWorkspace:
         self.motion_view.actor_name=self._single_actor['name'] if self._single_actor else 'Person 1'
         self.motion_view.scene_selected=self.active_person_id
         self.motion_view.scene_time=self.source_offset+self.motion_view.index/(self.info['fps'] if self.info else 30)
+        if hasattr(self,'camera_tools'):self.camera_tools.canvas.mirror()
         self.motion_view.update()
 
     def build_people_editor(self, video):
@@ -712,7 +713,7 @@ class PeopleWorkspace:
             from .person_names import export_path
             used={p.name.casefold() for p in Path(folder).iterdir()}
             for source,name in files:
-                target=export_path(folder,name,used)
+                target=export_path(folder,name,used,suffix='.'+getattr(self,'_source_export_options',{}).get('format','fbx'))
                 copies.append((source.parent,self.active_result,source,target))
             self.submit_fbx_exports(copies)
         return True

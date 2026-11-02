@@ -7,7 +7,7 @@ retained license files and provider agreements contain the full terms.
 
 ## AI tools and models
 
-Character import and baking use a separate, unmodified Blender 4.5 LTS runtime
+Character import, baking and portable scene export use a separate, unmodified Blender 4.5 LTS runtime
 (GPL; bundled license and source information in `runtime_character`). The scoped
 FBX sampler in `mocap/retarget/selective_fbx.py` retains Blender's GPL terms.
 The VRM add-on, mmd_tools and OpenCC retain their own notices under

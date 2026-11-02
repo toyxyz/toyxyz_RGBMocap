@@ -42,7 +42,7 @@ class ModelWorkspace:
 
     def workspace_view(self):
         fps=self.info['fps'] if self.info else 30.
-        return dict(source_time=self.source_offset+self.slider.value()/fps,
+        return dict(camera_background=self.camera_tools.background_options(),source_time=self.source_offset+self.slider.value()/fps,
             trim_time=[self.source_offset+self.slider.clip_in/fps,self.source_offset+self.slider.clip_out/fps],
             camera={**{key:np.asarray(getattr(self.motion_view,key)).tolist()
                     for key in ('yaw','pitch','distance','pan','scene_center')},'target':self.motion_view.target().tolist()})
@@ -69,6 +69,7 @@ class ModelWorkspace:
         atomic_json(root/'project.json',saved)
 
     def restore_workspace_view(self,view):
+        self.camera_tools.restore_background(view.get('camera_background',{}))
         if self.info:
             fps=self.info['fps']
             times=view.get('trim_time')

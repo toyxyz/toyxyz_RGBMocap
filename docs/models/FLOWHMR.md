@@ -75,7 +75,7 @@ used another 2.13 GiB of allocated VRAM. These are one-PC observations.
 3. Prepare the required files and choose the camera option, then **Reconstruct 3D**.
 4. Review contact correction, edit timings and **Apply Correction** if needed.
    Original motion is retained; applying contact changes does not rerun FlowHMR.
-5. Use **File > Export FBX** for the displayed applied motion, or
+5. Use **File > Export...** (FBX, BVH or Blender) for the displayed applied motion, or
    [retarget an imported character](../USER_GUIDE.md#character-retargeting).
 
 The working clip is 30 fps; the source video is preserved. The app supports up
@@ -168,3 +168,29 @@ package profiles and model files are retained. Valid feature caches remain usabl
 ## Citation
 
 [FlowHMR paper](https://arxiv.org/abs/2610.03691) · [Research citations and BibTeX](../CITATIONS.md#flowhmr)
+
+
+### Camera display
+
+The viewport Camera switch shows stored camera rotation and the estimated VGGT
+movement path. Displacement is not metrically calibrated; it is a rough visual
+guide. Motion x adjusts the displayed displacement scale (default 1; 0 fixes the
+camera center). This controls camera gizmos/path only. Video overlays retain
+their saved calibrated projection, and animation/correction/export are unchanged.
+
+
+### Optional background camera rotation refinement
+
+**Refine Camera Rotation** is a default-off checkbox below the camera setting.
+It uses PR #18's background-feature method to validate corrections of up to
+2 degrees to the saved moving-camera rotation. It masks known actors and keeps
+unreliable samples unchanged; static-camera results are skipped. Fast movement,
+parallax or sparse/blurred backgrounds may prevent any correction from being accepted.
+
+This is CPU post-processing for video bone overlays, Camera Preview and camera
+gizmos. It runs when a camera display is needed and does not rerun motion inference
+or modify original tracking files, camera centers, motion/contact results or
+FBX/BVH animation. Off restores the original saved camera path. Workspace view
+settings preserve the checkbox; verified session results can be reused. No extra
+runtime/models are needed. Progress, accepted counts and time are reported in the
+app/Console/CMD. See [the camera preview guide](../USER_GUIDE.md#saved-cameras-and-camera-preview).

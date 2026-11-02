@@ -85,6 +85,7 @@ class MotionView(ViewportBase):
         self.show_trajectory = True
         self.show_foot_locks = True
         self.show_names = True
+        self.show_cameras=False;self.camera_records=[];self.camera_message='';self.camera_translation_scale=0.
         self.actor_name = 'Person 1'
         self.scene_names = {}
         self.name_labels_presented = []
@@ -916,6 +917,19 @@ class MotionView(ViewportBase):
             painter.drawText(QRectF(18, 39, self.width() - 36, 20), Qt.AlignLeft, f"Frame {index + 1} / {len(self.joints)}")
             painter.drawText(QRectF(18, 60, self.width() - 36, 20), Qt.AlignLeft,
                              f"X {joints[0, 0]:+.2f}   Z {joints[0, 2]:+.2f} m")
+        if self.show_cameras:
+            from .camera_tracks import at,geometry
+            for camera,trail in self.camera_records:
+                matrix=at(camera,self.scene_time,self.camera_translation_scale)
+                if matrix is None:continue
+                edges,origin=geometry(camera,matrix)
+                lines3d(edges,'#ffae42',1.4)
+                if len(trail)>1:lines3d(np.stack((trail[:-1],trail[1:]),axis=1),'#a48250',1.)
+                xy,z,_=self.project(origin)
+                if z>.08:
+                    painter.setPen(QColor('#ffcc82'));painter.drawText(QPointF(xy[0]+5,xy[1]-5),camera['name'])
+            if self.camera_message:
+                painter.setPen(QColor('#e8c38d'));painter.drawText(self.rect().adjusted(18,125,-18,-18),Qt.AlignTop|Qt.TextWordWrap,self.camera_message)
         characters_drawn=self.draw_characters(painter)
         # Final independent depth layer: exported bones stay above characters,
         # with the same ordering whether Bone Overlay was on or off previously.

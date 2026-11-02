@@ -144,14 +144,17 @@ def build_workspace(w):
     video_header.addWidget(w.fps_label, 1)
     overlay = QCheckBox("Overlays")
     overlay.setChecked(True)
-    overlay.setToolTip(tooltip_text('Show tracked people and detected body points over the video. Display only.'))
+    overlay.setToolTip(tooltip_text('Show tracked people, detected points and the reconstructed skeleton projected through the saved camera over the video. Display only.'))
     def toggle_overlay(enabled):
         w.video_view.show_observations = enabled
+        if hasattr(w,'camera_tools'):w.camera_tools.sync()
         w.video_view.update()
     overlay.toggled.connect(toggle_overlay)
     w.video_overlay=overlay
     video_header.addWidget(overlay)
-    motion_panel, motion_header = editor("3D Viewport", w.motion_view)
+    from PySide6.QtWidgets import QStackedWidget
+    camera_stack=QStackedWidget()
+    motion_panel, motion_header = editor("3D Viewport", camera_stack)
     w.bone_overlay=QCheckBox('Bone Overlay')
     w.bone_overlay.setChecked(True)
     w.bone_overlay.setToolTip(tooltip_text('Show the skeleton used for FBX export over the motion mesh. Display only.'))
@@ -159,15 +162,17 @@ def build_workspace(w):
     motion_header.addWidget(w.bone_overlay)
     w.view_choice = QComboBox()
     w.view_choice.setToolTip(tooltip_text('Choose a viewing direction. This changes the camera, not the motion.'))
-    w.view_choice.addItems(["Perspective", "Front", "Back", "Right", "Left", "Top", "Bottom"])
-    w.view_choice.currentTextChanged.connect(w.motion_view.set_view)
+    w.view_choice.addItems(["Perspective", "Front", "Back", "Right", "Left", "Top", "Bottom", "Camera Preview"])
+    from .camera_ui import CameraTools
+    w.camera_tools=CameraTools(w,camera_stack,motion_header)
+    w.view_choice.currentTextChanged.connect(w.camera_tools.set_view)
     def view_changed(name):
         w.view_choice.blockSignals(True)
         w.view_choice.setCurrentText(name)
         w.view_choice.blockSignals(False)
     w.motion_view.view_changed.connect(view_changed)
     motion_header.addWidget(w.view_choice)
-    frame_view = button("Frame All", w.motion_view.frame_all, motion_header)
+    frame_view = button("Frame All", lambda:w.camera_tools.canvas.reset_view() if w.camera_tools.preview() else w.motion_view.frame_all(), motion_header)
     frame_view.setToolTip('Fit all visible people in the 3D view.')
     w.viewport_footer = QWidget()
     w.viewport_footer.setObjectName("editorHeader")
@@ -176,16 +181,17 @@ def build_workspace(w):
     viewport_footer.setContentsMargins(9, 3, 6, 3)
     w.viewport_checks={}
     for label, attribute in (("Floor Grid", "show_grid"), ("Correction Floor", "show_correction_floor"), ("Motion Path", "show_trajectory"),
-                             ("Lock", "show_foot_locks"), ("Name", "show_names")):
+                             ("Lock", "show_foot_locks"), ("Name", "show_names"), ("Camera", "show_cameras")):
         check = QCheckBox(label)
         w.viewport_checks[attribute]=check
         check.setChecked(getattr(w.motion_view, attribute))
-        check.setToolTip(tooltip_text({'show_grid': 'Show the reference grid at height zero. Does not change ground contact.', 'show_correction_floor': 'Show the correction floor height as an orange plane. Display only.', 'show_trajectory': 'Show the path followed by the person.', 'show_foot_locks': '', 'show_names': 'Show each person\'s name above their mesh. Rename people by right-clicking the People list. Display only.'}[attribute]))
+        check.setToolTip(tooltip_text({'show_grid': 'Show the reference grid at height zero. Does not change ground contact.', 'show_correction_floor': 'Show the correction floor height as an orange plane. Display only.', 'show_trajectory': 'Show the path followed by the person.', 'show_foot_locks': '', 'show_names': 'Show each person\'s name above their mesh. Rename people by right-clicking the People list. Display only.', 'show_cameras':'Show saved camera frustums and available camera motion. Display only; does not estimate or refit cameras.'}[attribute]))
         if attribute=='show_names':w.name_labels=check
         if attribute=='show_foot_locks':
             check.setToolTip(tooltip_text('Show active foot and hand contacts as colored discs. Colors match the timeline. Display only; does not enable correction.'))
         def toggle(enabled, attr=attribute):
             setattr(w.motion_view, attr, enabled)
+            if attr=='show_cameras':w.camera_tools.sync()
             w.motion_view.update()
         check.toggled.connect(toggle)
         viewport_footer.addWidget(check)
@@ -392,6 +398,11 @@ def build_workspace(w):
     w.flow_sampling.setToolTip(tooltip_text('Choose Static Camera only if the camera stays still without zooming. Otherwise start with Moving / Unknown - Auto. Frame intervals control camera analysis only; shorter intervals use more memory. Applies on Reconstruct 3D.'))
     w.flow_sampling.currentIndexChanged.connect(lambda _: w.update_readiness())
     flow_camera.addWidget(w.flow_sampling)
+    from .camera_ui import BACKGROUND_HELP
+    w.flowhmr_background=QCheckBox('Refine Camera Rotation')
+    w.flowhmr_background.setChecked(False);w.flowhmr_background.setToolTip(tooltip_text(BACKGROUND_HELP))
+    w.flowhmr_background.toggled.connect(w.camera_tools.background_changed)
+    flow_camera.addWidget(w.flowhmr_background)
     flow_help = QLabel('Native SMPL-H body and hands')
     flow_help.setToolTip(tooltip_text('FlowHMR: body and finger tracking. Slow, with the best overall motion quality in our subjective tests.'))
     flow_camera.addWidget(flow_help)
@@ -411,6 +422,11 @@ def build_workspace(w):
     w.exmr_camera.addItem('Moving Camera / SimpleVO',False)
     w.exmr_camera.setToolTip(tooltip_text('Choose Static Camera if the camera stays still without zooming. Choose Moving Camera if it moves. Applies next time you run Reconstruct 3D.'))
     exmr.addWidget(w.exmr_camera)
+    from .camera_ui import BACKGROUND_HELP
+    w.exmr_background=QCheckBox('Refine Camera Rotation')
+    w.exmr_background.setChecked(False);w.exmr_background.setToolTip(tooltip_text(BACKGROUND_HELP))
+    w.exmr_background.toggled.connect(w.camera_tools.background_changed)
+    exmr.addWidget(w.exmr_background)
     w.exmr_smoothing=QCheckBox('Smooth Motion')
     w.exmr_smoothing.setChecked(True)
     w.exmr_smoothing.setToolTip(tooltip_text('Reduce small changes between frames for smoother motion. Turn off to keep the unsmoothed result. Applies next time you run Reconstruct 3D.'))
@@ -573,15 +589,15 @@ def build_workspace(w):
     w.save_project_action.setShortcut('Ctrl+Shift+S')
     w.save_project_action.setToolTip(tooltip_text('Save a separate project folder with a new name and location, including its video, motion and settings. Continue working in the saved copy.'))
     file_menu.addSeparator()
-    w.export_action = file_menu.addAction("Export FBX...", w.save_fbx)
-    w.export_action.setToolTip(tooltip_text('Save the displayed skeleton animation as FBX. For multiple people, each checked person gets a separate named file and rig.'))
+    w.export_action = file_menu.addAction("Export...", w.save_fbx)
+    w.export_action.setToolTip(tooltip_text('Export the displayed motion as FBX, BVH or a portable Blender project. Multiple people export separately; MAMMA also offers a whole-scene Blender bundle.'))
     file_menu.addAction("Open Project Folder", w.open_folder)
     file_menu.addSeparator()
     file_menu.addAction("Exit", w.close)
     help_menu = w.menuBar().addMenu("Help")
     w.check_system_action = help_menu.addAction("Check System", lambda: w.start_jobs([("diagnose", [])]))
     help_menu.addAction("Controls", lambda: QMessageBox.information(w, "Workspace Controls",
-        "Space: Play / Pause\nLeft / Right: Step one frame\nShift + Left / Right: Step one second\nHome / End: First / last frame\n\nViewport: LMB orbit, MMB / RMB pan, wheel zoom\nGizmo: click an axis to align the view\nTimeline: drag video clip edges to trim\nClick the frame ruler or drag the blue frame box to seek\nWheel to zoom; MMB to pan; Reset Trim restores the full clip\nClick ? in the timeline header for editing help.\nPlayback and reconstruction use the selected video clip range.\n\nThe mesh shows the selected motion result.\nFlowHMR and ExMR track fingers directly. GVHMR uses optional HandFlow for finger tracking.\nUse File > Export FBX to save the displayed animation."))
+        "Space: Play / Pause\nLeft / Right: Step one frame\nShift + Left / Right: Step one second\nHome / End: First / last frame\n\nViewport: LMB orbit, MMB / RMB pan, wheel zoom\nGizmo: click an axis to align the view\nTimeline: drag video clip edges to trim\nClick the frame ruler or drag the blue frame box to seek\nWheel to zoom; MMB to pan; Reset Trim restores the full clip\nClick ? in the timeline header for editing help.\nPlayback and reconstruction use the selected video clip range.\n\nThe mesh shows the selected motion result.\nFlowHMR and ExMR track fingers directly. GVHMR uses optional HandFlow for finger tracking.\nUse File > Export to choose FBX, BVH or a portable Blender project and save the displayed animation."))
 
     menu_help = {
         'Open Video...': 'Choose a video to create motion from.',

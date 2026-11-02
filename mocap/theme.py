@@ -25,6 +25,10 @@ QComboBox,QAbstractSpinBox { background:#454545; border:1px solid #242424; borde
 QComboBox:hover,QAbstractSpinBox:hover { border-color:#737373; }
 QComboBox QAbstractItemView { background:#333333; selection-background-color:#477bb7; }
 QCheckBox { spacing:6px; }
+QCheckBox::indicator { width:14px; height:14px; border:1px solid #949494; border-radius:2px; background:#303030; }
+QCheckBox::indicator:hover { border-color:#d8e9ff; background:#404c59; }
+QCheckBox::indicator:checked { border-color:#c7ddf6; background:#477bb7; image:url("CHECK_ICON"); }
+QCheckBox::indicator:disabled { border-color:#666666; background:#353535; }
 QListWidget#peopleList::item { min-height:24px; }
 QListWidget#peopleList::indicator { width:16px; height:16px; border:1px solid #949494; border-radius:2px; background:#303030; }
 QListWidget#peopleList::indicator:hover { border-color:#d8e9ff; background:#404c59; }

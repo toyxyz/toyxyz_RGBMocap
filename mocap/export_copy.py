@@ -14,7 +14,10 @@ def run(request,emit=lambda *a,**k:None):
     staged=[]
     try:
         for i,row in enumerate(rows):
+            profile=row.get('bvh_profile','generic')
+            if profile not in ('generic','biped'):raise ValueError('Unsupported BVH export profile')
             project=Path(row['project']);source=selected_export(project,row['kind']);target=Path(row['target'])
+            if target.suffix.lower()!='.bvh':raise ValueError('Choose a BVH destination')
             if source is None or source.resolve()!=Path(row['source']).resolve():raise ValueError('Selected target motion changed. Export again.')
             if source.resolve()==target.resolve():raise ValueError('Choose a different export destination')
             if any(target.resolve()==old[1].resolve() for old in staged):raise ValueError('Duplicate export destination')
@@ -27,9 +30,19 @@ def run(request,emit=lambda *a,**k:None):
             staged.append((temporary,target,project,row['kind'],source,stamp,scene))
             with source.open('rb') as inp,temporary.open('xb') as out:
                 def progress():emit('progress',stage='copy_bvh',current=i,total=len(rows),message='Saving BVH in shared scene' if scene else 'Saving BVH')
-                if scene is not None and not np.allclose(scene['transform'],np.eye(4),rtol=0,atol=1e-12):
+                prepare=row.get('prepend_tpose',False) or (scene is not None and not np.allclose(scene['transform'],np.eye(4),rtol=0,atol=1e-12))
+                if profile=='biped':
+                    from .biped_bvh import convert
+                    if prepare:
+                        from tempfile import TemporaryFile
+                        from .scene_export import transform_motion
+                        with TemporaryFile() as prepared:
+                            transform_motion(inp,prepared,np.eye(4) if scene is None else scene['transform'],progress,prepend_tpose=row.get('prepend_tpose',False))
+                            prepared.seek(0);convert(prepared,out,progress)
+                    else:convert(inp,out,progress)
+                elif prepare:
                     from .scene_export import transform_motion
-                    transform_motion(inp,out,scene['transform'],progress)
+                    transform_motion(inp,out,np.eye(4) if scene is None else scene['transform'],progress,prepend_tpose=row.get('prepend_tpose',False))
                 else:
                     while True:
                         chunk=inp.read(1024*1024)
