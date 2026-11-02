@@ -515,6 +515,14 @@ def build_workspace(w):
     w.compute_mode.addItem("Low Memory", "low_memory")
     w.compute_mode.setToolTip(tooltip_text("Automatic uses the fast path when memory is available and switches supported stages to Low Memory when needed. Low Memory uses CPU loading and offloading; it can be slower and use more RAM. Model precision and video frames are unchanged."))
     processing.addWidget(w.compute_mode)
+    from .resource_safety import ENV,HELP,load
+    import os
+    w.resource_safety=QCheckBox('Resource Safety')
+    w.resource_safety.setChecked(load())
+    os.environ[ENV]='1' if w.resource_safety.isChecked() else '0'
+    w.resource_safety.setToolTip(tooltip_text(HELP))
+    w.resource_safety.toggled.connect(w.resource_safety_changed)
+    processing.addWidget(w.resource_safety)
     resource_description=TooltipHelp('',w.compute_mode)
     resource_description.setObjectName('muted');resource_description.setWordWrap(True);processing.addWidget(resource_description)
     setup = group("GVHMR Models", settings)
@@ -571,6 +579,8 @@ def build_workspace(w):
     w.task_info.setToolTip(tooltip_text('Step left estimates time for the current step; Total left estimates the remaining queue. Estimates appear once enough timing data is available and may change.'))
     footer.addWidget(w.task_info)
     w.log = ConsoleLog()
+    from .resource_safety import message
+    w.log.append(message(w.resource_safety.isChecked()))
     w.log.setReadOnly(True)
     w.log.setUndoRedoEnabled(False)
     w.log.document().setMaximumBlockCount(500)

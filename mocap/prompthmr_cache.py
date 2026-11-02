@@ -21,6 +21,9 @@ PIPELINE_CACHE_ONLY = {
     'b3098bbc038f9f5e25c9b9e96c9ec4fa2116226f74c645089bd328014f024e7d',
     'd1075279956f9443c3ff80694a9388fc9e1f2d74b3af5f9dab0714c50c2a7687':
     'b3098bbc038f9f5e25c9b9e96c9ec4fa2116226f74c645089bd328014f024e7d',
+    # Resource Safety wording only; no fixed-camera inference changes.
+    '82b1d570030f4858683064d10a214be1ded4b1d93de190d8971ad0847ac5314e':
+    'b3098bbc038f9f5e25c9b9e96c9ec4fa2116226f74c645089bd328014f024e7d',
 }
 
 

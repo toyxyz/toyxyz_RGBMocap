@@ -178,7 +178,7 @@ Windows adaptations retain the SLAM equations and full frame sequence, use
 64-bit tensor indices, avoid CPU/CUDA kernel-name collisions, and use native
 Torch SDPA for Metric3D attention. Depth batches are one image in both resource
 modes; the keyframe buffer covers the selected clip plus trajectory-fill slots.
-The existing memory/OOM guards remain active; long trims can need much more
+RAM/VRAM limits follow [Resource Safety](../PERFORMANCE.md#resource-safety); actual OOM handling remains active; long trims can need much more
 memory. Additional PromptHMR block offloading is not implemented.
 
 Camera setup logs: `.setup/logs/prompthmr-camera-*.log`.
@@ -216,9 +216,9 @@ not displayed as stationary poses or replaced with another actor.
 
 Both Automatic and Low Memory keep the validated **one-image batch**, model
 precision, full temporal context and native post-optimization. Additional
-PromptHMR block offloading is not implemented. Actual RAM/Windows allocation
-headroom monitoring, CUDA allocator budgets and allocation-error reporting remain
-active. Low Memory is not a promise of a smaller PromptHMR footprint; trim or
+PromptHMR block offloading is not implemented. RAM/Windows headroom stopping
+and CUDA allocator budgets follow [Resource Safety](../PERFORMANCE.md#resource-safety),
+default on. Actual allocation-error handling remains active in either setting. Low Memory is not a promise of a smaller PromptHMR footprint; trim or
 close other GPU applications when needed.
 
 Windows adapters retain strict checkpoint loading, avoid discarded initialization

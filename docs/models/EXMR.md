@@ -99,8 +99,8 @@ poses or fingers. Automatic contact detection can also miss intentional support;
 edit its timings rather than expecting correction to recover missing evidence.
 Contact correction is distinct from Smooth Motion and preserves original results.
 
-RAM/Windows allocation-headroom monitoring and the shared CUDA allocator budget
-remain active. Allocation failure stops the job with an error; shorten footage
+RAM/Windows allocation-headroom stopping and the shared CUDA allocator budget
+follow [Resource Safety](../PERFORMANCE.md#resource-safety), default on. Allocation failure stops the job with an error; shorten footage
 or free resources if necessary. Historical [processing/VRAM measurements](../USER_GUIDE.md#recorded-processing-time-and-vram)
 are individual runs, not minimum specifications. See [validation](../VALIDATION.md)
 for the tested PC and scope, and [licenses](../../THIRD_PARTY_NOTICES.md) for

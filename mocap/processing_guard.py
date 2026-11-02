@@ -20,8 +20,10 @@ def commit_headroom():
 
 
 class ProcessingGuard:
-    def __init__(self,pid,now=None):
+    def __init__(self,pid,now=None,resource_safety=None):
         import psutil
+        from .resource_safety import enabled
+        self.resource_safety=enabled() if resource_safety is None else bool(resource_safety)
         self.process=psutil.Process(pid)
         self.created=self.process.create_time()
         self.last_output=self.last_cpu_change=time.monotonic() if now is None else now
@@ -50,12 +52,13 @@ class ProcessingGuard:
                 self.activity_cpu=self.cpu
         except psutil.NoSuchProcess:return None
         except psutil.AccessDenied:pass
-        memory=psutil.virtual_memory();commit=commit_headroom()
-        message=memory_pressure_message(memory.available,memory.total,commit)
-        low=message is not None
-        self.low_samples=self.low_samples+1 if low else 0
-        critical=memory.available<256*1024**2 or (commit is not None and commit<256*1024**2)
-        if self.low_samples>=2 or critical:return message
+        if self.resource_safety:
+            memory=psutil.virtual_memory();commit=commit_headroom()
+            message=memory_pressure_message(memory.available,memory.total,commit)
+            low=message is not None
+            self.low_samples=self.low_samples+1 if low else 0
+            critical=memory.available<256*1024**2 or (commit is not None and commit<256*1024**2)
+            if self.low_samples>=2 or critical:return message
         if idle_timeout(self.last_output,self.last_cpu_change,now):
             return 'Processing stopped after 180 seconds without output or CPU activity. The app is still available; retry or use a shorter clip.'
         return None

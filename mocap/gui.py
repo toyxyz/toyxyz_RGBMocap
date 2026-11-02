@@ -449,6 +449,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
         self.update_people_readiness()
         tool = MOTION_TOOLS[self.model_choice.currentData()]
         self.compute_mode.setEnabled(not self.busy)
+        self.resource_safety.setEnabled(not self.busy)
         stages = tool.stages(self.htd_refine.isChecked(), self.footmr_refine.isChecked(), handflow=self.handflow_refine.isChecked())
         from .models import STAGE_REQUIREMENTS, BY_KEY
         required = {key for stage in stages for key in STAGE_REQUIREMENTS.get(stage, ())}
@@ -1172,10 +1173,22 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
         if self.project is not None and not self.busy:
             self.prepare_target_preview()
 
+    def resource_safety_changed(self,value):
+        from .resource_safety import ENV,save,message
+        try:save(value)
+        except (OSError,ValueError) as error:
+            self.resource_safety.blockSignals(True);self.resource_safety.setChecked(not value);self.resource_safety.blockSignals(False)
+            self.log.append('Cannot save Resource Safety: '+str(error));return
+        os.environ[ENV]='1' if value else '0'
+        self.log.append(message(value))
+
     def start_jobs(self, jobs, refresh_characters=False):
         if self.busy:
             return
         jobs=list(jobs)
+        from .resource_safety import message
+        self._job_resource_safety=self.resource_safety.isChecked()
+        self.log.append(message(self._job_resource_safety))
         self.character_refresh_queue=[]
         if refresh_characters:
             try:
@@ -1360,6 +1373,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
         environment.insert("PYTHONIOENCODING", "utf-8")
         environment.insert("PYTHONUNBUFFERED", "1")
         environment.insert("RGB_MOCAP_COMPUTE_MODE", self.compute_mode.currentData())
+        environment.insert('RGB_MOCAP_RESOURCE_SAFETY','1' if self._job_resource_safety else '0')
         environment.insert('RGB_MOCAP_FLOW_INTERVAL',str(self.flow_sampling.currentData()))
         environment.insert('RGB_MOCAP_FLOW_FAST_SAM','1' if self.fast_sam.isChecked() else '0')
         environment.insert('RGB_MOCAP_FLOW_BATCH4','1' if self.flow_batch4.isChecked() else '0')
@@ -1376,7 +1390,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
     def start_processing_guard(self):
         from .processing_guard import ProcessingGuard
         try:
-            self.processing_guard = ProcessingGuard(self.process.processId())
+            self.processing_guard = ProcessingGuard(self.process.processId(),resource_safety=self._job_resource_safety)
             self.guard_timer.start()
         except Exception as error:
             self.log.append('Resource monitor unavailable: ' + str(error))

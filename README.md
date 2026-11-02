@@ -201,7 +201,10 @@ Start with **Resource Mode > Automatic**. It uses the fast supported path when
 memory permits and falls back to a supported Low Memory path when needed.
 Memory-saving methods depend on the model; **Low Memory** can trade slower
 loading/transfers and more system RAM for lower VRAM use. See each model's guide
-for implemented options and limits.
+for implemented options and limits. **Resource Safety**, below Resource Mode,
+defaults on. Turn it off to bypass low-RAM stopping and the VRAM allocator limit;
+Automatic batching and actual allocation-error handling stay active. See the
+[Resource Safety details](docs/PERFORMANCE.md#resource-safety).
 
 Short paired tests reduced peak allocated VRAM from **5.68 to 3.87 GiB** for ExMR
 and **6.10 to 2.77 GiB** for FlowHMR. Separate short-clip tests of connected

@@ -9,9 +9,10 @@ example is not a general model limit.
 
 **RGB MoCap implementation:** reconstruction accepts two or more synchronized
 fixed-camera videos without a fixed camera-count maximum. Available RAM and
-VRAM determine practical capacity. Existing system-memory monitoring, CUDA
-allocator budgeting and OOM failure handling remain active; removing the input
-count limit does not guarantee that every camera/clip combination fits memory.
+VRAM determine practical capacity. Resource Safety controls system-memory
+stopping and CUDA allocator budgeting; actual OOM handling remains active.
+Removing the input count limit does not guarantee that every camera/clip
+combination fits memory.
 Four columns in the thumbnail strip are only a layout choice; more views add
 rows. Input/preparation/save/restore was checked with up to 65 tiny synthetic
 camera files, not 65-view AI fitting. Full model inference has only the scope
@@ -205,8 +206,9 @@ Automatic fallback retain copy loading because the experimental assign/offload
 combination increased Windows private allocation. See the
 [camera-loading measurements and scope](PERFORMANCE.md#vggt-camera-checkpoint-loading).
 Offloading may be slower and use more RAM; masks, landmarks and fitting retain
-their existing bounded settings. The shared allocator budget and system-memory guard
-still apply; shorten the common clip or reduce input views yourself if needed.
+their existing bounded settings. The shared allocator budget and system-memory
+stop follow [Resource Safety](PERFORMANCE.md#resource-safety), default on.
+Shorten the common clip or reduce input views yourself if needed.
 
 ## Applied acceleration and resource modes
 

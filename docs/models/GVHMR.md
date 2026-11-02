@@ -70,8 +70,9 @@ FootMR does not guarantee ground contact; use Motion Correction for that.
 HandFlow can still make finger mistakes, and neither add-on fixes a wrong person
 or an unobserved pose. Correction retains original motion for comparison.
 
-RAM/Windows allocation-headroom monitoring, adaptive supported GPU work and
-allocation-error reporting stay active. Automatic keeps the fast path when GPU
+RAM/Windows allocation-headroom stopping and CUDA allocator limits follow
+[Resource Safety](../PERFORMANCE.md#resource-safety), default on. Adaptive supported
+GPU work and actual allocation-error reporting stay active in either setting. Automatic keeps the fast path when GPU
 memory is sufficient and selects existing Low Memory image processing when
 needed. Full temporal context is preserved; dense attention remains enabled
 when it fits. Resource decisions and memory advice appear in Console and CMD.

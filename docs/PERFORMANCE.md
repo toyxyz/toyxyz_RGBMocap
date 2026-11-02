@@ -18,10 +18,38 @@ views and fitting iterations. Existing native mixed precision remains in use;
 this is not a claim that every model layer is FP32.
 
 **Low Memory is primarily a VRAM-saving mode, not a system-RAM-saving mode.**
-Actual RAM and Windows allocation headroom are monitored in both modes. Work
-stops with an error when memory becomes insufficient; close other applications
-or shorten the clip if necessary. Decisions and memory advice appear in both
-the app Console and CMD window.
+With **Resource Safety** enabled (the default), actual RAM and Windows allocation
+headroom are monitored in both modes. Work stops with an error when the measured
+headroom becomes low. Decisions and memory advice appear in both the app Console
+and CMD window. See the independent safety control below.
+
+### Resource Safety
+
+The **Resource Safety** checkbox sits below Resource Mode and defaults **on**.
+
+- **On:** retain the existing low-RAM/Windows commit-headroom stop and PyTorch
+  VRAM allocation budget. RAM reserve stays 1–4 GiB according to system size;
+  Windows commit headroom below 1 GiB also triggers the monitor. Ordinary low
+  samples must repeat; critical headroom below 256 MiB stops immediately.
+  The desktop checks every 0.5 seconds. The VRAM budget subtracts the existing
+  600 MiB Windows external-use margin, or 700 MiB for GPUs over 15 GiB, from
+  currently free VRAM. These thresholds have not been increased.
+- **Off:** skip that RAM/commit stop and remove the app's PyTorch allocator cap.
+  This does not create additional memory. Actual allocation failures or system
+  slowdowns can still occur; other applications and non-PyTorch allocations are
+  outside the allocator cap in either setting.
+
+In both settings, Automatic still measures resources to select batches and
+supported Low Memory paths. Actual CUDA OOM backoff/recovery, model limits,
+cancellation, incomplete-result protection and the separate 180-second
+no-output/no-CPU stall check remain. Disabling safety does not change inference
+precision or intentionally force larger batches. It is not a model speed preset.
+
+The preference is local to this installation, saved in ignored
+`config/local.json`, independently of projects and model selections. Console
+and CMD show the setting for queued work. Changing it does not rerun inference;
+running jobs retain their starting setting. PEAR inherits the same preference
+for its live and alignment workers; its offline resource controls remain hidden.
 
 ### What changes for each model
 
@@ -35,8 +63,8 @@ the app Console and CMD window.
 
 PEAR is a separate live tool: the offline Resource Mode control is hidden. Its
 fixed-length bone path uses FP16 encoding/FP32 decoding, one requested frame per
-prediction and bounded latest-frame presentation. It retains RAM monitoring and
-a CUDA allocation budget but has no automatic offload/retry path. See the
+prediction and bounded latest-frame presentation. Its RAM monitor and CUDA
+allocation budget follow Resource Safety; it has no automatic offload/retry path. See the
 [PEAR timings and limitations](models/PEAR.md#placement-and-performance).
 
 ## Measured memory savings

@@ -21,6 +21,8 @@ def gpu_memory_fraction(free,total):
     Model weights, activations and temporary inference buffers share this budget.
     It does not cap non-PyTorch allocations or reserve memory against other apps.
     """
+    from .resource_safety import enabled
+    if not enabled():return 1.
     return max(0.,min(1.,(free-gpu_reserve(total))/total))
 
 

@@ -142,8 +142,8 @@ or finger errors. A fixed-camera option cannot compensate for a camera that
 actually moves. Contact correction reduces supported-foot/palm sliding but does
 not repair bad camera geometry or identity swaps.
 
-The app retains RAM/Windows allocation-headroom monitoring, CUDA allocator
-budgets and allocation-error reporting. Camera analysis and long motion context
+The app retains allocation-error reporting. RAM/Windows allocation-headroom
+stopping and CUDA allocator budgets follow [Resource Safety](../PERFORMANCE.md#resource-safety), default on. Camera analysis and long motion context
 can still exceed available memory. Historical [time/VRAM records](../USER_GUIDE.md#recorded-processing-time-and-vram)
 include camera estimation and predate Fast SAM; they are not predictions or
 minimum specifications. See [validation](../VALIDATION.md) and

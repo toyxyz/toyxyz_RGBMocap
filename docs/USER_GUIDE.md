@@ -508,6 +508,7 @@ selected result is missing, reconstruct it; the app reports it as unavailable.
 | **MAMMA → Reference Height (m)** | Numeric approximate standing height, default 1.70 m. Sets VGGT scene scale, not every actor's height; unused with metric manual calibration. |
 | **PromptHMR → Camera / People / Interaction Prompt** | People defaults to 2; 0 detects automatically up to eight. Interaction Prompt defaults on; off follows the official default video path. Fixed Camera is the default; optional Moving Camera uses DroidCalib + Metric3D after camera setup and two additional model downloads. No animated fingers. These settings apply on Reconstruct 3D. See the [PromptHMR guide](models/PROMPTHMR.md). |
 | **Resource Mode** | Automatic uses the fast path when GPU memory is sufficient and selects supported Low Memory paths when needed. Low Memory uses CPU loading/offloading and existing bounded image processing; it can be slower and use more RAM. The selection and reason appear in Console and the CMD window. |
+| **Resource Safety** | Default on, directly below Resource Mode. On retains low-RAM/Windows headroom stopping and the PyTorch VRAM allocation limit. Off bypasses those limits; Automatic batching, Low Memory selection and actual allocation-error recovery remain. Saved locally, independently of projects. See [details](PERFORMANCE.md#resource-safety). |
 | **Prepare Preview** | Rebuild mesh/skeleton previews from existing motion without running the AI model again. Useful for older projects. |
 | **Cancel Job** | Stop queued processing; completed results are kept. |
 
@@ -523,9 +524,11 @@ maximum. PromptHMR accepts one fixed- or moving-camera video, 4–1,800 working 
 guarantee that a workload fits RAM or VRAM.
 
 Processing is allowed to start without a predicted RAM/VRAM minimum. While it
-runs, the app monitors actual available RAM and Windows allocation headroom.
-If either becomes low, it stops the processing job and shows the available memory
-in the error message. The app also reports actual CPU/GPU allocation failures.
+runs with Resource Safety enabled, the app monitors actual available RAM and
+Windows allocation headroom. If either becomes low, it stops the processing job
+and shows the available memory in the error message. Disabling Resource Safety
+bypasses this stop and the PyTorch VRAM cap; it does not disable actual
+allocation-error reporting or the supported OOM retry paths. The app also reports actual CPU/GPU allocation failures.
 Completed stages are retained for retry. ExMR Low Memory prepares Sapiens' existing
 FP16 layers on CPU and loads body/hand weights on CPU before GPU transfer; its
 body/hand feature batches remain 8. FlowHMR Low Memory offloads SAM and VGGT
@@ -550,7 +553,7 @@ component has a controlled offload comparison. See [conditions, times and compon
 These are observations, not minimum requirements. The newest CPU prefetch is
 disabled in Low Memory; FlowHMR SAM also uses one-frame batches in that mode.
 
-GPU allocator budgets use ComfyUI's external-use margin: 600 MiB on Windows,
+With Resource Safety enabled, GPU allocator budgets use ComfyUI's external-use margin: 600 MiB on Windows,
 or 700 MiB on GPUs larger than 15 GiB, subtracted from currently free VRAM.
 The five offline model paths use this rule; FlowHMR/ExMR no longer subtract fixed
 3/2 GiB or impose an additional 95/90% ceiling. Inference working memory is

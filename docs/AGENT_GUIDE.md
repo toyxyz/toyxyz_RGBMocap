@@ -176,7 +176,7 @@ Compiler tools and temporary build data are not installed runtime size.
 `mocap/prompthmr_camera.py` loads the two SHA-256 checked camera weights,
 invokes the pinned masked DroidCalib/Metric3D equations, uses Torch SDPA for
 Metric3D attention and one-image depth batches. Keep full temporal context and
-the actual memory guards. Invalid tracking must fail, not silently switch modes.
+the Resource Safety-controlled limits and actual OOM handling. Invalid tracking must fail, not silently switch modes.
 The camera module identity/weights are included only for moving inference.
 `prompthmr_publish.py` preserves the common world, derives each frame's incam
 body transform with the registered pelvis pivot, and commits the native camera
@@ -190,8 +190,8 @@ MAMMA runs an optional complete multi-view pipeline using a separate pinned
 Python 3.11 Windows runtime installed with Setup_MAMMA.cmd. The current app
 adapter accepts two or more synchronized fixed-camera views, with one common
 trim and thumbnail preview switching. There is no fixed camera-count maximum;
-retain existing RAM/Windows allocation-headroom monitoring, CUDA allocator
-budgets and OOM failure handling. Do not replace the removed camera-count cap
+retain Resource Safety control over RAM/Windows allocation-headroom stops and
+CUDA allocator budgets, plus actual OOM failure handling in either setting. Do not replace the removed camera-count cap
 with another arbitrary count limit. See [MAMMA scope](MAMMA.md).
 VGGT-Omega plus GeoCalib is the automatic default; compatible manual calibration is optional.
 GeoCalib supplies background gravity before MAMMA 3D fitting, replacing the
@@ -392,16 +392,31 @@ runtime dependency, source motion or contact change is part of export.
 
 ## Resources and performance
 
-Use **Resource Mode > Automatic** by default. It keeps the fast path when the current GPU budget is sufficient and selects supported Low Memory paths per operation when needed. A supported fast operation that raises CUDA OOM is released and retried once in Low Memory. ExMR Low Memory uses CPU-first body/hand loading and converts Sapiens' existing FP16 layers before GPU transfer; ExMR body/hand batches stay 8. FlowHMR offloads SAM/VGGT blocks; MAMMA offloads VGGT camera blocks while retaining its pinned masks/landmark/fitting settings. GVHMR/add-ons retain adaptive image batches and full-context attention. The saved Automatic selection is not changed. Resource decisions and memory advice appear in the app Console and CMD. Model precision, frame count, resolution and iterations are not reduced. CPU loading/offloading can be slower and use more RAM; it is not a promise every clip will fit. Estimates select a path, never reject a job. The desktop still checks actual RAM and Windows allocation headroom every 0.5 seconds and stops workers when these become low. Preserve completed stages, genuine model limits and original motion. Do not rerun inference for operations that can use existing results.
+**Resource Safety** defaults on below Resource Mode. Off skips the measured
+RAM/commit-headroom stop and sets the PyTorch allocator fraction to 1 (no app
+VRAM cap). Keep adaptive batch/path selection, actual OOM backoff/recovery,
+the independent stall check, cancellation and generation protection in both
+settings. Do not describe this option as disabling every memory check or as a
+guarantee that a workload fits. See [behavior and thresholds](PERFORMANCE.md#resource-safety).
+
+It is an installation preference in ignored `config/local.json`, not a project
+or inference option. Preserve other local settings when writing it. GUI jobs
+snapshot the preference and pass `RGB_MOCAP_RESOURCE_SAFETY=1` or `0` into all
+worker runtimes, including isolated launches; only explicit `0` disables it.
+PEAR workers inherit the same preference. Never remove actual OOM handling or
+change model equations/precision when extending this control. Model result
+identity must not include this local checkbox value.
+
+Use **Resource Mode > Automatic** by default. It keeps the fast path when the current GPU budget is sufficient and selects supported Low Memory paths per operation when needed. A supported fast operation that raises CUDA OOM is released and retried once in Low Memory. ExMR Low Memory uses CPU-first body/hand loading and converts Sapiens' existing FP16 layers before GPU transfer; ExMR body/hand batches stay 8. FlowHMR offloads SAM/VGGT blocks; MAMMA offloads VGGT camera blocks while retaining its pinned masks/landmark/fitting settings. GVHMR/add-ons retain adaptive image batches and full-context attention. The saved Automatic selection is not changed. Resource decisions and memory advice appear in the app Console and CMD. Model precision, frame count, resolution and iterations are not reduced. CPU loading/offloading can be slower and use more RAM; it is not a promise every clip will fit. Estimates select a path, never reject a job. With Resource Safety enabled, the desktop checks actual RAM and Windows allocation headroom every 0.5 seconds and stops workers when these become low. Preserve completed stages, genuine model limits and original motion. Do not rerun inference for operations that can use existing results.
 
 PromptHMR retains the same one-image batch/full temporal context in Automatic
 and Low Memory; extra block offloading is not implemented. Do not promise a
 mode-dependent VRAM saving or an unsupported offload retry for this path. Actual
-memory guards still apply. Its 422-frame/two-person run took 236.2 s, with peak
+allocation failures are still reported; proactive limits follow Resource Safety. Its 422-frame/two-person run took 236.2 s, with peak
 allocated VRAM 4.61 GiB (7.83 GiB reserved) and worker working set 8.74 GiB; see
 [scope and stage times](models/PROMPTHMR.md#recorded-validation).
 
-GPU allocator limits share ComfyUI's external-use margin: 600 MiB on Windows, 700 MiB above 15 GiB GPU capacity (400 MiB on other systems). Subtract it from actual free VRAM without an additional percentage cap or fixed FlowHMR/ExMR 3/2 GiB reserve. This margin is separate from inference working space. Keep offloading in the app's validated `memory_mode.py` / `gpu_offload.py` adapters, without importing ComfyUI or changing model precision. Offload is inference-only, synchronous and unpinned; close hooks/models on success and failure. Actual RAM pressure remains a stop condition because offloading can increase host memory.
+With Resource Safety enabled, GPU allocator limits share ComfyUI's external-use margin: 600 MiB on Windows, 700 MiB above 15 GiB GPU capacity (400 MiB on other systems). Subtract it from actual free VRAM without an additional percentage cap or fixed FlowHMR/ExMR 3/2 GiB reserve. This margin is separate from inference working space. Keep offloading in the app's validated `memory_mode.py` / `gpu_offload.py` adapters, without importing ComfyUI or changing model precision. Offload is inference-only, synchronous and unpinned; close hooks/models on success and failure. Actual RAM pressure remains a stop condition when Resource Safety is enabled because offloading can increase host memory.
 
 ### Measured savings and acceleration
 
@@ -534,7 +549,7 @@ Keep its size/hash-checked Model Manager download/import and trusted loader.
 Do not replace the shared YOLOv8x asset used by offline models. Detector boxes
 can alter pose predictions; detection success is not an accuracy measurement.
 Idle acknowledgement keeps a deliberately waiting started worker from appearing
-stalled. Keep RAM/VRAM monitoring and bounded mailboxes while it is running.
+stalled. Keep Resource Safety-controlled RAM/VRAM limits and bounded mailboxes while it is running.
 
 Selecting a webcam may create the separate `pear_camera_preview` capture worker.
 It imports OpenCV/NumPy, not PEAR or Torch, and uses bounded latest-frame buffers

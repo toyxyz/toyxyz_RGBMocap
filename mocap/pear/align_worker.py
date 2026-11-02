@@ -28,7 +28,7 @@ def align(path,progress):
     from vggt_omega.utils.pose_enc import encoding_to_camera
     from ..gpu_offload import load_vggt,release
     from geocalib import GeoCalib
-    from ..compute_policy import gpu_reserve
+    from ..compute_policy import gpu_memory_fraction
     torch.set_num_threads(4);cv2.setNumThreads(2)
     folder=owned_folder(path);job=json.loads((folder/'job.json').read_text('utf8'));n=int(job['count'])
     if not 1<=n<=32 or len(job['images'])!=2*n:raise ValueError('Invalid camera alignment job')
@@ -60,7 +60,7 @@ def align(path,progress):
         # its rig-to-depth scale fit; floor/gravity still exclude the person.
         paths.append(image_path if n==1 else p);images.append(im);masks.append(mask)
     start=time.perf_counter();free,total=torch.cuda.mem_get_info()
-    torch.cuda.set_per_process_memory_fraction(max(.001,min(1.,(free-gpu_reserve(total))/total)))
+    torch.cuda.set_per_process_memory_fraction(max(.001,gpu_memory_fraction(free,total)))
     stages=[];progress('Camera Align · Loading VGGT camera/depth model…')
     torch.cuda.reset_peak_memory_stats();t=time.perf_counter();model=load_vggt(BY_KEY['flow_vggt'].path,'cuda',camera_only=False)
     progress('Camera Align · VGGT background cameras and depth…')

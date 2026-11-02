@@ -143,7 +143,7 @@ def inference(stage,job,engine):
     work=work_for(job);link_assets(engine)
     torch.set_num_threads(4);torch.manual_seed(0)
     free,total=torch.cuda.mem_get_info();torch.cuda.set_per_process_memory_fraction(gpu_memory_fraction(free,total))
-    announce(stage,requested_mode(),'PromptHMR keeps the validated one-image batch and full temporal context in both modes. Additional block offloading is not implemented; actual RAM/VRAM guards remain active.',emit)
+    announce(stage,requested_mode(),'PromptHMR keeps the validated one-image batch and full temporal context in both modes. Additional block offloading is not implemented; Resource Safety controls the RAM/VRAM stop limits.',emit)
     os.chdir(engine);sys.path.insert(0,str(engine))
     from .prompthmr_cache import configure_downloads
     configure_downloads(work)

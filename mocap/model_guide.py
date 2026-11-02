@@ -52,6 +52,7 @@ th { text-align:left; background-color:#333333; } td, th { padding:7px; }
 <p>These are subjective observations from our test videos, not a universal ranking or accuracy benchmark.
 Try another model if a particular movement looks wrong.</p>""" + descriptions + """
 <p>Offline source motion: File &gt; Export offers FBX, BVH and portable Blender projects with video/cameras. MAMMA also offers a whole-scene Blender bundle with checked body meshes and all cameras. Keep exported video/mesh folders together. No additional inference is run for export.</p>
+<p><b>Resource Safety</b> defaults on below Resource Mode. On retains low-RAM stopping and the PyTorch VRAM allocation limit. Off bypasses these limits; Automatic batching, supported Low Memory paths and actual allocation-error handling remain. The preference is saved locally, separately from projects. PEAR inherits it while its offline resource controls are hidden. See docs/PERFORMANCE.md for details.</p>
 <h3>Recorded processing time and memory</h3>
 <table width="98%" border="0" cellspacing="1" cellpadding="7">
 <tr><th>Model</th><th>Input</th><th>Processing time</th><th>Peak VRAM (GiB)</th><th>Peak RAM (GiB)</th></tr>""" + rows + """</table>

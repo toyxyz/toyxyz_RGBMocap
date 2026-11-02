@@ -1,5 +1,42 @@
 # Source package validation
 
+## Resource Safety control (2026-11-03)
+
+The default-on checkbox below Resource Mode controls the existing desktop
+low-RAM/Windows commit-headroom stop and the PyTorch VRAM allocator cap. Off
+retains adaptive batching/path selection, supported actual-OOM recovery,
+cancellation, generation protection and the independent no-output/no-CPU stall
+check. No runtime dependencies, model equations or precision were changed.
+
+Six private policy tests covered default and corrupt preferences, preserving
+unrelated local settings, unchanged enabled thresholds/routing, disabled RAM
+queries, low/critical memory, injected OOM exception backoff, PID identity and
+stall handling. Offscreen GUI checks covered default-on layout, visible
+unchecked state, persistence after reopening, six model selections, disabled
+controls during work and both flag values reaching isolated workers and their
+desktop guards. PEAR session checks covered inherited flags and process closure.
+These are control/lifecycle checks, not playback throughput measurements.
+
+A small real CUDA allocation probe passed in the installed shared, FlowHMR,
+ExMR, MAMMA and PromptHMR profiles: a synthetic 4 MiB allocator allowance
+rejected a 16 MiB allocation with safety on; safety off allowed it. This did not
+exhaust physical RAM/VRAM. Both installed Torch 2.7.1 and 2.8.0 builds were used.
+An actual legacy fixed-camera PromptHMR receipt remained reusable without new
+video preparation or inference after the logging-only pipeline change.
+
+A subsequent manual ExMR run completed with Resource Safety off and Automatic
+fast paths: 2,586 working frames at 30 fps (about 86.2 seconds), total 299.22
+seconds including tracking, correction and preview/export preparation. No OOM,
+Low Memory fallback or safety stop appeared in that log. The keypoint receipt
+recorded 5.68 GiB peak allocated VRAM; a whole-run peak RAM measurement was not
+recorded. This is not a paired on/off performance or output-accuracy benchmark.
+FlowHMR in the same log reused cached results, so its time is not comparable.
+
+Checks used the existing Windows test PC. No clean-Windows or other-GPU test
+was performed, and disabling safety does not guarantee success under real
+memory exhaustion. Test inputs, scripts, logs and local preferences stay
+outside the public source package. See [behavior and thresholds](PERFORMANCE.md#resource-safety).
+
 ## PromptHMR shared download cache (2026-11-02)
 
 Torch Hub/Hugging Face download locations now belong to the app's shared

@@ -246,8 +246,9 @@ keeps video decoding, camera capture, calibration and inference off the GUI thre
 mailboxes and no automatic video/pose recording. Available RAM and CUDA allocation
 failures are reported rather than repeatedly retrying a failing worker.
 The offline Resource Mode selector does not apply to PEAR. Its live worker uses
-the validated fast configuration with available-memory monitoring and CUDA
-allocation limits; it has no block-offload or automatic Low Memory retry.
+the validated fast configuration. Available-memory stopping and CUDA allocation
+limits follow the local [Resource Safety](../PERFORMANCE.md#resource-safety)
+preference selected in an offline model; it has no block-offload or automatic Low Memory retry.
 
 ## Files and development
 

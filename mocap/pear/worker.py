@@ -38,10 +38,9 @@ def main():
         from .temporal_filter import ParameterFilter
         from .input_transform import rotate_frame,input_rotations
         if not torch.cuda.is_available():raise RuntimeError('PEAR requires a compatible NVIDIA GPU.')
-        from ..compute_policy import gpu_reserve
+        from ..compute_policy import gpu_memory_fraction
         free,total=torch.cuda.mem_get_info()
-        budget=max(1024**2,free-gpu_reserve(total))
-        torch.cuda.set_per_process_memory_fraction(min(1.,budget/total))
+        torch.cuda.set_per_process_memory_fraction(max(1024**2/total,gpu_memory_fraction(free,total)))
         model=Pear(mesh=False,fixed_rig=True,profile='fast',progress=lambda text:send(pipe,{'type':'status','text':text}))
         send(pipe,{'type':'status','text':'Warming up live inference…'})
         model.run(np.zeros((480,640,3),dtype=np.uint8),box_override=np.array([160,10,480,470],dtype=np.float32))

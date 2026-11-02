@@ -67,9 +67,10 @@ correction and display-only viewport controls. Original and corrected results
 are preserved. One project can hold separate results for each model. MAMMA saves
 all of its camera videos with **Save Project As**.
 
-Use **Resource Mode > Automatic** initially. Actual RAM/Windows allocation
-headroom monitoring, CUDA allocator budgets and allocation-error reporting remain
-active. More frames, pixels, people or views can increase work; no setting
+Use **Resource Mode > Automatic** initially. **Resource Safety**, default on,
+controls low-RAM/Windows headroom stopping and CUDA allocator limits. Off bypasses
+these limits; adaptive batching and actual allocation-error handling stay active.
+See [Resource Safety](../PERFORMANCE.md#resource-safety). More frames, pixels, people or views can increase work; no setting
 guarantees that every clip fits. Automatic selects supported Low Memory paths
 when the GPU budget is low; a supported operation can recover once after CUDA
 OOM. Low Memory uses CPU loading/offloading and existing bounded image batches,
