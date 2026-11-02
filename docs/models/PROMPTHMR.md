@@ -49,7 +49,8 @@ review. A PromptHMR setup failure must not prevent the base models from working.
    (PowerShell: `.\Setup_PromptHMR.cmd`). Setup downloads pinned sources/packages,
    builds SAM2 for the installed
    GPU and verifies real CUDA operations before registering the environment.
-4. Reopen the app, select **PromptHMR**, and prepare every file in **Model Manager**.
+4. For moving footage, choose **Y** at the additional moving-camera setup prompt. This builds DroidCalib/LieTorch for the installed GPU and verifies CUDA operations. The existing PromptHMR Python/Torch environment is reused; fixed-camera support remains available if the optional camera build fails. Review the linked DroidCalib AGPL and dependency terms before choosing Y.
+5. Reopen the app, select **PromptHMR**, and prepare the required files in **Model Manager**. The two rows named **Moving Camera** are optional for Fixed Camera.
    Google Drive may require a manual browser download; use **Manual Download... >
    Import** if automatic downloading fails. **Runtime Setup...** shows instructions
    and copies the command; it does not install anything inside the running app.
@@ -72,8 +73,9 @@ files including SMPL Neutral, plus **6.22 GiB** of cache-free runtime, for about
 PromptHMR's ViTPose COCO-25, SAM2 tiny and detector checkpoints differ from
 similarly named files in other workflows. Imports verify the supported hashes.
 
-Select **PromptHMR > Model Manager** for the complete 14-file checklist. Locations
-below are relative to `models/`; obtain the exact files listed by the manager.
+Select **PromptHMR > Model Manager** for the 14 base model/body files and two
+optional Moving Camera rows. Locations below are relative to `models/`; obtain
+the exact files listed by the manager.
 
 | Component | Files or folder |
 | --- | --- |
@@ -83,6 +85,31 @@ below are relative to `models/`; obtain the exact files listed by the manager.
 | Keypoints / camera calibration | `prompthmr/pretrain/vitpose-h-coco_25.pth`, `camcalib_sa_biased_l2.ckpt` |
 | Body correspondence / means / regressors | Four files under `prompthmr/body_models/`, listed individually in Model Manager |
 | Registered standard bodies | `body_models/smplx/SMPLX_NEUTRAL.npz`, `body_models/smpl/SMPL_NEUTRAL.pkl` |
+
+### Shared supporting-model download cache
+
+The upstream tracking backend also uses torchvision DeepLab segmentation
+weights (about 161 MiB) and Torch Hub source files. These supplementary downloads
+are stored once under `cache/prompthmr/torch/hub/` and reused across videos and
+reconstruction attempts. Hugging Face downloads use `cache/prompthmr/hf/`.
+Readiness counts 14 base files in Fixed Camera and 16 files in Moving Camera;
+these supplementary caches are not part of either count.
+The first use of an empty cache may require internet access.
+
+The connector first checks known old project `torch-cache/hub/checkpoints`
+locations and imports the supported DeepLab weights only after full SHA-256
+verification. It hardlinks when possible, otherwise copies once. Existing
+projects and their caches are preserved; downloaded Python Hub source trees
+are not imported from old projects. The Console/CMD prints the shared cache path
+and successful weight reuse. An invalid shared DeepLab file produces a checksum
+error instead of being loaded silently.
+
+After confirming a successful updated run and closing the app, old
+`<project>/prompthmr/inference/<generation>/torch-cache/` folders may be removed
+to reclaim duplicate downloads. Keep the other inference/result files. Deleting
+the new shared cache is also allowed, but its downloads will be needed again.
+This cache reuse needs no runtime reinstall. Moving-camera inference has a
+separate optional native setup and two managed weights, described below.
 
 On one volume, the connector hardlinks verified weights into the private engine
 without storing another copy. If hardlinks are unavailable, it reports the copy
@@ -113,10 +140,55 @@ of rebuilding the runtime. If native GPU verification fails after moving to
 another GPU architecture, run setup on that PC; do not copy compiled modules
 from an arbitrary machine or edit registration files to mark them Ready.
 
+## Moving-camera setup and behavior
+
+Close the app and rerun `Setup_PromptHMR.cmd`, choosing **Y** for moving-camera
+support. The base runtime is verified and retained. A separate, versioned native
+support folder is built over its pinned Python 3.11 / Torch 2.7.1 CUDA 12.8;
+other model runtimes are not changed. No Linux, WSL or Docker is required.
+The verified installed camera extension measured **18.6 MiB** on the test PC,
+excluding build archives and weights.
+Use Visual Studio 2022 C++ Build Tools / Windows SDK and CUDA Toolkit 12.8.
+Allow an additional **6 GiB free for building**, excluding models and compiler
+tools. Downloaded build archives are retained separately from installed modules.
+
+Prepare **DroidCalib** (16,049,525 bytes) and **Metric3D ViT-Large**
+(1,647,972,663 bytes) in Model Manager. Together they add **1.55 GiB**
+(1.66 GB) of weights, separate from the 14 base model/body files. Imports and
+downloads use the declared SHA-256 hashes. Tracking masks, PromptHMR weights,
+SPEC gravity and registered bodies are reused. Metric3D reads the verified file
+directly; it does not download another copy into each video generation.
+
+Select Moving Camera and **Reconstruct 3D**. The official masked DroidCalib
+path estimates background camera poses and refines a constant focal length;
+Metric3D provides an estimated metric scale. Native world fitting and
+post-optimization use this trajectory, preserving the joint multi-person scene.
+The usual optional app correction is applied afterward. The saved track also
+drives Camera Preview, source-video bone overlays, viewport camera gizmos and
+portable Blender camera animation. Display controls do not rerun inference.
+
+Moving-camera results have separate inference identities, including camera
+modules and model stamps. Changing the mode requires reconstruction; the previous
+result stays available until replacement succeeds. Missing/modified support or
+failed tracking produces an error rather than silently substituting a fixed
+camera. These are estimated poses/scale, not measured camera calibration. Foot
+height, drift, missed masks and occlusion can still affect the motion.
+
+Windows adaptations retain the SLAM equations and full frame sequence, use
+64-bit tensor indices, avoid CPU/CUDA kernel-name collisions, and use native
+Torch SDPA for Metric3D attention. Depth batches are one image in both resource
+modes; the keyframe buffer covers the selected clip plus trajectory-fill slots.
+The existing memory/OOM guards remain active; long trims can need much more
+memory. Additional PromptHMR block offloading is not implemented.
+
+Camera setup logs: `.setup/logs/prompthmr-camera-*.log`.
+Registration: `.setup/prompthmr-camera-runtime.json`. Never edit it to bypass a
+failed build. Rerun setup on a new GPU architecture. Providers' source/licenses
+are downloaded locally; compiled camera modules and weights are not in Git.
+
 ## Controls and supported workflow
 
-- **One fixed-camera video**, without camera movement or zoom. Moving-camera
-  DROID is not implemented in this Windows integration.
+- **One video**. **Camera > Fixed Camera** is the default and preserves the previous workflow. **Moving Camera / DroidCalib + Metric3D** tracks camera rotation and translation from the background. It requires the optional camera build and two additional models. Continuous focal-length changes/zoom, shot cuts, blur and poor background texture can break tracking or scale.
 - **People** defaults to **2**. **0** detects automatically, up to eight. This is
   a maximum count, not an identity selector. The intended people should be
   visible near the start; background people and occlusion can confuse tracking.
@@ -156,6 +228,18 @@ other-GPU validation. Setup tests SAM2 connected components, torchvision CUDA
 NMS and native attention on the user's GPU.
 
 ## Recorded validation
+
+A moving-camera test used 80 frames at 30 fps (2.67 seconds), one person and
+the existing RTX 5090 test PC. The installed Windows path completed preparation,
+fresh tracking, DroidCalib/Metric3D, motion inference, native world optimization
+and app correction/export preparation in **130.3 seconds** including process
+startup. Stage wall times were 1.4 / 33.2 / 57.2 / 31.0 / 7.4 seconds.
+Peak PyTorch allocated VRAM was **6.73 GiB**, reserved **6.93 GiB**; sampled
+worker-tree RAM peaked at **7.42 GiB**. Other GPU allocations can add to that.
+This short sample is not a long-video capacity or camera-accuracy benchmark.
+The saved 80-frame camera track loaded in the app and exported as Blender
+camera animation with synchronized relative video. A two-person fixed-camera
+regression and reuse of an older fixed-camera inference receipt also passed.
 
 A 422-frame, 14.1-second, two-person fixed-camera clip completed in **3 min 56 sec**
 on the documented RTX 5090 test PC, with Interaction Prompt and app correction
@@ -200,12 +284,15 @@ and four Blender FBX imports retained fixed local finger rotations.
 | Weights | `models/prompthmr/`, shared `models/body_models/` |
 | Runtime | `runtime_prompthmr/<generation>/` |
 | Runtime registration | `.setup/prompthmr-runtime.json` |
+| Optional camera extension / registration | `runtime_prompthmr/camera-<generation>/`, `.setup/prompthmr-camera-runtime.json` |
+| Shared supporting downloads | `cache/prompthmr/torch/hub/`, `cache/prompthmr/hf/` |
 | Setup logs / retained archives | `.setup/logs/prompthmr-*.log`, `.setup/prompthmr-downloads/` |
 | Native inference | `<project>/prompthmr/inference/<generation>/results.pkl` |
 | Published actors/takes | `<project>/prompthmr/results/<generation>/` |
 | Lock / Windows adaptations / CUDA verification | `installer/prompthmr-runtime-lock.json`, `installer/prompthmr_adapters.py`, `installer/verify_prompthmr.py` |
 | Setup implementation | `tools/setup_prompthmr.py` |
-| App connector | `mocap/prompthmr_pipeline.py`, `prompthmr_publish.py`, `prompthmr_scene.py`, `prompthmr_ui.py`, `prompthmr_runtime.py` |
+| Camera build / verification | `tools/setup_prompthmr_camera.py`, `installer/prompthmr-camera-lock.json`, `installer/prompthmr_camera_adapters.py`, `installer/verify_prompthmr_camera.py` |
+| App connector | `mocap/prompthmr_pipeline.py`, `prompthmr_cache.py`, `prompthmr_publish.py`, `prompthmr_scene.py`, `prompthmr_ui.py`, `prompthmr_runtime.py` |
 
 Native inference, derived correction and export generations remain separate.
 Cancelled/incomplete new work does not replace the saved active project. Verified

@@ -254,9 +254,12 @@ class PearWorkspace(PearMultiWorkspace):
         self._pear_restart+=1;self.pear_update_tracking_button();self.pear_source_changed()
 
     def pear_sync_controls(self):
-        from .models import missing
+        from .models import ready,BY_KEY,STAGE_REQUIREMENTS
+        from .pear_models import KEYS
         from .pear_runtime import status
-        ok,message=status();unavailable=missing('pear_assets')
+        ok,message=status()
+        missing_models=[BY_KEY[key] for key in KEYS if not ready(BY_KEY[key])]
+        unavailable=[model for model in missing_models if model.key in STAGE_REQUIREMENTS['pear_assets']]
         self.viewport_footer.show()
         for key,check in self.viewport_checks.items():check.setVisible(key=='show_grid')
         self.bone_overlay.setToolTip('Show fixed-length PEAR body and finger bones. Use Reset Bones to recalibrate their lengths from the displayed pose. Display only; no animation export in this mode.')
@@ -267,8 +270,9 @@ class PearWorkspace(PearMultiWorkspace):
         self.status.setText("PEAR experimental preview · Tracking and pose estimates may be unstable.")
         self.pear_header.show();self.model_pages.setCurrentWidget(self.pear_page);self.model_pages.show()
         for widget in (self.people_panel,self.find_person_button,self.correction_group,self.compute_mode.parentWidget(),self.run_button,self.mesh_button,self.cancel_button,self.htd_refine,self.refine_description,self.footmr_refine,self.handflow_refine,self.footmr_description,self.refine_preview_note,self.analyze_button):widget.hide()
-        self.models_group.setTitle('PEAR Models');self.readiness.setText('PEAR: '+('models ready' if not unavailable else str(len(unavailable))+' files missing'))
-        self.readiness.setToolTip(message)
+        self.models_group.setTitle('PEAR Models');self.readiness.setText(f'PEAR: {len(KEYS)-len(missing_models)}/{len(KEYS)} models ready')
+        self.readiness.setStyleSheet('color:#ffb45c; font-weight:600;' if missing_models else '')
+        self.readiness.setToolTip(message+('\nMissing models:\n'+'\n'.join(model.name for model in missing_models) if missing_models else ''))
         self.export_action.setEnabled(False);self.save_project_action.setEnabled(False);self.import_character_action.setEnabled(False)
         self.slider.contacts_supported=False;self.slider.live_preview=True;self.slider._cache_key=None;self.slider.update()
         self.play_button.setEnabled(self.info is not None and self.video_readable and not self.pear_using_webcams())

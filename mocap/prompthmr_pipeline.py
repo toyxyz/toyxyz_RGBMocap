@@ -1,4 +1,4 @@
-"""Atomic, cancellable fixed-camera PromptHMR pipeline for one video scene."""
+"""Atomic, cancellable PromptHMR pipeline for one video scene."""
 from pathlib import Path
 import argparse,gc,hashlib,json,math,os,subprocess,sys,time,uuid
 from .storage import atomic_json,sha256
@@ -16,7 +16,11 @@ def options(value):
     if isinstance(count,bool) or not isinstance(count,int) or not 0<=count<=8:raise ValueError('PromptHMR People must be 0 (automatic) or 1–8.')
     interaction=value.get('interaction',True)
     if not isinstance(interaction,bool):raise ValueError('Invalid PromptHMR interaction option.')
-    return dict(people=count,interaction=interaction)
+    camera=value.get('camera','static')
+    if camera not in ('static','moving'):raise ValueError('Invalid PromptHMR camera mode.')
+    result=dict(people=count,interaction=interaction)
+    if camera=='moving':result['camera']=camera
+    return result
 
 
 def request(path):
@@ -46,9 +50,15 @@ def validate_inputs(job):
     if file_stat(job['video'])!=job['identity']['input']['stat']:raise ValueError('The video changed during processing. Previous results were preserved.')
     for key,stamp in job['identity']['models'].items():
         if file_stat(BY_KEY[key].path)!=stamp:raise ValueError('A PromptHMR model changed during processing. Previous results were preserved.')
+    if job['options'].get('camera')=='moving':
+        from .prompthmr_camera_runtime import configuration as camera_configuration
+        cfg=camera_configuration()
+        if {k:cfg[k] for k in ('support_id','base_id','compute_capability','files')}!=job['identity'].get('camera_runtime'):
+            raise ValueError('PromptHMR camera support changed during processing. Previous motion was preserved.')
 
 
 def prepare(path,job):
+    from .prompthmr_cache import inference_code_hash
     from .prompthmr_runtime import configuration
     from .prompthmr_models import KEYS
     from .models import BY_KEY,missing
@@ -62,7 +72,15 @@ def prepare(path,job):
         raise ValueError('Use a trim of 4–1,800 frames (at 30 fps) within the source video. No frames were dropped.')
     identity=dict(version=1,input=dict(path=job['video'],stat=file_stat(job['video'])),start=job['start'],frames=n,
         options=job['options'],models={k:file_stat(BY_KEY[k].path) for k in KEYS},runtime=cfg['managed_id'],engine=cfg['engine_files'],
-        code={name:sha256(ROOT/'mocap'/name) for name in ('prompthmr_pipeline.py','image_io.py')})
+        code={name:inference_code_hash(ROOT/'mocap'/name) for name in ('prompthmr_pipeline.py','image_io.py')})
+    if job['options'].get('camera')=='moving':
+        from .prompthmr_camera_runtime import configuration as camera_configuration
+        from .prompthmr_models import CAMERA_KEYS
+        if missing('prompthmr_camera_assets'):raise ValueError('Prepare the Moving Camera files in Model Manager first.')
+        camera_cfg=camera_configuration(verify=True)
+        identity['camera_runtime']={k:camera_cfg[k] for k in ('support_id','base_id','compute_capability','files')}
+        identity['models'].update({k:file_stat(BY_KEY[k].path) for k in CAMERA_KEYS})
+        identity['code'].update({name:sha256(ROOT/'mocap'/name) for name in ('prompthmr_pipeline.py','prompthmr_camera.py','prompthmr_camera_runtime.py')})
     token=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()[:24]
     work=job['root']/'prompthmr/inference'/token;cached=False
     try:
@@ -85,11 +103,11 @@ def prepare(path,job):
     atomic_json(work/'media.json',result)
 
 
-def link_assets(engine):
+def link_assets(engine,links=None):
     from .models import BY_KEY,ready
     from .prompthmr_models import LINKS
     import shutil
-    for key,name in LINKS.items():
+    for key,name in (LINKS if links is None else links).items():
         model=BY_KEY[key]
         if not ready(model):raise ValueError('Missing or unverified model: '+model.name)
         p=engine/name;p.parent.mkdir(parents=True,exist_ok=True)
@@ -127,9 +145,11 @@ def inference(stage,job,engine):
     free,total=torch.cuda.mem_get_info();torch.cuda.set_per_process_memory_fraction(gpu_memory_fraction(free,total))
     announce(stage,requested_mode(),'PromptHMR keeps the validated one-image batch and full temporal context in both modes. Additional block offloading is not implemented; actual RAM/VRAM guards remain active.',emit)
     os.chdir(engine);sys.path.insert(0,str(engine))
-    os.environ.update(TORCH_HOME=str(work/'torch-cache'),HF_HOME=str(work/'hf-cache'),MPLCONFIGDIR=str(work/'mpl-cache'),YOLO_CONFIG_DIR=str(work/'yolo-cache'))
+    from .prompthmr_cache import configure_downloads
+    configure_downloads(work)
+    os.environ.update(MPLCONFIGDIR=str(work/'mpl-cache'),YOLO_CONFIG_DIR=str(work/'yolo-cache'))
     from pipeline import Pipeline
-    pipe=Pipeline(static_cam=True);pipe.cfg.num_max_people=job['options']['people'] or 8
+    pipe=Pipeline(static_cam=job['options'].get('camera')!='moving');pipe.cfg.num_max_people=job['options']['people'] or 8
     pipe.images,pipe.seq_folder=pipe.load_frames(str(work/'input.mp4'),str(work/'frames'))
     if len(pipe.images)!=job['frames']:raise ValueError('PromptHMR decoded a different frame count.')
     pipe.cfg.seq_folder=pipe.seq_folder
@@ -143,9 +163,13 @@ def inference(stage,job,engine):
             save_result(pipe.results,work/'tracking.pkl')
         elif stage=='prompthmr_pose':
             from pipeline.spec import run_cam_calib
-            emit('progress',current=0,total=0,message='Estimate fixed-camera intrinsics and gravity')
+            emit('progress',current=0,total=0,message='Estimate camera intrinsics and gravity')
             pipe.results['spec_calib']=run_cam_calib(pipe.images,out_folder=str(work/'spec'),save_res=True,stride=max(1,len(pipe.images)//30),method='spec',first_frame_idx=0)
-            pipe.camera_motion_estimation();pipe.estimate_2d_keypoints()
+            if job['options'].get('camera')=='moving':
+                from .prompthmr_camera import estimate
+                estimate(pipe,emit)
+            else:pipe.camera_motion_estimation()
+            pipe.estimate_2d_keypoints()
             from pipeline.phmr_vid import PromptHMRVideoDataset
             original=PromptHMRVideoDataset.__getitem__
             def item(dataset,index):

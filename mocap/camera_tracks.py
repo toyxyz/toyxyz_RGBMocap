@@ -143,6 +143,16 @@ def load(project,group=None,cancelled=lambda:False,reference_cache=None):
             if np.any(np.abs(c.get('distortion_coeffs',[0]))>1e-8):note=warning='Distorted camera videos may not align with the pinhole overlay.'
             items.append(record(e['id'],c['intrinsic_matrix'],c['image_size'],m,meta['start'],meta['fps'],'Saved fixed MAMMA calibration'))
         if not np.allclose(items[0]['matrices'][0],base,atol=1e-6):raise ValueError('MAMMA camera world changed. Prepare Preview first.')
+    elif model=='prompthmr' and camera.get('camera_track'):
+        from .people_store import root_for
+        saved=camera['camera_track'];p=(project/saved['path']).resolve()
+        root=group or root_for(project,state)
+        if not p.is_relative_to(root) or file_stat(tracked(p))!=saved['stat']:raise ValueError('PromptHMR camera track is stale. Reconstruct 3D.')
+        matrices=load_array(p,'world_to_camera')
+        if matrices.ndim!=3 or matrices.shape[1:]!=(4,4):raise ValueError('Invalid PromptHMR camera track.')
+        matrices=matrices@np.linalg.inv(transform)
+        items=[record('Camera 1',camera['K'],[state['width'],state['height']],matrices,saved['start'],saved['fps'],'Native DroidCalib/Metric3D camera trajectory; metric scale is estimated')]
+        note='Estimated moving camera from masked DroidCalib and Metric3D; tracking and scale can drift.'
     elif model in ('flowhmr','exmr'):
         root=group or project;meta=read(tracked(root/'project.json'))
         if model=='flowhmr':

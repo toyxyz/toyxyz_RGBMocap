@@ -7,8 +7,9 @@ For model-specific files, defaults and workflow, use [docs/models/README.md](doc
 For MAMMA runtime installation, native SAM 2/SDF builds or repair, follow
 [docs/MAMMA_AGENT_SETUP.md](docs/MAMMA_AGENT_SETUP.md). It distinguishes automatic
 setup from custom builds and requires actual CUDA verification before registering
-a manually built environment. For optional PromptHMR setup and its separate SAM2
-build, follow [docs/models/PROMPTHMR.md](docs/models/PROMPTHMR.md).
+a manually built environment. For optional PromptHMR setup, its SAM2 build and
+the optional DroidCalib/LieTorch moving-camera build, follow
+[docs/models/PROMPTHMR.md](docs/models/PROMPTHMR.md).
 
 - This is the Windows Git/CMD distribution. Preserve the separate pinned runtimes and model-specific behavior. `install.cmd` covers ExMR/FlowHMR/GVHMR and the small shared-runtime camera support overlay used by PEAR and MAMMA gravity; MAMMA and PromptHMR remain optional through their separate setup commands. Do not merge their packages or assume `update.cmd` installs them.
 - PEAR is a transient single-person bone preview. Selecting it must not start models or modify an offline project. Start/Stop controls the resident worker; see `docs/models/PEAR.md` for fixed bones, Reset Bones, One Euro filtering and World Position. Keep inference and capture off the GUI thread, use bounded latest-frame queues and preserve offline state on exit.

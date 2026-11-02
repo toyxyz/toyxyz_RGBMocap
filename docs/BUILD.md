@@ -24,7 +24,9 @@ still depends on the NVIDIA driver and installed wheels.
 
 Optional PromptHMR has a separate pinned Python 3.11 environment installed with
 `Setup_PromptHMR.cmd`. It also needs C++ tools and CUDA Toolkit 12.8 to build
-SAM2; MAMMA/SDF is not required. Read [its setup/developer notes](models/PROMPTHMR.md)
+SAM2. Choosing Y for its optional moving-camera support also builds
+DroidCalib/LieTorch over that same environment and verifies actual CUDA operations;
+MAMMA/SDF is not required. Read [its setup/developer notes](models/PROMPTHMR.md)
 before changing its lock, adapters, native modules or model paths.
 
 ## Environments

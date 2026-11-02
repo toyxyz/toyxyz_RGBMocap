@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "sources": {
+    "lietorch": {
+      "url": "https://codeload.github.com/princeton-vl/lietorch/zip/0fa9ce8ffca86d985eca9e189a99690d6f3d4df6",
+      "sha256": "6bcb0b37cebf8f33e53ab8779d618228914ddf78688e6c947377e509b49f45bb",
+      "bytes": 6115383,
+      "commit": "0fa9ce8ffca86d985eca9e189a99690d6f3d4df6",
+      "archive_root": "lietorch-0fa9ce8ffca86d985eca9e189a99690d6f3d4df6"
+    },
+    "eigen": {
+      "url": "https://gitlab.com/libeigen/eigen/-/archive/3d4ba855e014987cad86d62a8dff533492255695/eigen-3d4ba855e014987cad86d62a8dff533492255695.zip",
+      "sha256": "845304ac33fda4c5b7049ece2c6f91e1f6056d4f4dbbfb85fc35e0b8636f4087",
+      "bytes": 3836608,
+      "commit": "3d4ba855e014987cad86d62a8dff533492255695",
+      "archive_root": "eigen-3d4ba855e014987cad86d62a8dff533492255695"
+    }
+  },
+  "scatter": {
+    "url": "https://data.pyg.org/whl/torch-2.7.0%2Bcu128/torch_scatter-2.1.2%2Bpt27cu128-cp311-cp311-win_amd64.whl",
+    "bytes": 3592648,
+    "sha256": "a02ca9018503bfe6ecf4dc7868fa7e832803dfaaf113bdaab7811ca94547fff7",
+    "filename": "torch_scatter-2.1.2+pt27cu128-cp311-cp311-win_amd64.whl"
+  }
+}

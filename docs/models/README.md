@@ -10,7 +10,7 @@ saved selection. Only implemented tools appear in the list.
 | FlowHMR | One video; SMPL-H | Included | [FlowHMR](FLOWHMR.md) |
 | GVHMR | One video; SMPL-X | Optional HandFlow | [GVHMR](GVHMR.md) |
 | MAMMA | Two or more synchronized fixed-camera videos; SMPL-X | Included | [MAMMA](../MAMMA.md) |
-| PromptHMR | One fixed-camera video; jointly reconstructed people; SMPL-X | Not generated | [PromptHMR](PROMPTHMR.md) |
+| PromptHMR | One video; fixed or optional moving camera; jointly reconstructed people; SMPL-X | Not generated | [PromptHMR](PROMPTHMR.md) |
 | PEAR | Experimental real-time tracking from webcam or video input; one person, one or multiple fixed views; may be unstable | Included | [PEAR](PEAR.md) |
 
 One-video input does not mean one-person output. ExMR, FlowHMR and GVHMR can

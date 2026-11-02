@@ -1,5 +1,64 @@
 # Source package validation
 
+## PromptHMR shared download cache (2026-11-02)
+
+Torch Hub/Hugging Face download locations now belong to the app's shared
+`cache/prompthmr/` tree instead of each inference generation. Known older
+DeepLab checkpoints are imported only after full SHA-256 verification; directory
+enumeration and legacy hashing are bounded. Old project files are preserved.
+The runtime, model versions, batch size and numerical processing are unchanged.
+An exact reviewed pipeline hash pair retains existing valid inference-cache
+identities, while future source edits invalidate normally.
+
+Private tests covered two different eight-frame clips, including one and two
+people. Original and updated tracking, pose and world/post-optimization stages
+completed with network/download attempts blocked after priming the upstream Hub
+repository source cache. Both updated clips used one shared checkpoint, with no
+per-generation weight downloads. A separate empty-cache test exercised real
+torchvision/Torch Hub weight loading through a local copy of the official
+checkpoint bytes: first use requested one download, the second video requested
+none. This was not a live external-server availability test.
+
+Tracking outputs, camera-space motion, body rotations and shape were exact in
+the two independent comparisons. Fresh 2D keypoints varied by at most 0.000184
+pixels and final world translations by at most 4.64 mm; these end-to-end runs
+are not bitwise identical. Replaying identical camera-motion inputs with matched
+NumPy/Python/OpenCV RNG in the test produced exact world/post-optimization output
+before and after the fix. Production random behavior was not changed. Peak
+allocated VRAM was unchanged per corresponding stage; the two updated worker
+runs took about 42–43 seconds each. These short runs establish neither a quality
+ranking nor a general speed improvement.
+
+Additional checks passed for cross-volume copy fallback, Unicode cache paths,
+invalid-cache rejection, preserving original files, and reusing an actual old
+complete inference receipt without FFmpeg preparation or AI inference. Models,
+input videos and test artifacts remain outside the public source package.
+
+## Side-by-side preview video export (2026-11-02)
+
+File > Export Preview was checked using private copies of an ExMR project with
+an animated PMX character and a two-person MAMMA project with a non-primary
+camera selected. Twelve repeated 30-frame exports per case retained the chosen
+view and restored the original frame/camera. Saved H.264 MP4s decoded to exactly
+30 frames at 30 fps (one second); the selected source's audio was included when
+available. First/last encoded frames matched the submitted video/framebuffer
+pair within normal lossy encoding differences (mean channel error below 3/255).
+The test panels were 1404 × 684 and 1954 × 684; this is not a universal speed or
+resolution guarantee. Rendering still requires GUI-thread framebuffer capture.
+
+Cancellation preserved an existing destination and removed partial output.
+Playback resumed after export when previously running. Closing the app during
+export cancelled and reaped FFmpeg before the window/workers closed. Additional
+checks covered one frame at 30000/1001 fps, an externally changed destination,
+incomplete frame delivery, Unicode output names, input-file overwrite rejection
+and PEAR exclusion. Repeated-export testing caught Python 3.10 DummyThread
+registration through joining a Python log reader from a Qt thread; completion
+now uses an event instead. Handles and thread counts stabilized in the bounded
+repeat test; it does not establish leak freedom for hours of use or other PCs.
+No source inference/contact math or installed dependencies were changed. Test
+scripts, source media, copied projects and rendered videos remain outside the
+public source package.
+
 ## MAMMA background gravity before fitting (2026-11-02)
 
 Automatic calibration now uses VGGT-Omega camera placement with GeoCalib
@@ -1857,3 +1916,48 @@ leak guarantee or a universal frame-rate claim. The known-rotation background
 fixture, original PR equivalence, off restoration, cache invalidation and
 worker cancellation checks also passed. Runtime locks, installer scripts,
 AI worker and source-correction implementation stayed unchanged.
+
+### Optional PromptHMR moving-camera support (2026-11-02)
+
+- Built the pinned LieTorch/DroidCalib Windows CUDA extensions over the existing
+  PromptHMR Python 3.11 / Torch 2.7.1 CUDA 12.8 runtime. Real LieTorch
+  forward/backward, scatter and DroidCalib CUDA operations passed on RTX 5090
+  (compute capability 12.0). Setup also retained the verified extension on retry.
+  Base runtime pins and installed packages did not change. The installed
+  extension measured 19,547,213 bytes; its two managed weights total
+  1,664,022,188 bytes. Compiler/download/build caches are excluded.
+- The 80-frame, 30 fps, single-person moving-camera test completed all five
+  normal worker stages, including fresh tracking and correction/export
+  preparation, in 130.3 seconds of wall time. Phase times were 1.4s preparation,
+  33.2s tracking, 57.2s camera/keypoints/motion, 31.0s world optimization and 7.4s
+  publication/correction. Peak allocated/reserved Torch VRAM was 6.73/6.93 GiB;
+  sampled worker-tree RSS peaked at 7.42 GiB. These are one-PC short-clip
+  observations, not minimum memory or long-clip guarantees.
+- The complete 80-frame camera trajectory loaded both with and without a shared
+  scene context. Published incam translations and rotation matrices matched
+  direct per-frame world-to-camera conversion within 1.2e-7 m and 1.9e-7
+  respectively, including the registered shape-dependent pelvis pivot.
+  Original and corrected sources remained exportable. Blender 4.5 reopened
+  the portable bundle with relative synchronized video and 52 body/finger bones;
+  sampled camera matrix errors stayed below 1.2e-7. Armature objects had no
+  animation keys. These are serialization/coordinate checks, not ground-truth
+  camera-accuracy measurements.
+- A separate eight-frame, two-person fixed-camera regression reran image/video
+  inference and world fitting before/after. Body/root camera-space motion stayed
+  exact; independent GPU runs differed by at most 0.000123 px in saved 2D
+  keypoints and about 3.0 mm in native final world translation. Replaying
+  identical camera-motion intermediates produced exact world outputs across
+  121 compared arrays in the overall regression. No new physical correction
+  or precision reduction was introduced. An older fixed-camera inference
+  receipt was reused without FFmpeg or inference; moving identities retain
+  their actual camera code/module/model fingerprints.
+- App controls restored Moving Camera, loaded its 80-frame saved track and
+  showed 16/16 ready models. Switching to Fixed Camera showed 14/14 and a
+  reconstruction notice without processing or replacing the current motion.
+  Legacy options restored Fixed Camera. Corrupted extension files, stale or
+  escaped camera paths and a simulated failed repair were rejected; prior
+  registrations and the base runtime remained intact.
+
+No clean Windows installation, other-GPU verification, long-video stability or
+absolute SLAM scale/accuracy claim follows from these checks. Tracking loss,
+zoom/cuts, poor texture and scale drift remain possible.

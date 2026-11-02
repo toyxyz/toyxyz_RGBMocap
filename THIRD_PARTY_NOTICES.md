@@ -7,6 +7,15 @@ retained license files and provider agreements contain the full terms.
 
 ## AI tools and models
 
+PromptHMR's optional moving-camera support downloads [DroidCalib](https://github.com/boschresearch/DroidCalib)
+(AGPL-3.0), [LieTorch](https://github.com/princeton-vl/lietorch) (BSD-3-Clause),
+Eigen and torch-scatter with their provider licenses into the local support
+build. [Metric3D](https://github.com/YvanYin/Metric3D) source/weights retain their
+provider terms. Compatibility adapters do not relicense those sources or remove
+AGPL obligations. Neither camera weights nor compiled extensions are checked into
+this repository. See the [PromptHMR camera guide](docs/models/PROMPTHMR.md#moving-camera-setup-and-behavior).
+
+
 Character import, baking and portable scene export use a separate, unmodified Blender 4.5 LTS runtime
 (GPL; bundled license and source information in `runtime_character`). The scoped
 FBX sampler in `mocap/retarget/selective_fbx.py` retains Blender's GPL terms.

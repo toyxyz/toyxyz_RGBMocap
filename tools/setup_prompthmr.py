@@ -119,6 +119,10 @@ def setup():
 
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--accept-licenses',action='store_true',required=True)
-    try:parser.parse_args();setup()
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--accept-licenses',action='store_true',required=True);parser.add_argument('--camera',action='store_true')
+    try:
+        args=parser.parse_args();setup()
+        if args.camera:
+            from tools.setup_prompthmr_camera import setup as setup_camera
+            setup_camera()
     except Exception as error:print('PromptHMR setup failed: '+str(error),file=sys.stderr);raise SystemExit(1)

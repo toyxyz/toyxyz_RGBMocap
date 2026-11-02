@@ -8,7 +8,8 @@ characters, and exporting animation for Blender or MMD. Processing runs locally.
 
 For optional single-video capture of people together, see the
 [PromptHMR setup and usage guide](models/PROMPTHMR.md). It supports fixed-camera
-video through a separate `Setup_PromptHMR.cmd` runtime, with a People count and
+video by default and optional moving-camera tracking through a separate
+`Setup_PromptHMR.cmd` runtime, with a People count and
 Interaction Prompt option. It performs its own tracking and does not generate
 animated fingers. Standard correction, retargeting and FBX controls apply.
 
@@ -145,7 +146,7 @@ Setup_PromptHMR.cmd
 Review its license prompt, reopen the app, select **PromptHMR** and prepare all
 files in **Model Manager**. This setup is independent of MAMMA and is also excluded
 from `install.cmd`/`update.cmd`. The [PromptHMR guide](models/PROMPTHMR.md) lists
-the exact files, fixed-camera limits, native-build verification and repair steps.
+the exact files, camera modes, native-build verification and repair steps.
 The Model Manager's **Runtime Setup...** button shows instructions; it does not
 run installation inside the app.
 
@@ -181,7 +182,7 @@ Shared model files and hardlinks are counted once.
 | --- | ---: | ---: | ---: |
 | ExMR + FlowHMR + GVHMR, including supported add-ons | 12.35 GiB | 28.89 GiB | 41.23 GiB |
 | MAMMA additional files | 6.11 GiB | 3.53 GiB | 9.65 GiB |
-| PromptHMR additional files | 6.22 GiB | 6.13 GiB | 12.34 GiB |
+| PromptHMR additional files, Fixed Camera | 6.22 GiB | 6.13 GiB | 12.34 GiB |
 | **Five offline models** | **24.68 GiB** | **38.55 GiB** | **63.22 GiB** |
 | PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.84 GiB | ~2.85 GiB |
 
@@ -198,6 +199,12 @@ added model size includes SMPL Neutral, while its standard SMPL-X Neutral is
 already counted in the base set. Its specific weights/support files alone total
 about 6.09 GiB. Installed Python packages remain separate; verified identical
 download archives can be reused without merging runtimes.
+
+The totals above exclude optional PromptHMR moving-camera support: its verified
+extension measured **18.6 MiB**, plus **1.55 GiB** of DroidCalib/Metric3D weights.
+Including these adds about **1.57 GiB**, bringing the five offline sets to about
+**64.79 GiB**, or about **67.64 GiB** with PEAR. Allow a separate **6 GiB free
+during the native camera build**, excluding weights and compiler tools.
 
 **MAMMA and PromptHMR are separate optional runtime installations.** After
 `install.cmd`, use `Setup_MAMMA.cmd` or `Setup_PromptHMR.cmd` for the model you
@@ -222,13 +229,14 @@ may be outside the installation folder.
 
 | Location | What you can remove and what happens |
 | --- | --- |
-| `<install folder>\cache\` | Its contents can be deleted. This includes `huggingface`, `torch` and ExMR support caches. They are recreated or downloaded again when needed; the next run may take longer and require internet access. Saved projects and the separate `models` library remain. |
+| `<install folder>\cache\` | Its contents can be deleted. This includes `huggingface`, `torch`, ExMR support caches and PromptHMR's shared `prompthmr/torch` and `prompthmr/hf` downloads. They are recreated or downloaded again when needed; the next run may take longer and require internet access. Saved projects and the separate `models` library remain. |
 | `<install folder>\projects\<project folder>\` | Delete an entire unwanted project folder. This removes its model results, prepared videos, previews, contact edits and imported/retargeted characters. Reprocessing requires the source video and AI inference; manual edits are lost. Keep projects you still need. |
 | Your **Save Project As** destination | The same rule applies to each saved project folder at your chosen location. It contains a copy of the video and project data. Deleting it removes that copy; cleaning the default `projects` folder does not clean external copies. |
 | `<install folder>\character_scenes\<session folder>\` | Contains characters imported before a project was opened. Old session folders can be deleted once those imports are no longer needed or have been copied into a saved project. Unsaved session imports are lost. |
 | `<install folder>\.setup\downloads\`, `.setup\uv-cache\` and `.setup\tmp\` | Downloaded wheels and temporary cache can be removed only after installation or update completes. They are reused for repair and updates; deleting them may require downloading files again. Keep the rest of `.setup`, including the private Python and installation state. |
 | `<install folder>\.setup\mamma-downloads\` | Optional MAMMA package/source download cache. Its contents can be removed after MAMMA setup finishes; repair may need to download them again. Keep `runtime_mamma` and `.setup/mamma-runtime.json`. |
 | `<install folder>\.setup\prompthmr-downloads\` | Optional PromptHMR package/source download cache. Remove contents only after setup finishes; repair may need to download them again. Keep `runtime_prompthmr` and `.setup/prompthmr-runtime.json`. |
+| `<install folder>\.setup\prompthmr-camera-downloads\` | Optional moving-camera source/package download cache. Its contents can be removed after setup finishes. Repair may download them again. Keep `runtime_prompthmr/camera-*` and `.setup/prompthmr-camera-runtime.json`. |
 | `<install folder>\.setup\pear-downloads\` | PEAR source/support and camera-alignment archives. Contents can be removed after installation/update finishes; repair may download them again. Keep `runtime_pear`, `.setup/pear-runtime.json` and `.setup/pear-alignment.json`. |
 | `<install folder>\temp\` | Local PEAR Torch/kernel temporary cache. Contents can be removed after closing the app and its workers; the next run can recreate them. |
 
@@ -265,7 +273,7 @@ For ExMR, FlowHMR and GVHMR:
 For synchronized multi-camera capture, select MAMMA before opening videos and
 follow the [MAMMA workflow](MAMMA.md#reconstruct-and-export). It detects people
 during reconstruction, so the **Find person** step is not used. PromptHMR also
-tracks people during reconstruction; open one fixed-camera video and start with
+tracks people during reconstruction; open one video, choose its camera mode and start with
 **People = 2** and **Interaction Prompt** on. See [its workflow](models/PROMPTHMR.md#controls-and-supported-workflow).
 
 To animate a character, follow [Character retargeting](#character-retargeting),
@@ -319,7 +327,7 @@ opening a project restores its saved model. **Prepare Preview**, below
 | **FlowHMR** | Slow, but the best overall motion quality in our tests. | Included. |
 | **GVHMR** | Lowest overall quality in our tests, but sometimes better for unusual poses such as backflips. | Optional **HandFlow**; not inferred by GVHMR itself. |
 | **MAMMA** | Multi-view capture of human motion and interactions. Needs separate setup and overlapping synchronized views; outside the quality ranking above. | Included. |
-| **PromptHMR** | Can improve relative placement and interactions between multiple people in one fixed-camera video. Overall motion quality was lower than ExMR in our subjective tests; contacts and depth can still be wrong. Separate setup. | No finger tracking; fixed neutral pose. |
+| **PromptHMR** | Can improve relative placement and interactions between multiple people in one video. Fixed Camera is the default; Moving Camera needs optional camera setup. Overall motion quality was lower than ExMR in our subjective tests; contacts and depth can still be wrong. | No finger tracking; fixed neutral pose. |
 | **PEAR** | Live single-person bone preview from a webcam or video. Lightweight live foot lock; no offline correction, recording, retargeting or export. | Included. |
 
 The five offline models support contact correction, a 52-bone overlay, FBX/BVH export and portable Blender bundles.
@@ -498,7 +506,7 @@ selected result is missing, reconstruct it; the app reports it as unavailable.
 | **MAMMA → Import Camera Data...** | Import calibration with camera names matching video filenames without extensions, original pixel intrinsics and metric translations. See the exact [camera format](MAMMA.md#manual-cameras). |
 | **MAMMA → People** | Default 0 automatically detects people during reconstruction; set 1–8 if someone is missed or background people are included. Count each person once across all cameras. Find person is hidden. |
 | **MAMMA → Reference Height (m)** | Numeric approximate standing height, default 1.70 m. Sets VGGT scene scale, not every actor's height; unused with metric manual calibration. |
-| **PromptHMR → People / Interaction Prompt** | People defaults to 2; 0 detects automatically up to eight. Interaction Prompt defaults on; off follows the official default video path. Fixed cameras only; no animated fingers. Both settings apply on Reconstruct 3D. See the [PromptHMR guide](models/PROMPTHMR.md). |
+| **PromptHMR → Camera / People / Interaction Prompt** | People defaults to 2; 0 detects automatically up to eight. Interaction Prompt defaults on; off follows the official default video path. Fixed Camera is the default; optional Moving Camera uses DroidCalib + Metric3D after camera setup and two additional model downloads. No animated fingers. These settings apply on Reconstruct 3D. See the [PromptHMR guide](models/PROMPTHMR.md). |
 | **Resource Mode** | Automatic uses the fast path when GPU memory is sufficient and selects supported Low Memory paths when needed. Low Memory uses CPU loading/offloading and existing bounded image processing; it can be slower and use more RAM. The selection and reason appear in Console and the CMD window. |
 | **Prepare Preview** | Rebuild mesh/skeleton previews from existing motion without running the AI model again. Useful for older projects. |
 | **Cancel Job** | Stop queued processing; completed results are kept. |
@@ -510,7 +518,7 @@ instead of an invented percentage. FlowHMR is limited to 5,000 frames per take
 (about 166.7 seconds); available memory may require a shorter clip. MAMMA's
 adapter accepts 4–1,800 common frames and at most eight people. It requires
 two or more synchronized fixed-camera videos, with no fixed camera-count
-maximum. PromptHMR accepts one fixed-camera video, 4–1,800 working frames at
+maximum. PromptHMR accepts one fixed- or moving-camera video, 4–1,800 working frames at
 30 fps and up to eight people. Four thumbnails per row is only a layout choice. These limits do not
 guarantee that a workload fits RAM or VRAM.
 
@@ -657,6 +665,21 @@ The first frame in **Pose Position** shows animation, which can differ from rest
 Use the character workflow above for supported humanoids, or retarget the source
 FBX in your animation software.
 
+### Preview video
+
+Use **File > Export Preview...** to choose an MP4 save location. The timeline's
+trimmed range is saved with the currently selected input camera on the left and
+the actual 3D viewport on the right. Arrange the viewport before exporting:
+the current angle, framing, Follow Actor setting, visible people/characters and
+viewport overlays are retained. No new AI inference or correction is run.
+
+The output uses the timeline frame rate and source audio when available.
+Both panels keep their aspect ratios; the current viewport capture and decoded
+video preview determine detail, with the combined image bounded to 3840 × 2160.
+Progress and Cancel are available during saving. Completion/cancellation restores
+the original frame and view; an incomplete export does not replace an existing
+destination. **PEAR live mode does not support preview export.**
+
 ### Portable Blender projects
 
 Choose **Blender project + video (.blend)** in **File > Export...**, then choose
@@ -733,6 +756,9 @@ bounded display samples. Saved cameras can be outside the current 3D framing;
 zoom out or orbit to inspect them.
 
 - MAMMA displays all saved fixed camera calibrations in the fitted shared world.
+- PromptHMR Moving Camera displays its saved native DroidCalib/Metric3D rotation
+  and translation. That same estimated trajectory drives source-video overlays,
+  Camera Preview and Blender camera animation. Fixed Camera retains one camera.
 - FlowHMR displays saved rotation and the estimated VGGT displacement path.
   Its displacement has no measured metric scale, so the path is approximate.
 - ExMR in Moving Camera mode can estimate camera displacement from the original
@@ -740,7 +766,8 @@ zoom out or orbit to inspect them.
   measured camera trajectory. Static Camera mode retains a fixed position.
 - When **Camera** is enabled in the ordinary 3D view, **Motion x** controls the
   estimated movement display: 1 uses the estimate, 0 keeps the camera center fixed.
-  The default is 1. This affects camera gizmos and their path only; source video
+  The default is 1 for FlowHMR/ExMR estimates. PromptHMR uses its native trajectory
+  without this display-scale adjustment. This affects camera gizmos and their path only; source video
   overlays keep the calibrated projection and exports/motion remain unchanged.
   ExMR movement requires a reference take covering the complete video; otherwise
   the app shows rotation only with a notice.

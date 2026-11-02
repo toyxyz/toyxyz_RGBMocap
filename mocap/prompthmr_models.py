@@ -98,4 +98,18 @@ LINKS = {'phmr_checkpoint': 'data/pretrain/phmr/checkpoint.ckpt',
  'phmr_video': 'data/pretrain/phmr_vid/prhmr_release_002.ckpt',
  'phmr_video_config': 'data/pretrain/phmr_vid/prhmr_release_002.yaml'}
 KEYS = tuple(LINKS)
+CAMERA_ASSETS = (
+ dict(key='phmr_droidcalib',name='Moving Camera / DroidCalib',relative='prompthmr/pretrain/droidcalib.pth',
+      url='https://github.com/boschresearch/DroidCalib',minimum_bytes=16049525,
+      download_url='https://raw.githubusercontent.com/boschresearch/DroidCalib/9a7174ae66c4dc4be4abdb5f6a819f1c0586a90d/droidcalib.pth',
+      expected_sha256='67c5b78f727fb5ea7a6bf31fafe2f20c8982a56ca0b4f880ab46769a244b0a6f'),
+ dict(key='phmr_metric3d',name='Moving Camera / Metric3D ViT-Large',relative='prompthmr/pretrain/metric_depth_vit_large_800k.pth',
+      url='https://huggingface.co/JUGGHM/Metric3D',minimum_bytes=1647972663,
+      download_url='https://huggingface.co/JUGGHM/Metric3D/resolve/main/metric_depth_vit_large_800k.pth',
+      expected_sha256='15328ffc42b528b95f188687418f6f03b3f123eb34ccdbd686c112abbea6d972'),
+)
+CAMERA_LINKS={'phmr_droidcalib':'data/pretrain/droidcalib.pth'}
+CAMERA_KEYS=tuple(a['key'] for a in CAMERA_ASSETS)
+ASSETS += CAMERA_ASSETS
 INSTRUCTIONS = {a["key"]: "Review the official PromptHMR non-commercial license. Download the exact file from the official source, then Import it into this row. Google Drive may require a manual browser download." for a in ASSETS}
+INSTRUCTIONS.update({key:'Optional: required only for Moving Camera (DroidCalib + Metric3D). Run Setup_PromptHMR.cmd and choose camera support. Download/Import the exact verified file. Fixed Camera does not require it.' for key in CAMERA_KEYS})

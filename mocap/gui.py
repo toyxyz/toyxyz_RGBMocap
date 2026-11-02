@@ -134,6 +134,7 @@ class ModelsDialog(QDialog):
         keys = ({key for key in STAGE_REQUIREMENTS[self.tool.key+'_assets']} if self.tool.key in ('mamma','prompthmr','pear') else
                 {key for stage in (*self.tool.stages(refine=True, footmr=True, handflow=True),'people') for key in STAGE_REQUIREMENTS.get(stage, ())})
         if self.tool.key=='pear':keys.update(STAGE_REQUIREMENTS['pear_align'])
+        if self.tool.key=='prompthmr':keys.update(STAGE_REQUIREMENTS['prompthmr_camera_assets'])
         if self.tool.key=='flowhmr':keys.add('flow_metadata')
         # Keep public automatic downloads together, followed by manual-only files.
         # Stable sorting preserves the existing component order within each group.
@@ -348,8 +349,9 @@ from .character_ui import CharacterWorkspace
 from .mamma_ui import MammaWorkspace
 from .prompthmr_ui import PromptHMRWorkspace
 from .pear_ui import PearWorkspace
+from .preview_export_ui import PreviewExportWorkspace
 
-class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,QMainWindow):
+class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,QMainWindow):
     def __init__(self, video: Path | None = None):
         super().__init__()
         self.setWindowTitle("RGB MoCap | Motion Workspace")
@@ -402,6 +404,8 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         self.data_loader.tracked_actor_ready.connect(self.tracked_actor_ready)
         build_workspace(self)
         self.init_characters()
+        self.video_view.frame_presented.connect(self.refresh_preview_export_action)
+        self.scene_loader.ready.connect(self.refresh_preview_export_action)
         self.timer = QTimer(self)
         self.timer.setTimerType(Qt.PreciseTimer)
         self.timer.setInterval(33)
@@ -434,6 +438,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
 
     @read_only_checks
     def update_readiness(self):
+        self.export_preview_action.setEnabled(self.preview_export_available())
         if self._pear_active:
             if hasattr(self,'camera_tools'):self.camera_tools.sync()
             self.pear_sync_controls();return
@@ -449,6 +454,7 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
         required = {key for stage in stages for key in STAGE_REQUIREMENTS.get(stage, ())}
         if tool.key=='flowhmr' and self.flow_sampling.currentData()==-1:required.discard('flow_vggt')
         if tool.key=='mamma' and self.mamma_camera_mode.currentData()=='manual':required.difference_update(('flow_vggt','pear_geocalib'))
+        if tool.key=='prompthmr' and self.prompthmr_camera.currentData()=='moving':required.update(STAGE_REQUIREMENTS['prompthmr_camera_assets'])
         unavailable = [BY_KEY[key] for key in sorted(required) if not ready(BY_KEY[key])]
         count = len(required) - len(unavailable)
         text = f"{tool.label}: {count}/{len(required)} models ready"
@@ -1818,6 +1824,10 @@ class MainWindow(PearWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorksp
             else:self.load_video(Path(urls[0].toLocalFile()))
 
     def closeEvent(self, event):
+        if getattr(self, '_preview_export', None) is not None:
+            self._preview_export.cancel(close_window=True)
+            event.ignore()
+            return
         if self.busy and self.process:
             answer = QMessageBox.question(self, "Processing", "Cancel the current job and close the application?")
             if answer != QMessageBox.Yes:

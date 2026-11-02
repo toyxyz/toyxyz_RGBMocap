@@ -16,8 +16,8 @@
     },
     {
       "path": "AGENTS.md",
-      "bytes": 2174,
-      "sha256": "9b25172bb63b4441a582c48a2bf3df1906aca6a3f0ffed8307a08ce7d37ecd89"
+      "bytes": 2219,
+      "sha256": "990cdee8d94201aeef3781f0d7bdf3a83fde72f7c8137669b723a85837536f93"
     },
     {
       "path": "LICENSE",
@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 11568,
-      "sha256": "231fed2ace6b009c4d04fd13f1ded21e9e5aa3c78ac6cfab4acb73c9ae89b9ac"
+      "bytes": 11858,
+      "sha256": "dc739192a3767d917c41bc5ed18dbfd1d1ac0d2619f90ca6eac1f63b7003504a"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -41,13 +41,13 @@
     },
     {
       "path": "Setup_PromptHMR.cmd",
-      "bytes": 882,
-      "sha256": "f81f365d7f7efc61f3105bf8a78905d43725ff658242920187dc74563615b208"
+      "bytes": 1436,
+      "sha256": "41ea984bcb4878ad39a9f53fa962cca22a9a84e416246ccc5412e13b192a019e"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "bytes": 9254,
-      "sha256": "42364b7829e85031e5ff353df02e9dccc7c1e2df841beb3a1aceca86f872153a"
+      "bytes": 9879,
+      "sha256": "7745b1a68af85ec4885549113e8f540b70263d122feeb05f8d904e2fcac174c8"
     },
     {
       "path": "app.py",
@@ -96,13 +96,13 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 58966,
-      "sha256": "4fe9829f4d14e497e44ae81788b50abcf1d0f0ae46d839e5ce60870a8e0903e2"
+      "bytes": 63148,
+      "sha256": "b1149d40f8b54cf05f3be2017022cc57458d874ea323e4e2e9d12d53107795a2"
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 12967,
-      "sha256": "327a6ae33599374f5dc56871246269591f1c6f00c69a774b0e4143b0f689c993"
+      "bytes": 13113,
+      "sha256": "3ca8d430ea8a261db29bd817c4c3674907d889af6bc9f59132d5818179866f56"
     },
     {
       "path": "docs/CITATIONS.md",
@@ -126,13 +126,13 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 59973,
-      "sha256": "ca250fd26156181cd333885dfae50342eb146a72d530d013c173b3dc67d72a39"
+      "bytes": 62196,
+      "sha256": "5df7a603a8a18b7d030a109c339cb6f6a630861d55cc671d039b4c7e1034d95f"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 122164,
-      "sha256": "5b1d16981620860e18f471b4477f87ea987aa31989a7f8d04e03520736b6b7b6"
+      "bytes": 129029,
+      "sha256": "347aeba0ddf06c49e77dbbb3cd7965125a80565601446861a53e76bbbb3463d7"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -176,13 +176,13 @@
     },
     {
       "path": "docs/models/PROMPTHMR.md",
-      "bytes": 14215,
-      "sha256": "037afb02834ac599660e18478b87b247353155551d9929bedc517451db68d60f"
+      "bytes": 20708,
+      "sha256": "ce4a64477b4b93dfdc4eb4045e6c3c722c1085d78a380cdeb2168dd9b765e4ad"
     },
     {
       "path": "docs/models/README.md",
-      "bytes": 6628,
-      "sha256": "1fa42963d3f78e788eb3737aa706d5f25e280d91e1357b486fb37fb553be1272"
+      "bytes": 6648,
+      "sha256": "4ab9cd922cb7369f149ee9d245e3306e4c872609b2d956e622432d3ee76a1345"
     },
     {
       "path": "docs/samples/character-retargeting.jpg",
@@ -310,6 +310,11 @@
       "sha256": "f36fb1d7d563cbb15d8effb377470559757b92f5d5e1cbe876bf4f6f7cbf7e54"
     },
     {
+      "path": "installer/prompthmr-camera-lock.json",
+      "bytes": 1169,
+      "sha256": "a32f5c88fc465a0deed9c493792a7ffa688bee6983cfef89c479ab63362e63d2"
+    },
+    {
       "path": "installer/prompthmr-runtime-lock.json",
       "bytes": 85747,
       "sha256": "968f2579c04d3a7c4b4989a1b3941a245beeb438045b8a328eeb13e8fd5911c7"
@@ -318,6 +323,11 @@
       "path": "installer/prompthmr_adapters.py",
       "bytes": 2561,
       "sha256": "08e1e8fb768ae7e4edf852569d70ae69fde20d2cb89dd81de4ffc2a9ca896e06"
+    },
+    {
+      "path": "installer/prompthmr_camera_adapters.py",
+      "bytes": 2932,
+      "sha256": "c70bdefa7e36af6f6bfbe956dd97ec1fb9431c8d4db247e96d356641487583b5"
     },
     {
       "path": "installer/runtime-lock.json",
@@ -1035,6 +1045,11 @@
       "sha256": "9fe3b87fbee89b300c42240d48c04610b07f23207e33549f3aff8f6834442499"
     },
     {
+      "path": "installer/verify_prompthmr_camera.py",
+      "bytes": 1825,
+      "sha256": "9ed4a92aaa76e4cb47c652baef65fa87a6029bfcd1ae635ad5a315b170e019da"
+    },
+    {
       "path": "installer/verify_runtime.py",
       "bytes": 2416,
       "sha256": "4d82e97687f6850b2784c3b3bc1029bf180a664f69411abea422bafec3ff3b64"
@@ -1156,8 +1171,8 @@
     },
     {
       "path": "mocap/camera_tracks.py",
-      "bytes": 13087,
-      "sha256": "b71fd476a02449f2676e0aa404eba12949873f4ef2d81bb22c3783231e2c26e4"
+      "bytes": 13972,
+      "sha256": "6cb7e777cec7ef8f36862667bf9a8afcabc7458f2b1a815e9ad641d81a3fef6a"
     },
     {
       "path": "mocap/camera_ui.py",
@@ -1366,8 +1381,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 105342,
-      "sha256": "afd459dc23ccefd56a0a3587b7208d55062fe7ad0887c32b1b953e2d58fce93a"
+      "bytes": 106069,
+      "sha256": "ba28a7320d8957e25c386da2b0b58e98563af1349b127e747898db77c9600ee4"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -1501,8 +1516,8 @@
     },
     {
       "path": "mocap/model_guide.py",
-      "bytes": 12047,
-      "sha256": "ff25269540fb7a571f23a9e9aba2d01ce28820cfeaef88bb4f3a54ad27f2a4ef"
+      "bytes": 12178,
+      "sha256": "3a72db257f521458ceccda08be039338ab5b0ba0ef0ace82c42c36cb1d57da5f"
     },
     {
       "path": "mocap/model_session.py",
@@ -1511,8 +1526,8 @@
     },
     {
       "path": "mocap/models.py",
-      "bytes": 32625,
-      "sha256": "ca1de9ef959cfa2383827945ebf7335834afb8ad47b5aba730f20b913bf4eee8"
+      "bytes": 32707,
+      "sha256": "514d6e3cd16c0b08a185bf542814a0ce7b92ce8e84d7b002afb304138d5a9ea8"
     },
     {
       "path": "mocap/motion_tools.py",
@@ -1676,8 +1691,8 @@
     },
     {
       "path": "mocap/pear_ui.py",
-      "bytes": 34895,
-      "sha256": "1f933754b51420bd7f4ae23905bf8ed2f0cf0a1f7b46e014a0a40cf79c866d1a"
+      "bytes": 35286,
+      "sha256": "78217cde55f9d200f8fb71fa0b3e2d909b1ca4ca682276d800cb28faeaebfa7f"
     },
     {
       "path": "mocap/people_store.py",
@@ -1720,6 +1735,16 @@
       "sha256": "56039242f441a693efb2ffa0823e07dbeeddf6ef300d9e2be087daf4d550bd8f"
     },
     {
+      "path": "mocap/preview_export.py",
+      "bytes": 9061,
+      "sha256": "a7227a2780138b9daec890281d7d2480b9ee3d55a48a50bdb865a9c4583e8c1a"
+    },
+    {
+      "path": "mocap/preview_export_ui.py",
+      "bytes": 15444,
+      "sha256": "18d00cba3825f614cb9d01e5a4ae629dbcec571ea477fc23834c6d29d64b73c1"
+    },
+    {
       "path": "mocap/processing_guard.py",
       "bytes": 2783,
       "sha256": "d440382289bda7479b5d3189661a9a784f7da4b48fe07a5971e6f5eabcad4be7"
@@ -1755,24 +1780,39 @@
       "sha256": "0577f32e583c3667d6ebb638b7687045d0f487870d2f5abc1875b83ce4d4de64"
     },
     {
+      "path": "mocap/prompthmr_cache.py",
+      "bytes": 4730,
+      "sha256": "2e11d39c67f75e514b039855537ad29fb430370b750b416cee3d79fcb2beb7e6"
+    },
+    {
+      "path": "mocap/prompthmr_camera.py",
+      "bytes": 3712,
+      "sha256": "c01c8d8663075a8c42083bd6567159587903e9b8e112d7806b679530ae77153c"
+    },
+    {
+      "path": "mocap/prompthmr_camera_runtime.py",
+      "bytes": 2593,
+      "sha256": "4ac95a749b8a6c00962f302f6ffe56a192a8eb6d63dcdb421dfe8eb38e4c531e"
+    },
+    {
       "path": "mocap/prompthmr_manager.py",
-      "bytes": 3731,
-      "sha256": "defb8be2c475fafafe4b27c55666bdc7bec42edc671a79827910f8121bfc3cfc"
+      "bytes": 4401,
+      "sha256": "09e7850cd62760acb35194caf6ea8a8b09d95c6142248a2dbb6d1f37bea1e045"
     },
     {
       "path": "mocap/prompthmr_models.py",
-      "bytes": 5520,
-      "sha256": "475c9a57e906c66da3f457aecb3b2fe0ad8ca42298d56d1a0acf61386550b7ba"
+      "bytes": 6745,
+      "sha256": "cbbfb1b2adedf1353c8657f1b00b423f54dd6f4e7bdb4900a1e0e321bfb7dc5f"
     },
     {
       "path": "mocap/prompthmr_pipeline.py",
-      "bytes": 11515,
-      "sha256": "b3098bbc038f9f5e25c9b9e96c9ec4fa2116226f74c645089bd328014f024e7d"
+      "bytes": 13137,
+      "sha256": "d1075279956f9443c3ff80694a9388fc9e1f2d74b3af5f9dab0714c50c2a7687"
     },
     {
       "path": "mocap/prompthmr_publish.py",
-      "bytes": 11220,
-      "sha256": "f6db793dee88db0187b2fc38962d9ef149b5282cda0db46ccf825053e49ba08c"
+      "bytes": 12440,
+      "sha256": "efdd800e66c0d40ccd9c9caf5abadd163a5f002ac0ddb2ebdcd45b235d596e7a"
     },
     {
       "path": "mocap/prompthmr_runtime.py",
@@ -1781,13 +1821,13 @@
     },
     {
       "path": "mocap/prompthmr_scene.py",
-      "bytes": 946,
-      "sha256": "7e64ea32e6c7f15881555137dd9a530e8c3ccc1ab6c7257c432d4eed95ca929f"
+      "bytes": 994,
+      "sha256": "3e141a1f5d10655b94d572172b680af069049e43cd3be85312198080ab58f983"
     },
     {
       "path": "mocap/prompthmr_ui.py",
-      "bytes": 6608,
-      "sha256": "6f0b3eb8375208991cde4af8055bafc6b44c1f63a549e12c6d18d2ea95e10148"
+      "bytes": 8188,
+      "sha256": "7b8f1383b6918526fe4ca0bd088fe69cfb5d20ba9906b5138f3fb2369899c08a"
     },
     {
       "path": "mocap/queue_groups.py",
@@ -2076,8 +2116,8 @@
     },
     {
       "path": "mocap/workspace_ui.py",
-      "bytes": 37546,
-      "sha256": "48d421c6fa7ffdda62ae5bd629b83a620fd39255cf1fc64d8871811b43dd2b2c"
+      "bytes": 37974,
+      "sha256": "12520e6c1d64f7d1744d47bc51b9dae2f839bcf28958105718a71d3e44cc219e"
     },
     {
       "path": "native_compat/LICENSE",
@@ -12841,8 +12881,13 @@
     },
     {
       "path": "tools/setup_prompthmr.py",
-      "bytes": 9108,
-      "sha256": "76cab672a109aaf69431d26d1b69939048324dee2055d367f47c46da3d7fe194"
+      "bytes": 9300,
+      "sha256": "067e15c0d637ff0f58dba1690f3b9765f86d1040c12d4f3bb6cdefee7a0267a1"
+    },
+    {
+      "path": "tools/setup_prompthmr_camera.py",
+      "bytes": 7067,
+      "sha256": "e013f504e214b470ff7793e6b530c4a8f7b6f0916aeb89663207126279c32717"
     },
     {
       "path": "tools/stage_assets.py",

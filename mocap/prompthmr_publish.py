@@ -61,7 +61,7 @@ def publish(job,emit):
     if not 1<=len(record['people'])<=8:raise ValueError('PromptHMR returned an unsupported actor count.')
     selected='corrected_initial' if job['correction_enabled'] else 'initial'
     common=dict(version=1,source=job['source'],start=job['start'],end=job['start']+n/30,fps=30,frames=n,
-        width=media['width'],height=media['height'],camera='static',stages={},timeline=dict(start=job['start'],step=1/30,frames=n),
+        width=media['width'],height=media['height'],camera=job['options'].get('camera','static'),stages={},timeline=dict(start=job['start'],step=1/30,frames=n),
         pipeline=dict(model='prompthmr',result=selected),correction=job['correction'],prompthmr_options=job['options'],
         workspace_root=os.path.relpath(root,group))
     atomic_json(group/'project.json',common);media_link(work/'input.mp4',group/'input.mp4')
@@ -79,6 +79,19 @@ def publish(job,emit):
     center=np.asarray(camera['img_center']);focal=float(camera['img_focal'])
     sx=media['width']/model_width;sy=media['height']/height
     K=np.array([[focal*sx,0,center[0]*sx],[0,focal*sy,center[1]*sy],[0,0,1.]])
+    moving=job['options'].get('camera')=='moving';camera_track=None
+    if moving:
+        from .camera_tracks import valid_rotations
+        rr=np.asarray(camera['Rcw'],dtype=float);tt=np.asarray(camera['Tcw'],dtype=float)
+        valid_rotations(rr)
+        if rr.shape!=(n,3,3) or tt.shape!=(n,3) or not np.isfinite(tt).all():raise ValueError('PromptHMR camera track does not cover the selected video.')
+        matrices=np.tile(np.eye(4),(n,1,1));matrices[:,:3,:3]=rr;matrices[:,:3,3]=tt
+        target=group/'camera_track.npz';temp=target.with_name('camera_track-'+__import__('uuid').uuid4().hex+'.tmp')
+        try:
+            with temp.open('wb') as stream:np.savez(stream,world_to_camera=matrices)
+            os.replace(temp,target)
+        finally:temp.unlink(missing_ok=True)
+        camera_track=dict(path='camera_track.npz',stat=file_stat(target),start=job['start'],fps=30)
     people=[];projects=[]
     for number,(track_id,person) in enumerate(tracks,1):
         hands=hand_policy(person)
@@ -106,9 +119,10 @@ def publish(job,emit):
             if not reuse:
                 params=convert(person['smplx_world'],body,positions,neutral_hands=hands!='native');incam={k:v.clone() for k,v in params.items()}
                 pelvis=body.J_regressor.numpy()[0]@body.v_template.numpy()+np.einsum('v,vci,bi->bc',body.J_regressor.numpy()[0],body.shapedirs.numpy(),params['betas'].numpy())
-                r=transform[:3,:3];t=transform[:3,3]
+                r=rr[first:end] if moving else transform[:3,:3];t=tt[first:end] if moving else transform[:3,3]
                 incam['global_orient']=torch.from_numpy(Rotation.from_matrix(r@Rotation.from_rotvec(params['global_orient'].numpy()).as_matrix()).as_rotvec().astype('float32'))
-                incam['transl']=torch.from_numpy(((params['transl'].numpy()+pelvis)@r.T+t-pelvis).astype('float32'))
+                root_positions=params['transl'].numpy()+pelvis
+                incam['transl']=torch.from_numpy(((np.einsum('tij,tj->ti',r,root_positions) if moving else root_positions@r.T)+t-pelvis).astype('float32'))
                 logits=np.asarray(person['smplx_cam']['static_conf_logits'],dtype=np.float32)
                 if logits.shape!=(len(frames),6) or not np.isfinite(logits).all():raise ValueError('Missing or invalid native PromptHMR contact confidence.')
                 save_tensor(dict(smpl_params_global=params,smpl_params_incam=incam,
@@ -119,8 +133,10 @@ def publish(job,emit):
                 else:
                     subprocess.run([executable('ffmpeg'),'-v','error','-i',str(group/'input.mp4'),'-vf',f'trim=start_frame={first}:end_frame={end},setpts=PTS-STARTPTS',
                         '-an','-c:v','libx264','-crf','18','-preset','fast','-threads','2',str(project/'input.mp4')],check=True,creationflags=0x08000000)
-            atomic_json(project/'scene_camera.json',dict(version=VERSION,sources=camera_sources(project),model=file_stat(BY_KEY['smplx'].path),
-                world_to_camera=transform.tolist(),K=K.tolist(),htd_compatible=False,source_model='prompthmr',method='Native shared PromptHMR world; fixed camera; no independent actor alignment'))
+            cam_record=dict(version=VERSION,sources=camera_sources(project),model=file_stat(BY_KEY['smplx'].path),
+                world_to_camera=transform.tolist(),K=K.tolist(),htd_compatible=False,source_model='prompthmr',method='Native shared PromptHMR world; no independent actor alignment')
+            if moving:cam_record['camera_track']={**camera_track,'path':os.path.relpath(group/'camera_track.npz',project)}
+            atomic_json(project/'scene_camera.json',cam_record)
             row['takes'].append(dict(first=first,end=end,project=project.relative_to(group).as_posix()));projects.append(project)
         if row['takes']:row['preview']=row['takes'][0]['project'];people.append(row)
         emit('progress',current=number,total=len(tracks),message=f'Prepare PromptHMR source actor {number}')

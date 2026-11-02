@@ -122,6 +122,7 @@ do not put passwords or account tokens in the agent chat.
 - Export source animation as FBX or BVH (Generic/Blender or 3ds Max Biped), with an optional leading T-pose; export characters as FBX with or without meshes,
   or PMX character motion as VMD for MMD.
 - Export portable Blender projects with source animation, video and saved cameras; MAMMA can include animated body meshes and every camera.
+- Save side-by-side input video and the current 3D viewport as MP4 with **File > Export Preview...** (offline models).
 - Inspect source-video/bone alignment in Camera Preview and display saved cameras in 3D, with optional background rotation refinement for FlowHMR/ExMR.
 - Save projects with separate results for each AI model.
 - Track webcam or video input in real time with PEAR's experimental body/finger bone preview; tracking and poses may be unstable.
@@ -172,13 +173,16 @@ projects, caches or retained downloads; shared files are counted once.
 | --- | ---: | ---: | ---: |
 | ExMR + FlowHMR + GVHMR and supported add-ons | 12.35 GiB | 28.89 GiB | 41.23 GiB |
 | MAMMA additional files | 6.11 GiB | 3.53 GiB | 9.65 GiB |
-| PromptHMR additional files | 6.22 GiB | 6.13 GiB | 12.34 GiB |
+| PromptHMR additional files, Fixed Camera | 6.22 GiB | 6.13 GiB | 12.34 GiB |
 | **Five offline models** | **24.68 GiB** | **38.55 GiB** | **63.22 GiB** |
 | PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.84 GiB | ~2.85 GiB |
 
 Including PEAR, the estimated combined model/runtime total is about
 **66.07 GiB (70.9 GB)**, before the additional space listed below. GeoCalib weights (about **0.11 GiB**) are shared by MAMMA and PEAR and counted once; both also reuse VGGT. See the
 [PEAR camera guide](docs/models/PEAR.md#multiple-fixed-cameras-and-camera-align).
+
+Optional PromptHMR moving-camera support adds approximately **18.6 MiB** of
+native modules and **1.55 GiB** of weights beyond these totals; see its model guide.
 
 **MAMMA and PromptHMR require separate runtime installation:** run
 `Setup_MAMMA.cmd` or `Setup_PromptHMR.cmd` after `install.cmd`, as described
@@ -219,7 +223,7 @@ be smaller. Batch selection and OOM retry messages appear in Console and CMD.
 - [Recorded processing time, VRAM and RAM](docs/USER_GUIDE.md#recorded-processing-time-and-vram)
 - [Resource modes and measured optimizations](docs/PERFORMANCE.md)
 - [MAMMA: additional installation, model files and multi-video workflow](docs/MAMMA.md)
-- [PromptHMR: additional installation, model files and fixed-camera workflow](docs/models/PROMPTHMR.md)
+- [PromptHMR: additional installation, model files and camera workflows](docs/models/PROMPTHMR.md)
 - [Development and builds](docs/BUILD.md)
 - [Agent operating and development guide](docs/AGENT_GUIDE.md)
 - [Source validation](docs/VALIDATION.md)
