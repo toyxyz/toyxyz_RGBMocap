@@ -174,7 +174,9 @@ def main() -> int:
             project = prepare(args.video.resolve(), args.start, args.end,motion_tool=args.motion_tool or 'gvhmr',project=args.project)
             manifest = json.loads((project / "project.json").read_text(encoding="utf-8"))
             if args.motion_tool=='flowhmr':
-                manifest['flow_options']={**manifest.get('flow_options',{}),'camera_interval':int(os.environ.get('RGB_MOCAP_FLOW_INTERVAL','0')),'fast_sam':os.environ.get('RGB_MOCAP_FLOW_FAST_SAM','1')=='1','sam_batch4':os.environ.get('RGB_MOCAP_FLOW_BATCH4','1')=='1','sam_gpu_crop':os.environ.get('RGB_MOCAP_FLOW_GPU_CROP','1')=='1'}
+                manifest['flow_options']={**manifest.get('flow_options',{}),'camera_interval':int(os.environ.get('RGB_MOCAP_FLOW_INTERVAL','0')),'fast_sam':os.environ.get('RGB_MOCAP_FLOW_FAST_SAM','1')=='1','sam_batch4':os.environ.get('RGB_MOCAP_FLOW_BATCH4','1')=='1','sam_gpu_crop':os.environ.get('RGB_MOCAP_FLOW_GPU_CROP','1')=='1','sam_hand_stride4':os.environ.get('RGB_MOCAP_FLOW_HAND_STRIDE4','1')=='1'}
+                manifest['flow_options']['hamer']=os.environ.get('RGB_MOCAP_FLOW_HAMER','0')=='1'
+                if manifest['flow_options']['hamer']:manifest['flow_options'].update(fast_sam=True,sam_hand_stride4=True)
             if args.motion_tool=='exmr':
                 from .exmr_options import options
                 manifest['exmr_options']=options(json.loads(os.environ.get('RGB_MOCAP_EXMR_OPTIONS','{}')))

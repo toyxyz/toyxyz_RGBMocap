@@ -125,6 +125,7 @@ do not put passwords or account tokens in the agent chat.
 - Save side-by-side input video and the current 3D viewport as MP4 with **File > Export Preview...** (offline models).
 - Inspect source-video/bone alignment in Camera Preview and display saved cameras in 3D, with optional background rotation refinement for FlowHMR/ExMR.
 - Save projects with separate results for each AI model.
+- Reduce FlowHMR memory use with query-batched attention and optional sparse hand sampling; optional HaMeR refines fingers. See [controls and trade-offs](docs/models/FLOWHMR.md#controls) and [measured time/memory comparisons](docs/PERFORMANCE.md#flowhmr-query-batches-and-four-frame-hands-2026-11-03).
 - Track webcam or video input in real time with PEAR's experimental body/finger bone preview; tracking and poses may be unstable.
 
 ## How it works

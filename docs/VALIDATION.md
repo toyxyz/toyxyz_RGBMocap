@@ -1998,3 +1998,91 @@ AI worker and source-correction implementation stayed unchanged.
 No clean Windows installation, other-GPU verification, long-video stability or
 absolute SLAM scale/accuracy claim follows from these checks. Tracking loss,
 zoom/cuts, poor texture and scale drift remain possible.
+
+## FlowHMR query and hand-sampling integration (2026-11-03)
+
+Validation used the installed Windows runtime on the test PC, with private
+projects outside the source checkout. No user project, video or model weight
+was published or replaced. This initial sampling/query check preceded the
+optional HaMeR integration described below.
+
+- A 327-frame app-backend comparison completed with sparse hands on and off,
+  including camera receipt handling, SAM features, query-batched generation and
+  native world placement. Every stage reused its verified cache on the second
+  call. Changing only hand sampling invalidated feature identity while leaving
+  the camera identity unchanged.
+- A 117-case CPU FP32 attention check covered local/global masks, padding and
+  fully masked rows. Maximum difference from original math attention was
+  4.77e-7. Actual app features generated a 327-frame motion with a maximum
+  source-joint difference of 0.00034 mm against original attention.
+- Sampling/interpolation checks covered 98 frame-length/batch combinations,
+  including one frame, final endpoints, maximum context and simulated batch
+  allocation backoff. Body slots and sampled anchors were preserved. Actual
+  SAM calls checked CPU/GPU crops, batches without a hand sample and body-pelvis
+  placement before/after hand fusion; placement differences stayed below
+  0.0004 mm. Every-frame output was within repeated baseline GPU variation,
+  rather than bitwise identical across separate feature calls.
+- App controls defaulted on, restored saved off values and supplied the on
+  default for missing legacy settings. Switching tools/toggles did not start
+  inference. The three controls and explanations were inspected using the
+  application's theme in an offscreen Qt widget render.
+- A separate nine-frame app project completed CPU hand crops with one-frame
+  batches, explicit Low Memory block offloading, query generation, native
+  correction, preview generation and FBX saving. Cancelling feature extraction
+  left the previous tokens intact and marked the stage pending; a retry committed
+  a complete generation and removed the marker. This was a controlled
+  cancellation/backoff check, not a physically exhausted-GPU test.
+
+Timing and quality differences are in [performance measurements](PERFORMANCE.md#flowhmr-query-batches-and-four-frame-hands-2026-11-03).
+These checks do not establish other-GPU performance, universal motion accuracy
+or absence of long-session resource leaks.
+
+## Optional FlowHMR HaMeR integration (2026-11-03)
+
+Private nine- and 327-frame app-backend projects completed per-frame SAM hand
+box capture, four-frame SAM conditioning, query motion generation and the
+independent ExMR-runtime HaMeR pass. The direct HaMeR finger output uses ExMR
+crops/rotation smoothing, not its learned temporal HandMR network. Body/root,
+wrist rotations, shape and native foot contacts were bit-exact to the same
+FlowHMR prediction before hand replacement. The original FlowHMR tensor remained
+separate. A nine-frame run completed correction, preview and FBX saving. Turning
+HaMeR off and reconstructing restored the original SAM-conditioned prediction.
+The nine-frame paired contact-correction check also retained identical corrected
+body/wrist/root/shape/contact tensors; only fingers differed in that test.
+
+- A nine-frame Low Memory run exercised SAM's one-frame CPU-crop/offload path
+  and HaMeR's one-hand-crop CPU-first loader. Both finished and reused verified
+  feature/motion caches on repeat calls. A separate 327-frame Automatic run
+  used body batches of 16 and hand batches of eight. HaMeR child resource/time
+  measurements are recorded in [performance](PERFORMANCE.md#optional-flowhmr-hamer-fingers-2026-11-03).
+- Controlled OOM splits retained exactly one ordered hand-box row per source
+  frame. Invalid-hand fallback retained original fingers exactly. Cancelling
+  the actual child before model loading preserved the previous completed hand
+  cache, left no partial output and reaped the process. A malformed hand cache
+  entered recovery. These do not establish physically exhausted-GPU behavior
+  or long-running child-process leak freedom.
+- Themed offscreen Qt checks verified default off, missing legacy flag defaults,
+  saved on/off restoration, automatic Fast SAM/four-frame activation and locking,
+  additional Model Manager rows and no inference on toggles. Draft checkbox
+  changes retained the committed source until reconstruction.
+
+No new runtime package, model weight or test video was distributed. Other GPUs,
+clean installation and universal accuracy/stability were not established.
+
+## Right-sidebar wheel routing (2026-11-03)
+
+A native Windows Qt/OpenGL test (150% scaling, 773×476 logical 3D viewport,
+no loaded actor or playback) sent 72 wheel events per target. Previously,
+hovering the preset combo changed its value 23 times and the numeric pelvis
+field 72 times, consuming the wheel without scrolling. These triggered the same
+number of model-readiness checks and 3D paints. After routing to the panel, both
+targets scrolled with no value changes, readiness checks or 3D paints. Measured
+event p95 changed 7.42→1.72 ms for the combo and 7.94→1.03 ms for the number
+field; maxima changed 8.97→3.85 ms and 9.34→1.32 ms. These are synthetic wheel
+event timings, not overall FPS or a heavy-scene playback benchmark.
+
+Additional Qt checks preserved pixel-delta behavior, open popups, focused
+Ctrl+wheel, text/keyboard edits, frame/camera and idle processing state. Six
+offscreen create/close cycles retained 419 handles and 34 threads; the final
+repeat's RSS ranged 81.56–84.43 MiB. This short trend does not establish long-session leak freedom.
+Inference, correction, preview math and installed packages were unchanged.

@@ -39,7 +39,7 @@ def current_batch_size(frames, width, height, *, enabled=True, low_memory=False,
                              enabled=enabled,low_memory=low_memory,gpu_crops=gpu_crops)
 
 
-def extract_bounded(extractor,images,boxes,intrinsics,*,gpu_crops,placement,limit,emit):
+def extract_bounded(extractor,images,boxes,intrinsics,*,gpu_crops,placement,limit,emit,hand_indices=None,hand_boxes=None):
     """Retry only an unpublished sub-batch after releasing the OOM traceback."""
     import torch,gc
     from .flow_fast_sam import extract_batch
@@ -47,9 +47,12 @@ def extract_bounded(extractor,images,boxes,intrinsics,*,gpu_crops,placement,limi
     while offset<len(images):
         count=min(limit,len(images)-offset)
         failed=False
+        captured=[] if hand_boxes is not None else None
         try:
+            selected = None if hand_indices is None else [i-offset for i in hand_indices if offset<=i<offset+count]
             value,output=extract_batch(extractor,images[offset:offset+count],boxes[offset:offset+count],
-                                       intrinsics,gpu_crops=gpu_crops,placement=placement)
+                                       intrinsics,gpu_crops=gpu_crops,placement=placement,hand_indices=selected,
+                                       **({'hand_boxes':captured} if captured is not None else {}))
         except torch.cuda.OutOfMemoryError:
             if count==1:raise
             failed=True
@@ -59,5 +62,8 @@ def extract_bounded(extractor,images,boxes,intrinsics,*,gpu_crops,placement,limi
             limit=max(1,min(limit//2,count//2))
             emit('info',message=f'SAM GPU memory pressure: retrying unpublished frames with batch {limit}.')
             continue
+        if hand_boxes is not None:
+            if len(captured)!=1 or captured[0].shape!=(count,2,4):raise ValueError('Incomplete SAM hand boxes')
+            hand_boxes.append(captured[0])
         values.append(value);people.extend(output);offset+=count
     return torch.cat(values),people,limit

@@ -496,7 +496,8 @@ selected result is missing, reconstruct it; the app reports it as unavailable.
 | **ExMR → Camera** | Static Camera for a camera that stays still without zooming; Moving Camera / SimpleVO when it moves. |
 | **ExMR → Smooth Motion** | Reduce small changes between frames. Off keeps the unsmoothed result. |
 | **FlowHMR → Fast SAM** | Speed up body/hand image processing with the same model files. Small numerical differences can affect motion and automatic contacts. |
-| **FlowHMR → Fast SAM Acceleration** | Two independent, default-on switches: **Adaptive Batching** and **GPU Hand Crops**. Automatic selects 1, 2, 4, 8 or 16 frames from memory headroom and image size; Low Memory or disabling batching uses one frame. Used only with Fast SAM, on Reconstruct 3D. Tooltips and the [FlowHMR guide](models/FLOWHMR.md#controls) explain speed, VRAM and output differences. Batch selection and OOM retry messages appear in Console and CMD. |
+| **FlowHMR → Fast SAM Acceleration** | Three default-on switches: **Adaptive Batching**, **GPU Hand Crops** and **4-Frame Hand Sampling**. Automatic selects 1, 2, 4, 8 or 16 spatial frames; Low Memory or disabling batching uses one. Four-frame hand sampling interpolates intermediate hand features: faster with less VRAM, but finger accuracy, body/wrist motion and contacts can change. Off uses every hand frame. Used only with Fast SAM, on Reconstruct 3D. Tooltips and the [FlowHMR guide](models/FLOWHMR.md#controls) explain measurements and differences. Query size, hand interval, batch selection and OOM retries appear in Console and CMD. |
+| **FlowHMR → HaMeR Finger Refinement** | Default off. Aims to improve finger tracking accuracy with every-frame HaMeR inference using ExMR crops and Gaussian rotation smoothing, preserving FlowHMR body/wrists/trajectory. Enables and locks Fast SAM and 4-Frame Hand Sampling while on. Slower and may still jitter; this is not ExMR learned HandMR inference. Prepare shared HaMeR/MANO files in Model Manager. Uses the existing ExMR runtime from install.cmd. Reconstruct 3D after changing it. |
 | **FlowHMR → Camera / Sampling** | Start with Moving / Unknown - Auto for moving or uncertain cameras. Static Camera skips camera estimation for locked footage. Explicit frame intervals control camera analysis only; denser sampling uses more memory. |
 | **GVHMR → HTD Refine** | Improve body-motion consistency over time. Runs before FootMR when both are enabled. |
 | **GVHMR → FootMR** | Refine ankle angles from foot observations. Separate from foot contact locking. |
@@ -511,6 +512,11 @@ selected result is missing, reconstruct it; the app reports it as unavailable.
 | **Resource Safety** | Default on, directly below Resource Mode. On retains low-RAM/Windows headroom stopping and the PyTorch VRAM allocation limit. Off bypasses those limits; Automatic batching, Low Memory selection and actual allocation-error recovery remain. Saved locally, independently of projects. See [details](PERFORMANCE.md#resource-safety). |
 | **Prepare Preview** | Rebuild mesh/skeleton previews from existing motion without running the AI model again. Useful for older projects. |
 | **Cancel Job** | Stop queued processing; completed results are kept. |
+
+The mouse wheel scrolls the right settings panel even above a closed selection
+list or number field, without changing its value. Click/type, use keyboard arrows
+or the field's buttons to edit. A focused field also accepts Ctrl+wheel. Open
+selection lists retain their own normal scrolling.
 
 Processing shows the current step, progress and elapsed time. **Step left** estimates
 the current step; **Total left** estimates the queue when timing data is available.

@@ -135,7 +135,11 @@ class ModelsDialog(QDialog):
                 {key for stage in (*self.tool.stages(refine=True, footmr=True, handflow=True),'people') for key in STAGE_REQUIREMENTS.get(stage, ())})
         if self.tool.key=='pear':keys.update(STAGE_REQUIREMENTS['pear_align'])
         if self.tool.key=='prompthmr':keys.update(STAGE_REQUIREMENTS['prompthmr_camera_assets'])
-        if self.tool.key=='flowhmr':keys.add('flow_metadata')
+        if self.tool.key=='flowhmr':
+            keys.add('flow_metadata')
+            if window.flow_hamer.isChecked():
+                from .flow_hamer import MODEL_KEYS
+                keys.update(MODEL_KEYS)
         # Keep public automatic downloads together, followed by manual-only files.
         # Stable sorting preserves the existing component order within each group.
         self.models = sorted((model for model in MODELS_LIST if model.key in keys),
@@ -453,6 +457,12 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
         stages = tool.stages(self.htd_refine.isChecked(), self.footmr_refine.isChecked(), handflow=self.handflow_refine.isChecked())
         from .models import STAGE_REQUIREMENTS, BY_KEY
         required = {key for stage in stages for key in STAGE_REQUIREMENTS.get(stage, ())}
+        if self.flow_hamer.isChecked():
+            for checkbox in (self.fast_sam,self.flow_hand_stride4):
+                blocked=checkbox.blockSignals(True);checkbox.setChecked(True);checkbox.blockSignals(blocked)
+            if tool.key=='flowhmr':
+                from .flow_hamer import MODEL_KEYS
+                required.update(MODEL_KEYS)
         if tool.key=='flowhmr' and self.flow_sampling.currentData()==-1:required.discard('flow_vggt')
         if tool.key=='mamma' and self.mamma_camera_mode.currentData()=='manual':required.difference_update(('flow_vggt','pear_geocalib'))
         if tool.key=='prompthmr' and self.prompthmr_camera.currentData()=='moving':required.update(STAGE_REQUIREMENTS['prompthmr_camera_assets'])
@@ -497,7 +507,9 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
         self.mesh_button.setEnabled(self.preview_preparation_available())
         self.import_character_action.setEnabled(not self.busy and not self.contact_saving)
         self.flow_sampling.setEnabled(not self.busy)
-        self.fast_sam.setEnabled(not self.busy)
+        self.fast_sam.setEnabled(not self.busy and not self.flow_hamer.isChecked())
+        self.flow_hand_stride4.setEnabled(not self.busy and not self.flow_hamer.isChecked())
+        self.flow_hamer.setEnabled(not self.busy)
         self.flow_acceleration.setVisible(self.fast_sam.isChecked())
         self.flow_acceleration.setEnabled(not self.busy)
         self.exmr_camera.setEnabled(not self.busy)
@@ -685,6 +697,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
             self.fast_sam.setChecked(True)
             self.flow_batch4.setChecked(True)
             self.flow_gpu_crop.setChecked(True)
+            self.flow_hand_stride4.setChecked(True)
+            self.flow_hamer.setChecked(False)
             self.exmr_camera.setCurrentIndex(0)
             self.exmr_smoothing.setChecked(True)
             self.camera_tools.restore_background({})
@@ -788,9 +802,12 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
         from .flow_camera import saved_interval
         from .flow_sam import saved_options
         flow=saved_options(project,manifest)
+        self.flow_hamer.setChecked(False)
         self.fast_sam.setChecked(flow['fast_sam'])
         self.flow_batch4.setChecked(flow['sam_batch4'])
         self.flow_gpu_crop.setChecked(flow['sam_gpu_crop'])
+        self.flow_hand_stride4.setChecked(flow['sam_hand_stride4'])
+        self.flow_hamer.setChecked(flow['hamer'])
         from .exmr_options import saved as saved_exmr
         exmr=saved_exmr(project,manifest)
         self.exmr_camera.setCurrentIndex(self.exmr_camera.findData(exmr['static_camera']))
@@ -996,6 +1013,10 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
         if 'people' not in stages and self.input_person_jobs(stages,result):
             return
         unavailable = [model for stage in stages for model in ([] if self.model_choice.currentData()=='flowhmr' and stage=='flow_camera' and self.flow_sampling.currentData()==-1 else missing('flow_export' if self.model_choice.currentData()=='flowhmr' and stage in ('correct','export') else stage))]
+        if self.model_choice.currentData()=='flowhmr' and self.flow_hamer.isChecked():
+            from .flow_hamer import MODEL_KEYS
+            from .models import BY_KEY
+            unavailable += [BY_KEY[k] for k in MODEL_KEYS if not ready(BY_KEY[k])]
         if unavailable:
             names = ", ".join(dict.fromkeys(model.name for model in unavailable))
             self.status.setText(f"Prepare these models first: {names}")
@@ -1234,7 +1255,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
             frames=int(arguments[arguments.index('--end-frame')+1])-int(arguments[arguments.index('--first-frame')+1])
         model=arguments[arguments.index('--model')+1] if '--model' in arguments else ''
         result=arguments[arguments.index('--result')+1] if '--result' in arguments else self.active_result
-        key=(stage,tool,frames,model,result,self.compute_mode.currentData(),self.fast_sam.isChecked(),self.flow_batch4.isChecked(),self.flow_gpu_crop.isChecked(),self.flow_sampling.currentData(),self.exmr_camera.currentData())
+        key=(stage,tool,frames,model,result,self.compute_mode.currentData(),self.fast_sam.isChecked(),self.flow_batch4.isChecked(),self.flow_gpu_crop.isChecked(),self.flow_hand_stride4.isChecked(),self.flow_hamer.isChecked(),self.flow_sampling.currentData(),self.exmr_camera.currentData())
         if not isinstance(estimate,(int,float)) or not math.isfinite(estimate) or not 1<=estimate<=7*86400:estimate=None
         if stage in ('flow_batch','exmr_batch','gvhmr_batch'):
             from .queue_groups import argument
@@ -1378,6 +1399,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
         environment.insert('RGB_MOCAP_FLOW_FAST_SAM','1' if self.fast_sam.isChecked() else '0')
         environment.insert('RGB_MOCAP_FLOW_BATCH4','1' if self.flow_batch4.isChecked() else '0')
         environment.insert('RGB_MOCAP_FLOW_GPU_CROP','1' if self.flow_gpu_crop.isChecked() else '0')
+        environment.insert('RGB_MOCAP_FLOW_HAND_STRIDE4','1' if self.flow_hand_stride4.isChecked() else '0')
+        environment.insert('RGB_MOCAP_FLOW_HAMER','1' if self.flow_hamer.isChecked() else '0')
         environment.insert('RGB_MOCAP_EXMR_OPTIONS',json.dumps({'static_camera':self.exmr_camera.currentData(),'smoothing':'global' if self.exmr_smoothing.isChecked() else 'none'}))
         self.process.setProcessEnvironment(environment)
         self.process.readyReadStandardOutput.connect(self.read_stdout)

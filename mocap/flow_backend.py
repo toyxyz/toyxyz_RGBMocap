@@ -112,6 +112,9 @@ def identity(project,stage):
     root_state=json.loads((root/'project.json').read_text(encoding='utf-8'))
     selected=root_state.get('flow_options',{}).get('camera_interval',0)
     files={name:file_stat(project/name) for name in names if (project/name).exists()}
+    from .flow_hamer import enabled as hamer_enabled,source_identity as hamer_identity
+    hamer=hamer_enabled(project)
+    if stage=='flowhmr' and hamer:files['flow_hand_boxes.npy']=file_stat(project/'flow_hand_boxes.npy')
     # Full-scene camera is shared even when each person has shorter visible takes.
     if stage=='flow_camera':
         files={'root_input':file_stat(root/'input.mp4')}
@@ -129,11 +132,16 @@ def identity(project,stage):
         for name in ('memory_mode.py','gpu_offload.py','model_session.py'):code[name]=sha256(ROOT/'mocap'/name)
     if stage in ('flow_camera','flowhmr'):code['flow_camera.py']=sha256(ROOT/'mocap/flow_camera.py')
     if stage=='flow_features':
-        for name in ('flow_sam.py','flow_fast_sam.py','flow_sam_batch.py','batch_prefetch.py'):code[name]=code_hash(ROOT/'mocap'/name)
+        for name in ('flow_sam.py','flow_fast_sam.py','flow_sam_batch.py','flow_hand_sampling.py','batch_prefetch.py'):code[name]=code_hash(ROOT/'mocap'/name)
+    if stage=='flowhmr':
+        for name in ('network/hymotion_mmdit_for_v2m.py','network/token_refiner.py','network/mmdit/query_batched_attention.py'):
+            code[name]=code_hash(UPSTREAM/'FlowHMR/flowhmr'/name)
     if stage=='flow_features':
         from .flow_sam import saved_fast_sam, source_identity, acceleration_options
         code['sam_source']=source_identity(saved_fast_sam(project,state))
         code['sam_acceleration']=acceleration_options(project,state)
+        code['hamer_boxes']=hamer
+    if stage=='flowhmr' and hamer:code['hamer']=hamer_identity()
     import torch
     return dict(version=VERSION,stage=stage,inputs=files,camera_interval=selected if stage=='flow_camera' else None,
         models={key:file_stat(BY_KEY[key].path) for key in STAGE_REQUIREMENTS[stage] if not (stage=='flow_camera' and selected==-1)},
@@ -222,6 +230,10 @@ def _features(project,emit,low_memory):
     cap=cv2.VideoCapture(str(project/'input.mp4'));cap.set(cv2.CAP_PROP_N_THREADS,2) if hasattr(cv2,'CAP_PROP_N_THREADS') else None
     from .flow_sam import extract_tokens
     tokens=torch.empty((n,3072),dtype=torch.float32);anchors=[]
+    from .flow_hamer import enabled as hamer_enabled
+    hand_boxes=np.empty((n,2,4),np.float32) if hamer_enabled(project) else None
+    from .flow_hand_sampling import sample_indices,interpolate_hands
+    hand_samples=sample_indices(n,options['sam_hand_stride4'])
     try:
         from .flow_sam_batch import current_batch_size, extract_bounded
         batch_size = current_batch_size(n,state['width'],state['height'],enabled=options['sam_batch4'],
@@ -229,6 +241,7 @@ def _features(project,emit,low_memory):
         batch_limit = batch_size
         if fast:
             emit('info', message=f"Fast SAM acceleration: {batch_size} frame(s) per batch; GPU hand crops {'on' if options['sam_gpu_crop'] else 'off'}.")
+            emit('info', message=f"SAM hand sampling: {'every 4 frames + linear feature interpolation' if options['sam_hand_stride4'] else 'every frame'}; {len(hand_samples)}/{n} hand frames. Body features use every frame.")
         if options['sam_batch4'] and low_memory:
             emit('info', message='Low Memory: using one frame per SAM batch to reduce VRAM. GPU hand crop selection is retained.')
         def cpu_batches():
@@ -245,9 +258,13 @@ def _features(project,emit,low_memory):
                 if any(options.values()):
                     batch_limit = min(batch_limit,current_batch_size(n,state['width'],state['height'],
                         enabled=options['sam_batch4'],low_memory=low_memory,gpu_crops=options['sam_gpu_crop']))
+                    captured=[] if hand_boxes is not None else None
                     values, outputs, batch_limit = extract_bounded(extractor, images, boxes[begin:begin+count],
                         torch.from_numpy(k[None]), gpu_crops=options['sam_gpu_crop'], placement=begin<30,
-                        limit=batch_limit,emit=emit)
+                        limit=batch_limit,emit=emit,
+                        hand_indices=(hand_samples[(hand_samples>=begin)&(hand_samples<begin+count)]-begin).tolist() if options['sam_hand_stride4'] else None,
+                        **({'hand_boxes':captured} if captured is not None else {}))
+                    if hand_boxes is not None:hand_boxes[begin:begin+count]=np.concatenate(captured)
                 else:
                     token, outputs = extract_tokens(extractor, images[0], boxes[begin:begin+1],
                         torch.from_numpy(k[None]), placement=begin<30)
@@ -268,6 +285,15 @@ def _features(project,emit,low_memory):
         cap.release()
         from .model_session import release
         release(extractor)
+    if options['sam_hand_stride4']:
+        interpolate_hands(tokens,hand_samples)
+    if not torch.isfinite(tokens).all():raise ValueError('Invalid interpolated FlowHMR features')
+    if hand_boxes is not None:
+        target=project/'flow_hand_boxes.npy';temporary=target.with_name(target.name+'.'+uuid.uuid4().hex+'.partial')
+        try:
+            with temporary.open('wb') as stream:np.save(stream,hand_boxes,allow_pickle=False)
+            os.replace(temporary,target)
+        finally:temporary.unlink(missing_ok=True)
     save_tensor(project/'flow_tokens.pt',tokens)
     atomic_json(project/'flow_placement.json',dict(camera_pelvis=anchors,intrinsics=k.tolist(),method='Constant X/Z placement from SAM MHR70 pelvis; native FlowHMR height and motion retained'))
     return project/'flow_tokens.pt'
@@ -285,13 +311,16 @@ def infer(project,emit):
     if tuple(rt.shape)!=(n,4,4):raise ValueError('Camera and body frame counts differ')
     from .model_session import acquire,model_key
     def build():
-        pipeline=build_pipeline(load_yaml(str(BY_KEY['flow_config'].path)),device='cuda',ckpt=str(checkpoint),validation_steps=20)
+        config=load_yaml(str(BY_KEY['flow_config'].path))
+        config['network_module_args'].update(attention_backend='query_batched',attention_query_chunk_size=256)
+        pipeline=build_pipeline(config,device='cuda',ckpt=str(checkpoint),validation_steps=20)
         weights=load_tensor(checkpoint)
         weights=weights.get('model_state_dict',weights.get('state_dict',weights))
         if any(name not in weights or tuple(weights[name].shape)!=tuple(value.shape) for name,value in pipeline.named_parameters()):
             raise ValueError('FlowHMR checkpoint is missing required learned parameters. Repair its checkpoint and configuration.')
         return pipeline
     pipeline=acquire(model_key('flowhmr',checkpoint,BY_KEY['flow_config'].path),build)
+    emit('info',message='FlowHMR attention: query batches of 256; FP32, full temporal context, 20 ODE steps.')
     emit('progress',current=0,total=20,message='FlowHMR: integrate 20 ODE steps')
     from .flow_camera import relative_camera
     with torch.inference_mode():
@@ -300,6 +329,10 @@ def infer(project,emit):
     validate_motion(output,n)
     save_tensor(project/'flow_prediction.pt',output)  # untouched official prediction
     del pipeline;gc.collect();torch.cuda.empty_cache()
+    from .flow_hamer import enabled as hamer_enabled,refine as refine_hands
+    if hamer_enabled(project):
+        output=refine_hands(project,output,emit)
+        validate_motion(output,n);save_tensor(project/'flow_hamer_prediction.pt',output)
     placement=json.loads((project/'flow_placement.json').read_text(encoding='utf-8'))
     anchors=np.asarray(placement['camera_pelvis'],float)
     offset=np.zeros(3,np.float32)
@@ -318,7 +351,9 @@ def infer(project,emit):
     placed['scene_offset']=torch.from_numpy(offset)
     placed['source_representation']='smplh';placed['flow_version']=VERSION
     save_tensor(project/'hmr4d_results.pt',placed)
-    atomic_json(project/'initial_sources.json',{name:file_stat(project/name) for name in ('flow_prediction.pt','flow_tokens.pt','flow_camera.npz','flow_placement.json','tracking.npz')})
+    sources=['flow_prediction.pt','flow_tokens.pt','flow_camera.npz','flow_placement.json','tracking.npz']
+    if hamer_enabled(project):sources.append('flow_hamer_prediction.pt')
+    atomic_json(project/'initial_sources.json',{name:file_stat(project/name) for name in sources})
     return project/'hmr4d_results.pt'
 
 
@@ -335,6 +370,10 @@ def run_stage(project,stage,result,emit,force=False):
     if result not in ('auto','initial','corrected_initial'):raise ValueError('FlowHMR supports original or corrected original motion only')
     static=(stage=='flow_camera' and json.loads((scene_root(project)/'project.json').read_text(encoding='utf-8')).get('flow_options',{}).get('camera_interval',0)==-1)
     absent=[] if static else missing(stage)
+    from .flow_hamer import enabled as hamer_enabled,MODEL_KEYS
+    if stage in ('flow_features','flowhmr') and hamer_enabled(project):
+        from .models import BY_KEY,ready
+        absent += [BY_KEY[k] for k in MODEL_KEYS if not ready(BY_KEY[k])]
     if absent:raise ValueError('Open FlowHMR Model Manager and prepare: '+', '.join(m.name for m in absent))
     state=json.loads((project/'project.json').read_text(encoding='utf-8'))
     signature=identity(project,stage)
@@ -380,6 +419,9 @@ def run_stage(project,stage,result,emit,force=False):
     if stage=='flow_camera' and root!=project:outputs.append('flow_camera_sources.json')
     if stage=='flow_features':outputs.append('flow_placement.json')
     if stage=='flowhmr':outputs+=['flow_prediction.pt','initial_sources.json','flow_world.json']
+    if hamer_enabled(project):
+        if stage=='flow_features':outputs.append('flow_hand_boxes.npy')
+        if stage=='flowhmr':outputs+=['flow_hamer_prediction.pt','flow_hamer_hands.npz','flow_hamer_receipt.json']
     committed_identity=identity(project,stage)
     if stage=='flow_features' and committed_identity!=signature:
         raise RuntimeError('SAM inputs or settings changed during extraction. Reconstruct 3D again; this extraction was not committed.')

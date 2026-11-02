@@ -23,11 +23,12 @@ def saved_options(project, state):
         if project.resolve().is_relative_to(root) and (root / 'people.json').is_file():
             options = json.loads((root / 'project.json').read_text(encoding='utf-8')).get('flow_options', options)
     result = {}
-    for key in ('fast_sam', 'sam_batch4', 'sam_gpu_crop'):
-        value = options.get(key, True)
+    for key in ('fast_sam', 'sam_batch4', 'sam_gpu_crop', 'sam_hand_stride4', 'hamer'):
+        value = options.get(key, key!='hamer')
         if not isinstance(value, bool):
             raise ValueError('Invalid FlowHMR setting: '+key+'; expected on or off')
         result[key] = value
+    if result['hamer']:result.update(fast_sam=True,sam_hand_stride4=True)
     return result
 
 
@@ -37,7 +38,7 @@ def saved_fast_sam(project, state):
 
 def acceleration_options(project, state):
     options = saved_options(project, state)
-    return {key: options['fast_sam'] and options[key] for key in ('sam_batch4', 'sam_gpu_crop')}
+    return {key: options['fast_sam'] and options[key] for key in ('sam_batch4', 'sam_gpu_crop', 'sam_hand_stride4')}
 
 
 def source_root(fast):

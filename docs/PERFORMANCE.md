@@ -283,6 +283,71 @@ Compilation, TensorRT, model weights and installed dependencies are
 unchanged. The upstream A100 report compares against an unaccelerated original
 baseline, so its 5–10× claim must not be applied to this app's previous Fast path.
 
+### FlowHMR query batches and four-frame hands (2026-11-03)
+
+The app now uses the validated official 256-query attention implementation for
+all FlowHMR motion lengths. FP32, full key visibility, RoPE, temporal context,
+checkpoint and 20 ODE steps are retained. The before/after measurements below
+use identical features on the test PC (RTX 5090 32 GB, Ryzen 9 9950X, 96 GB RAM):
+
+| Motion length (30 fps) | Original time | Query-256 time | Original / query peak allocated VRAM | Original / query worker RAM (RSS) |
+| --- | ---: | ---: | ---: | ---: |
+| 60 frames / 2.0 s | 0.47 s | 0.55 s | 1.83 / 1.83 GiB | 4.97 / 4.97 GiB |
+| 474 frames / 15.8 s | 0.77 s | 0.90 s | 2.04 / 1.93 GiB | 4.48 / 4.99 GiB |
+| 999 frames / 33.3 s | 2.16 s | 1.82 s | 2.64 / 2.07 GiB | 5.03 / 5.01 GiB |
+| 4,806 frames / 160.2 s | 25.45 s | 7.97 s | 17.41 / 3.06 GiB | 4.37 / 5.04 GiB |
+
+At 4,806 frames, this is **3.19× throughput (68.7% less time)** and
+**82.4% less allocated VRAM**, while worker RSS increases about **0.67 GiB**.
+Short sequences can be slightly slower. These are warm motion-generator timings
+reported as medians of three runs per case, excluding model load, warmup, SAM extraction,
+camera estimation, correction and export. Allocated VRAM is the PyTorch allocation
+peak, not total GPU/desktop usage; RSS is the worker working set, not all processes.
+These are measured differences, not minimum requirements or whole-job speedups.
+The source-motion comparison found joint differences below **0.001 mm**; a
+separate downstream correction comparison reached **0.674 mm / 0.202°** maximum
+disagreement with unchanged contact timing. Floating-point results are not
+guaranteed bit-identical.
+
+**4-Frame Hand Sampling** is a separate, default-on Fast SAM option. Body
+features and output motion still use every frame. Hand features are sampled
+every four frames plus the final endpoint, then interpolated on CPU. It works
+with one-frame Low Memory batches and CPU or GPU hand crops. It is independent
+of the number of spatial frames processed together. Disable it to retain
+every-frame hand evidence. This option does not itself run HaMeR or add a runtime dependency.
+
+On the test PC, a 327-frame 1080×1920 clip's fresh app feature jobs took
+**54.05 s off / 43.21 s on**, including model loading and decoding. Allocated
+VRAM peaks were **5.43 / 4.21 GiB**. Earlier warm extraction measurements were
+**20.55 / 11.33 s**; these are different timing scopes. Neither is a universal
+whole-job speedup. The app integration comparison retained all 327 frames.
+Query versus original attention, using identical features, differed by at most
+**0.00034 mm** across source joints. Sparse versus every-frame hands differed
+by **22.26 mm mean / 85.24 mm maximum** across body/wrist joints in this
+upper-body clip; the all-joint maximum was **167.85 mm**. These are disagreements,
+not measured accuracy losses against ground truth. The hands condition the
+whole motion model, so changes are not confined to fingers or contact timing.
+
+See [FlowHMR controls and limits](models/FLOWHMR.md#controls) and the
+[integration checks](VALIDATION.md#flowhmr-query-and-hand-sampling-integration-2026-11-03).
+
+### Optional FlowHMR HaMeR fingers (2026-11-03)
+
+The separate default-off HaMeR option uses the existing ExMR runtime and shared
+HaMeR/MANO weights. It infers every frame with ExMR crop preparation, FP16 network
+execution and Gaussian rotation smoothing. It is not ExMR's learned HandMR
+temporal inference. It forces four-frame SAM hand conditioning on, but does not
+reduce HaMeR's own temporal sampling. It replaces fingers only and may still
+produce jitter or inaccurate poses. FlowHMR body/wrists/root/shape/native contacts
+remain exact before downstream correction.
+
+A 327-frame app check measured **26.67 s** for the fresh HaMeR child pass,
+including its startup/model load and video read. Peak child allocated VRAM was
+**5.14 GiB**, with peak child RAM working set **1.75 GiB**. These are child-worker
+figures, not combined parent/desktop RAM peaks or universal requirements. The
+parent releases its GPU model before the child starts. Warm timings from earlier
+standalone FP32 crop experiments have a different scope and precision.
+
 ### MAMMA
 
 The current MAMMA adapter uses exact-coordinate ROI preprocessing, CPU checkpoint

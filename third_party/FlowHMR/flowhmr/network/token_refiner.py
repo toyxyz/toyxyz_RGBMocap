@@ -10,6 +10,7 @@ from .mmdit.attention import attention
 from .mmdit.bricks import get_norm_layer
 from .mmdit.encoders import MLP, MLPEncoder, TimestepEmbeddingEncoder
 from .mmdit.modulate_layers import ModulateDiT, apply_gate
+from .mmdit.query_batched_attention import AttentionPlan, build_global_attention_plan, query_batched_attention
 
 
 class IndividualTokenRefinerBlock(nn.Module):
@@ -45,7 +46,10 @@ class IndividualTokenRefinerBlock(nn.Module):
 
         self.adaLN_modulation = ModulateDiT(feat_dim=feat_dim, factor=2, act_type="silu")
 
-    def forward(self, x: Tensor, c: Tensor, attn_mask: Optional[Tensor] = None) -> Tensor:
+    def forward(self, x: Tensor, c: Tensor, attn_mask: Optional[Tensor] = None,
+                attention_plan: Optional[AttentionPlan] = None) -> Tensor:
+        if attention_plan is not None and self.training:
+            raise ValueError("An attention plan requires evaluation mode")
         dtype = self.self_attn_qkv.weight.dtype
         gate_msa, gate_mlp = self.adaLN_modulation(c).chunk(2, dim=-1)
         qkv = self.self_attn_qkv(self.norm1(x).to(dtype))
@@ -54,7 +58,8 @@ class IndividualTokenRefinerBlock(nn.Module):
         q = self.self_attn_q_norm(q).to(v)
         k = self.self_attn_k_norm(k).to(v)
         # Self-Attention
-        attn = attention(q, k, v, mode="torch", attn_mask=attn_mask)
+        attn = (attention(q, k, v, mode="torch", attn_mask=attn_mask) if attention_plan is None
+                else query_batched_attention(q, k, v, attention_plan))
         x = x.float() + apply_gate(self.self_attn_proj(attn), gate_msa.float())
         # FFN Layer
         x = x + apply_gate(self.mlp(self.norm2(x).to(dtype)).float(), gate_mlp.float())
@@ -89,7 +94,15 @@ class IndividualTokenRefiner(nn.Module):
             ]
         )
 
-    def forward(self, x: Tensor, c: Tensor, mask: Optional[Tensor] = None) -> Tensor:
+    def forward(self, x: Tensor, c: Tensor, mask: Optional[Tensor] = None,
+                attention_query_chunk_size: Optional[int] = None) -> Tensor:
+        if attention_query_chunk_size is not None and not self.training:
+            plan = build_global_attention_plan(
+                x.shape[1], chunk_size=attention_query_chunk_size, valid_tokens=mask, device=x.device
+            )
+            for block in self.blocks:
+                x = block(x, c, attention_plan=plan)
+            return x
         self_attn_mask = None
         if mask is not None:
             batch_size = mask.shape[0]
@@ -165,7 +178,8 @@ class SingleTokenRefiner(nn.Module):
             qkv_bias=qkv_bias,
         )
 
-    def forward(self, x: Tensor, t: Tensor, mask: Optional[Tensor] = None) -> Tensor:
+    def forward(self, x: Tensor, t: Tensor, mask: Optional[Tensor] = None,
+                attention_query_chunk_size: Optional[int] = None) -> Tensor:
         t = cast_to_module_dtype(t, self.timestep_encoder)
         timestep_aware_representations = self.timestep_encoder(t)
 
@@ -182,6 +196,6 @@ class SingleTokenRefiner(nn.Module):
         x = cast_to_module_dtype(x, self.input_embedder)
         x = self.input_embedder(x)
 
-        x = self.individual_token_refiner(x, c, mask)
+        x = self.individual_token_refiner(x, c, mask, attention_query_chunk_size=attention_query_chunk_size)
 
         return x

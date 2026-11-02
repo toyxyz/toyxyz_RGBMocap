@@ -4,13 +4,14 @@ from .console_log import ConsoleLog
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (QWidget, QFrame, QLabel, QPushButton, QComboBox, QCheckBox,
-    QVBoxLayout, QHBoxLayout, QGroupBox, QSplitter, QScrollArea,
+    QVBoxLayout, QHBoxLayout, QGroupBox, QSplitter,
     QSpinBox, QDoubleSpinBox, QProgressBar, QTextEdit, QMessageBox, QSizePolicy, QStackedWidget)
 from .viewer import VideoView, MotionView
 from .timeline import TimelineSlider
 from .motion_tools import MOTION_TOOLS
 from .paths import ROOT
 from .correction_settings import PRESETS
+from .sidebar_scroll import SettingsScrollArea
 
 
 class WrappedLabel(QLabel):
@@ -312,7 +313,7 @@ def build_workspace(w):
     side_layout = QVBoxLayout(sidebar)
     side_layout.setContentsMargins(4, 0, 4, 0)
     side_layout.setSpacing(7)
-    scroll = QScrollArea()
+    scroll = SettingsScrollArea()
     scroll.setObjectName("modelSettings")
     scroll.viewport().setObjectName("modelSettingsViewport")
     scroll.setWidgetResizable(True)
@@ -384,13 +385,19 @@ def build_workspace(w):
     w.flow_acceleration=acceleration.parentWidget()
     w.flow_batch4=QCheckBox('Adaptive Batching')
     w.flow_gpu_crop=QCheckBox('GPU Hand Crops')
+    w.flow_hand_stride4=QCheckBox('4-Frame Hand Sampling')
+    w.flow_hand_stride4.setToolTip(tooltip_text('Infer hands every 4 frames and interpolate the hand features between them. Faster and uses less VRAM, but finger accuracy may decrease. Body/wrist motion and automatic contact timing can also change. Tests: 41-49% less SAM feature time and allocated VRAM 5.43 to 4.21 GiB at batch 16. Off infers hands every frame. Applies on Reconstruct 3D.'))
     w.flow_batch4.setToolTip(tooltip_text('Automatic selects 1-16 frames from available VRAM/RAM and image size. Tests of 4 to 16 frames reduced warm SAM feature time by 16-23%, with allocated VRAM about 3.84 to 5.43 GiB. Low Memory and this option off use one frame. Small numerical motion differences are possible. Applies on Reconstruct 3D; whole-job gains vary.'))
     w.flow_gpu_crop.setToolTip(tooltip_text('Prepare hand crops on the GPU. Short tests: about 10-15% faster SAM features, with little extra VRAM beyond the selected batch size. Different image interpolation can change motion (about 1 mm at the 95th percentile; up to 5 mm in these tests). Model precision stays unchanged. Applies on Reconstruct 3D; results vary.'))
-    for check in (w.flow_batch4,w.flow_gpu_crop):
+    for check in (w.flow_batch4,w.flow_gpu_crop,w.flow_hand_stride4):
         check.setChecked(True)
         acceleration.addWidget(check)
         check.toggled.connect(lambda _: w.update_readiness())
     w.fast_sam.toggled.connect(lambda _: w.update_readiness())
+    w.flow_hamer=QCheckBox('HaMeR Finger Refinement')
+    w.flow_hamer.setToolTip(tooltip_text('Use HaMeR for more accurate finger tracking with every-frame hand inference and ExMR crop/rotation smoothing. Accuracy varies; jitter can remain. Slower and uses additional VRAM. Keeps FlowHMR body, wrists and movement. Requires HaMeR and MANO files. Automatically enables Fast SAM and 4-Frame Hand Sampling. Applies on Reconstruct 3D.'))
+    flow_camera.addWidget(w.flow_hamer)
+    w.flow_hamer.toggled.connect(lambda _: w.update_readiness())
     flow_camera.addWidget(QLabel('Camera / Sampling'))
     w.flow_sampling = QComboBox()
     for label, interval in [('Moving / Unknown - Auto', 0), ('Static Camera', -1), ('Every Frame', 1), ('Every 2 Frames', 2), ('Every 5 Frames', 5), ('Every 10 Frames', 10), ('Every 30 Frames', 30)]:

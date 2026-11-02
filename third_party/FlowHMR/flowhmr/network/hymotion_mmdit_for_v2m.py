@@ -17,6 +17,13 @@ from .mmdit.bricks import get_activation_layer, get_norm_layer
 from .mmdit.encoders import MLP, MLPEncoder, TimestepEmbeddingEncoder
 from .mmdit.modulate_layers import ModulateDiT, apply_gate, modulate
 from .mmdit.positional_encoding import RotaryEmbedding
+from .mmdit.query_batched_attention import (
+    AttentionPlan,
+    build_local_attention_plan,
+    query_batched_attention,
+    resolve_query_attention_config,
+)
+from .token_refiner import SingleTokenRefiner
 
 
 class MMDoubleStreamBlock(nn.Module):
@@ -94,7 +101,10 @@ class MMDoubleStreamBlock(nn.Module):
         attn_mask: Optional[Tensor] = None,
         return_attn: bool = False,
         attn_collector: Optional[List[Tensor]] = None,
+        attention_plan: Optional[AttentionPlan] = None,
     ) -> Tuple[Tensor, Tensor]:
+        if attention_plan is not None and (self.training or return_attn):
+            raise ValueError("An attention plan requires evaluation without attention-map output")
         (
             motion_shift_msa,
             motion_scale_msa,
@@ -150,7 +160,7 @@ class MMDoubleStreamBlock(nn.Module):
         text_len = text_feat.shape[1]
         dropout_p = 0.0 if not self.training else self.dropout
 
-        ret = attention(
+        ret = query_batched_attention(q, k, v, attention_plan) if attention_plan is not None else attention(
             q,
             k,
             v,
@@ -257,7 +267,10 @@ class MMSingleStreamBlock(nn.Module):
         attn_mask: Optional[Tensor] = None,
         return_attn: bool = False,
         attn_collector: Optional[List[Tensor]] = None,
+        attention_plan: Optional[AttentionPlan] = None,
     ) -> Tensor:
+        if attention_plan is not None and (self.training or return_attn):
+            raise ValueError("An attention plan requires evaluation without attention-map output")
         (
             shift_msa,
             scale_msa,
@@ -287,7 +300,7 @@ class MMSingleStreamBlock(nn.Module):
         bsz, total_len = x_modulated.shape[:2]
         dropout_p = 0.0 if not self.training else self.dropout
 
-        ret = attention(
+        ret = query_batched_attention(q, k, v, attention_plan) if attention_plan is not None else attention(
             q,
             k,
             v,
@@ -342,9 +355,14 @@ class HunyuanMotionMMDiT(nn.Module):
         apply_rope_to_single_branch: bool = True,
         insert_start_token: bool = False,
         with_long_skip_connection: bool = False,
+        attention_backend: Optional[str] = None,
+        attention_query_chunk_size: Optional[int] = None,
         **kwargs,
     ):
         super().__init__()
+        self.attention_backend, self.attention_query_chunk_size = resolve_query_attention_config(
+            attention_backend, attention_query_chunk_size
+        )
         self.motion_input_dim = input_dim
         self.ctxt_input_dim = ctxt_input_dim
         self.vtxt_input_dim = vtxt_input_dim
@@ -483,10 +501,31 @@ class HunyuanMotionMMDiT(nn.Module):
         ctxt_key_padding_mask = self._canonical_mask(ctxt_mask_temporal).to(device)
         seq_key_padding_mask = torch.cat((motion_key_padding_mask, ctxt_key_padding_mask), dim=1)
 
+        use_query_batched = (
+            not self.training and self.attention_backend == "query_batched" and self.mask_mode == "narrowband_v2m"
+        )
         if hasattr(self, "text_refiner"):
-            ctxt_feat = self.text_refiner(x=ctxt_feat, t=timesteps, mask=(ctxt_key_padding_mask == 0).to(device))
+            refiner_kwargs = {}
+            if use_query_batched and isinstance(self.text_refiner, SingleTokenRefiner):
+                refiner_kwargs["attention_query_chunk_size"] = self.attention_query_chunk_size
+            ctxt_feat = self.text_refiner(
+                x=ctxt_feat, t=timesteps, mask=(ctxt_key_padding_mask == 0).to(device), **refiner_kwargs
+            )
 
-        if self.mask_mode is None:
+        attention_plan = None
+        if use_query_batched:
+            tt_length = self.narrowband_tt_length if self.narrowband_tt_length is not None else self.narrowband_v2m_length
+            attention_plan = build_local_attention_plan(
+                motion_feat.shape[1], ctxt_feat.shape[1], chunk_size=self.attention_query_chunk_size,
+                mm_window=int(round(self.narrowband_length)),
+                mc_window=int(round(self.narrowband_v2m_length)) if self.narrowband_v2m_length > 0 else None,
+                cm_window=(-1 if self.narrowband_tm_length == 0 else
+                           int(round(self.narrowband_tm_length)) if self.narrowband_tm_length > 0 else None),
+                cc_window=int(round(tt_length)) if tt_length > 0 else None,
+                key_padding_mask=torch.isneginf(seq_key_padding_mask), device=device,
+            )
+            seq_mask = None
+        elif self.mask_mode is None:
             seq_mask = None
         elif self.mask_mode == "causal":
             motion_len = motion_feat.shape[1]
@@ -557,7 +596,7 @@ class HunyuanMotionMMDiT(nn.Module):
         mask_dtype = motion_feat.dtype
         # narrowband_v2m mode handles T→M in seq_mask; other modes need _build to disable it
         tm_in_seq_mask = (self.mask_mode == "narrowband_v2m")
-        attn_mask_double = self._build_dmm_attn_mask_shared(
+        attn_mask_double = None if attention_plan is not None else self._build_dmm_attn_mask_shared(
             bsz=bsz,
             motion_len=motion_len,
             text_len=text_len,
@@ -582,12 +621,13 @@ class HunyuanMotionMMDiT(nn.Module):
                     text_feat=ctxt_feat,
                     adapter=adapter,
                     attn_mask=attn_mask_double,
+                    attention_plan=attention_plan,
                 )
 
         # precompute shared attention masks for single stream blocks too
         split_len = motion_feat.shape[1]
         x = torch.cat((motion_feat, ctxt_feat), 1)
-        attn_mask_single = self._build_smm_attn_mask_shared(
+        attn_mask_single = None if attention_plan is not None else self._build_smm_attn_mask_shared(
             bsz=bsz,
             split_len=split_len,
             total_len=total_len,
@@ -612,6 +652,7 @@ class HunyuanMotionMMDiT(nn.Module):
                     split_len=split_len,
                     adapter=adapter,
                     attn_mask=attn_mask_single,
+                    attention_plan=attention_plan,
                 )
 
         x = x[:, :split_len, ...]

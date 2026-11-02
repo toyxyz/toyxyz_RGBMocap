@@ -48,12 +48,15 @@ def placement_fit(pelvis,anchors,cameras,scene_first):
                 anchor_residual_m=dict(mean=float(np.linalg.norm(residual,axis=1).mean()),maximum=float(np.linalg.norm(residual,axis=1).max())))
 
 
-def context(project):
+def context(project,generated=False):
     from .flow_backend import scene_root
     from .models import BY_KEY
     project=Path(project);root=scene_root(project)
     state=json.loads((project/'project.json').read_text(encoding='utf-8'))
     inputs={name:file_stat(project/name) for name in ('flow_prediction.pt','flow_placement.json','flow_camera.npz','tracking.npz')}
+    from .flow_hamer import prediction_name
+    selected=prediction_name(project,generated=generated)
+    if selected!='flow_prediction.pt':inputs[selected]=file_stat(project/selected)
     inputs['scene_camera']=file_stat(root/'flow_camera.npz')
     return dict(version=VERSION,inputs=inputs,frames=state['frames'],take=state.get('person_frames'),
                 model=(file_stat(BY_KEY['smplh'].path) if BY_KEY['smplh'].path.exists() else json.loads((project/'flow_world.json').read_text(encoding='utf-8'))['context']['model']))
@@ -79,7 +82,11 @@ def prediction_current(project):
     project=Path(project)
     try:
         record=json.loads((project/'flowhmr_receipt.json').read_text(encoding='utf-8'))
-        return not (project/'flowhmr_pending.json').exists() and record['identity']==identity(project,'flowhmr') and record['outputs']['flow_prediction.pt']==file_stat(project/'flow_prediction.pt')
+        from .flow_hamer import prediction_name
+        selected=prediction_name(project)
+        return (not (project/'flowhmr_pending.json').exists() and record['identity']==identity(project,'flowhmr')
+                and record['outputs']['flow_prediction.pt']==file_stat(project/'flow_prediction.pt')
+                and (selected=='flow_prediction.pt' or record['outputs'][selected]==file_stat(project/selected)))
     except (OSError,ValueError,KeyError,TypeError):return False
 
 
@@ -93,7 +100,7 @@ def ensure(project,generated=False,body=None):
     if current(project):return False
     if not generated and not prediction_current(project):
         raise ValueError('FlowHMR prediction no longer matches its camera/features/models. Reconstruct 3D before rebuilding placement.')
-    before=context(project);root=scene_root(project)
+    before=context(project,generated=generated);root=scene_root(project)
     state=json.loads((project/'project.json').read_text(encoding='utf-8'));n=state['frames']
     with np.load(root/'flow_camera.npz',allow_pickle=False) as data:scene_first=data['camera_RT_yup'][0,:3,:3].copy()
     with np.load(project/'flow_camera.npz',allow_pickle=False) as data:cameras=data['camera_RT_yup'].copy()
@@ -102,7 +109,8 @@ def ensure(project,generated=False,body=None):
         with np.load(root/'flow_camera.npz',allow_pickle=False) as data:
             if end-begin!=n or not np.array_equal(cameras,data['camera_RT_yup'][begin:end]):
                 raise ValueError('Person take does not use the matching shared scene camera slice')
-    raw=load_tensor(project/'flow_prediction.pt');validate_motion(raw,n)
+    from .flow_hamer import prediction_name
+    raw=load_tensor(project/prediction_name(project,generated=generated));validate_motion(raw,n)
     body=body if body is not None else SMPLSkeleton(model_path=str(BY_KEY['smplh'].path))
     with torch.inference_mode():rest=body.compute_j_shaped(raw['shapes'].reshape(1,16))[0,0].numpy()
     pelvis=raw['trans'][0].numpy()+rest
@@ -121,15 +129,17 @@ def ensure(project,generated=False,body=None):
     placed.update(scene_offset=offset,source_representation='smplh',flow_version=1,placement_version=VERSION)
     validate_motion(placed,n)
     atomic_json(project/'flow_world_pending.json',dict(version=VERSION))
-    if before!=context(project):raise ValueError('FlowHMR placement inputs changed; retry Prepare Preview.')
+    if before!=context(project,generated=generated):raise ValueError('FlowHMR placement inputs changed; retry Prepare Preview.')
     save_tensor(project/'hmr4d_results.pt',placed)
     record=dict(context=before,output=file_stat(project/'hmr4d_results.pt'),camera_height=fit['camera_height'],
                 scene_basis=fit['scene_basis'].tolist(),rotation=fit['rotation'].tolist(),offset=fit['offset'].tolist(),
                 anchor_residual_m=fit['anchor_residual_m'],intrinsics=anchors['intrinsics'],
                 method='Official WV yaw; shared scene basis; rigid XZ offset; native height retained')
-    if before!=context(project):raise ValueError('FlowHMR inputs changed during placement commit; retry Prepare Preview.')
+    if before!=context(project,generated=generated):raise ValueError('FlowHMR inputs changed during placement commit; retry Prepare Preview.')
     atomic_json(project/'flow_world.json',record)
     sources={name:file_stat(project/name) for name in ('flow_prediction.pt','flow_tokens.pt','flow_camera.npz','flow_placement.json','tracking.npz','flow_world.json')}
+    selected=prediction_name(project,generated=generated)
+    if selected!='flow_prediction.pt':sources[selected]=file_stat(project/selected)
     atomic_json(project/'initial_sources.json',sources)
     # The original generator identity and immutable prediction remain reusable.
     receipt=project/'flowhmr_receipt.json'

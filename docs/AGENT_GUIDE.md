@@ -41,6 +41,12 @@ cache. The two prepared batches are in addition to the batch being consumed.
 The 256 MiB prepared-storage estimate is not a hard cap on whole-process RAM;
 retain actual memory monitoring and deterministic producer cleanup.
 
+For FlowHMR query-batch before/after time, allocated VRAM, worker RAM and
+precision limits, use the [measured comparison table](PERFORMANCE.md#flowhmr-query-batches-and-four-frame-hands-2026-11-03).
+Keep warm generator measurements separate from fresh feature jobs and the
+additional HaMeR child pass. HaMeR is an optional finger-accuracy refinement,
+not a guarantee of better results for every video.
+
 ## Models and model files
 
 ExMR's integrated v0.1.5 uses public `pipeline.hand_boxes`, `model_inputs` and
@@ -392,6 +398,13 @@ runtime dependency, source motion or contact change is part of export.
 
 ## Resources and performance
 
+`sidebar_scroll.py` routes ordinary wheel events over closed combo boxes and
+number inputs into the right settings scroll area. Do not let scrolling mutate
+inference/correction options and trigger model checks or viewport repainting.
+Preserve native high-resolution deltas, open popup scrolling, keyboard/text/button
+edits and deliberate focused Ctrl+wheel. This is scoped UI input routing, not a
+model/cache/precision change or an application-wide wheel filter.
+
 **Resource Safety** defaults on below Resource Mode. Off skips the measured
 RAM/commit-headroom stop and sets the PyTorch allocator fraction to 1 (no app
 VRAM cap). Keep adaptive batch/path selection, actual OOM backoff/recovery,
@@ -448,8 +461,49 @@ not necessarily RAM; individual CPU-loaded models can add several GiB of host
 working set. Automatic selects a path per operation, not from a guaranteed
 whole-job capacity prediction. FlowHMR's Low Memory SAM batch is one even when
 the saved Adaptive Batching box is on; its GPU Hand Crops selection is retained.
-The two Fast SAM switches default on for new work, preserve saved off settings,
+The three Fast SAM switches default on for new work, preserve saved off settings,
 and only apply with Fast SAM. See [their separate measurements and output differences](PERFORMANCE.md#flowhmr-fast-sam-switches).
+
+FlowHMR additionally uses the reviewed 256-query attention implementation for
+every clip length, with FP32, unchanged visibility/RoPE and full sequence context.
+Do not substitute temporal chunking or change steps/precision. Network sources
+are recorded in `third_party/FlowHMR/RGB_MOCAP_PROVENANCE.json` and motion receipts.
+No runtime package changes or additional compilation are needed.
+
+The default-on `sam_hand_stride4` setting controls **4-Frame Hand Sampling**.
+It is distinct from the spatial `sam_batch4` key: body features stay per frame,
+hands use indices 0,4,8,... plus the last frame, and bounded CPU linear feature
+interpolation fills all output frames. Keep the same indices across OOM splits,
+one-frame Low Memory batches and people/take jobs. `flow_hand_sampling.py` holds
+the schedule/interpolation; `flow_fast_sam.py` also supports body-only sub-batches.
+The body decoder provides the first placement hips without requiring hand fusion.
+Saved off is respected; an absent setting defaults on for future reconstruction,
+without automatically replacing cached motion. Include the option and sampling
+code in feature identities; never alias this numerical change to an older cache.
+Publish no partially interpolated tokens.
+Tests measured 41–49% less warm SAM feature time and 5.43→4.21 GiB allocated VRAM
+at batch 16, but body/wrist positions and contacts can change too. See
+[the model guide](models/FLOWHMR.md#query-batched-motion-attention-and-sparse-hands).
+
+FlowHMR's optional `hamer` flag defaults **false** and forces `fast_sam` and
+`sam_hand_stride4` true. The UI locks those dependent switches while enabled.
+SAM publishes per-frame body-derived hand boxes with its feature receipt.
+`flow_hamer.py` runs `flow_hamer_entry.py` in the existing **ExMR** runtime, never
+imports its incompatible packages into FlowHMR, and reuses shared HaMeR/MANO
+assets. It applies ExMR crops/mirroring and Gaussian rotation smoothing to
+direct HaMeR finger predictions; this is not ExMR's learned HandMR inference.
+HaMeR itself uses every frame, eight hand crops per batch (one with CPU-first
+loading in Low Memory), without another detector. Keep invalid-hand fallback,
+bounded capture/prefetch, child cancellation and atomic cache receipts intact.
+Release the parent GPU model before launching the child. Preserve
+`flow_prediction.pt` as the untouched FlowHMR output; optional fingers go to
+`flow_hamer_prediction.pt`. `flow_placement.py` selects the source recorded by
+the committed generation, not a draft checkbox value. Preserve root/body/wrist,
+shape, camera and native contact tensors exactly before subsequent correction.
+HaMeR's local matrix predictions map directly to SMPL-H's 15 joints per side;
+mirror the left local matrices but do not add/subtract a MANO/SMPL hand mean.
+Do not promise better accuracy for every video or ExMR-equivalent temporal stability. See
+[HaMeR details and requirements](models/FLOWHMR.md#optional-hamer-fingers).
 
 FlowHMR's `flow_sam_batch.py` selects 1/2/4/8/16 frames from current allocation
 headroom, free RAM and resolution after loading. Preserve the legacy

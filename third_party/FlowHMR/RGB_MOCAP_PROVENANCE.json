@@ -2,5 +2,14 @@
   "repository": "https://github.com/flowhmr/flowhmr",
   "commit": "b23040f10732b59acaad37afbd9fe0fa823c54b3",
   "runtime": "Native Windows Python 3.10 / PyTorch 2.7.1+cu128",
-  "registered_models_bundled": false
+  "registered_models_bundled": false,
+  "query_attention": {
+    "commit": "87ebb483ce9da32be72c67971bc8fd76f27251f3",
+    "files": [
+      "network/hymotion_mmdit_for_v2m.py",
+      "network/token_refiner.py",
+      "network/mmdit/query_batched_attention.py"
+    ],
+    "default_in_app": "query_batched, 256 queries, all clip lengths; FP32 and original temporal visibility retained"
+  }
 }
