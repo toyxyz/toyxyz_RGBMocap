@@ -235,6 +235,10 @@ app and use `update.cmd` to install a version containing the fix; for an already
 updated source checkout, `install.cmd` refreshes runtime verification. Matching
 package profiles and model files are retained. Valid feature caches remain usable.
 
+## Acknowledgments
+
+Special thanks to [Scar1etCrystal](https://github.com/Scar1etCrystal) for their valuable help with FlowHMR optimization in RGB MoCap.
+
 ## Citation
 
 [FlowHMR paper](https://arxiv.org/abs/2610.03691) · [Research citations and BibTeX](../CITATIONS.md#flowhmr)

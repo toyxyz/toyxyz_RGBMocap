@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "date": "2026-11-03",
+  "date": "2026-11-04",
   "purpose": "Public source distribution; excludes model weights and runtime binaries",
   "version": "git-source",
   "files": [
@@ -161,8 +161,8 @@
     },
     {
       "path": "docs/models/FLOWHMR.md",
-      "bytes": 18530,
-      "sha256": "93dcb3323fa9dfc0f3fed8079c27ef9eef07fc727f900b346ea0ef5387f6aca4"
+      "bytes": 18685,
+      "sha256": "9b8e13d8ebe4a742e262512f466e1e762f9c3cd4a201811f6d2a5bfb56aad97d"
     },
     {
       "path": "docs/models/GVHMR.md",
