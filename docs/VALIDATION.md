@@ -2086,3 +2086,38 @@ Ctrl+wheel, text/keyboard edits, frame/camera and idle processing state. Six
 offscreen create/close cycles retained 419 handles and 34 threads; the final
 repeat's RSS ranged 81.56–84.43 MiB. This short trend does not establish long-session leak freedom.
 Inference, correction, preview math and installed packages were unchanged.
+
+## MAMMA direct SAM input (2026-11-03)
+
+The app now reads SAM 2.1 frames through the prepared-video reader instead of
+saving and rereading intermediate lossless RGB PNGs. The adapter creates no
+empty frame-index files. PIL resize, float64 division into FP32 storage,
+normalization, CPU video/state offload, prompts, matching, propagation and final
+mask cleanup are unchanged. Final person-mask PNGs are still saved normally.
+The helper is included in inference code identities. Existing committed results
+are not rewritten on open; explicit reconstruction uses a new generation.
+
+Independent four-camera, two-person 1080p tests used the same video prefix at
+210/426 frames (7/14.2 seconds, 30 fps). All 5,088 paired person-mask images
+were pixel-identical, with no memory-protection stop or OOM. Mask-stage time
+fell 16.9%/21.2%; peak RAM differences were +23/−3 MiB, with the same allocated
+and reserved CUDA peaks within each pair. These were fresh-process, single-run
+measurements on RTX 5090 / 96 GB RAM, not minute-scale or other-GPU guarantees.
+See [performance](PERFORMANCE.md#mamma-direct-sam-video-input-2026-11-03).
+
+The integrated app path was then exercised on a separate dynamic 90-frame,
+four-view/two-person 1080p segment through masks, FP32 landmarks and 3D fitting.
+Against the earlier PNG control with identical prepared inputs and calibration,
+all 720 person-mask images, landmark/contact arrays, final meshes and joints
+were bit-identical. The new mask worker took 91.48 s with 4.731 GiB maximum RAM
+working set and 2.536 GiB allocated / 2.861 GiB reserved CUDA memory. This is
+the mask stage only; fresh camera estimation, app correction, GUI playback and
+exports were not rerun for this input-loading change.
+
+Controlled checks covered sequential reads, the same normalized tensor as PNG,
+Unicode path registration, empty-source rejection, unregistered/image-source
+fallback, and restoration on success, decode/OOM/cancellation exceptions and
+repeated app-wrapper failures. The adapter owns no additional readers, queues
+or threads. The updated Model Guide rendered in offscreen Qt. The installed
+MAMMA engine's 368 checked source files were unchanged. Tests/inputs remained
+outside the public checkout; no runtime package or model weight was added.

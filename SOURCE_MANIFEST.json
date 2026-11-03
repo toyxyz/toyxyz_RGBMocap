@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 12425,
-      "sha256": "0085bb68c8ea6ae8c133d37bfa960fbbc32a090f5a170ef16fb5e2b98617d42b"
+      "bytes": 12453,
+      "sha256": "8d0805bd478dc38ff39680b37b0744a7cb8783d26a22614ac9cc684300651938"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -96,8 +96,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 68225,
-      "sha256": "5ea3fc662da00e09b88ffb9f7153ce74887a13b72c836d87e670e4d3be802a97"
+      "bytes": 69250,
+      "sha256": "f1f7beb2be54f32d55c6e3d061038f4c9a8bbbe60af71a9aacd3bd752f972c31"
     },
     {
       "path": "docs/BUILD.md",
@@ -111,8 +111,8 @@
     },
     {
       "path": "docs/MAMMA.md",
-      "bytes": 26044,
-      "sha256": "b39269e68b68ad1d1644083114a4adab39a321b7a57430c2e299932b8448e350"
+      "bytes": 27478,
+      "sha256": "d944c829870df59e1f8b70f40cbf903f4a53f4d1903a55dccc8ef69ab3dff4f9"
     },
     {
       "path": "docs/MAMMA_AGENT_SETUP.md",
@@ -121,8 +121,8 @@
     },
     {
       "path": "docs/PERFORMANCE.md",
-      "bytes": 23477,
-      "sha256": "9a7930c96cde25c9d56ecfe1981ccd57b1099207e408aabced2961ad6cd6fce9"
+      "bytes": 25858,
+      "sha256": "a258094f5bbdd9321e2bc48bb58cc9a3ebdd58372cbf7a12280c8ebf2295ec5e"
     },
     {
       "path": "docs/USER_GUIDE.md",
@@ -131,8 +131,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 137180,
-      "sha256": "bc42cbb32f6756739822483e2d3029933b9e8228e1470684f8e91d194fa05cdb"
+      "bytes": 139455,
+      "sha256": "8b1931274cece344694bcd749ef66e465fc14b566a46fed3fa9604c3b5fc9334"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -1476,8 +1476,8 @@
     },
     {
       "path": "mocap/mamma_pipeline.py",
-      "bytes": 19453,
-      "sha256": "21dd73e239904ab95bf147b0544bdd460cccf6979b35975095106363dfc2b069"
+      "bytes": 19048,
+      "sha256": "5c90318cfc520bfad4f84d0239a47bdc38b95be14f2f3fc79baf9d9c7e9f32ba"
     },
     {
       "path": "mocap/mamma_publish.py",
@@ -1488,6 +1488,11 @@
       "path": "mocap/mamma_runtime.py",
       "bytes": 5812,
       "sha256": "2e69b856b0969aed3b1e34b02130432f35c3fa434d4e669f11e40943aa6d9757"
+    },
+    {
+      "path": "mocap/mamma_sam_frames.py",
+      "bytes": 4132,
+      "sha256": "1fb23a91f5df5b092e63d48e87e1d87d557a16268d8422c4c7f54c6aa488fb3f"
     },
     {
       "path": "mocap/mamma_scene.py",
@@ -1531,8 +1536,8 @@
     },
     {
       "path": "mocap/model_guide.py",
-      "bytes": 13352,
-      "sha256": "eadbea53fe399296eeba27669dec0e4bf557f4944dec955e93dd274cf4c4d490"
+      "bytes": 13618,
+      "sha256": "d96ba65d31bb49fe3b31a7a54a8795b9a9f6acc064546c69c83b1a5257a93c44"
     },
     {
       "path": "mocap/model_session.py",

@@ -65,7 +65,10 @@ be faster. These three models used the same seven-second clip; their times exclu
 tracking, app correction and preview/export.</p>
 <p>MAMMA used a different clip: three synchronized videos resized within 1920×1080,
 two people and 413 frames at 30 fps. Its time includes preparation, correction and preview;
-memory covers masks, landmarks, VGGT and 3D fitting. This is not a direct speed comparison.</p>
+memory covers masks, landmarks, VGGT and 3D fitting. This is not a direct speed comparison.
+That row predates direct SAM video input. New paired four-view tests skipped intermediate
+RGB PNGs and cut mask-stage time by 17–21% with nearly unchanged RAM/VRAM and identical
+masks; this is not a whole-job speedup. See docs/MAMMA.md and docs/PERFORMANCE.md.</p>
 <p>PromptHMR used 422 frames at 30 fps, one fixed-camera video and two people, with
 Interaction Prompt and app correction on. Time includes tracking, native inference,
 post-optimization, correction and preview/bone preparation; writing public FBX files is excluded.

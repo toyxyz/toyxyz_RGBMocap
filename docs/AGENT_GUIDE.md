@@ -222,6 +222,20 @@ verification, registration and rollback, use the
 validate actual native CUDA operations. Do not overwrite a working runtime to
 test a new native module, or use cached inference as evidence of a new build.
 
+MAMMA's SAM 2.1 input uses `mocap/mamma_sam_frames.py` to decode the already
+prepared video directly, without intermediate RGB PNGs or empty index files.
+Keep the same PIL resize, float64 pixel division into FP32 frame storage,
+in-place normalization and CPU frame/state offload. Final masks and existing
+matching/fitting settings remain unchanged. The adapter is worker-scoped,
+restores upstream hooks even on exceptions, and holds only the current camera's
+frame-source reference; it owns no new captures or background queues. Other
+frame-source types keep the upstream path. Include the helper in the MAMMA code
+identity; never reuse a mixed/incomplete generation. Existing completed results
+remain readable and are not automatically reprocessed on open. No runtime setup
+change is needed. Paired 7/14.2-second mask tests cut time 17–21%, changed RAM by
++23/−3 MiB and retained all masks; these are stage-only results. See
+[performance and measurement limits](PERFORMANCE.md#mamma-direct-sam-video-input-2026-11-03).
+
 ### Capture, correction and export
 
 1. Select an AI Motion Model and prepare its models, then **File > Open Video** and optionally trim the Video track. Select MAMMA before opening multiple videos. New work defaults to ExMR.

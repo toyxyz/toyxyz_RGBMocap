@@ -212,7 +212,7 @@ and **6.10 to 2.77 GiB** for FlowHMR. Separate short-clip tests of connected
 processing phases cut worker time by **44% for ExMR** and **24% for FlowHMR**,
 with unchanged measured peak VRAM. These are different tests, not full-job
 speed guarantees. See [resource modes, measured savings and acceleration](docs/PERFORMANCE.md)
-for conditions, per-model results and output differences.
+for conditions, per-model results, direct-video preprocessing and output differences.
 
 FlowHMR's **Adaptive Batching** selects 1–16 Fast SAM frames from available memory;
 Low Memory uses one. Warm feature tests took 16–23% less time at batch 16 than at

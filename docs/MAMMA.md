@@ -219,6 +219,28 @@ diagnostics. VGGT samples up to three times per fixed camera at its 512 input
 setting and omits unneeded depth output. Matching completed inference is reused;
 contact edits and correction do not require another MAMMA inference.
 
+SAM input now comes directly from the prepared camera videos instead of writing
+and rereading intermediate RGB PNG frames. The same decoded pixels, PIL resize,
+FP32 frame storage and normalization are retained. Final person masks still save
+normally for the landmark stage. Both Automatic and Low Memory use this path;
+it changes neither camera estimation nor fitting/contact settings and adds no
+package, checkpoint or runtime installation requirement.
+
+Paired four-camera, two-person tests at 1920×1080/30 fps measured the mask stage:
+
+| Common duration | Time: PNG → direct input | Peak RAM working set: PNG → direct | Peak allocated VRAM: PNG → direct |
+| --- | ---: | ---: | ---: |
+| 7 s / 210 frames | 221.79 → 184.40 s | 6.569 → 6.592 GiB | 2.536 → 2.536 GiB |
+| 14.2 s / 426 frames | 398.88 → 314.52 s | 10.053 → 10.050 GiB | 2.536 → 2.536 GiB |
+
+This was **17–21% less mask-stage time**, with RAM differences of +23/−3 MiB
+and all 5,088 compared person-mask images pixel-identical. These are stage
+measurements on one PC, not full-job speedups or long-video memory guarantees.
+RAM still grows with clip length in both paths; this change removes disk I/O,
+not SAM's existing CPU frame/state storage. Existing completed projects remain
+readable; explicitly reconstruct to use the new input path. See the
+[measurement scope](PERFORMANCE.md#mamma-direct-sam-video-input-2026-11-03).
+
 Earlier four-view, two-person, 30-frame tests on the RTX 5090 test PC measured:
 
 | Applied change | Stage time before → after | Time reduction |

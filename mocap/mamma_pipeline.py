@@ -105,7 +105,7 @@ def prepare(path, job):
     # All connector code contributes, not just the model prediction script.
     from .paths import ROOT
     from .storage import sha256
-    identity['code']={name:sha256(ROOT/'mocap'/name) for name in ('mamma_pipeline.py','mamma_camera.py','mamma_gravity.py','mamma_gravity_worker.py','mamma_inputs.py','image_io.py','memory_mode.py','gpu_offload.py','worker_progress.py','runtime_registry.py','pear/alignment_support.py')}
+    identity['code']={name:sha256(ROOT/'mocap'/name) for name in ('mamma_pipeline.py','mamma_sam_frames.py','mamma_camera.py','mamma_gravity.py','mamma_gravity_worker.py','mamma_inputs.py','image_io.py','memory_mode.py','gpu_offload.py','worker_progress.py','runtime_registry.py','pear/alignment_support.py')}
     token=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()[:24]
     slot=job['root']/'mamma'/'inference'/token
     cached=False
@@ -169,21 +169,11 @@ def masks(engine, work, job):
             raise ValueError('Unsupported MAMMA appearance model; no automatic downloads are allowed.')
         kwargs['pretrained']=str(BY_KEY['mamma_clip'].path)
         return original_clip(name,*args,**kwargs)
-    open_clip.create_model_and_transforms=local_clip
     sys.path[:0]=[str(engine/'segmentation'),str(engine)]
     from core.pipeline import SegmentMultipleFrames
     from core.frame_source import VideoSource
-    original=SegmentMultipleFrames._resolve_sam_video_source
-    def resolve(self,frames,cam_data=None):
-        if not isinstance(frames,VideoSource):return original(self,frames,cam_data)
-        dest=Path(self.output_path)/frames.cam_name/'_sam_frames_lossless'
-        dest.mkdir(parents=True,exist_ok=True)
-        for i in range(len(frames)):
-            if i%30==0:emit('progress',current=i,total=len(frames),message='Prepare SAM frames: '+frames.cam_name)
-            if not write_image(str(dest/f'{i:06}.png'),frames.reader.read_bgr(i)):
-                raise OSError('Cannot write a lossless SAM input frame.')
-        return str(dest)
-    SegmentMultipleFrames._resolve_sam_video_source=resolve
+    import sam2.sam2_video_predictor as sam_video
+    from .mamma_sam_frames import direct_video_frames
     names=[v['id'] for v in job['inputs']]
     config=yaml.safe_load((engine/'segmentation/configs/sam2.yaml').read_text(encoding='utf-8'))
     # Frozen settings from the completed occlusion trials: a single anatomical
@@ -202,7 +192,12 @@ def masks(engine, work, job):
           '--skip_masked_outputs','--skip_collage','--cfg',config_path]
     people=job['options'].get('people',0)
     if people:args+=['--expected_subjects',people]
-    run_script(engine,'segmentation','run_ma_masks.py',args)
+    open_clip.create_model_and_transforms=local_clip
+    try:
+        with direct_video_frames(SegmentMultipleFrames,VideoSource,sam_video,emit):
+            run_script(engine,'segmentation','run_ma_masks.py',args)
+    finally:
+        open_clip.create_model_and_transforms=original_clip
     raw=work/'masks/mamma_example/motion'
     cleaned=work/'clean-masks/motion'
     count=0

@@ -348,7 +348,45 @@ figures, not combined parent/desktop RAM peaks or universal requirements. The
 parent releases its GPU model before the child starts. Warm timings from earlier
 standalone FP32 crop experiments have a different scope and precision.
 
-### MAMMA
+### MAMMA direct SAM video input (2026-11-03)
+
+MAMMA now skips the intermediate lossless RGB PNG write/read before SAM 2.1.
+It uses the existing video reader and the same PIL resize, FP32 tensor and
+normalization. YOLO/CLIP matching, mask prompts, propagation, tiny-component
+cleanup, landmark inference, cameras, fitting and correction are unchanged.
+Final person masks remain available for downstream stages. This optimization
+is used in both resource modes and needs no new runtime or weights.
+
+Independent paired measurements on the RTX 5090 / 96 GB RAM test PC used four
+1920×1080 videos, two people, 30 fps, and the same source prefix at both lengths.
+Each variant ran in a fresh process, once per duration, with CPU frame/state
+offload unchanged. Time covers mask-model setup, input preparation, matching,
+propagation, mask saving and cleanup; camera/landmark/3D fitting are excluded.
+
+| Duration | Time: PNG / direct | Peak RAM working set: PNG / direct | Peak allocated VRAM: PNG / direct |
+| --- | ---: | ---: | ---: |
+| 7 s / 210 frames | 221.79 / 184.40 s | 6.569 / 6.592 GiB | 2.536 / 2.536 GiB |
+| 14.2 s / 426 frames | 398.88 / 314.52 s | 10.053 / 10.050 GiB | 2.536 / 2.536 GiB |
+
+Mask-stage time fell **16.9% / 21.2%** (1.20× / 1.27× throughput).
+RAM changed **+23 / −3 MiB**, with identical allocated/reserved CUDA peaks
+within each pair. Windows private-commit peaks were 10.661 / 10.670 GiB for
+7 seconds and 13.989 / 13.981 GiB for 14.2 seconds. Private commit is not
+physical RAM; working set is the OS process peak, including short transients.
+
+All **5,088 paired person-mask images** were pixel-identical. PNG input payloads
+of 2.57 / 5.23 GiB were avoided; final masks and other necessary outputs still
+write to disk. Process logical writes fell 3.89→1.32 / 7.88→2.65 GiB; these are
+Windows process I/O counters, not physical SSD writes. The SAM CPU tensor alone
+uses about 12 MiB per frame at its 1024-square setting in either path, so long
+clips can still need substantial RAM. These tests do not establish minute-scale
+memory use, universal speedups or less RAM for every input.
+
+An earlier separate four-view, three-second comparison also retained identical
+masks, landmarks, final mesh and joints. The app-path regression and remaining
+scope are recorded in [validation](VALIDATION.md#mamma-direct-sam-input-2026-11-03).
+
+### Other MAMMA optimizations
 
 The current MAMMA adapter uses exact-coordinate ROI preprocessing, CPU checkpoint
 loading, a mask-based landmark path without an unnecessary detector, fewer
