@@ -105,7 +105,9 @@ def prepare(path, job):
     # All connector code contributes, not just the model prediction script.
     from .paths import ROOT
     from .storage import sha256
-    identity['code']={name:sha256(ROOT/'mocap'/name) for name in ('mamma_pipeline.py','mamma_sam_frames.py','mamma_camera.py','mamma_gravity.py','mamma_gravity_worker.py','mamma_inputs.py','image_io.py','memory_mode.py','gpu_offload.py','worker_progress.py','runtime_registry.py','pear/alignment_support.py')}
+    from .resource_cache import code_hash
+    # Exact-byte aliases retain inference after the download-only progress fix.
+    identity['code']={name:(code_hash if name in {'mamma_pipeline.py','worker_progress.py'} else sha256)(ROOT/'mocap'/name) for name in ('mamma_pipeline.py','mamma_sam_frames.py','mamma_camera.py','mamma_gravity.py','mamma_gravity_worker.py','mamma_inputs.py','image_io.py','memory_mode.py','gpu_offload.py','worker_progress.py','runtime_registry.py','pear/alignment_support.py')}
     token=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()[:24]
     slot=job['root']/'mamma'/'inference'/token
     cached=False

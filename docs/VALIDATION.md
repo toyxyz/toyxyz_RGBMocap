@@ -2192,3 +2192,24 @@ verified cached archives. Both native checks and readiness configurations passed
 The real launcher dependency/pending guards, GUI runtime activation and app import
 also passed without opening a GUI or running model inference. Prior support
 generations and user models/projects were preserved.
+
+## FlowHMR model download callback repair (2026-11-06)
+
+Issue #25 was reproduced before the fix: the worker's one-argument download
+wrapper rejected FlowHMR's recursive metadata call with its explicit progress
+callback. The scoped replacement accepts the original optional callback and
+restores the downloader on success, failure or interruption. Model URLs,
+SHA-256 checks, weights, runtime packages and inference calculations are unchanged.
+
+15 regression checks passed using actual download workers and tiny files served
+over localhost HTTP. They cover metadata-before-checkpoint order, sequential
+Download All-style jobs, individual downloads, verified-file reuse, metadata and
+checkpoint hash failures, interrupted transfers and retries, callback forwarding,
+nesting, cleanup and non-download dispatch. Four additional cache checks passed:
+exact reviewed hashes preserve the previous MAMMA inference identity, later edits
+invalidate normally, the complete code identity remains unchanged, and actual
+MAMMA preparation reuses a committed pre-fix result without running processing.
+
+These are isolated fixture tests, not public-provider downloads, GUI click tests,
+new motion inference or a clean-Windows installation. No user model/project files
+were changed. Test scripts and outputs are kept outside the public source tree.

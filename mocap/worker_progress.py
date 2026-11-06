@@ -1,5 +1,6 @@
 """Presentation-only worker entry; inference/cache identities stay unchanged."""
 import json,runpy,sys
+from contextlib import contextmanager,nullcontext
 
 for stream in (sys.stdout,sys.stderr):
     if hasattr(stream,'reconfigure'):
@@ -8,6 +9,19 @@ for stream in (sys.stdout,sys.stderr):
 
 def emit(kind,**value):
     print('@@MOCAP@@'+json.dumps(dict(type=kind,**value)),flush=True)
+
+
+@contextmanager
+def download_progress(callback):
+    """Preserve the downloader signature, including recursive metadata calls."""
+    from . import models
+    original=models.download
+    def wrapped(key,progress=None):
+        return original(key,progress=callback if progress is None else progress)
+    try:
+        models.download=wrapped
+        yield
+    finally:models.download=original
 
 
 def main():
@@ -57,13 +71,10 @@ def main():
         from .project_save import main as save_main
         sys.argv.pop(1)
         return save_main(emit)
-    if stage=='download':
-        from . import models
-        original=models.download
-        models.download=lambda key:original(key,progress=emit)
     if stage.startswith('exmr') or stage=='download':
         from .progress_events import tqdm_events
-        with tqdm_events(emit):runpy.run_module('mocap.worker',run_name='__main__')
+        with tqdm_events(emit), (download_progress(emit) if stage=='download' else nullcontext()):
+            runpy.run_module('mocap.worker',run_name='__main__')
     else:runpy.run_module('mocap.worker',run_name='__main__')
 
 

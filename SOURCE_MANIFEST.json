@@ -131,8 +131,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 143635,
-      "sha256": "77691e896537ccd67ee14e967685b97c109c2734e61db51d3e7e5eb1d005897e"
+      "bytes": 144966,
+      "sha256": "fc430e80094d020c483ebc24e42af44d31b9540d5a9a2d734ff62f93e24400ce"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -1476,8 +1476,8 @@
     },
     {
       "path": "mocap/mamma_pipeline.py",
-      "bytes": 19048,
-      "sha256": "5c90318cfc520bfad4f84d0239a47bdc38b95be14f2f3fc79baf9d9c7e9f32ba"
+      "bytes": 19241,
+      "sha256": "8252ef60d906f1c36a8d3b832fbdf9da8204bedf66d3adecb55de52580121413"
     },
     {
       "path": "mocap/mamma_publish.py",
@@ -1856,8 +1856,8 @@
     },
     {
       "path": "mocap/resource_cache.py",
-      "bytes": 2246,
-      "sha256": "4184520af56fe2fb21c4866cf978dfd5d817132142fe9d419b02695adbd1d82b"
+      "bytes": 2739,
+      "sha256": "57f1170b1e5a1d9c47fcb07ef443f138964fb109bdcd2178f6579e881e6cbee9"
     },
     {
       "path": "mocap/resource_safety.py",
@@ -2141,8 +2141,8 @@
     },
     {
       "path": "mocap/worker_progress.py",
-      "bytes": 2836,
-      "sha256": "e98a7df6d9396ee5d8ef9411b76cf899497f6c873955812b18b7439376da2e0d"
+      "bytes": 3210,
+      "sha256": "c3b12bed270ffea56272e750b234e06c6c49ce7eea980d0520dd0c8180c517aa"
     },
     {
       "path": "mocap/workspace_ui.py",

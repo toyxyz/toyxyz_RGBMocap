@@ -27,6 +27,14 @@ LOGGING_ONLY = {
 }
 
 
+# Download callback plumbing changes no MAMMA inference inputs.
+# These aliases match complete reviewed bytes, never arbitrary later edits.
+DOWNLOAD_PROGRESS_ONLY = {
+    "c3b12bed270ffea56272e750b234e06c6c49ce7eea980d0520dd0c8180c517aa": "e98a7df6d9396ee5d8ef9411b76cf899497f6c873955812b18b7439376da2e0d",
+    "8252ef60d906f1c36a8d3b832fbdf9da8204bedf66d3adecb55de52580121413": "5c90318cfc520bfad4f84d0239a47bdc38b95be14f2f3fc79baf9d9c7e9f32ba"
+}
+
+
 def code_hash(path):
     actual=sha256(path)
-    return LOGGING_ONLY.get(actual,POLICY_ONLY.get(actual,actual))
+    return DOWNLOAD_PROGRESS_ONLY.get(actual,LOGGING_ONLY.get(actual,POLICY_ONLY.get(actual,actual)))
