@@ -56,9 +56,17 @@ PLATFORM_ONLY = {
 }
 
 
+# Model locations (in-place import flag, registry body-model paths) change no
+# inference or correction inputs. Complete-byte matching, as above.
+MODEL_LOCATION_ONLY = {
+    "7b84aed4c283cf9524d6f5fd8358ae2dfeb393e02ddbf7517d30c664be3933f1": "883d9dde808cf27c86611cb85f0e28ffcb3541639d417d2f68c4c7e1b2d00855",  # worker.py
+    "33f771e4b754efe6903aa7f46f8c358cb62d9faba2cfff029523229710def62e": "87642b11a7a50515c634968b60f35ceebf2ba929c538a287086120869338f2a4"  # scene_floor.py
+}
+
+
 def alias(digest):
     """Identity value of reviewed source bytes; any other digest is its own identity."""
-    return PLATFORM_ONLY.get(digest,DOWNLOAD_PROGRESS_ONLY.get(digest,LOGGING_ONLY.get(digest,POLICY_ONLY.get(digest,digest))))
+    return MODEL_LOCATION_ONLY.get(digest,PLATFORM_ONLY.get(digest,DOWNLOAD_PROGRESS_ONLY.get(digest,LOGGING_ONLY.get(digest,POLICY_ONLY.get(digest,digest)))))
 
 
 def code_hash(path):
