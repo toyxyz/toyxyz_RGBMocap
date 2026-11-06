@@ -14,22 +14,13 @@ def valid(path,spec):
     return path.is_file() and path.stat().st_size==spec['bytes'] and digest(path)==spec['sha256']
 
 def download(cache,name,spec):
-    path=cache/(name+'.zip'); partial=cache/(name+'.zip.partial')
-    if valid(path,spec):return path
-    if not spec['url'].startswith('https://'):raise ValueError('Support download must use HTTPS')
-    print('Downloading '+name+' from upstream...',flush=True)
-    try:
-        with urllib.request.urlopen(spec['url'],timeout=120) as response,partial.open('wb') as output:
-            shutil.copyfileobj(response,output,1024*1024)
-        if not valid(partial,spec):raise ValueError(name+' archive hash or size mismatch')
-        os.replace(partial,path)
-    finally:
-        if partial.exists():partial.unlink()
-    return path
+    from tools.pinned_download import download as fetch
+    return fetch(cache,name,spec)
 
 def safe_members(archive,root):
     total=0
-    for item in archive.infolist():
+    for count,item in enumerate(archive.infolist(),1):
+        if count>100000:raise ValueError('Support archive has too many files')
         name=item.filename
         path=PurePosixPath(name)
         if '\\' in name or path.is_absolute() or '..' in path.parts or not path.parts or path.parts[0]!=root or ':' in name:

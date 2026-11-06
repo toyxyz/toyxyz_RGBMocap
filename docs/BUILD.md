@@ -203,13 +203,17 @@ support folders, diagnostics and private regression artifacts are excluded from 
 The active receipt binds the support/adapters to the installed shared-runtime group.
 Matching verified support is retained without downloading or extracting it again;
 a source/base change or damaged support stages and CUDA-verifies a new generation
-before replacing the pointer. Failure leaves prior support and the install retry
-marker intact. No weights or registered geometry are acquired by this step.
+before replacing the pointer. Failure preserves prior support generations. Base
+completion is independent: a post-commit PEAR failure reports a warning rather
+than leaving the base install retry marker. No weights or registered geometry
+are acquired by this step.
 
 `tools/setup_pear_alignment.py` additionally stages the pinned GeoCalib/Kornia
 support from `installer/pear-alignment.json`, over the existing Flow runtime,
 without upgrading shared packages. It verifies imports/CUDA availability and
-writes a separate `.setup/pear-alignment.json` inventory. VGGT/GeoCalib model
+writes a separate `.setup/pear-alignment.json` inventory bound to the installed
+shared/Flow group IDs and runtime directory creation stamps. A replaced or changed
+base requires support revalidation. VGGT/GeoCalib model
 weights are obtained in Model Manager. This support enables camera alignment;
 if it is unavailable, PEAR can still track the selected camera with a warning,
 provided its base support and model files are ready.
@@ -220,6 +224,46 @@ fitting; cp310 GeoCalib/Kornia packages must not enter MAMMA's Python 3.11
 environment. Missing or unreliable gravity is an actionable failure for MAMMA
 automatic cameras. Manual camera data bypasses this support and both camera
 checkpoints. A separate GeoCalib package installation into MAMMA is not needed.
+
+## Base update and recovery
+
+Keep the existing bootstrap, pinned separate profiles and promotion journal.
+`tools/git_managed_install.py` freezes source dependency/installer inputs, recovers
+an interrupted promotion, verifies/stages the base, rechecks the frozen inputs,
+then commits receipts and finishes journal cleanup. Only then clear the global
+pending marker. PEAR and camera alignment are independently attempted through
+`tools/optional_support.py`; `.setup/git-components.json` records their readiness
+and errors. A support warning is not a successful capability verification.
+Cancellation must propagate; mandatory base errors remain fatal.
+If a live runtime is reused, discard its leftover installer staging directory
+before installing dependents, and never promote that stale directory. Otherwise
+an interrupted run could supply an unverified staged interpreter or replace an
+already verified live runtime. This cleanup is confined to installer staging.
+
+`tools/runtime_verification.py` caches successful full checks per profile for
+at most seven days. Cache keys include the group/base dependency identity and
+verifier code; reports must match the committed receipt. A bounded metadata
+inventory includes files added/removed and size/mtime/ctime changes, ignoring
+bytecode caches. Recheck reused inventories before base commit. A fast check
+never extends the full-check date. Missing, changed, expired or malformed caches
+fall back to full RECORD/import verification. `--verify-all` bypasses reuse.
+This is an ordinary-change detector, not protection against hostile metadata
+forgery. Keep the explicit full-audit path and do not broaden numerical cache
+invalidation for installer-only changes.
+
+Support archives use `tools/pinned_download.py`: default TLS verification,
+HTTPS-only redirects, three transient-error attempts, bounded backoff and a
+size-aware total deadline, a finite socket timeout, strict range validation and
+a final complete size/hash check. Partial files are associated with the exact
+URL/size/hash; an ignored Range restarts safely. Certificate/permanent HTTP or
+pin failures do not loop indefinitely. Existing base-wheel and optional-runtime
+package download paths are not all replaced by this helper.
+
+Fault tests must distinguish failure before base commit from failure afterward.
+Include real CMD argument forwarding/local Git fast-forward, retained pending
+state after failed pulls, interrupted promotions, changed source inputs, partial
+downloads, certificate/hash failures and user-data preservation. Keep tests and
+their generated files outside the public source tree. See [validation](VALIDATION.md#installation-recovery-and-recent-verification-2026-11-06).
 
 Changed upstream files receive an adaptation notice. Each support generation
 also records pinned source URLs/hashes and the adapter hash in

@@ -7,7 +7,7 @@ from mocap.pear_runtime import identity,base_identity,configuration
 from installer.pear_adapters import adapt
 from tools.session_lock import app_lock
 
-def prepare(cache=None):
+def prepare(cache=None,align=True):
     """Called under the installer lock, after committing the shared base."""
     from tools.support_components import download
     lock=json.loads((ROOT/'installer/pear-sources.json').read_text(encoding='utf-8'))
@@ -16,15 +16,21 @@ def prepare(cache=None):
     except (OSError,ValueError,KeyError,TypeError):current=None
     if current is not None:
         print('Keeping verified PEAR support over the shared runtime.',flush=True)
-        from tools.setup_pear_alignment import prepare as prepare_alignment
-        prepare_alignment(cache);return current
+        if align:
+            from tools.setup_pear_alignment import prepare as prepare_alignment
+            prepare_alignment(cache)
+        return current
     base=base_identity()
-    folder=ROOT/'runtime_pear'/('support-'+identity()[:20]+'-'+uuid.uuid4().hex[:8]);folder.mkdir(parents=True)
+    folder=ROOT/'runtime_pear'/('support-'+identity()[:20]+'-'+uuid.uuid4().hex[:8])
     cache=Path(cache) if cache else ROOT/'.setup/pear-downloads';cache.mkdir(parents=True,exist_ok=True)
     try:
+        archives={}
         for name,row in lock['sources'].items():
             print('Preparing PEAR support: '+name,flush=True)
-            archive=download(cache,name,dict(row,filename=name+('.whl' if name=='roma' else '.zip')))
+            archives[name]=download(cache,name,dict(row,filename=name+('.whl' if name=='roma' else '.zip')))
+        # Do not accumulate empty/partly extracted generations on network failure.
+        folder.mkdir(parents=True)
+        for name,archive in archives.items():
             with zipfile.ZipFile(archive) as z:
                 for info in z.infolist():
                     p=Path(info.filename)
@@ -50,8 +56,10 @@ def prepare(cache=None):
         files={p.relative_to(folder).as_posix():[p.stat().st_size,p.stat().st_mtime_ns] for p in folder.rglob('*') if p.is_file() and '__pycache__' not in p.parts and p.suffix not in ('.pyc','.pyo')}
         atomic_json(ROOT/'.setup/pear-runtime.json',dict(version=2,identity=identity(),base_identity=base,folder=folder.relative_to(ROOT).as_posix(),files=files))
         print('PEAR support ready. Existing runtime packages, models and projects were not changed.',flush=True)
-        from tools.setup_pear_alignment import prepare as prepare_alignment
-        prepare_alignment(cache);return folder
+        if align:
+            from tools.setup_pear_alignment import prepare as prepare_alignment
+            prepare_alignment(cache)
+        return folder
     except Exception:
         # Keep failed staging for diagnosis; no previous configuration is overwritten.
         print('PEAR setup failed. Existing support generations were preserved.',flush=True);raise

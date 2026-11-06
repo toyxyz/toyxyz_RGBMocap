@@ -13,12 +13,16 @@ def main():
         if git('status','--porcelain','--untracked-files=no'):raise RuntimeError('Tracked source files have local changes. Commit or back up changes before updating.')
         if git('branch','--show-current')!='main':raise RuntimeError('Switch to the intended main branch before updating.')
         before=git('rev-parse','HEAD');pending=ROOT/'.setup/git-sync.pending'
+        pending.parent.mkdir(parents=True,exist_ok=True)
+        previous_pending=pending.read_bytes() if pending.exists() else None
         pending.write_text('Update requires installation and validation.\n',encoding='utf8')
         try:
             print('Updating the current branch...',flush=True)
             subprocess.run(['git','-C',str(ROOT),'pull','--ff-only'],check=True)
         except BaseException:
-            if git('rev-parse','HEAD')==before:pending.unlink(missing_ok=True)
+            if git('rev-parse','HEAD')==before:
+                if previous_pending is None:pending.unlink(missing_ok=True)
+                else:pending.write_bytes(previous_pending)
             raise
     command=[str(Path(os.environ['SystemRoot'])/'System32/WindowsPowerShell/v1.0/powershell.exe'),'-NoProfile','-ExecutionPolicy','Bypass','-File',str(ROOT/'tools/git_bootstrap.ps1'),*sys.argv[1:]]
     print('Checking the updated runtime configuration...',flush=True)

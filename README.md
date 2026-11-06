@@ -57,6 +57,11 @@ To update, close the app and run `update.cmd` from the same folder. See the
 [installation guide](docs/USER_GUIDE.md#install) for disk space, prerequisites
 and recovery.
 
+Updates reuse recently verified, unchanged runtimes. If PEAR or camera-alignment
+support preparation fails after the base installation succeeds, the base app
+remains usable; rerun `install.cmd` to retry the unavailable support. See
+[verification and repair](docs/USER_GUIDE.md#installation-verification-and-repair).
+
 ### Optional model runtimes
 
 `install.cmd` prepares ExMR, FlowHMR, GVHMR and the small shared-runtime support

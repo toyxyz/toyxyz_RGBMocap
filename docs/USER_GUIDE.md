@@ -163,6 +163,42 @@ be reused. Do not delete `models`, `projects` or the remaining `.setup` state to
 retry. If Git reports a conflict or local changes, resolve or back them up before
 running `update.cmd` again.
 
+### Installation verification and repair
+
+First installation, changed dependencies and missing/changed runtime files still
+require full package hash and import checks. For up to seven days after a
+successful full check, ordinary updates/retries can reuse that result when the
+dependency/verifier identities and file inventory remain unchanged. This scans
+file metadata instead of repeatedly reading every package payload. The cache
+does not extend its own expiry. Size/timestamps are change detection, not a
+cryptographic proof against deliberate tampering.
+
+To force the full runtime checks, close the app and run:
+
+```cmd
+install.cmd --verify-all
+```
+
+`update.cmd --verify-all` also updates source and requests full verification.
+Existing installations without verification metadata perform one full check
+before gaining the faster retry path. The commands and separate runtime layout
+are unchanged; no new runtime manager or separate PEAR setup command is required.
+
+The base runtime transaction completes before PEAR and camera-alignment support
+are attempted independently. If only those support steps fail, setup reports
+**Installation complete with warnings** and the base app remains available.
+PEAR needs its own support; automatic MAMMA gravity needs camera-alignment
+support. Those capabilities remain unavailable until their preparation succeeds.
+Rerun `install.cmd`; the component summary is `.setup/git-components.json`.
+Failed mandatory base installation or an unresolved update still blocks launch.
+Do not manually remove `.setup/git-sync.pending` to bypass that protection.
+
+Pinned support downloads retry transient network failures up to three attempts
+with bounded waiting and validated partial-download recovery. HTTPS certificate
+and final size/SHA-256 checks remain required. Permanent errors are reported
+without an endless retry loop. Completed model/project files are not part of
+this repair work.
+
 On the tested PC, a separate-folder first install took about 10 min 32 sec with
 previously verified package downloads reused; Blender and FFmpeg were downloaded.
 A subsequent code update and runtime verification took about 1 min 55 sec. These

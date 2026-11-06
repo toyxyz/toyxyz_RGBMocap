@@ -161,7 +161,18 @@ def install_runtimes(root,resources,lock,cancel,reused=None):
     setup=inside(root,root/'.setup');stage=inside(setup,setup/'staging'/lock['id']);stage.mkdir(parents=True,exist_ok=True)
     logs=setup/'logs';logs.mkdir(exist_ok=True);cache=setup/'downloads';cache.mkdir(exist_ok=True);uv=resources/'uv.exe'
     if sha(uv)!=lock['uv_sha256']:raise ValueError('Setup helper verification failed')
-    reused=reused or {}; pending=[g for g in lock['groups'] if g['key'] not in reused]
+    reused=reused or {}
+    # A previous interrupted run may leave this lock's staged directories.
+    # Reused groups must refer only to the validated live installation, never
+    # an old staged base interpreter or a leftover directory at promotion.
+    for g in lock['groups']:
+        key=g['key']
+        if TARGETS.get(key)!=g['target']:raise ValueError('Invalid runtime target')
+        if key in reused:
+            stale=stage/g['target']
+            if stale.exists():remove_owned(stage,stale)
+            (stage/('complete-'+key+'.json')).unlink(missing_ok=True)
+    pending=[g for g in lock['groups'] if g['key'] not in reused]
     for version in sorted({g['python'] for g in pending}):
         emit(message='Preparing private Python '+version,phase='python',current=0,total=0)
         run([uv,'python','install',version,'--install-dir',setup/'python','--no-bin','--no-registry','--no-config','--no-progress','--cache-dir',setup/'uv-cache'],root,cancel,logs/('python-'+version+'.log'))

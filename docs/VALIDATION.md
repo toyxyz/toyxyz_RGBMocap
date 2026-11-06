@@ -1158,6 +1158,9 @@ showed no sustained resource growth; it is not a long-duration leak guarantee.
 
 ### PEAR support included in base installation (2026-11-01)
 
+The global retry-marker policy described in this historical test was superseded
+by [independent support recovery](#installation-recovery-and-recent-verification-2026-11-06).
+
 `install.cmd` now prepares PEAR's small source/utility overlay after the base
 runtime transaction commits. `update.cmd` reaches the same managed installation
 flow. PEAR reuses the pinned shared Python/Torch packages; model weights and
@@ -2121,3 +2124,71 @@ repeated app-wrapper failures. The adapter owns no additional readers, queues
 or threads. The updated Model Guide rendered in offscreen Qt. The installed
 MAMMA engine's 368 checked source files were unchanged. Tests/inputs remained
 outside the public checkout; no runtime package or model weight was added.
+
+
+### Installation recovery and recent verification (2026-11-06)
+
+Issue #23 exposed a post-commit PEAR download failure leaving the entire base
+installation pending. Base completion now precedes independent PEAR/alignment
+attempts; only affected capabilities are unavailable after support failure.
+Mandatory pre-commit failures remain blocking. A failed unchanged Git pull also
+preserves any earlier incomplete-install marker. Reused runtimes cannot use or
+promote a previous interrupted run's staged interpreter/directory.
+
+32 isolated fault/regression assertions passed on actual selected source
+helpers. They cover transient/permanent download errors, certificate/hash/range
+rejection, cancellation/deadline checks, offline archive reuse, base-versus-support
+failure, successful support retry without repeated full checks, forced full
+verification, source mutation, cache invalidation/expiry, stale-stage cleanup,
+promotion rollback and user-data sentinels. Three real isolated-Python managed
+installer CLI runs passed with heavyweight package/assets/native work stubbed:
+initial support failure, metadata-based retry and forced full verification.
+The fixture paths included Korean, Japanese, Chinese, accented Latin and Cyrillic.
+
+Four actual Windows CMD/local-Git checks passed for install/update argument
+forwarding, fast-forward update, refusal of tracked edits and retained pending
+state after a failed pull. Their bootstrap installation endpoint was stubbed;
+the checkout path also included spaces, multilingual text and a percent sign.
+No public Git remote was changed. A real localhost HTTPS endpoint rejected an
+untrusted certificate, then interrupted a 1 MiB pinned transfer and successfully
+resumed with a validated byte range and final SHA-256. Test trust was local to
+the test process; system certificate settings were unchanged.
+
+All six existing runtime profiles passed actual full RECORD/import verification
+with bytecode writes disabled. On one Windows PC:
+
+| Profile | Full hashes + imports | Subsequent metadata comparison |
+| --- | ---: | ---: |
+| shared | 161.57 s | 5.16 s |
+| gui | 18.75 s | 0.63 s |
+| flow | 57.74 s | 1.67 s |
+| hand | 28.22 s | 0.69 s |
+| htd | 6.31 s | 0.06 s |
+| exmr | 162.34 s | 5.20 s |
+| Total | 434.94 s | 13.42 s |
+
+The comparison scan followed full verification and had warm filesystem caches.
+It measures verification work, not total installation/update duration. The
+installer does a second metadata consistency scan before commit, plus bootstrap,
+support, auxiliary assets and receipt work. First use without a recent cache,
+changed files/dependencies or expired verification still requires full checks.
+Metadata checks are not cryptographic integrity proofs; `--verify-all` retains
+the full-check route. Fast reuse never refreshes the seven-day full-check expiry.
+
+Exact cached pinned PEAR/geometry-helper and GeoCalib/Kornia archives were also
+extracted into isolated support generations. The existing shared/Flow runtimes
+passed actual CUDA rotation/NMS operations and alignment import/CUDA-availability
+checks against those staged sources. Matching support was reused without another
+subprocess. A changed Flow base identity was rejected. The verifier bridge used
+the already installed interpreters; no installed packages or user support
+receipts were replaced. This was not a clean-Windows installation, an external
+network-failure reproduction, a GeoCalib numerical-quality test or new AI motion
+inference. Numerical algorithms, model weights and runtime package pins were
+unchanged.
+
+The development installation's PEAR/alignment support pointers were subsequently
+refreshed under the application lock, using the unchanged installed packages and
+verified cached archives. Both native checks and readiness configurations passed.
+The real launcher dependency/pending guards, GUI runtime activation and app import
+also passed without opening a GUI or running model inference. Prior support
+generations and user models/projects were preserved.

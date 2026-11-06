@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "date": "2026-11-04",
+  "date": "2026-11-06",
   "purpose": "Public source distribution; excludes model weights and runtime binaries",
   "version": "git-source",
   "files": [
@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 12453,
-      "sha256": "8d0805bd478dc38ff39680b37b0744a7cb8783d26a22614ac9cc684300651938"
+      "bytes": 12770,
+      "sha256": "e7e36b21ae1e57cea71012be7d50de37e2e8474dce7b2603675b92f439440169"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -96,13 +96,13 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 69250,
-      "sha256": "f1f7beb2be54f32d55c6e3d061038f4c9a8bbbe60af71a9aacd3bd752f972c31"
+      "bytes": 70853,
+      "sha256": "d82371616b0a7442e88dfb0ce9086fcd3aaca3d80b85122f5ba5536fbada6a22"
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 13113,
-      "sha256": "3ca8d430ea8a261db29bd817c4c3674907d889af6bc9f59132d5818179866f56"
+      "bytes": 16061,
+      "sha256": "402cbcd93299ae5a7e4f6937a15c691683d0fcce5b4b4d029373c8a10df82e0f"
     },
     {
       "path": "docs/CITATIONS.md",
@@ -126,13 +126,13 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 63738,
-      "sha256": "56c928d6a05e882e24fd43773fd146d440f73387b325f532a4afca7939076f33"
+      "bytes": 65698,
+      "sha256": "4ea64b0722fef3ca43bfab9c6266dcf8b6cf620060a46b8b29ebeb75db804ed8"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 139455,
-      "sha256": "8b1931274cece344694bcd749ef66e465fc14b566a46fed3fa9604c3b5fc9334"
+      "bytes": 143635,
+      "sha256": "77691e896537ccd67ee14e967685b97c109c2734e61db51d3e7e5eb1d005897e"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -171,8 +171,8 @@
     },
     {
       "path": "docs/models/PEAR.md",
-      "bytes": 23965,
-      "sha256": "cde9ccbfa48913eecd4659138a967c65aa1c2030557c6ec525cfd548ab393603"
+      "bytes": 24551,
+      "sha256": "8967cc2bbc74abacaa5b0923b7f821369b3fec10840b11259718722b72c24723"
     },
     {
       "path": "docs/models/PROMPTHMR.md",
@@ -236,8 +236,8 @@
     },
     {
       "path": "installer/engine.py",
-      "bytes": 18340,
-      "sha256": "f285199581bff1154a84da727a0b5b32ae19d52c1fb9b2b3b9e571fe516cd554"
+      "bytes": 18904,
+      "sha256": "5be67c26acc141306b3fd7ce80f74ad3570c6a268ada13cffff187b0707db443"
     },
     {
       "path": "installer/external-assets.json",
@@ -1591,8 +1591,8 @@
     },
     {
       "path": "mocap/pear/alignment_support.py",
-      "bytes": 1168,
-      "sha256": "c181e2025b6491a80f68f3c954806a63cd280dcf1d9735ac2a5d2d7e4d4b0b09"
+      "bytes": 1959,
+      "sha256": "88de916078a6abfb920832f7c69e4e3544754922506c54ce44b0ade183e47429"
     },
     {
       "path": "mocap/pear/batch.py",
@@ -12866,8 +12866,8 @@
     },
     {
       "path": "tools/git_managed_install.py",
-      "bytes": 5686,
-      "sha256": "e3f6cbe11315e1a6624e4d91febd2a697ebc7f9196a616b7321b4173df94bca9"
+      "bytes": 7716,
+      "sha256": "2d537e5187a29a33a726ac6c0c88f4d5ae8b9048139a4a4874c03ca224612da3"
     },
     {
       "path": "tools/git_transaction.py",
@@ -12876,8 +12876,18 @@
     },
     {
       "path": "tools/git_update.py",
-      "bytes": 1648,
-      "sha256": "46491b1aadc8ef27d3ffafc0cf70caf9d5dadea3565db0ad40c3e64d6885423d"
+      "bytes": 1885,
+      "sha256": "ace9d2a8981c7c6eb7887280d9895d3f757d155f8ad7c646ca71c3f37c8ec8d8"
+    },
+    {
+      "path": "tools/optional_support.py",
+      "bytes": 1475,
+      "sha256": "992c156e58b80d845e1957cb276af69abea78bf6060a1b3790b22373413114cf"
+    },
+    {
+      "path": "tools/pinned_download.py",
+      "bytes": 7296,
+      "sha256": "719a7744bd2f03d4ac33d2b388fe2ebfb5712239c2983ebf5523e24f36ce5894"
     },
     {
       "path": "tools/prepare_upstream.py",
@@ -12888,6 +12898,11 @@
       "path": "tools/runtime_support.py",
       "bytes": 3496,
       "sha256": "f94692268dcc654ebe21d62302fd1714730af98bd4084c51b27f36215069c01a"
+    },
+    {
+      "path": "tools/runtime_verification.py",
+      "bytes": 4618,
+      "sha256": "a91fb0a907f4ad1607dc166664ed7f4e426f92b384222ac19484406f989738ec"
     },
     {
       "path": "tools/session_lock.py",
@@ -12906,13 +12921,13 @@
     },
     {
       "path": "tools/setup_pear.py",
-      "bytes": 5179,
-      "sha256": "bcd4d2e0dbbb6ecb5dfa75455d5a0d0d0f11f50ea99cf79e7973c50c8cbb18ee"
+      "bytes": 5430,
+      "sha256": "9e491a2c63df8843b5004edfbaac16d51793aa4a98301b3d4607197e2f7eb6a7"
     },
     {
       "path": "tools/setup_pear_alignment.py",
-      "bytes": 2836,
-      "sha256": "bc43c636f0256898e4dc14731677348464a194bd055ffdaa33c13ace684e3545"
+      "bytes": 3090,
+      "sha256": "e6ff5e0a3923d9ceac8b4616e7228077502fd71c24a369f075a268e81b253140"
     },
     {
       "path": "tools/setup_prompthmr.py",
@@ -12931,8 +12946,8 @@
     },
     {
       "path": "tools/support_components.py",
-      "bytes": 3830,
-      "sha256": "000772ff21d47a1a35d5fefa0e7685781e7c05fbbbcf708a29cfc3f275dd4984"
+      "bytes": 3388,
+      "sha256": "bb454f0c6171e2357f5e550a5f88f8f37ce7654842e252b2d1afb6d53e39c903"
     },
     {
       "path": "update.cmd",

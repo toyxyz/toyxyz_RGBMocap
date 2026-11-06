@@ -49,6 +49,14 @@ capture. Changing device assignment or requested resolution can reopen capture.
    `assets.zip`. Import that ZIP without editing it. Import validates its SHA-256
    and extracts only required files. The source ZIP is preserved.
 
+If setup reports PEAR or camera-alignment support unavailable after the base
+installation has completed, other ready workflows can still run. Rerun
+`install.cmd` to repair those capabilities; PEAR and alignment are checked
+independently. Alignment also serves automatic MAMMA gravity. Recent unchanged
+base runtime verification is reused; [full verification and repair](../USER_GUIDE.md#installation-verification-and-repair)
+remain available. Existing support receipts may require one revalidation after
+this installer update; model weights do not need to be downloaded again.
+
 PEAR requires **SMPL-X 2020 and FLAME 2020** geometry. The standard SMPL-X v1.1
 used by other models and MAMMA's locked-head model cannot replace these files.
 Registered geometry is not included in the repository or downloaded automatically
