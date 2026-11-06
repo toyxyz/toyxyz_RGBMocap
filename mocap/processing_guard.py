@@ -12,8 +12,19 @@ class PerformanceInfo(ctypes.Structure):
         ('HandleCount',ctypes.c_ulong),('ProcessCount',ctypes.c_ulong),('ThreadCount',ctypes.c_ulong)]
 
 
+def linux_commit_headroom():
+    # The commit limit is enforced only in strict overcommit mode; otherwise RAM availability decides.
+    try:
+        if open('/proc/sys/vm/overcommit_memory',encoding='ascii').read().strip()!='2':return None
+        values={key:int(value.split()[0])*1024 for key,value in
+                (line.split(':',1) for line in open('/proc/meminfo',encoding='ascii'))
+                if key in ('CommitLimit','Committed_AS')}
+        return values['CommitLimit']-values['Committed_AS']
+    except (OSError,ValueError,KeyError):return None
+
+
 def commit_headroom():
-    if os.name!='nt':return None
+    if os.name!='nt':return linux_commit_headroom()
     info=PerformanceInfo();info.cb=ctypes.sizeof(info)
     if not ctypes.windll.psapi.GetPerformanceInfo(ctypes.byref(info),info.cb):return None
     return (info.CommitLimit-info.CommitTotal)*info.PageSize

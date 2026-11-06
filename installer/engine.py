@@ -4,9 +4,19 @@ Every path is scoped to the Setup folder. Runtime installation is staged and
 verified before commit; models, projects and application caches are never moved.
 """
 from __future__ import annotations
-import argparse, ctypes, hashlib, importlib.metadata, json, msvcrt, os
+import argparse, hashlib, importlib.metadata, importlib.util, json, os
 from pathlib import Path
-import re, shutil, stat, subprocess, sys, time, urllib.error, urllib.parse, urllib.request, zipfile
+import re, shutil, signal, stat, subprocess, sys, time, urllib.error, urllib.parse, urllib.request, zipfile
+
+def _registry():
+    # Shipped beside this engine: one runtime layout shared with the application.
+    spec=importlib.util.spec_from_file_location('runtime_registry',Path(__file__).with_name('runtime_registry.py'))
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+REGISTRY=_registry()
+WINDOWS=os.name=='nt'
+NO_WINDOW=subprocess.CREATE_NO_WINDOW if WINDOWS else 0
+PYTHON_PLATFORM='windows-x86_64-none' if WINDOWS else 'linux-x86_64-gnu'
+UV='uv.exe' if WINDOWS else 'uv'
 
 PREFIX='@@SETUP@@'
 TARGETS={'shared':'runtime','gui':'runtime_gui','flow':'runtime_flow','hand':'runtime_hand','htd':'runtime_htd','exmr':'runtime_exmr'}
@@ -36,16 +46,26 @@ def inside(root,path):
 def remove_owned(setup,path):
     p=inside(setup,path)
     if p.exists():
-        if p.is_symlink() or p.stat().st_file_attributes&stat.FILE_ATTRIBUTE_REPARSE_POINT:raise ValueError('Unexpected installer link')
+        if p.is_symlink() or getattr(p.stat(),'st_file_attributes',0)&stat.FILE_ATTRIBUTE_REPARSE_POINT:raise ValueError('Unexpected installer link')
         shutil.rmtree(p)
+
+def _setup_temp_override():
+    # Optional scratch directory for wheel extraction, e.g. tmpfs when the install
+    # volume cannot hold twice the runtime's file count. Anything else means unset.
+    value=os.environ.get('RGB_MOCAP_SETUP_TEMP')
+    if value is None:return None
+    if value and value==value.strip() and Path(value).is_absolute() and Path(value).is_dir():return Path(value)
+    emit(message='Ignoring RGB_MOCAP_SETUP_TEMP: expected an existing absolute directory.',phase='setup')
+    return None
+SETUP_TEMP=_setup_temp_override()
 
 def clean_env(root):
     env={k:v for k,v in os.environ.items() if not k.upper().startswith(('PYTHON','PIP_','UV_'))}
-    temp=inside(root,root/'.setup/tmp');temp.mkdir(parents=True,exist_ok=True)
+    temp=SETUP_TEMP or inside(root,root/'.setup/tmp');temp.mkdir(parents=True,exist_ok=True)
     env.update(PYTHONUTF8='1',PYTHONIOENCODING='utf-8',PYTHONDONTWRITEBYTECODE='1',
         UV_PYTHON_INSTALL_DIR=str(root/'.setup/python'),UV_CACHE_DIR=str(root/'.setup/uv-cache'),
         UV_NO_CONFIG='1',UV_NO_PROGRESS='1',UV_PYTHON_NO_REGISTRY='1',
-        UV_PYTHON_PREFERENCE='only-managed',TEMP=str(temp),TMP=str(temp),
+        UV_PYTHON_PREFERENCE='only-managed',TEMP=str(temp),TMP=str(temp),TMPDIR=str(temp),
         OMP_NUM_THREADS='4',OPENBLAS_NUM_THREADS='1',RGB_MOCAP_DATA=str(root))
     return env
 
@@ -56,13 +76,17 @@ def run(command,root,cancel,log):
     check_cancel(cancel)
     with Path(log).open('w',encoding='utf8') as output:
         p=subprocess.Popen([str(x) for x in command],cwd=root,env=clean_env(root),stdout=output,stderr=subprocess.STDOUT,
-                           creationflags=subprocess.CREATE_NO_WINDOW)
+                           creationflags=NO_WINDOW,start_new_session=not WINDOWS)
         try:
             while p.poll() is None:
                 check_cancel(cancel);time.sleep(.2)
         except BaseException:
-            subprocess.run([str(Path(os.environ['SystemRoot'])/'System32/taskkill.exe'),'/PID',str(p.pid),'/T','/F'],
-                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=subprocess.CREATE_NO_WINDOW)
+            if WINDOWS:
+                subprocess.run([str(Path(os.environ['SystemRoot'])/'System32/taskkill.exe'),'/PID',str(p.pid),'/T','/F'],
+                    stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=NO_WINDOW)
+            else:
+                try:os.killpg(p.pid,signal.SIGKILL)
+                except ProcessLookupError:pass
             p.wait(timeout=30);raise
     if p.returncode:
         tail=Path(log).read_text(encoding='utf8',errors='replace')[-3500:]
@@ -110,14 +134,14 @@ def download(p,cache,cancel,completed,total):
             emit(message='Retrying '+p['name'],phase='download',current=completed,total=total)
 
 def python_home(root,version):
-    p=inside(root,root/'.setup/python'/f'cpython-{version}-windows-x86_64-none')
-    if not (p/'python.exe').is_file():raise RuntimeError('The private Python download is incomplete: '+version)
+    p=inside(root,root/'.setup/python'/f'cpython-{version}-{PYTHON_PLATFORM}')
+    if not REGISTRY.interpreter(p,version).is_file():raise RuntimeError('The private Python download is incomplete: '+version)
     return p
 
 def verify_group(stage,group,root,cancel,logs):
-    py=stage/'runtime/python.exe' if group['key']!='exmr' else stage/'runtime_exmr/python.exe'
+    py=REGISTRY.managed_python(stage,group['key'])
     if not py.is_file() and group.get('base'):
-        py=root/'runtime/python.exe'
+        py=REGISTRY.managed_python(root,group['key'])
     report=logs/(group['key']+'-verify.log')
     scripts=Path(__file__).resolve().parent
     request=logs/(group['key']+'-verify-input.json');atomic_json(request,group)
@@ -159,7 +183,7 @@ def prune_runtime(folder):
 
 def install_runtimes(root,resources,lock,cancel,reused=None):
     setup=inside(root,root/'.setup');stage=inside(setup,setup/'staging'/lock['id']);stage.mkdir(parents=True,exist_ok=True)
-    logs=setup/'logs';logs.mkdir(exist_ok=True);cache=setup/'downloads';cache.mkdir(exist_ok=True);uv=resources/'uv.exe'
+    logs=setup/'logs';logs.mkdir(exist_ok=True);cache=setup/'downloads';cache.mkdir(exist_ok=True);uv=resources/UV
     if sha(uv)!=lock['uv_sha256']:raise ValueError('Setup helper verification failed')
     reused=reused or {}
     # A previous interrupted run may leave this lock's staged directories.
@@ -199,10 +223,10 @@ def install_runtimes(root,resources,lock,cancel,reused=None):
         emit(message='Installing '+('the common runtime' if key=='shared' else key+' runtime')+f' ({index+1}/{len(lock["groups"])})',phase='install',current=0,total=0)
         if key in ('shared','exmr'):
             shutil.copytree(python_home(root,g['python']),dest,ignore=shutil.ignore_patterns('__pycache__','*.pyc'))
-            py=dest/'python.exe';target=dest/'Lib/site-packages';target.mkdir(parents=True,exist_ok=True)
+            py=REGISTRY.interpreter(dest,g['python']);target=REGISTRY.site_packages(dest,g['python']);target.mkdir(parents=True,exist_ok=True)
         else:
-            py=stage/'runtime/python.exe'
-            if not py.is_file(): py=root/'runtime/python.exe'
+            py=REGISTRY.managed_python(stage,key)
+            if not py.is_file(): py=REGISTRY.managed_python(root,key)
             target=dest;target.mkdir()
         req=stage/(key+'-wheels.txt')
         req.write_text('\n'.join(local[p['sha256']].as_uri()+' --hash=sha256:'+p['sha256'] for p in g['packages'])+'\n',encoding='utf8')
@@ -238,7 +262,7 @@ def commit(root,resources,stage,lock,reports,cancel):
             if dst.exists():os.replace(dst,saved)
             files.append((dst,saved));shutil.copy2(src,dst)
         # Verify the committed layout with the real native correction backend.
-        py=root/'runtime/python.exe';log=root/'.setup/logs/native-verify.log'
+        py=REGISTRY.managed_python(root,'shared');log=root/'.setup/logs/native-verify.log'
         code="import sys;sys.path.insert(0,sys.argv[1]);from mocap.correction import backend;assert backend().rgb_mocap_anatomical_version==1;from mocap.flow_sam import source_identity;source_identity(True);print('Native correction and application sources verified')"
         run([py,'-B','-c',code,str(root)],root,None,log)
         for name in ('models','projects'):(root/name).mkdir(exist_ok=True)
@@ -254,9 +278,10 @@ def commit(root,resources,stage,lock,reports,cancel):
         raise
 
 def main():
+    import msvcrt  # The Setup.exe release flow is Windows-only; Git installs use install_runtimes().
     p=argparse.ArgumentParser();p.add_argument('--root',type=Path,required=True);p.add_argument('--resources',type=Path,required=True);p.add_argument('--cancel',type=Path);args=p.parse_args()
     root=args.root.resolve();resources=args.resources.resolve();setup=root/'.setup'
-    if setup.exists() and (setup.is_symlink() or setup.stat().st_file_attributes&stat.FILE_ATTRIBUTE_REPARSE_POINT):raise ValueError('Installer folder must not be a link')
+    if setup.exists() and (setup.is_symlink() or getattr(setup.stat(),'st_file_attributes',0)&stat.FILE_ATTRIBUTE_REPARSE_POINT):raise ValueError('Installer folder must not be a link')
     setup.mkdir(exist_ok=True);inside(setup,resources);lock=json.loads((resources/'runtime-lock.json').read_text(encoding='utf8'))
     # A retry can reuse or clear its own existing temporary files. Existing
     # application runtimes are renamed on commit, not copied a second time.

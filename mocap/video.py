@@ -8,11 +8,11 @@ from fractions import Fraction
 from pathlib import Path
 
 from .storage import atomic_json, project_key, sha256
-from .paths import PROJECTS, ROOT
+from .paths import EXE, NO_WINDOW, PROJECTS, ROOT
 
 
 def executable(name: str) -> str:
-    bundled = ROOT / "tools" / "bin" / f"{name}.exe"
+    bundled = ROOT / "tools" / "bin" / f"{name}{EXE}"
     found = str(bundled) if bundled.exists() else shutil.which(name)
     if not found:
         raise RuntimeError("Video tools are missing. Check the app installation.")
@@ -23,7 +23,7 @@ def probe(path: Path) -> dict:
     if not path.is_file():
         raise FileNotFoundError(f"Video not found: {path}")
     proc = subprocess.run([executable("ffprobe"), "-v", "error", "-show_streams", "-show_format", "-of", "json", str(path)],
-                          check=True, capture_output=True, encoding="utf-8", creationflags=0x08000000)
+                          check=True, capture_output=True, encoding="utf-8", creationflags=NO_WINDOW)
     raw = json.loads(proc.stdout)
     stream = next((s for s in raw["streams"] if s["codec_type"] == "video"), None)
     if stream is None:
@@ -52,12 +52,12 @@ def select_preview(project: Path) -> Path:
 
 def run_video_command(command, cancelled=None):
     if cancelled is None:
-        return subprocess.run(command, check=True, capture_output=True, creationflags=0x08000000)
+        return subprocess.run(command, check=True, capture_output=True, creationflags=NO_WINDOW)
     import time
     # File-backed stderr bounds memory for a long encode and avoids pipe stalls.
     import tempfile
     with tempfile.TemporaryFile() as errors:
-        with subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=errors, creationflags=0x08000000) as process:
+        with subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=errors, creationflags=NO_WINDOW) as process:
             try:
                 while process.poll() is None:
                     if cancelled():
@@ -208,7 +208,7 @@ def prepare_people_clip(project: Path, first: int, end: int) -> Path:
             '-map', '0:v:0', '-an', '-vf', f'trim=start_frame={first}:end_frame={end},setpts=N/({state["fps"]}*TB)',
             '-frames:v', str(end-first), '-r', str(state['fps']), '-fps_mode', 'cfr', '-c:v', 'libx264', '-preset', 'fast',
             '-crf', '18', '-pix_fmt', 'yuv420p', '-threads', '2', '-y', str(temporary)],
-            check=True, capture_output=True, creationflags=0x08000000)
+            check=True, capture_output=True, creationflags=NO_WINDOW)
         info = probe(temporary)
         if info['frames'] != end-first or abs(info['fps']-state['fps']) > .001:
             raise ValueError('Person take media does not match its scene frame range')

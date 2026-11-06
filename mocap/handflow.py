@@ -37,11 +37,12 @@ def input_signature(project):
     from importlib.metadata import version
     from .models import BY_KEY,STAGE_REQUIREMENTS
     from .paths import UPSTREAM
+    from .resource_cache import code_hash  # Exact-byte aliases retain results after platform-only edits.
     names=('input.mp4','tracking.npz','gvhmr_keypoints.pt','camera.pt')
     payload=dict(version=VERSION,inputs={n:file_stat(project/n) for n in names},
         models={k:file_stat(BY_KEY[k].path) for k in STAGE_REQUIREMENTS['handflow']},
         runtime={k:version(k) for k in ('torch','ultralytics','timm')},
-        code=[sha256(Path(__file__).with_name('handflow_engine.py')),
+        code=[code_hash(Path(__file__).with_name('handflow_engine.py')),
               sha256(UPSTREAM/'HandFlow/utils/inference_utils.py')])
     return hashlib.sha256(json.dumps(payload,sort_keys=True).encode()).hexdigest(),payload
 

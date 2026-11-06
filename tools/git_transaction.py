@@ -14,7 +14,7 @@ def inside(root,path):
     current=root
     for component in candidate.relative_to(root).parts:
         current=current/component
-        if current.exists() and (current.is_symlink() or current.stat().st_file_attributes&stat.FILE_ATTRIBUTE_REPARSE_POINT):
+        if current.exists() and (current.is_symlink() or getattr(current.stat(),'st_file_attributes',0)&stat.FILE_ATTRIBUTE_REPARSE_POINT):
             raise ValueError('Transaction path contains a link.')
     resolved=candidate.resolve()
     if not resolved.is_relative_to(root):raise ValueError('Transaction path leaves installation.')

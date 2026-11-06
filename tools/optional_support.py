@@ -16,6 +16,10 @@ def prepare(root):
         os.replace(temp, path)
 
     for name, action in [('PEAR', lambda: pear(align=False)), ('Camera alignment', alignment)]:
+        if os.name != 'nt':
+            rows[name] = dict(status='unavailable', error='Not ported to this platform yet.')
+            record()
+            continue
         rows[name] = dict(status='preparing')
         record()
         try:
@@ -27,7 +31,9 @@ def prepare(root):
             rows[name] = dict(status='ready')
         record()
     failures = [name for name, row in rows.items() if row['status'] != 'ready']
-    if failures:
+    if failures and os.name != 'nt':
+        print('Installation complete. PEAR and camera alignment (MAMMA gravity) are not ported to this platform yet.', flush=True)
+    elif failures:
         print('Installation complete with warnings. The base app is ready. Unavailable: '
               + ', '.join(failures) + '. Rerun install.cmd to retry; see .setup/git-components.json. '
               'Automatic MAMMA gravity requires Camera alignment support.', flush=True)

@@ -5,6 +5,7 @@ import numpy as np
 from PySide6.QtCore import Qt,QProcess,QTimer,QProcessEnvironment
 from PySide6.QtWidgets import QFileDialog,QListWidgetItem,QMenu,QMessageBox
 from .paths import ROOT,HOME
+from .process_group import kill_group,own_session
 from .storage import atomic_json
 from .character_data import CharacterLoader
 
@@ -245,7 +246,7 @@ class CharacterWorkspace:
             self.status.setText(str(exc));return
         self.stop_playback();self.character_job=job;self.character_started=time.monotonic();self.character_line='Starting character processing...';self.character_buffer='';self.character_cancelled=False
         self._character_decoder=codecs.getincrementaldecoder("utf-8")("replace");self._character_pending=""
-        p=QProcess(self);self.character_process=p
+        p=QProcess(self);self.character_process=p;own_session(p)
         env=QProcessEnvironment.systemEnvironment();env.insert('PYTHONUTF8','1');env.insert('PYTHONIOENCODING','utf-8');p.setProcessEnvironment(env)
         p.setWorkingDirectory(str(ROOT));p.setProcessChannelMode(QProcess.MergedChannels)
         p.readyReadStandardOutput.connect(self.character_output)
@@ -306,6 +307,8 @@ class CharacterWorkspace:
         p=self.character_process
         if not p:return
         self.character_cancelled=True;self.character_line='Cancelling character job...'
+        if os.name!='nt':
+            kill_group(p.processId());p.kill();return
         helper=QProcess(self);self._character_killer=helper
         helper.start('taskkill',['/PID',str(p.processId()),'/T','/F'])
         helper.finished.connect(helper.deleteLater)

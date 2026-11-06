@@ -8,7 +8,9 @@ from .result_artifacts import file_stat
 from .storage import sha256
 
 # Only child storage metadata changed; detection/tracking math is identical.
-DISCOVERY_STORAGE_COMPAT = {'096f62724e78996b2c944db45a2a3151e03a5a72d92ea7aad2ae000c796e2135': 'fc7db0d237d87776f0f65388b615e9c00968f1b06c988f332ca91558e7d0fd2d'}
+DISCOVERY_STORAGE_COMPAT = {'096f62724e78996b2c944db45a2a3151e03a5a72d92ea7aad2ae000c796e2135': 'fc7db0d237d87776f0f65388b615e9c00968f1b06c988f332ca91558e7d0fd2d',
+    # Media hard links keep source timestamps (Linux NTFS); detection is unchanged.
+    '92138a2919704d18aa94f4138f8a96b6b7a6191f4a5f09a8f207c550fafc0600': '39f6422998f9d77a501cd4ac88c2a62cf312cf2be0f01129e9c0e7b8a0dd2b5f'}
 
 
 def discovery_identity(path):
@@ -17,6 +19,8 @@ def discovery_identity(path):
 
 COMPATIBLE_CODE = {
     'source_surface.py': {'2dc605a8d8381e11439200ed3885ab3d7208e76790c394ecd693b16963bab0fc': 'fbe6b1dd944e63b337d683a738e9a5a5be7e14a4c48718dde0820f1d37e7dfbb'},
+    # Only the native module's platform suffix changed; correction math is identical.
+    'correction.py': {'7b25e1eb57ed810bdf995a918d7b7633e7e558c25f982ba273f7d64783105ec3': '18b52409527dea9e7513850f7936d8662f09c93f00d64d8452b449881b2af1b8'},
     'mixamo_data.py': {
         # Project relocation changes path resolution only; fitting is unchanged.
         'e256fdca2b356c1002d011f85942529e6af16d84631985d9b303c3c938196eb6': 'fa10d8fbd61e8a6946038491abe23409ee34ffda0efbe0d5a093275de44dbd40',

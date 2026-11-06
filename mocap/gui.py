@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QFil
 
 from .models import MODELS_LIST, import_body_model, missing, ready
 from .paths import ROOT, PROJECTS, worker_command
+from .process_group import kill_group, own_session
 from .video import select_preview
 from .viewer import VideoView, MotionView
 from .playback import playback_frame, PlaybackTimerResolution
@@ -1389,6 +1390,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
             arguments=['--request',str(self._batch_request),'--project',str(self.job_project)]
         command = worker_command(stage, *arguments)
         self.process = QProcess(self)
+        own_session(self.process)
         self.process.setWorkingDirectory(str(ROOT))
         environment = QProcessEnvironment.systemEnvironment()
         environment.insert("PYTHONIOENCODING", "utf-8")
@@ -1590,6 +1592,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
                 helper.finished.connect(cancelled)
                 helper.start("taskkill.exe", ["/PID", str(worker.processId()), "/T", "/F"])
             else:
+                kill_group(worker.processId())
                 worker.kill()
         self.status.setText("Cancelled. Completed stages will be reused next time.")
 
