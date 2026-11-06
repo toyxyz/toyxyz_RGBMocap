@@ -66,7 +66,7 @@ def _euler(matrix):
 
 
 def write(path, names, parents, rest, rest_frames, display, tip_local, frames, fps,
-          transform=None, progress=lambda *args:None, rig_name='SourceAnimation', prepend_tpose=False):
+          transform=None, progress=lambda *args:None, rig_name='SourceAnimation', prepend_tpose=False,symmetric_bind=None):
     """Write one committed mapped take; working rotation arrays are one bone wide."""
     from .person_names import validate_name
     rig_name=validate_name(rig_name)
@@ -86,6 +86,20 @@ def write(path, names, parents, rest, rest_frames, display, tip_local, frames, f
     for a in (rest_frames,display):
         if np.max(abs(a.swapaxes(-1,-2)@a-np.eye(3)))>1e-5 or np.linalg.det(a).min()<.99999:
             raise ValueError('Invalid FBX rest rotation')
+    source_display=display
+    source_offsets=[rest[j] if p<0 else rest_frames[p].T@(rest[j]-rest[p]) for j,p in enumerate(parents)]
+    if symmetric_bind is not None:
+        from .export_options import symmetric_rest
+        from .bone_overlay import reference_frame
+        rest,ends=symmetric_rest(names,parents,symmetric_bind['rest'],symmetric_bind['ends'])
+        display=[]
+        for j in range(52):
+            children=np.flatnonzero(parents==j)
+            delta=rest[children].mean(0)-rest[j] if len(children) else ends[j]
+            if np.linalg.norm(delta)<.001:delta=delta+[0.,.1,0.]
+            display.append(reference_frame(delta))
+        display=np.asarray(display);rest_frames=display
+        tip_local=np.einsum('nji,nj->ni',display,ends)
     from .scene_camera import validate_transform
     transform=validate_transform(np.eye(4) if transform is None else transform)
     ids=np.arange(1000,1052);objects=[];connections=[]
@@ -166,8 +180,9 @@ def write(path, names, parents, rest, rest_frames, display, tip_local, frames, f
             else:
                 parent=np.asarray(frames[:,p,:3,:3],float)@display[p]
                 local=parent.swapaxes(-1,-2)@world
-                actual=np.einsum('tji,tj->ti',parent,np.asarray(frames[:,j,:3,3],float)-frames[:,p,:3,3])
-                if not np.isfinite(actual).all() or np.max(abs(actual-offsets[j]))>2e-5:
+                source_parent=np.asarray(frames[:,p,:3,:3],float)@source_display[p]
+                actual=np.einsum('tji,tj->ti',source_parent,np.asarray(frames[:,j,:3,3],float)-frames[:,p,:3,3])
+                if not np.isfinite(actual).all() or np.max(abs(actual-source_offsets[j]))>2e-5:
                     raise ValueError('Non-rigid bone offset in committed source animation')
             if not np.isfinite(local).all():raise ValueError('Non-finite FBX animation')
             if prepend_tpose:

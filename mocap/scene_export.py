@@ -33,13 +33,18 @@ def context(root,project):
                 sources=camera['sources'],anchor_sources=anchor['sources'],model=camera.get('model'))
 
 
-def transform_motion(inp,out,transform,progress=lambda:None,prepend_tpose=False):
-    """Stream only root channels in bounded blocks; keep the hierarchy byte-for-byte."""
+def transform_motion(inp,out,transform,progress=lambda:None,prepend_tpose=False,symmetric_rest=False):
+    """Stream root transforms; optionally replace only exported rest offsets."""
     from scipy.spatial.transform import Rotation
     import warnings
     transform=validate_transform(transform);rotation=transform[:3,:3];translation=transform[:3,3]
     channels=0;root_seen=False;root_order=None
+    if symmetric_rest:
+        from .export_options import read_header
+        lines,root_order=read_header(inp,symmetric=True)
+        out.writelines(lines);channels=159;root_seen=True
     for _ in range(4096):
+        if symmetric_rest:break
         line=inp.readline(65537)
         if not line or len(line)>65536:raise ValueError('Invalid BVH hierarchy')
         out.write(line);tokens=line.split()
@@ -60,6 +65,16 @@ def transform_motion(inp,out,transform,progress=lambda:None,prepend_tpose=False)
     if count<1 or not np.isfinite(step) or step<=0:raise ValueError('Invalid BVH timing')
     out.write(f'Frames: {count+1}\n'.encode('ascii') if prepend_tpose else count_line)
     out.write(time_line);previous=np.zeros(3)
+    if symmetric_rest and not prepend_tpose and np.array_equal(transform,np.eye(4)):
+        # Rest-only exports retain the committed motion encoding byte-for-byte.
+        for first in range(0,count,128):
+            for _ in range(min(128,count-first)):
+                line=inp.readline(65537);values=np.asarray(line.split(),float)
+                if len(line)>65536 or values.shape!=(159,) or not np.isfinite(values).all():raise ValueError('Invalid BVH motion')
+                out.write(line)
+            progress()
+        if inp.read(1):raise ValueError('Unexpected trailing BVH data')
+        return
     for first in range(0,count,128):
         rows=[]
         for _ in range(min(128,count-first)):

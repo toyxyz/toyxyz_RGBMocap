@@ -680,6 +680,26 @@ before the original motion, at its initial root position; original frames shift
 by one and retain their poses, frame rate and intervals. The option does not
 replace the bind pose or edit project motion/contact timings.
 
+**Place at origin** and **Symmetrical rest pose** default off and apply only to
+source-skeleton FBX/BVH exports, including both BVH profiles. They are unavailable
+for Blender project exports and do not change imported-character exports.
+
+- **Place at origin:** move each person's first exported root position to X=0,
+  Z=0, preserving its height, facing and subsequent travel. People are centered
+  independently, so their relative scene placement is intentionally removed.
+  Multiple exported takes of one person share the first exported take's constant
+  offset rather than resetting at every tracking gap. An optional leading T-pose
+  uses the same centered start.
+- **Symmetrical rest pose:** average paired left/right segment lengths and mirror
+  their reference directions, including shoulders, feet, hands, fingers and end
+  tips. The central spine/neck/head chain is vertical. Motion timing and canonical
+  animation rotations are retained, but the changed reference proportions move
+  animated joint/end positions; existing hand/foot contacts are not re-solved.
+  Source motion, correction results, viewport geometry and cached bind data remain
+  unchanged. The option is a reference skeleton change, not an added T-pose frame.
+
+The export options window keeps the same size when switching formats.
+
 BVH uses the same 52-bone hierarchy, metre units and Y up, including finger bones
 and terminal tips. Import into Blender with **Scale 1 / Forward -Z / Up Y**.
 The **3ds Max Biped** profile follows the PR #18 conversion: it uses Character

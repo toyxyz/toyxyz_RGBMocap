@@ -1813,6 +1813,14 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,PromptHMRWorkspace,MammaWo
                 row['rig_name']=self.export_person_name(project)
                 row['prepend_tpose']=getattr(self,'_source_export_options',{}).get('prepend_tpose',False)
                 row['bvh_profile']=getattr(self,'_source_export_options',{}).get('bvh_profile','generic')
+                for key in ('place_at_origin','symmetric_rest'):
+                    row[key]=getattr(self,'_source_export_options',{}).get(key,False) and getattr(self,'_source_export_options',{}).get('format','fbx') in ('fbx','bvh')
+                row['origin_group']=str(Path(project).resolve())
+                if self.people_state:
+                    from .people_store import safe_child
+                    for person in self.people_state['people']:
+                        if any(safe_child(self.people_root,t['project'])==Path(project).resolve() for t in person.get('takes',[])):
+                            row['origin_group']='person:'+str(person['id']);break
                 for key,default in (('animate_camera',True),('background_refine',False),('camera_translation_scale',1.)):
                     row[key]=getattr(self,'_source_export_options',{}).get(key,default)
                 if self.people_root is not None:

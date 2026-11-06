@@ -2213,3 +2213,35 @@ MAMMA preparation reuses a committed pre-fix result without running processing.
 These are isolated fixture tests, not public-provider downloads, GUI click tests,
 new motion inference or a clean-Windows installation. No user model/project files
 were changed. Test scripts and outputs are kept outside the public source tree.
+
+## Optional origin placement and symmetrical source export (2026-11-07)
+
+Source FBX/BVH exports now offer default-off origin placement and symmetrical
+rest geometry. Origin placement subtracts one constant horizontal translation per
+actor; height and travel are retained. Ordered takes of one actor share that
+offset. Symmetry averages paired lengths, mirrors reference segments/tips and
+straightens the central spine/neck/head chain. These change only exported copies;
+changed proportions can change animated hand/foot endpoints without contact IK.
+Portable Blender exports explicitly exclude both options.
+
+24 actual worker exports covered both flags on/off, optional T-pose, Generic BVH,
+Biped BVH and FBX, using a short copied ExMR result and a nonidentity shared-scene
+rotation/translation. Additional FBX files used four-frame samples from existing
+FlowHMR, GVHMR, MAMMA and PromptHMR caches, with symmetry on/off. All 32 files were
+reimported through Blender 4.5.0's ordinary importers. Maximum sampled joint
+position discrepancy against expected FK was 0.013 mm, rest-head discrepancy
+below 0.001 mm, and mirrored imported bone-length discrepancy below 0.001 mm.
+This is file-conversion agreement, not inference accuracy or a contact-quality
+claim. Tests account for Blender BVH's first key at frame 1 and FBX offset 0.
+
+Default FBX output remained byte-identical to the preceding writer, with and
+without its optional T-pose. Default Generic BVH copying remained byte-identical;
+symmetry-only Generic export retained MOTION bytes. Other checks covered averaged
+segment lengths, mirrored terminal tips, vertical central joints, independent
+actor origins/later takes, malformed input rejection, source-file preservation,
+failure before commit, destination preservation and closed frame mappings.
+15 offscreen dialog cases across all five offline models retained a 660x400
+logical-pixel window, visible unclipped controls and disabled/hidden options for
+Blender. Representative images were visually inspected. The new work did not run
+AI inference, modify user caches or test a complete real-time export gesture.
+Scripts, fixtures and generated files remain outside the public source tree.

@@ -1,11 +1,12 @@
 """Source-motion export options; existing character exports remain separate."""
-from PySide6.QtWidgets import QDialog,QVBoxLayout,QFormLayout,QComboBox,QCheckBox,QLabel,QDialogButtonBox,QDoubleSpinBox,QLayout
+from PySide6.QtWidgets import QDialog,QVBoxLayout,QFormLayout,QComboBox,QCheckBox,QLabel,QDialogButtonBox,QDoubleSpinBox
 
 class SourceExportDialog(QDialog):
     def __init__(self,parent=None):
-        super().__init__(parent);self.setWindowTitle('Export');self.setMinimumWidth(480)
+        super().__init__(parent);self.setWindowTitle('Export');self.setFixedSize(660,400)
         self.model=parent.model_choice.currentData() if parent is not None and hasattr(parent,'model_choice') else None
-        layout=QVBoxLayout(self);layout.setSizeConstraint(QLayout.SetMinimumSize);form=QFormLayout();layout.addLayout(form)
+        layout=QVBoxLayout(self);layout.setContentsMargins(18,18,18,18);layout.setSpacing(12)
+        form=QFormLayout();form.setVerticalSpacing(12);layout.addLayout(form)
         self.format=QComboBox();self.format.addItem('FBX (.fbx)','fbx');self.format.addItem('BVH (.bvh)','bvh');self.format.addItem('Blender project + video (.blend)','blend')
         form.addRow('Format',self.format)
         self.profile=QComboBox();self.profile.addItem('Generic / Blender','generic');self.profile.addItem('3ds Max Biped','biped')
@@ -16,6 +17,10 @@ class SourceExportDialog(QDialog):
         self.tpose=QCheckBox('Add T-pose before motion');self.tpose.setChecked(False)
         self.tpose.setToolTip('Insert a T-pose at the first motion frame root position. Original frames shift by one; their poses and timing intervals stay unchanged.')
         layout.addWidget(self.tpose)
+        self.place_at_origin=QCheckBox('Place at origin');layout.addWidget(self.place_at_origin)
+        self.place_at_origin.setToolTip("Center each person's first exported frame on world X/Z. Height and travel are preserved. People are centered independently; their relative placement changes.")
+        self.symmetric_rest=QCheckBox('Symmetrical rest pose');layout.addWidget(self.symmetric_rest)
+        self.symmetric_rest.setToolTip('Use mirrored left/right rest bones with averaged paired lengths and a straight vertical spine. Animation rotations and timing are retained; changed proportions can move hands and feet. Exported files only.')
         self.animate_camera=QCheckBox('Export saved camera tracking');self.animate_camera.setChecked(True);layout.addWidget(self.animate_camera)
         self.background_refine=QCheckBox('Refine Camera Rotation');layout.addWidget(self.background_refine)
         from .camera_ui import BACKGROUND_HELP
@@ -26,6 +31,7 @@ class SourceExportDialog(QDialog):
         self.translation_scale.setToolTip('Approximate saved camera movement. 0 fixes the camera center; 1 uses the estimate. This does not change the source animation.')
         self.scale_label=QLabel('Camera movement scale');form.addRow(self.scale_label,self.translation_scale)
         self.note=QLabel();self.note.setWordWrap(True);layout.addWidget(self.note)
+        layout.addStretch(1)
         buttons=QDialogButtonBox(QDialogButtonBox.Save|QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Save).setText('Continue...');buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);layout.addWidget(buttons)
         for signal in (self.format.currentIndexChanged,self.whole_scene.toggled,self.animate_camera.toggled):signal.connect(self.update_format)
@@ -34,6 +40,7 @@ class SourceExportDialog(QDialog):
         fmt=self.format.currentData();blend=fmt=='blend';whole=blend and self.model=='mamma' and self.whole_scene.isChecked()
         self.profile_label.setVisible(fmt=='bvh');self.profile.setVisible(fmt=='bvh')
         self.whole_scene.setVisible(blend and self.model=='mamma');self.tpose.setEnabled(not whole);self.tpose.setVisible(not whole)
+        for control in (self.place_at_origin,self.symmetric_rest):control.setVisible(not blend);control.setEnabled(not blend)
         self.animate_camera.setVisible(blend and not whole)
         camera=blend and not whole and self.model in ('flowhmr','exmr')
         self.background_refine.setVisible(camera);self.background_refine.setEnabled(self.animate_camera.isChecked())
@@ -42,9 +49,10 @@ class SourceExportDialog(QDialog):
               'Creates a new folder containing the .blend and synchronized video. Keep both together. The video is a camera-view background, not a render background. Saved camera movement is approximate.' if blend else
               'Exports the selected source skeleton. BVH uses metres and Y up. The T-pose is an extra animation frame; it does not replace the character bind pose.')
         self.note.setText(text)
-        self.layout().activate();self.adjustSize()
+        self.layout().activate()
     def options(self):
         fmt=self.format.currentData();whole=fmt=='blend' and self.model=='mamma' and self.whole_scene.isChecked()
         value=dict(format='blend_scene' if whole else fmt,bvh_profile=self.profile.currentData() if fmt=='bvh' else 'generic',prepend_tpose=self.tpose.isChecked() and not whole)
+        value.update(place_at_origin=self.place_at_origin.isChecked() and fmt in ('fbx','bvh'),symmetric_rest=self.symmetric_rest.isChecked() and fmt in ('fbx','bvh'))
         if fmt=='blend':value.update(animate_camera=self.animate_camera.isChecked(),background_refine=self.background_refine.isChecked() and self.animate_camera.isChecked() and self.model in ('flowhmr','exmr'),camera_translation_scale=self.translation_scale.value())
         return value

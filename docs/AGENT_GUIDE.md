@@ -360,6 +360,24 @@ both original-frame and fractional-frame suffix poses in Blender after changes.
 
 ### Portable Blender export implementation
 
+Source FBX/BVH requests accept default-off `place_at_origin` and `symmetric_rest`.
+`gui.py` attaches a stable `origin_group` for each person, distinct from display
+names. Within an export batch, each actor's first exported take determines one
+constant XZ offset; later takes retain their relative travel and Y is untouched.
+This intentionally discards placement between different people.
+
+`export_options.py` constructs mirrored averaged-length rest offsets and a
+vertical central chain. BVH changes exported hierarchy offsets; a rest-only
+Generic export preserves MOTION bytes. FBX uses the same canonical reference
+geometry with new proper display/rest bases and corresponding terminal markers.
+Validate input rigid offsets against the original committed bind, not the new
+lengths. Do not materialize a full new animation or rerun inference/contacts.
+Changed proportions intentionally change animated endpoints. Both options off
+retain the existing bind/output. `blend_export.py` explicitly clears both flags
+before its nested FBX export; MAMMA whole-scene requests never propagate them.
+Keep source results/receipts immutable, stream bounded BVH blocks, and validate
+ordinary Blender imports, profiles, T-pose combinations and independent actors.
+
 `blend_export_ui.py` constructs requests and selects new, collision-free bundle
 folders. `blend_export_worker.py` routes `save_blend`/`save_blend_scene` through
 `worker_progress.py` before inference fingerprinting. Keep the existing runtime
