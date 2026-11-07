@@ -24,9 +24,8 @@ HALO_SECONDS = 4.0
 
 
 def backend():
-    from .paths import ROOT
-    folder=ROOT/'third_party/KimodoMotionCorrection/bin'
-    files=list(folder.glob('_motion_correction*.pyd'))
+    from .paths import CORRECTION_BIN,NATIVE_SUFFIX
+    files=list(CORRECTION_BIN.glob('_motion_correction*'+NATIVE_SUFFIX))
     if not files:raise RuntimeError('Motion Correction runtime is missing. Reinstall or rebuild the app.')
     spec=importlib.util.spec_from_file_location('_motion_correction',files[0])
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)

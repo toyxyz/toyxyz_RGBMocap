@@ -4,13 +4,13 @@ import argparse,hashlib,importlib.util,json,os,shutil,stat,sys,urllib.request,uu
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 sys.path.insert(0,str(ROOT/'tools'))
-from runtime_support import cache_dependency_files,prepared_lock,sha
+from runtime_support import REGISTRY,cache_dependency_files,prepared_lock,sha
 from session_lock import app_lock
 from git_transaction import begin,promote,recover,store
 from runtime_verification import reuse as reuse_verification,save as save_verification,inventory as runtime_inventory
 
-CONTRACTS={'lock_sha256':'installer/runtime-lock.json','registry_sha256':'mocap/runtime_registry.py',
-           'support_sha256':'installer/git-support-lock.json','assets_sha256':'installer/external-assets.json'}
+CONTRACTS={'lock_sha256':REGISTRY.LOCK,'registry_sha256':'mocap/runtime_registry.py',
+           'support_sha256':REGISTRY.SUPPORT_LOCK,'assets_sha256':'installer/external-assets.json'}
 
 def source_snapshot():
     names=[*CONTRACTS.values(),'installer/engine.py','installer/verify_runtime.py',
@@ -44,7 +44,7 @@ def setup():
         print('Free disk: %.1f GiB; fresh runtime installation estimate: %.1f GiB' % (available/1024**3,lock['fresh_free_bytes_required']/1024**3),flush=True)
         if not (ROOT/'SETUP_RECEIPT.json').exists() and available<lock['fresh_free_bytes_required']:
             raise OSError('Insufficient free space for the runtime installation.')
-        support_path=ROOT/'installer/git-support-lock.json'
+        support_path=ROOT/REGISTRY.SUPPORT_LOCK
         support=json.loads(support_path.read_text(encoding='utf8'))
         roots={'runtime_character','tools/bin','third_party/KimodoMotionCorrection/bin'}
         state_file=folder/'git-runtime-state.json'
@@ -53,7 +53,7 @@ def setup():
             inventory=previous['support_inventory']
             def unchanged(row):
                 path=ROOT/row['path'];st=path.stat()
-                return path.is_file() and not (st.st_file_attributes&stat.FILE_ATTRIBUTE_REPARSE_POINT) and [st.st_size,st.st_mtime_ns]==row['stat']
+                return path.is_file() and not (getattr(st,'st_file_attributes',0)&stat.FILE_ATTRIBUTE_REPARSE_POINT) and [st.st_size,st.st_mtime_ns]==row['stat']
             support_ready=(previous['support_sha256']==sha(support_path) and bool(inventory) and all(unchanged(row) for row in inventory))
         except (OSError,ValueError,KeyError,TypeError):support_ready=False
         support_stage=folder/('git-support-'+uuid.uuid4().hex)
@@ -74,7 +74,7 @@ def setup():
             if conflicts:raise RuntimeError('Existing unmanaged runtime files were preserved: '+', '.join(conflicts))
         for name in names:
             dest=ROOT/name
-            if dest.exists() and (dest.is_symlink() or dest.stat().st_file_attributes&stat.FILE_ATTRIBUTE_REPARSE_POINT):
+            if dest.exists() and (dest.is_symlink() or getattr(dest.stat(),'st_file_attributes',0)&stat.FILE_ATTRIBUTE_REPARSE_POINT):
                 raise RuntimeError('A runtime path is a link; refusing to replace it: '+str(dest))
         receipt=ROOT/'SETUP_RECEIPT.json';state=folder/'git-runtime-state.json'
         assert_sources(frozen)

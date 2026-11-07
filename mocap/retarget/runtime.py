@@ -1,10 +1,10 @@
 """Dedicated character I/O runtime; never changes an AI environment."""
 import os,shutil
 from pathlib import Path
-from mocap.paths import ROOT
+from mocap.paths import EXE,ROOT
 
 def blender():
-    candidates=[Path(os.environ.get('RGBMOCAP_BLENDER',''))/'blender.exe',ROOT/'runtime_character/blender.exe']
+    candidates=[Path(os.environ.get('RGBMOCAP_BLENDER',''))/('blender'+EXE),ROOT/'runtime_character'/('blender'+EXE)]
     explicit=os.environ.get('RGBMOCAP_BLENDER')
     if explicit:candidates.insert(0,Path(explicit))
     found=shutil.which('blender')
