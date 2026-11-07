@@ -2245,3 +2245,38 @@ logical-pixel window, visible unclipped controls and disabled/hidden options for
 Blender. Representative images were visually inspected. The new work did not run
 AI inference, modify user caches or test a complete real-time export gesture.
 Scripts, fixtures and generated files remain outside the public source tree.
+
+## Update launcher self-replacement repair (2026-11-07)
+
+Issue #26's unexpected command failure was reproduced in actual Windows CMD:
+a historical launcher replaced by the preceding current launcher returned 9009
+with `'B' is not recognized` after a tiny updater reported successful installation.
+CMD resumed at an old file offset in the replacement batch. The fixed launcher
+parses its final command block before starting Python; completion reporting and
+optional pause now run in the in-memory Python CLI. Explicit deferred numeric
+status expansion retains failures. A bare `exit /b` was tested and rejected
+because it lost nonzero status in the grouped-command test.
+
+34 isolated regressions passed with the installed Windows Python interpreter,
+actual CMD and local-only Git repositories. They cover shorter/longer/empty
+launcher replacements, received arguments, delayed-expansion callers, an
+inherited ERRORLEVEL shadow, Unicode/metacharacter paths, caller-batch return,
+missing runtime/startup failure, CLI cancellation, real no-argument pause,
+fast-forward replacement of both launcher and bootstrap, dirty/wrong-branch/
+divergent-update refusal, active app locking, pending-marker preservation and
+installation failure followed by successful repair. Sampled process statuses
+include 0, 1, 7, 130, 9009 and Windows 0x80004005. Model/project sentinel files
+were preserved. The existing update transaction body was unchanged.
+
+An old parent launcher cannot acquire the fix retroactively. Its first transition
+still emitted an unexpected command in the fixture; the guide documents direct
+Python invocation or rerunning the updated launcher after installation completion.
+Deleting the running launcher was explicitly checked and produces a nonzero
+missing-batch failure; forced console termination and caller-side shell expansion
+are outside the replacement guarantee. Arguments containing shell metacharacters
+must be quoted by the caller as usual.
+
+These checks used tiny local bootstrap fixtures, not runtime installation,
+GitHub publication, GPU inference or a clean-Windows installation. No user model,
+project, runtime package or dependency pin was changed. Test scripts, fixtures
+and reports remain outside the public source tree.

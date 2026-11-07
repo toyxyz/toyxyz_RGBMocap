@@ -96,8 +96,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 72104,
-      "sha256": "0cdce931109df97b7c06b034c6fd283e7e10c8a595fe41f22d821196a5366892"
+      "bytes": 73058,
+      "sha256": "2a3b7f70f1d61166ece8db724457308057a725d1696772c8d0b81e6933207af9"
     },
     {
       "path": "docs/BUILD.md",
@@ -126,13 +126,13 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 67027,
-      "sha256": "bc3f9b1759a750979cb28e025e304b012a23a9309e7914be1016b2a51467ff78"
+      "bytes": 68114,
+      "sha256": "be92c8342d1ca5f4206569cab79b2c557d3e94c44b105100f3d9bf19d9abe2c5"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 147163,
-      "sha256": "ec150427aac5043ce649b5881f1421f9d26f8875877cd8a9a9d1acbc3b80e4df"
+      "bytes": 149407,
+      "sha256": "2b7407fb841494c77e88657b6ff812a20d939af37966ed2dd3da061062ca2111"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -12881,8 +12881,8 @@
     },
     {
       "path": "tools/git_update.py",
-      "bytes": 1885,
-      "sha256": "ace9d2a8981c7c6eb7887280d9895d3f757d155f8ad7c646ca71c3f37c8ec8d8"
+      "bytes": 2754,
+      "sha256": "f5f4cebcc4735d35b55653787673032736c7fdf4966c4adbd2cc490b927f468b"
     },
     {
       "path": "tools/optional_support.py",
@@ -12956,8 +12956,8 @@
     },
     {
       "path": "update.cmd",
-      "bytes": 347,
-      "sha256": "4cf4ca78309a4e6c4b0decf8995fb4dc227e1702b664180fb5ab0c9481faae08"
+      "bytes": 439,
+      "sha256": "4afbb411ad0faf65d1860f9cd4f712b9a228a9d6a1440c0060a9878bca683772"
     },
     {
       "path": "worker_boot.py",

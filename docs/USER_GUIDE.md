@@ -163,6 +163,26 @@ be reused. Do not delete `models`, `projects` or the remaining `.setup` state to
 retry. If Git reports a conflict or local changes, resolve or back them up before
 running `update.cmd` again.
 
+The updater keeps completion/error reporting in Python and buffers its final CMD
+commands before Git can replace the launcher. Successful installation therefore
+does not resume at an old byte offset inside a new `update.cmd`. Failures retain
+their nonzero exit status; running without arguments pauses at the end.
+
+**One-time transition from older launchers:** an already-running old `update.cmd`
+cannot gain this protection while it is being replaced. If installation says it
+completed, followed only by an unexpected command error such as `'B' is not
+recognized`, close that window and rerun the updated `update.cmd`. Do not delete
+models, projects or setup state. To avoid the old CMD launcher for this transition,
+open CMD in the app folder, close RGB MoCap, and run:
+
+```cmd
+runtime\python.exe -I -X utf8 -B tools\git_update.py
+```
+
+Read actual Git/download/installation errors before retrying; an incomplete
+installation remains incomplete until verification succeeds. Force-closing the
+console or deleting the running launcher is not a supported update path.
+
 ### Installation verification and repair
 
 First installation, changed dependencies and missing/changed runtime files still
