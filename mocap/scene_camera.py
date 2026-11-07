@@ -50,11 +50,11 @@ def read_camera(project):
     if not path.exists():return None
     record=json.loads(path.read_text(encoding='utf-8'))
     if record.get('version')!=VERSION or record.get('sources')!=camera_sources(project):return None
-    from .paths import MODELS
+    from .models import BY_KEY
     if record.get('source_model')=='mamma':
         from .mamma_body import body_path
         model=body_path(project)
-    else:model=MODELS/('body_models/smplh/neutral/model.npz' if record.get('source_model')=='flowhmr' else 'body_models/smplx/SMPLX_NEUTRAL.npz')
+    else:model=BY_KEY['smplh' if record.get('source_model')=='flowhmr' else 'smplx'].path
     if model.exists() and record.get('model')!=stamp(model):return None
     validate_transform(record['world_to_camera'])
     intrinsic=np.asarray(record['K'],dtype=float)
@@ -103,8 +103,8 @@ def prepare_cameras(root):
         import torch
         torch.set_num_threads(1)
         from scipy.spatial.transform import Rotation
-        from .paths import MODELS
-        model=MODELS/'body_models/smplx/SMPLX_NEUTRAL.npz'
+        from .models import BY_KEY
+        model=BY_KEY['smplx'].path
         pelvis_template=pelvis_shapes=None
         if model.exists():
             with np.load(model,allow_pickle=False) as data:

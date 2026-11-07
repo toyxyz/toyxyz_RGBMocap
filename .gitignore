@@ -11,6 +11,7 @@
 __pycache__/
 *.py[cod]
 *.pyd
+*.so
 *.dll
 *.exe
 

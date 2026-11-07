@@ -42,23 +42,37 @@ def extract(archive_path,root,destination,select):
     if not count:raise ValueError('Support archive contained no expected files')
 
 def stage(destination,cache,lock):
+    """Stage each support component as its lock entry describes (Windows: archives/prebuilt; Linux: system/source)."""
     cache.mkdir(parents=True,exist_ok=True)
-    native=ROOT/lock['correction']['path']
-    if not valid(native,lock['correction']):raise ValueError('Prebuilt motion correction module is missing or has the wrong hash')
-    blender=download(cache,'blender-4.5.0',lock['blender'])
-    ffmpeg=download(cache,'ffmpeg-7.1.1',lock['ffmpeg'])
-    out=destination/'runtime_character'; extract(blender,lock['blender']['archive_root'],out,lambda parts:bool(parts))
-    if not (out/'blender.exe').is_file():raise ValueError('Blender executable missing in archive')
-    ffroot=destination/'ffmpeg-stage'; extract(ffmpeg,lock['ffmpeg']['archive_root'],ffroot,lambda p:bool(p) and (p[-1] in ('ffmpeg.exe','ffprobe.exe') or p[-1].lower() in ('license','license.txt','copying','readme.txt')))
-    binout=destination/'tools/bin';binout.mkdir(parents=True)
-    for name in ('ffmpeg.exe','ffprobe.exe'):
-        matches=list(ffroot.rglob(name))
-        if len(matches)!=1:raise ValueError('Expected one '+name+' in archive')
-        shutil.copy2(matches[0],binout/name)
-    notices=binout/'notices';notices.mkdir()
-    for path in ffroot.rglob('*'):
-        if path.is_file() and path.name not in ('ffmpeg.exe','ffprobe.exe'):
-            shutil.copy2(path,notices/path.name)
+    correction=lock['correction']
+    if 'path' in correction:
+        native=ROOT/correction['path']
+        if not valid(native,correction):raise ValueError('Prebuilt motion correction module is missing or has the wrong hash')
+    if 'blender' in lock:
+        blender=download(cache,'blender-4.5.0',lock['blender'])
+        out=destination/'runtime_character'; extract(blender,lock['blender']['archive_root'],out,lambda parts:bool(parts))
+        if not (out/'blender.exe').is_file():raise ValueError('Blender executable missing in archive')
+    if 'system' in lock['ffmpeg']:
+        missing=[name for name in lock['ffmpeg']['system'] if not shutil.which(name)]
+        if missing:raise RuntimeError('Install FFmpeg first (for example: sudo apt install ffmpeg); missing '+', '.join(missing))
+    else:
+        ffmpeg=download(cache,'ffmpeg-7.1.1',lock['ffmpeg'])
+        ffroot=destination/'ffmpeg-stage'; extract(ffmpeg,lock['ffmpeg']['archive_root'],ffroot,lambda p:bool(p) and (p[-1] in ('ffmpeg.exe','ffprobe.exe') or p[-1].lower() in ('license','license.txt','copying','readme.txt')))
+        binout=destination/'tools/bin';binout.mkdir(parents=True)
+        for name in ('ffmpeg.exe','ffprobe.exe'):
+            matches=list(ffroot.rglob(name))
+            if len(matches)!=1:raise ValueError('Expected one '+name+' in archive')
+            shutil.copy2(matches[0],binout/name)
+        notices=binout/'notices';notices.mkdir()
+        for path in ffroot.rglob('*'):
+            if path.is_file() and path.name not in ('ffmpeg.exe','ffprobe.exe'):
+                shutil.copy2(path,notices/path.name)
     target=destination/'third_party/KimodoMotionCorrection/bin';target.mkdir(parents=True)
-    shutil.copy2(native,target/native.name)
-    print('Upstream support archives verified and staged.',flush=True)
+    if 'path' in correction:
+        shutil.copy2(native,target/native.name)
+    else:
+        # Built from the tracked source with this private CPython, which matches the runtime ABI.
+        from build_motion_correction import build
+        print('Building native motion correction from source...',flush=True)
+        build(ROOT/'.setup/motion-correction-build',target)
+    print('Support components verified and staged.',flush=True)

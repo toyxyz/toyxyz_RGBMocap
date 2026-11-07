@@ -61,7 +61,7 @@ def ensure_config(root):
 
 def inputs(root):
     from .scene_camera import stamp,take_projects,validate_transform
-    from .paths import MODELS
+    from .models import BY_KEY
     root=Path(root).resolve();state=load_people(root)
     if state is None:raise ValueError('People scene unavailable')
     reference=read_people_json(root/'people_scene.json')
@@ -72,7 +72,7 @@ def inputs(root):
     manifest=read_people_json(root/'project.json')
     mamma=manifest.get('pipeline',{}).get('model')=='mamma'
     flow=manifest.get('pipeline',{}).get('model')=='flowhmr'
-    model=MODELS/('body_models/smplh/neutral/model.npz' if flow else 'body_models/smplx/SMPLX_NEUTRAL.npz')
+    model=BY_KEY['smplh' if flow else 'smplx'].path
     model_stamp=stamp(model) if model.exists() and not mamma else None
     rows=[]
     for ident,project in take_projects(root,state):
@@ -130,10 +130,10 @@ def resolve(root,body=None):
         import torch
         from scipy.spatial.transform import Rotation
         from .correction import SoleGeometry,prepare_contacts
-        from .paths import MODELS
+        from .models import BY_KEY
         if body is None and not mamma:
             import smplx
-            model=MODELS/'body_models/smplx/SMPLX_NEUTRAL.npz'
+            model=BY_KEY['smplx'].path
             if not model.exists():raise FileNotFoundError('Import the body model to estimate the shared scene floor.')
             body=smplx.SMPLX(str(model),gender='neutral',num_pca_comps=12,flat_hand_mean=False,batch_size=1).eval()
         inverse=np.linalg.inv(np.asarray(context['reference']))

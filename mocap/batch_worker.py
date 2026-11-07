@@ -77,10 +77,11 @@ def main(argv, emit):
                     gc.collect()
                     if torch.cuda.is_initialized():torch.cuda.empty_cache()
                     import psutil
+                    from .process_memory import open_handles
                     emit('batch_item_done',stage=stage,project=str(active),index=index,count=len(jobs),
                          resident_models=int(session.value is not None),resident_allocated_bytes=torch.cuda.memory_allocated() if torch.cuda.is_initialized() else 0,
                          peak_cuda_allocated_bytes=torch.cuda.max_memory_allocated() if torch.cuda.is_initialized() else 0,
-                         rss_bytes=psutil.Process().memory_info().rss,handles=psutil.Process().num_handles())
+                         rss_bytes=psutil.Process().memory_info().rss,handles=open_handles(psutil.Process()))
             emit('batch_phase_released',phase=phase,allocated_bytes=torch.cuda.memory_allocated() if torch.cuda.is_initialized() else 0)
         emit('complete',stage=args.stage,output=str(jobs[-1]['project']),cached=all_cached,elapsed=time.monotonic()-started)
         return 0

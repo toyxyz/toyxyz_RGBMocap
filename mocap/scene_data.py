@@ -127,7 +127,8 @@ class PeopleScene:
 
 def prepare_camera_process(root,cancelled):
     from .paths import ROOT
-    if getattr(sys,'frozen',False) or __import__('os').environ.get('RGB_MOCAP_MANAGED') == '1':command=[str(ROOT/'runtime/python.exe'),'-I','-X','utf8',str(ROOT/'scene_boot.py'),str(root)]
+    from .runtime_registry import managed_python
+    if getattr(sys,'frozen',False) or __import__('os').environ.get('RGB_MOCAP_MANAGED') == '1':command=[str(managed_python(ROOT,'shared')),'-I','-X','utf8',str(ROOT/'scene_boot.py'),str(root)]
     else:command=[sys.executable,'-X','utf8','-m','mocap.scene_camera',str(root)]
     log=root/'.scene_camera.log'
     with log.open('wb') as output:
@@ -184,8 +185,8 @@ class SceneDataLoader(QThread):
         projects=take_projects(root,state)
         if not projects:return PeopleScene(root,dict(floor=0.))
         from .scene_floor import read_config,current_resolution
-        from .paths import MODELS
-        needs_floor=read_config(root) is not None and current_resolution(root) is None and (MODELS/'body_models/smplx/SMPLX_NEUTRAL.npz').exists()
+        from .models import BY_KEY
+        needs_floor=read_config(root) is not None and current_resolution(root) is None and BY_KEY['smplx'].path.exists()
         path=root/'people_scene.json'
         if needs_floor or not path.exists() or any(read_camera(project) is None for _,project in projects):
             prepare_camera_process(root,cancelled)
@@ -228,8 +229,8 @@ class SceneDataLoader(QThread):
                     from .project_storage import resolve_reference
                     asset_path=resolve_reference(project,info['asset'])
                     if not asset_path.exists():
-                        from .paths import MODELS
-                        asset_path=MODELS/'body_models/smplx'/asset_path.name
+                        from .models import BY_KEY
+                        asset_path=BY_KEY['smplx'].path.parent/asset_path.name
                     stat=asset_path.stat();key=(str(asset_path.resolve()),stat.st_size,stat.st_mtime_ns)
                     if manifest.get('pipeline',{}).get('model')=='mamma':
                         # The body filename includes the registered source,

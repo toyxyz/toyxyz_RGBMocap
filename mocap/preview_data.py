@@ -381,8 +381,8 @@ class PreviewDataLoader(QThread):
                     from .project_storage import resolve_reference
                     asset = resolve_reference(project, info['asset'])
                     if not asset.exists():
-                        from .paths import MODELS
-                        asset = MODELS / "body_models/smplx" / asset.name
+                        from .models import BY_KEY
+                        asset = BY_KEY["smplx"].path.parent / asset.name
                     if not asset.exists():
                         continue  # Keep video/joints usable; the mesh view offers Prepare Mesh.
                     stat = asset.stat()

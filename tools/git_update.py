@@ -24,7 +24,8 @@ def main():
                 if previous_pending is None:pending.unlink(missing_ok=True)
                 else:pending.write_bytes(previous_pending)
             raise
-    command=[str(Path(os.environ['SystemRoot'])/'System32/WindowsPowerShell/v1.0/powershell.exe'),'-NoProfile','-ExecutionPolicy','Bypass','-File',str(ROOT/'tools/git_bootstrap.ps1'),*sys.argv[1:]]
+    if os.name=='nt':command=[str(Path(os.environ['SystemRoot'])/'System32/WindowsPowerShell/v1.0/powershell.exe'),'-NoProfile','-ExecutionPolicy','Bypass','-File',str(ROOT/'tools/git_bootstrap.ps1'),*sys.argv[1:]]
+    else:command=['/bin/sh',str(ROOT/'tools/git_bootstrap.sh'),*sys.argv[1:]]
     print('Checking the updated runtime configuration...',flush=True)
     subprocess.run(command,check=True,cwd=ROOT)
 
@@ -43,7 +44,8 @@ def cli():
         result=exc.returncode if isinstance(exc,subprocess.CalledProcessError) else 1
     if result:
         print('Update stopped; review the message above.',file=sys.stderr,flush=True)
-    if not cancelled and (len(sys.argv)==1 or not sys.argv[1]):
+    # The double-clicked CMD window pauses; a POSIX terminal stays open by itself.
+    if os.name=='nt' and not cancelled and (len(sys.argv)==1 or not sys.argv[1]):
         try:
             subprocess.run([str(Path(os.environ['SystemRoot'])/'System32/cmd.exe'),'/d','/c','pause'],check=False)
         except (OSError,KeyboardInterrupt):

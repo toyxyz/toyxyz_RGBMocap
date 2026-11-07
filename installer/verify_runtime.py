@@ -6,9 +6,9 @@ root=Path(sys.argv[1]).resolve();group=json.loads(Path(sys.argv[2]).read_text(en
 spec=importlib.util.spec_from_file_location('runtime_registry',registry)
 module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
 base_root=root
-if group.get('base') and not (root/'runtime/python.exe').is_file(): base_root=Path(sys.argv[4])
+if group.get('base') and not module.managed_python(root,'shared').is_file(): base_root=Path(sys.argv[4])
 report=module.activate(root,group['key'],base_root)
-folder=root/group['target'];site=folder/'Lib/site-packages' if not group.get('base') and group['key'] in {'shared','exmr'} else folder
+folder=root/group['target'];site=module.site_packages(folder,group['python']) if not group.get('base') and group['key'] in {'shared','exmr'} else folder
 distributions={d.metadata['Name'].lower().replace('_','-'):d for d in metadata.distributions(path=[str(site)])}
 checked=0
 for p in group['packages']:

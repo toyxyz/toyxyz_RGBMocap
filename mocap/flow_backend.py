@@ -7,11 +7,11 @@ from pathlib import Path
 import gc, hashlib, json, math, os, sys, uuid
 import numpy as np
 from .paths import ROOT, UPSTREAM
-from .storage import atomic_json, sha256
+from .storage import atomic_json, hard_link, sha256
 from .model_session import set_memory_budget
 from .compute_policy import gpu_memory_fraction
 from .result_artifacts import file_stat
-from .resource_cache import code_hash
+from .resource_cache import alias, code_hash
 
 VERSION=1
 MAX_FRAMES=5000  # Pinned FlowHMR per-branch RoPE table; 30 fps.
@@ -59,8 +59,8 @@ def activate():
         if not ready(model):continue
         target=root/name;target.parent.mkdir(parents=True,exist_ok=True)
         if target.exists() and target.samefile(model.path):continue
-        if target.exists():target.unlink()
-        try:os.link(model.path,target)
+        if target.exists() or target.is_symlink():target.unlink()  # includes links left dangling by moved models
+        try:hard_link(model.path,target)
         except OSError:
             # Models may live on another drive. Copy only during explicit setup,
             # never unexpectedly duplicate multi-GB weights at inference time.
@@ -125,7 +125,7 @@ def identity(project,stage):
     if stage=='flow_export':
         code={name:sha256(ROOT/'mocap'/name) for name in ('flow_export.py','source_pose_fit.py','mixamo_rig.py','bvh_bind.py','mixamo_data.py')}
     else:
-        code={'adapter':hashlib.sha256(''.join(inspect.getsource(f) for f in (*functions[stage],activate,load_tensor,save_tensor)).encode()).hexdigest()}
+        code={'adapter':alias(hashlib.sha256(''.join(inspect.getsource(f) for f in (*functions[stage],activate,load_tensor,save_tensor)).encode()).hexdigest())}
     upstream={'flow_camera':'flowhmr/utils/runtime_vggt_camera.py','flow_features':'flowhmr/utils/runtime_sam_features.py','flowhmr':'flowhmr/pipeline/pipeline_v2m.py'}.get(stage)
     if upstream:code[upstream]=sha256(UPSTREAM/'FlowHMR'/upstream)
     if stage in ('flow_camera','flow_features'):
@@ -358,7 +358,8 @@ def infer(project,emit):
 
 
 def run_stage(project,stage,result,emit,force=False):
-    import time,torch,psutil
+    import time,torch
+    from .process_memory import peak_ram_bytes
     from .models import missing
     project=Path(project);started=time.monotonic()
     torch.set_num_threads(4)
@@ -432,13 +433,14 @@ def run_stage(project,stage,result,emit,force=False):
     latest.setdefault('stages',{})[stage]=dict(status='complete',elapsed=time.monotonic()-started,output=str(output))
     atomic_json(project/'project.json',latest)
     emit('complete',stage=stage,output=str(output),cached=False,elapsed=time.monotonic()-started,
-         peak_ram_gib=psutil.Process().memory_info().peak_wset/1024**3,
+         peak_ram_gib=peak_ram_bytes()/1024**3,
          peak_cuda_allocated_gib=torch.cuda.max_memory_allocated()/1024**3 if torch.cuda.is_initialized() else 0)
 
 
 def run_post(project,stage,result,emit,force=False):
     """CPU-only contact/export stages, separately validated from AI caches."""
-    import time,torch,psutil
+    import time,torch
+    from .process_memory import peak_ram_bytes
     from .models import missing
     from .motion_tools import result_is_current,selected_export
     from .flow_export import prepare
@@ -480,4 +482,4 @@ def run_post(project,stage,result,emit,force=False):
     atomic_json(project/'project.json',latest)
     if stage in ('export','flow_export','rig','mesh'):(project/'flow_export_pending.json').unlink(missing_ok=True)
     emit('complete',stage=stage,output=str(output),cached=cached,elapsed=time.monotonic()-started,
-        peak_ram_gib=psutil.Process().memory_info().peak_wset/1024**3)
+        peak_ram_gib=peak_ram_bytes()/1024**3)

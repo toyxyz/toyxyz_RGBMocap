@@ -4,7 +4,7 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
-from .paths import MODELS
+from .paths import MODELS, MODEL_FILES, set_model_file
 from .storage import atomic_json, sha256
 
 
@@ -21,7 +21,14 @@ class Model:
 
     @property
     def path(self) -> Path:
-        return MODELS / self.relative
+        return MODEL_FILES.get(self.key) or MODELS / self.relative
+
+    @property
+    def receipt(self) -> Path:
+        # Files used in place elsewhere keep their receipts in the models folder.
+        if self.key in MODEL_FILES:
+            return MODELS / '.receipts' / (self.key + '.receipt.json')
+        return self.path.with_suffix(self.path.suffix + '.receipt.json')
 
 
 MODELS_LIST = [
@@ -264,7 +271,7 @@ def ready(model: Model) -> bool:
     if valid and (model.key.startswith(('flow','hand','exmr','mamma','phmr','pear')) or model.key in ('smplh','mano_right')):
         import json
         try:
-            receipt=json.loads(model.path.with_suffix(model.path.suffix+'.receipt.json').read_text(encoding='utf-8'))
+            receipt=json.loads(model.receipt.read_text(encoding='utf-8'))
             stat=model.path.stat()
             valid=receipt.get('stat')==[stat.st_size, stat.st_mtime_ns] and (not model.expected_sha256 or receipt.get('sha256')==model.expected_sha256)
         except (OSError,ValueError):valid=False
@@ -340,7 +347,8 @@ def download(key: str, progress=None) -> Path:
     if key == "gvhmr" and checksum != "4fae7da2de388d5da3514cb27a2d003f364dacb280e9cf88972b710e589c6b91":
         raise RuntimeError("The GVHMR model file hash does not match.")
     part.replace(model.path)
-    atomic_json(model.path.with_suffix(model.path.suffix + ".receipt.json"), {
+    model.receipt.parent.mkdir(parents=True, exist_ok=True)
+    atomic_json(model.receipt, {
         "source": source, "drive_id": model.drive_id, "bytes": model.path.stat().st_size,
         "sha256": checksum,
         'stat': [model.path.stat().st_size, model.path.stat().st_mtime_ns],
@@ -348,10 +356,15 @@ def download(key: str, progress=None) -> Path:
     return model.path
 
 
-def import_model_file(key: str, source: Path) -> Path:
-    """Worker-only validated, atomic registration; never unpickles imports."""
+def import_model_file(key: str, source: Path, in_place: bool = False) -> Path:
+    """Worker-only validated, atomic registration; never unpickles imports.
+
+    `in_place` keeps the checked file where it is and remembers its location; otherwise
+    it is copied to the models folder and any remembered location is forgotten.
+    """
     import os, uuid
     if key=='pear_geometry':
+        if in_place:raise ValueError('PEAR geometry is extracted from its archive and cannot be used in place.')
         from .pear_models import import_bundle
         return import_bundle(source)
     model=BY_KEY[key]; source=Path(source).resolve()
@@ -370,36 +383,57 @@ def import_model_file(key: str, source: Path) -> Path:
     elif key not in {'smplx','smpl'} and not model.expected_sha256:
         raise ValueError('This model cannot be imported.')
     elif key in {'smplx','smpl'}:
-        if source.name.lower() != model.path.name.lower():
-            raise ValueError('Select ' + model.path.name + ' for ' + model.name + '.')
-        return import_body_model(source)
-    model.path.parent.mkdir(parents=True,exist_ok=True)
-    temporary=model.path.with_name(model.path.name+'.'+uuid.uuid4().hex+'.part')
+        if source.name.lower() != Path(model.relative).name.lower():
+            raise ValueError('Select ' + Path(model.relative).name + ' for ' + model.name + '.')
+        return import_body_model(source, in_place)
+    # A file already at its models-folder path is registered there, never copied onto itself.
+    in_place=in_place or source==(MODELS/model.relative).resolve();before=source.stat()
+    destination=source if in_place else MODELS/model.relative
+    destination.parent.mkdir(parents=True,exist_ok=True)
+    temporary=None if in_place else destination.with_name(destination.name+'.'+uuid.uuid4().hex+'.part')
     try:
         # Validate the bytes actually copied; a changing source cannot publish.
-        import hashlib
+        import contextlib, hashlib
         checksum=hashlib.sha256()
-        with source.open('rb') as incoming, temporary.open('wb') as output:
+        with source.open('rb') as incoming, (contextlib.nullcontext() if in_place else temporary.open('wb')) as output:
             for chunk in iter(lambda:incoming.read(8*1024**2),b''):
-                output.write(chunk);checksum.update(chunk)
+                if output:output.write(chunk)
+                checksum.update(chunk)
         digest=checksum.hexdigest()
         if model.expected_sha256 and digest!=model.expected_sha256:
             raise ValueError('This file does not match the supported official '+model.name+'. Check the filename and download version.')
         if key=='smplh':
             # Validate the stable copy again if the source was replaced meanwhile.
-            with np.load(temporary,allow_pickle=False) as data:
+            with np.load(source if in_place else temporary,allow_pickle=False) as data:
                 for name,shape in shapes.items():
                     if data[name].shape!=shape:raise ValueError('Body model changed during import.')
-        os.replace(temporary,model.path)
-        atomic_json(model.path.with_suffix(model.path.suffix+'.receipt.json'),dict(source=str(source),sha256=digest,stat=[model.path.stat().st_size,model.path.stat().st_mtime_ns],manual_import=True))
+        if not in_place:os.replace(temporary,destination)
+        elif [before.st_size,before.st_mtime_ns]!=[source.stat().st_size,source.stat().st_mtime_ns]:
+            raise ValueError(model.name+' changed during import.')
+        remember_location(model,destination,in_place)
+        model.receipt.parent.mkdir(parents=True,exist_ok=True)
+        atomic_json(model.receipt,dict(source=str(source),sha256=digest,stat=[model.path.stat().st_size,model.path.stat().st_mtime_ns],manual_import=True))
         license_file=source.parent/'LICENSE.txt'
         if license_file.exists() and license_file.resolve()!=(model.path.parent/'LICENSE.txt').resolve():shutil.copy2(license_file,model.path.parent/'LICENSE.txt')
-    finally:temporary.unlink(missing_ok=True)
+    finally:
+        if temporary:temporary.unlink(missing_ok=True)
     return model.path
 
 
-def import_body_model(source: Path) -> Path:
-    candidates = [model for model in MODELS_LIST if model.key in {"smplx", "smpl"} and model.path.name.lower() == source.name.lower()]
+def remember_location(model: Model, destination: Path, in_place: bool) -> None:
+    """Point `model` at a checked in-place file, or back at the models folder after a copy.
+
+    Only a checked file changes where the app looks. Plain copies to the default path
+    leave config/local.json untouched unless an old in-place entry must be forgotten.
+    """
+    keep = in_place and Path(destination).resolve() != (MODELS / model.relative).resolve()
+    if keep or model.key in MODEL_FILES:
+        set_model_file(model.key, destination if keep else None)
+
+
+def import_body_model(source: Path, in_place: bool = False) -> Path:
+    source = Path(source).resolve()
+    candidates = [model for model in MODELS_LIST if model.key in {"smplx", "smpl"} and Path(model.relative).name.lower() == source.name.lower()]
     if not candidates:
         raise ValueError("Select SMPLX_NEUTRAL.npz or SMPL_NEUTRAL.pkl.")
     model = candidates[0]
@@ -411,7 +445,10 @@ def import_body_model(source: Path) -> Path:
             required = {"v_template", "shapedirs", "posedirs", "kintree_table"}
             if not required.issubset(data.files):
                 raise ValueError("The selected file does not match the required SMPL-X model format.")
-    model.path.parent.mkdir(parents=True, exist_ok=True)
-    if source.resolve() != model.path.resolve():
-        shutil.copy2(source, model.path)
+    in_place = in_place or source == (MODELS / model.relative).resolve()
+    destination = source if in_place else MODELS / model.relative
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if not in_place:
+        shutil.copy2(source, destination)
+    remember_location(model, destination, in_place)
     return model.path

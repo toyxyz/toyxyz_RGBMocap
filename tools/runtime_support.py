@@ -1,8 +1,14 @@
 """Rebuild local pure-Python wheel sources and preserve pinned runtime groups."""
 from pathlib import Path
-import hashlib,json,os,re,subprocess,sys,zipfile
+import hashlib,importlib.util,json,os,re,subprocess,sys,zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
+
+def _registry():
+    # Loaded by path: installer scripts run isolated, without the app root on sys.path.
+    spec=importlib.util.spec_from_file_location('runtime_registry',ROOT/'mocap/runtime_registry.py')
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+REGISTRY=_registry()
 
 def cache_dependency_files(root):
     """Keep historical worker receipt inputs, without using them to install packages."""
@@ -27,7 +33,7 @@ def sha(path):
 
 def prepared_lock(work):
     work=Path(work).resolve();work.mkdir(parents=True,exist_ok=True)
-    lock=json.loads((ROOT/'installer/runtime-lock.json').read_text(encoding='utf8'))
+    lock=json.loads((ROOT/REGISTRY.LOCK).read_text(encoding='utf8'))
     if sha(ROOT/'mocap/runtime_registry.py')!=lock['registry_sha256']:
         raise RuntimeError('Runtime registry changed. Review the profile pins and update the source lock explicitly.')
     for name in sorted({p['bundled'] for g in lock['groups'] for p in g['packages'] if p.get('bundled')}):
