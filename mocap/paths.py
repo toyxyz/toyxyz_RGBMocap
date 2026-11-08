@@ -10,6 +10,10 @@ MODELS = HOME / "models"
 PROJECTS = HOME / "projects"
 UPSTREAM = ROOT / "third_party"
 COMPAT = ROOT / "native_compat"
+EXE = ".exe" if os.name == "nt" else ""
+NO_WINDOW = 0x08000000 if os.name == "nt" else 0  # CREATE_NO_WINDOW; POSIX Popen rejects any flags
+NATIVE_SUFFIX = ".pyd" if os.name == "nt" else ".so"
+CORRECTION_BIN = UPSTREAM / "KimodoMotionCorrection/bin"
 
 
 def worker_command(stage: str, *args: str) -> list[str]:

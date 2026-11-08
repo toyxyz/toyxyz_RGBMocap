@@ -14,7 +14,9 @@ VERSION=1
 
 def code_identity():
     from .paths import ROOT
-    return {name:sha256(ROOT/'mocap'/name) for name in
+    from .resource_cache import code_hash
+    # Exact-byte aliases retain corrections after platform-only edits to these files.
+    return {name:(code_hash if name in {'flow_correction.py','correction.py','scene_floor.py'} else sha256)(ROOT/'mocap'/name) for name in
         ('flow_correction.py','flow_floor.py','correction.py','multilevel_contacts.py','hand_lock.py','contact_trajectory.py','contact_arm_plan.py','palm_contact.py','contact_pose_plan.py','contact_temporal_root.py','anatomical_ik.py','correction_settings.py','foot_contacts.py','scene_floor.py')}
 
 

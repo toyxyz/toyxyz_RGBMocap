@@ -8,6 +8,7 @@ from pathlib import Path
 
 from .models import BY_KEY
 from .paths import COMPAT, MODELS, UPSTREAM
+from .storage import hard_link
 
 
 def save_tensor(value, target):
@@ -41,12 +42,12 @@ def link_models(root: Path) -> None:
             continue
         target = root / "inputs/checkpoints" / model.relative
         target.parent.mkdir(parents=True, exist_ok=True)
-        if target.exists():
-            if target.samefile(source):
-                continue
-            target.unlink()
+        if target.exists() and target.samefile(source):
+            continue
+        if target.exists() or target.is_symlink():
+            target.unlink()  # includes links left dangling by moved models
         try:
-            os.link(source, target)
+            hard_link(source, target)
         except OSError:
             # Cross-volume data folders use a link when possible. If linking is
             # disallowed, report it instead of unexpectedly copying huge models.

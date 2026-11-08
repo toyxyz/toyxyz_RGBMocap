@@ -11,6 +11,7 @@ a manually built environment. For optional PromptHMR setup, its SAM2 build and
 the optional DroidCalib/LieTorch moving-camera build, follow
 [docs/models/PROMPTHMR.md](docs/models/PROMPTHMR.md).
 
+- On Linux, follow [docs/LINUX.md](docs/LINUX.md): `install.sh`/`RGBMoCap.sh`/`update.sh` with `installer/runtime-lock-linux.json` (derived by `tools/linux_lock.py`). Only ExMR/FlowHMR/GVHMR are ported; keep platform layout in `mocap/runtime_registry.py`.
 - This is the Windows Git/CMD distribution. Preserve the separate pinned runtimes and model-specific behavior. `install.cmd` covers ExMR/FlowHMR/GVHMR and the small shared-runtime camera support overlay used by PEAR and MAMMA gravity; MAMMA and PromptHMR remain optional through their separate setup commands. Do not merge their packages or assume `update.cmd` installs them.
 - PEAR is a transient single-person bone preview. Selecting it must not start models or modify an offline project. Start/Stop controls the resident worker; see `docs/models/PEAR.md` for fixed bones, Reset Bones, One Euro filtering and World Position. Keep inference and capture off the GUI thread, use bounded latest-frame queues and preserve offline state on exit.
 - Treat local `models/`, `projects/`, `cache/`, `character_scenes/`, runtime folders, external project folders and registered model data as user-owned. Do not delete, overwrite, upload or migrate them without appropriate user authorization. Ignore rules are not backups.

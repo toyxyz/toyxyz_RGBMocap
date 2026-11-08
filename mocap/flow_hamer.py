@@ -66,8 +66,9 @@ def refine(project,output,emit):
         if session is not None:session.discard()
         import gc
         gc.collect();torch.cuda.empty_cache()
-        python=ROOT/'runtime_exmr/python.exe'
-        if not python.is_file():python=ROOT/'.venv-exmr/Scripts/python.exe'
+        from .runtime_registry import managed_python,venv_interpreter
+        python=managed_python(ROOT,'exmr')
+        if not python.is_file():python=venv_interpreter(ROOT/'.venv-exmr')
         if not python.is_file():raise RuntimeError('HaMeR needs the base ExMR runtime. Run install.cmd to repair it.')
         emit('info',message='FlowHMR HaMeR: every-frame fingers; ExMR crops and Gaussian smoothing. Body, wrists and trajectory are retained.')
         command=[str(python),'-I','-X','utf8',str(ROOT/'mocap/flow_hamer_entry.py'),str(project)]
@@ -97,7 +98,8 @@ def refine(project,output,emit):
 
 def run(project,emit):
     """Called only by the separate pinned ExMR runtime."""
-    import cv2,numpy as np,torch,gc,time,psutil
+    import cv2,numpy as np,torch,gc,time
+    from .process_memory import peak_ram_bytes
     started=time.monotonic()
     from scipy.spatial.transform import Rotation
     from .storage import atomic_json
@@ -177,4 +179,4 @@ def run(project,emit):
     load_hands(project,n)
     atomic_json(project/'flow_hamer_receipt.json',dict(identity=identity,output=file_stat(target)))
     emit('progress',current=n,total=n,phase='hamer',message='HaMeR finger smoothing complete')
-    emit('info',message=f'HaMeR finger pass: {time.monotonic()-started:.2f} s; peak allocated VRAM {torch.cuda.max_memory_allocated()/2**30:.2f} GiB; peak worker RAM {psutil.Process().memory_info().peak_wset/2**30:.2f} GiB.')
+    emit('info',message=f'HaMeR finger pass: {time.monotonic()-started:.2f} s; peak allocated VRAM {torch.cuda.max_memory_allocated()/2**30:.2f} GiB; peak worker RAM {peak_ram_bytes()/2**30:.2f} GiB.')

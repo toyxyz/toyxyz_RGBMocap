@@ -7,7 +7,7 @@ from pathlib import Path
 import json
 import subprocess
 import sys
-from .paths import ROOT
+from .paths import NO_WINDOW, ROOT
 from .storage import atomic_json, sha256
 
 PACKAGES = {'torch': '2.7.1+cu128', 'numpy': '1.26.4', 'scipy': '1.17.1',
@@ -89,7 +89,7 @@ def configure(python, engine, root=ROOT, managed_id=None):
             'import torch,numpy,scipy,smplx,timm,torchvision,sam2,pytorch_sdf,open_clip;'
             'print(json.dumps(dict(python=list(sys.version_info[:3]),packages={n:m.version(n) for n in '+repr(list(PACKAGES))+'},cuda=torch.cuda.is_available(),compute_capability=list(torch.cuda.get_device_capability()) if torch.cuda.is_available() else None)))')
     result = subprocess.run([str(python), '-I','-X','utf8', '-c', code], capture_output=True, text=True,
-                            encoding='utf-8', errors='replace', timeout=120, creationflags=0x08000000)
+                            encoding='utf-8', errors='replace', timeout=120, creationflags=NO_WINDOW)
     if result.returncode:
         raise RuntimeError('MAMMA runtime import check failed:\n'+result.stderr[-4000:])
     checked = json.loads(result.stdout.strip().splitlines()[-1])

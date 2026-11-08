@@ -18,7 +18,7 @@ import uuid
 from .paths import ROOT, UPSTREAM
 from .people_store import (VERSION, load_people, media_receipt, person_color, safe_child,
                            save_people, visible_runs)
-from .storage import atomic_json, sha256
+from .storage import atomic_json, hard_link, sha256
 
 
 class AppearanceEncoder:
@@ -164,7 +164,7 @@ def _link(source, target):
             return  # A prior cross-volume or permission fallback made an ordinary copy.
         raise RuntimeError('Existing person media does not match the source.')
     try:
-        os.link(source,target)
+        hard_link(source,target)
     except OSError:
         shutil.copy2(source,target)
 
