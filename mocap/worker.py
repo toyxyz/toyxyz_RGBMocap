@@ -139,6 +139,7 @@ def main() -> int:
     parser.add_argument("--start", type=float, default=0)
     parser.add_argument("--end", type=float)
     parser.add_argument("--model")
+    parser.add_argument("--in-place", action="store_true", help="import_model: keep the checked file where it is and remember its location")
     parser.add_argument("--motion-tool", choices=list(MOTION_TOOLS))
     parser.add_argument("--result", choices=["auto", *RESULTS], default="auto")
     parser.add_argument("--output", type=Path)
@@ -198,7 +199,7 @@ def main() -> int:
             return 0
         if args.stage=='import_model':
             from .models import import_model_file
-            result=import_model_file(args.model,args.video)
+            result=import_model_file(args.model,args.video,in_place=args.in_place)
             emit('downloaded',path=str(result),model=args.model)
             return 0
         if args.stage=='save_fbx':

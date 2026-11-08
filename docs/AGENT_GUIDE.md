@@ -111,7 +111,7 @@ pipeline-hash pair preserves valid existing inference receipts for this cache-on
 fix; do not extend that exception to numerical/weight changes. No optional-runtime
 rebuild is required. See [supporting downloads](models/PROMPTHMR.md#shared-supporting-model-download-cache).
 
-Model files are in `<installation>/models/` by default. To reuse a legitimate installation, close both apps, copy the complete models folder and its receipt/license files beside `RGBMoCap.cmd`, and check readiness in Model Manager. Do not copy old `runtime*` folders. SMPL Neutral is required by PromptHMR, although it is not required for ExMR/FlowHMR/GVHMR. Standard SMPL-X Neutral is shared by ExMR/GVHMR/PromptHMR; MAMMA uses its separate locked-head bodies. Exact requirements are defined by `mocap/models.py` and the chosen stages, not by guessed filenames.
+Model files are in `<installation>/models/` by default; the local `config/local.json` `models_dir` / `model_files` entries (written by Model Manager's **Use in Place**) relocate them or use checked files where they are, see [other folders](USER_GUIDE.md#keep-models-in-another-folder). To reuse a legitimate installation, close both apps, copy the complete models folder and its receipt/license files beside `RGBMoCap.cmd`, and check readiness in Model Manager. Do not copy old `runtime*` folders. SMPL Neutral is required by PromptHMR, although it is not required for ExMR/FlowHMR/GVHMR. Standard SMPL-X Neutral is shared by ExMR/GVHMR/PromptHMR; MAMMA uses its separate locked-head bodies. Exact requirements are defined by `mocap/models.py` and the chosen stages, not by guessed filenames.
 
 ## Standard GUI workflow
 

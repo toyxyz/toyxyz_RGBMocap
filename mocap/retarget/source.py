@@ -12,7 +12,6 @@ def stamp(paths):
 
 def prepare(project,kind,out):
     import torch
-    from mocap.paths import MODELS
     from mocap.motion_tools import RESULTS
     from mocap.project_storage import resolve_reference
     from mocap.source_surface import native_endpoints,smplx_endpoints
@@ -45,7 +44,9 @@ def prepare(project,kind,out):
     if model=='mamma':
         from mocap.mamma_body import body_path
         bodypath=body_path(project)
-    else:bodypath=MODELS/('body_models/smplh/neutral/model.npz' if topology=='smplh' else 'body_models/smplx/SMPLX_NEUTRAL.npz')
+    else:
+        from mocap.models import BY_KEY
+        bodypath=BY_KEY[topology].path
     paths.append(bodypath)
     before=stamp(paths)
     frames=np.load(paths[1],mmap_mode='r');asset=np.load(paths[2]);n=len(frames)
