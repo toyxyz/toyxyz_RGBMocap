@@ -11,6 +11,7 @@ saved selection. Only implemented tools appear in the list.
 | GVHMR | One video; SMPL-X | Optional HandFlow | [GVHMR](GVHMR.md) |
 | MAMMA | Two or more synchronized fixed-camera videos; SMPL-X | Included | [MAMMA](../MAMMA.md) |
 | PromptHMR | One video; fixed or optional moving camera; jointly reconstructed people; SMPL-X | Not generated | [PromptHMR](PROMPTHMR.md) |
+| GEM-X | One fixed-camera video; one primary person; SOMA Native77 | Included | [GEM-X](GEMX.md) |
 | PEAR | Experimental real-time tracking from webcam or video input; one person, one or multiple fixed views; may be unstable | Included | [PEAR](PEAR.md) |
 
 One-video input does not mean one-person output. ExMR, FlowHMR and GVHMR can
@@ -36,7 +37,8 @@ overall but sometimes better for unusual poses such as backflips. These are
 not benchmark rankings. PromptHMR could improve relative placement and
 interactions for multiple people in one video, but its overall motion quality
 was lower than ExMR in our subjective tests, and it has no finger tracking.
-MAMMA is a separate multi-view workflow rather than another single-video option.
+GEM-X processed clips quickly, with relatively low overall motion quality in those tests.
+MAMMA uses synchronized views in a separate multi-view workflow.
 
 ## Installation and shared workflow
 
@@ -50,6 +52,8 @@ MAMMA is a separate multi-view workflow rather than another single-video option.
    C++/CUDA build tools and provider license review. Close the app before setup;
    reopen it before preparing weights. `update.cmd` does not install either
    optional runtime; rerun its own setup if the app requests it after an update.
+   GEM-X uses [Setup_GEMX.cmd](GEMX.md#setup), which reuses the ExMR Python
+   base and needs no local native build.
 3. Run `RGBMoCap.cmd`, select the model and use **Model Manager**. Follow each
    row's exact download/import instructions. Some files require registration
    and license acceptance; Google Drive downloads may need manual import.
@@ -61,6 +65,10 @@ For PEAR, use **Start Live Tracking** instead of reconstruction. It displays
 live bones only; offline contact, project-save, retarget and export steps do not
 apply. Multiple synchronized files/webcam slots and Camera Align are described
 in its guide, along with filtering, World Position and Reset Bones.
+
+GEM-X uses its native SOMA result for preview, foot and hand correction,
+and character retargeting. **File > Export...** offers Native77 FBX and BVH for
+the skeleton and a Blender bundle with the evaluated surface and source video.
 
 Model-specific settings affect reconstruction; they are separate from contact
 correction and display-only viewport controls. Original and corrected results

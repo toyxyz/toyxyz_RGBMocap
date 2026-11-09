@@ -9,31 +9,43 @@ from .result_artifacts import file_stat
 
 def run(request, emit=lambda *a, **k:None):
     from .fbx_writer import write
+    from .gemx_result import is_project
     from .scene_export import context
     request=Path(request)
     if request.stat().st_size>4*1024**2:raise ValueError('Export request is too large')
     rows=json.loads(request.read_text(encoding='utf-8'))
     if not isinstance(rows,list) or not 1<=len(rows)<=4096:raise ValueError('Invalid export request')
-    staged=[];origins={}
+    staged=[];origins={};committed=[];native_checks=[]
     try:
+        destinations = {Path(row['target']).resolve() for row in rows}
+        if len(destinations) != len(rows):raise ValueError('Duplicate export destination')
         for i,row in enumerate(rows):
             project=Path(row['project']);kind=row['kind'];target=Path(row['target'])
             source=selected_export(project,kind)
             if source is None or source.resolve()!=Path(row['source']).resolve():
                 raise ValueError('Selected target motion changed. Prepare Preview and export again.')
             if target.suffix.lower()!='.fbx':raise ValueError('Choose an FBX destination')
-            if any(target.resolve()==old[1].resolve() for old in staged):raise ValueError('Duplicate export destination')
+            temporary=target.with_name('.'+target.name+'.rgbmocap-'+request.stem+'.partial')
+            if is_project(project):
+                from .gemx_skeleton_export import write as write_soma
+
+                def progress(done,total):
+                    emit('progress',stage='save_fbx',current=i*total+done,total=len(rows)*total,message='Export SOMA FBX')
+
+                staged.append((temporary,target))
+                native_checks.append(write_soma(temporary,row,source,destinations,'fbx',progress))
+                continue
             meta=project/(kind+'_mixamo.json');info=json.loads(meta.read_text(encoding='utf-8'))
             paths=[meta,source]
             for key in ('asset_file','frames_file'):
                 if Path(info[key]).name!=info[key]:raise ValueError('Invalid committed file path')
                 paths.append(project/info[key])
-            if target.resolve() in [p.resolve() for p in paths]:raise ValueError('Choose a different export destination')
+            if destinations.intersection(p.resolve() for p in paths):raise ValueError('An export destination overlaps a committed source file.')
             stamps=[file_stat(p) for p in paths]
             scene=row.get('scene')
             if scene is not None and context(scene['root'],project)!=scene:raise ValueError('Scene placement changed. Export again.')
-            temporary=target.with_name('.'+target.name+'.rgbmocap-'+request.stem+'.partial')
-            staged.append((temporary,target,project,kind,paths,stamps,scene))
+            staged.append((temporary,target))
+            committed.append((project,kind,paths,stamps,scene))
             with np.load(project/info['asset_file'],allow_pickle=False) as data:
                 needed=('parents','fbx_rest','fbx_rest_frames','fbx_display_frames','fbx_tip_local')
                 if not all(k in data for k in needed):raise ValueError('FBX rest pose is unavailable. Use Prepare Preview first.')
@@ -55,7 +67,8 @@ def run(request, emit=lambda *a, **k:None):
                       transform=transform,progress=progress,
                       rig_name=row.get('rig_name','SourceAnimation'),prepend_tpose=row.get('prepend_tpose',False),symmetric_bind=symmetric)
             finally:frames._mmap.close()
-        for _,_,project,kind,paths,stamps,scene in staged:
+        for verify in native_checks:verify()
+        for project,kind,paths,stamps,scene in committed:
             if [file_stat(p) for p in paths]!=stamps or selected_export(project,kind)!=paths[1]:
                 raise ValueError('Motion generation changed during export. Retry.')
             if scene is not None and context(scene['root'],project)!=scene:raise ValueError('Scene placement changed during export. Retry.')

@@ -13,6 +13,9 @@ COMPAT = ROOT / "native_compat"
 
 
 def worker_command(stage: str, *args: str) -> list[str]:
+    if stage in ('gemx_reconstruct', 'gemx_correct'):
+        from .gemx_runtime import command as gemx_command
+        return gemx_command(stage, args)
     if stage.startswith('prompthmr_') and stage not in ('prompthmr_prepare','prompthmr_publish'):
         from .prompthmr_runtime import command as phmr_command
         return phmr_command(stage,args)

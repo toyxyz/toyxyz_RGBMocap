@@ -29,6 +29,12 @@ DroidCalib/LieTorch over that same environment and verifies actual CUDA operatio
 MAMMA/SDF is not required. Read [its setup/developer notes](models/PROMPTHMR.md)
 before changing its lock, adapters, native modules or model paths.
 
+Optional GEM-X uses `Setup_GEMX.cmd`, the ExMR CPython base, and its own pinned
+Windows wheel set. The installer validates CUDA and the native SOMA imports
+before publishing the environment. Only allowlisted identical CUDA DLLs are
+shared. See the [GEM-X guide](models/GEMX.md#setup) before changing the locks
+or working on its native preview, retarget and Blender paths.
+
 ## Environments
 
 Run `python tools/setup_dev.py --plan` to review groups. Then run the same command

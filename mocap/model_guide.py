@@ -15,6 +15,7 @@ BENCHMARKS = {
     'exmr': ('7s<br>1 video', '1m 08s', '11.32', '19.31'),
     'mamma': ('13.8s<br>3 videos<br>2 people', '11m 52s', '6.47', '9.11'),
     'prompthmr': ('14.1s<br>1 video<br>2 people', '3m 56s', '4.61', '8.74'),
+    'gemx': ('9.8s<br>1 video<br>1 person', '1m 44s', '3.48', '—'),
 }
 PROJECT_URLS = {
     'pear':'https://github.com/Pixel-Talk/PEAR',
@@ -23,6 +24,7 @@ PROJECT_URLS = {
     'gvhmr': 'https://github.com/zju3dv/GVHMR',
     'flowhmr': 'https://github.com/flowhmr/flowhmr',
     'exmr': 'https://github.com/twehrbein/ExMR',
+    'gemx': 'https://github.com/NVlabs/GEM-X',
 }
 DESCRIPTIONS = {
     'pear':'Experimental support. Tracking and pose estimates may be unstable. Real-time tracking of webcam or video input, with a single-person body and finger bone preview from one or multiple fixed-camera views. Select synchronized videos with Open Video, or assign distinct webcam devices using the camera-count slots and thumbnails. Start Live Tracking attempts Camera Align first, including one camera; VGGT and GeoCalib are needed for alignment. A single view uses estimated body/depth scale; multiple views use triangulation. If alignment fails or its support/models are missing, tracking continues from the selected camera with a visible warning, without camera fusion or aligned foot lock. Use Camera Align to retry. Fixed bone lengths are calibrated once; Reset Bones recalibrates from the displayed pose, then aligns cameras again. World Position is on by default; off fixes pelvis translation while preserving rotation. Body mesh is not computed per live frame. Select a webcam in the table below the video for image preview without loading PEAR; click Start Live Tracking to attempt alignment and begin tracking. Capture stays connected during Start and Camera Align; opened videos can play while models load or align. Choose None for video. Stop releases models and the webcam. Uses YOLOv8s person detection; detector boxes can affect the resulting pose. Rotation and One Euro Filter apply to both sources. One Euro Filter has independent Bone Rotation and World Position checkboxes, both on by default, with shared Filter Strength. The position-filter checkbox is separate from the World Position movement switch. Filtering reduces tremors with some motion-dependent lag and no extra inference. Seeks start from the selected frame; filtering continues during playback. After successful alignment, default-on lightweight Foot Lock stabilizes low, slow feet with smooth causal transitions, fixed lengths and preserved ankle/toe directions. Reach limits and incorrect ground estimates can leave residual sliding. No Find person, recording, offline Motion Correction, retargeting or motion export in this live mode. Single-view pelvis placement assumes a fixed camera. Camera Align estimates background gravity, camera positions, scale and floor; these are not measured calibration and feet can still slide. Changed inputs and Reset Bones trigger realignment. After moving physical cameras, click Camera Align again. Webcam arrival-time pairing is approximate, not hardware sync. Support files are included in install.cmd and update.cmd, reusing the shared runtime without upgrading its packages or requiring a CUDA compiler. Prepare the checkpoint and registered SMPL-X 2020/FLAME geometry bundle in Model Manager. See docs/models/PEAR.md.',
@@ -32,6 +34,7 @@ DESCRIPTIONS = {
              'No native finger tracking. Optional HandFlow adds finger motion; FootMR refines ankles, and HTD refines body motion. These add processing time.',
     'flowhmr': 'Slow, but the best overall motion quality in our tests. Tracks body and fingers without a separate hand add-on. Motion generation uses 256-query attention batches with FP32 and full temporal context, reducing VRAM especially for long clips. Fast SAM offers independent Adaptive Batching, GPU Hand Crops and default-on 4-Frame Hand Sampling. Four-frame hands interpolate intermediate features: tests reduced warm feature time by 41-49% and allocated VRAM from 5.43 to 4.21 GiB at batch 16, but finger accuracy, body/wrist motion and automatic contacts can change. Turn it off for every-frame hand inference. Automatic selects 1-16 spatial frames; Low Memory uses one and retains hand sampling. Whole-job gains vary because loading dominates short clips. Query size, hand interval, batches and OOM retries appear in Console and CMD. Optional Refine Camera Rotation changes camera display only. See docs/models/FLOWHMR.md.',
     'exmr': 'Generally fast, with good motion quality in our tests. A practical choice for a first attempt. Tracks body and fingers together without a separate finger add-on. Optional Refine Camera Rotation validates small background-based corrections for camera display only; source motion is unchanged.',
+    'gemx': 'In our tests, GEM-X processed clips quickly, with relatively low overall motion quality. Use one fixed-camera video on Windows and trim it to 60 seconds or less. GEM-X automatically selects one primary person and reconstructs body and finger motion at 30 fps on the SOMA Native77 rig. Motion Correction supports editable foot and hand contacts on the Native77 rig and surface. Export the selected Native77 skeleton motion as FBX or BVH, export the surface and video in a Blender bundle, or retarget the motion to an imported character. The native source uses no SMPL models. Run Setup_GEMX.cmd after install.cmd, then prepare its public assets in Model Manager. Reuses ExMR Python with isolated inference packages. See docs/models/GEMX.md.',
 }
 
 
@@ -54,7 +57,7 @@ th { text-align:left; background-color:#333333; } td, th { padding:7px; }
 <h3>Choosing a model</h3>
 <p>These are subjective observations from our test videos, not a universal ranking or accuracy benchmark.
 Try another model if a particular movement looks wrong.</p>""" + descriptions + """
-<p>Offline source motion: File &gt; Export offers FBX, BVH and portable Blender projects with video/cameras. MAMMA also offers a whole-scene Blender bundle with checked body meshes and all cameras. Keep exported video/mesh folders together. No additional inference is run for export.</p>
+<p>File &gt; Export offers FBX, BVH and portable Blender projects for SMPL source motion. MAMMA also offers a whole-scene Blender bundle. GEM-X offers Native77 FBX, BVH and Blender exports. Keep exported video/mesh folders together.</p>
 <p><b>Resource Safety</b> defaults on below Resource Mode. On retains low-RAM stopping and the PyTorch VRAM allocation limit. Off bypasses these limits; Automatic batching, supported Low Memory paths and actual allocation-error handling remain. The preference is saved locally, separately from projects. PEAR inherits it while its offline resource controls are hidden. See docs/PERFORMANCE.md for details.</p>
 <h3>Recorded processing time and memory</h3>
 <table width="98%" border="0" cellspacing="1" cellpadding="7">
@@ -74,12 +77,12 @@ Interaction Prompt and app correction on. Time includes tracking, native inferen
 post-optimization, correction and preview/bone preparation; writing public FBX files is excluded.
 Its peak reserved CUDA memory was 7.83 GiB. It used a different clip from the older three-model test.</p>
 <p>PEAR is a live preview, not a full-clip reconstruction. Its row measures the fixed-length bone worker after warmup, excluding model startup, GUI and camera capture. Maximum processing time was 160.31 ms; the visible app presented 150 paired frames in five seconds. Startup took about 34 seconds. Peak RAM was not separately recorded for this row. See docs/models/PEAR.md for scope and limits. This is not directly comparable with offline processing times.</p>
+<p>GEM-X used a separate 294-frame fixed-camera clip. Its time includes model verification, video preparation, inference and SOMA mesh evaluation. Peak RAM was not recorded for this run.</p>
 <p>VRAM is peak PyTorch allocated memory, not total GPU usage. ExMR/FlowHMR/GVHMR RAM is
 peak private memory; MAMMA/PromptHMR RAM is peak worker working set. The older four-model
 measurements predate the latest Low Memory changes. These are not minimum requirements.
 Results vary by input and PC.</p>
-<p>Offline reconstruction models offer Motion Correction for foot and hand contacts. Contact correction reduces sliding;
-it is separate from tracking fingers or refining ankle angles.</p></body></html>"""
+<p>Offline reconstruction models offer Motion Correction for foot and hand contacts. It reduces sliding after pose estimation.</p></body></html>"""
 
 
 class ModelGuideDialog(QDialog):

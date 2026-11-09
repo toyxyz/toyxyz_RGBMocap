@@ -130,6 +130,7 @@ class CharacterWorkspace:
 
     def character_sources(self):
         from .motion_tools import result_is_current
+        from .gemx_result import RECEIPT, is_project
         from .people_store import safe_child
         if self.people_state:
             people=self.people_state['people']
@@ -140,7 +141,7 @@ class CharacterWorkspace:
             takes=[]
             for t in p.get('takes',[]):
                 path=safe_child(self.people_root,t['project']) if self.people_state else Path(t['project'])
-                metadata=path/(self.active_result+'_mixamo.json')
+                metadata=path/(RECEIPT if is_project(path) else self.active_result+'_mixamo.json')
                 if not metadata.is_file() or not result_is_current(path,self.active_result):continue
                 manifest=json.loads((path/'project.json').read_text(encoding='utf8'))
                 start=float(manifest.get('start',0.))
@@ -238,7 +239,10 @@ class CharacterWorkspace:
             if job['mode']!='adopt':blender()
             path=self.character_root/'characters'/('job-'+uuid.uuid4().hex+'.json');atomic_json(path,job)
             args=['--request',str(path)]
-            if job['mode']=='retarget':args+=['--project',job['takes'][0]['project']]
+            if job['mode']=='retarget':
+                from .gemx_result import is_project
+                if not is_project(job['takes'][0]['project']):
+                    args+=['--project',job['takes'][0]['project']]
             cmd=command(ROOT,'character',args,frozen=getattr(sys,'frozen',False))
         except Exception as exc:
             self.character_refresh_queue=[]

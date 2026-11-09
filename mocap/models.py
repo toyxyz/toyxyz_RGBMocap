@@ -101,8 +101,10 @@ from .mamma_models import ASSETS as MAMMA_ASSETS, KEYS as MAMMA_KEYS, INSTRUCTIO
 MODELS_LIST.extend(Model(**entry) for entry in MAMMA_ASSETS)
 from .prompthmr_models import ASSETS as PHMR_ASSETS,KEYS as PHMR_KEYS,CAMERA_KEYS as PHMR_CAMERA_KEYS,INSTRUCTIONS as PHMR_INSTRUCTIONS
 from .pear_models import ASSETS as PEAR_ASSETS,KEYS as PEAR_KEYS,INSTRUCTIONS as PEAR_INSTRUCTIONS
+from .gemx_models import ASSETS as GEMX_ASSETS,KEYS as GEMX_KEYS,INSTRUCTIONS as GEMX_INSTRUCTIONS
 MODELS_LIST.extend(Model(**entry) for entry in PEAR_ASSETS)
 MODELS_LIST.extend(Model(**entry) for entry in PHMR_ASSETS)
+MODELS_LIST.extend(Model(**entry) for entry in GEMX_ASSETS)
 BY_KEY = {model.key: model for model in MODELS_LIST}
 if len(BY_KEY)!=len(MODELS_LIST):raise ValueError('Duplicate model identifiers in the model registry.')
 MANUAL_INSTRUCTIONS = {
@@ -122,6 +124,7 @@ MANUAL_INSTRUCTIONS = {
 MANUAL_INSTRUCTIONS.update(MAMMA_INSTRUCTIONS)
 MANUAL_INSTRUCTIONS.update(PHMR_INSTRUCTIONS)
 MANUAL_INSTRUCTIONS.update(PEAR_INSTRUCTIONS)
+MANUAL_INSTRUCTIONS.update(GEMX_INSTRUCTIONS)
 
 for _key in ('mano_right','smplh'):
     MANUAL_INSTRUCTIONS[_key] += ('\nIf the MANO website shows 502 Bad Gateway, use the Recommended download link below '
@@ -228,6 +231,8 @@ def manual_instructions_html(key: str) -> str:
 
 
 STAGE_REQUIREMENTS = {
+    'gemx_assets': GEMX_KEYS,
+    'gemx_reconstruct': GEMX_KEYS,
     'prompthmr_camera_assets': PHMR_CAMERA_KEYS,
     'pear_assets': ('pear','pear_geometry','pear_yolo'),
     'pear_align': ('flow_vggt','pear_geocalib'),
@@ -261,7 +266,7 @@ def ready(model: Model) -> bool:
         from .pear_models import geometry_ready
         return geometry_ready()
     valid=model.path.is_file() and model.path.stat().st_size >= model.minimum_bytes
-    if valid and (model.key.startswith(('flow','hand','exmr','mamma','phmr','pear')) or model.key in ('smplh','mano_right')):
+    if valid and (model.key.startswith(('flow','hand','exmr','mamma','phmr','pear','gemx')) or model.key in ('smplh','mano_right')):
         import json
         try:
             receipt=json.loads(model.path.with_suffix(model.path.suffix+'.receipt.json').read_text(encoding='utf-8'))
@@ -277,6 +282,9 @@ def missing(stage: str,tool=None) -> list[Model]:
 
 
 def download(key: str, progress=None) -> Path:
+    if key in GEMX_KEYS:
+        from .gemx_models import download_model
+        return download_model(key, progress)
     import gdown
     if key == 'flowhmr':
         # Hugging Face checkpoint metadata uses the same pinned revision. It is

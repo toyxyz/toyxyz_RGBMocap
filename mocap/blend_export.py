@@ -16,6 +16,11 @@ def run(request,emit=lambda *a,**k:None):
     try:
         rows=read(request)
         if not isinstance(rows,list) or not 1<=len(rows)<=4096:raise ValueError('Invalid Blender export request')
+        from .gemx_result import is_project
+        if any(is_project(row['project']) for row in rows):
+            if len(rows)!=1:raise ValueError('Export one native SOMA result at a time.')
+            from .gemx_blend import run as native_export
+            return native_export(rows[0],request,emit)
         folders=set()
         for row in rows:
             folder=Path(row['target']).resolve().parent

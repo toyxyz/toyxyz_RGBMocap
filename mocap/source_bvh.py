@@ -55,9 +55,15 @@ def write_bvh(path,rig,roots,local,fps):
   a=continuous_angles(a)
   np.testing.assert_allclose(Rotation.from_euler(order,a).as_matrix(),rot[:,j],atol=1e-5)
   angles.append(np.degrees(a));orders.append(order);quality.append(margin)
- angles=np.stack(angles,1);order=[];lines=['HIERARCHY']
+ write_channels(path,binding['names'],parents,rest,ends,roots,np.stack(angles,1),orders,fps)
+ return dict(orders=orders,minimum_singularity_margin=min(quality))
+
+
+def write_channels(path,names,parents,rest,ends,roots,angles,orders,fps,*,exclusive=False):
+ """Write the hierarchy and precomputed Euler channels in depth-first order."""
+ order=[];lines=['HIERARCHY']
  def visit(j,depth):
-  pad='  '*depth;order.append(j);parent=parents[j];lines.extend([pad+('ROOT ' if parent<0 else 'JOINT ')+binding['names'][j],pad+'{'])
+  pad='  '*depth;order.append(j);parent=parents[j];lines.extend([pad+('ROOT ' if parent<0 else 'JOINT ')+names[j],pad+'{'])
   offset=rest[j] if parent<0 else rest[j]-rest[parent];lines.append(pad+'  OFFSET '+' '.join(f'{v:.9f}' for v in offset))
   lines.append(pad+'  CHANNELS '+('6 Xposition Yposition Zposition ' if parent<0 else '3 ')+' '.join(c+'rotation' for c in orders[j]))
   children=np.flatnonzero(parents==j)
@@ -65,7 +71,6 @@ def write_bvh(path,rig,roots,local,fps):
   if not len(children):lines.extend([pad+'  End Site',pad+'  {',pad+'    OFFSET '+' '.join(f'{v:.9f}' for v in ends[j]),pad+'  }'])
   lines.append(pad+'}')
  visit(0,0);lines.extend(['MOTION',f'Frames: {len(roots)}',f'Frame Time: {1/fps:.10f}'])
- with open(path,'w',encoding='ascii') as f:
+ with open(path,'x' if exclusive else 'w',encoding='ascii') as f:
   f.write('\n'.join(lines)+'\n')
   for root,angle in zip(roots,angles):f.write(' '.join(f'{v:.9f}' for v in np.r_[root,angle[order].reshape(-1)])+'\n')
- return dict(orders=orders,minimum_singularity_margin=min(quality))

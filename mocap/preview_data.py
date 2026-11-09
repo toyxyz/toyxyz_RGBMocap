@@ -122,7 +122,7 @@ class FrameArray:
 def project_signature(project):
     """Small publication receipts, shared by the loader and its GUI consumer."""
     project=Path(project)
-    names=dict.fromkeys(('tracking.npz','keypoints.npz',
+    names=dict.fromkeys(('tracking.npz','keypoints.npz','soma-result.json','soma-correction.json',
         'flowhmr_pending.json','flow_camera_sources.json',
         *(value[0] for value in RESULTS.values()),
         *(f'{kind}_{suffix}' for kind in RESULTS for suffix in
@@ -303,6 +303,12 @@ class PreviewDataLoader(QThread):
             result = ProjectPreview(project)
             cancelled = lambda: self.stopping or generation != self.generation
             try:
+                from .gemx_result import is_project, open_preview
+                if is_project(project):
+                    open_preview(result, cancelled)
+                    if cancelled():raise LoadCancelled()
+                    self.ready.emit(generation, result)
+                    continue
                 for filename, fields in (("tracking.npz", ("boxes", "observed")),
                                          ("keypoints.npz", ("keypoints", "confidence")),
                                          *((f"{kind}_joints.npz", ("joints",)) for kind in RESULTS)):

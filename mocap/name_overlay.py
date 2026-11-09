@@ -41,7 +41,7 @@ def body_points(joints, frames=None, asset=None, transform=None):
         segments=asset['bones']['segments']
         tips=[frames[bone,:3,:3] @ delta + frames[bone,:3,3]
               for bone,_,delta in segments]
-        points=np.concatenate((frames[:52,:3,3],tips))
+        points=np.concatenate((frames[:len(segments),:3,3],tips))
     if transform is not None:
         points=points @ transform[:3,:3].T + transform[:3,3]
     return points

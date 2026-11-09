@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "date": "2026-11-07",
+  "date": "2026-11-09",
   "purpose": "Public source distribution; excludes model weights and runtime binaries",
   "version": "git-source",
   "files": [
@@ -16,8 +16,8 @@
     },
     {
       "path": "AGENTS.md",
-      "bytes": 2606,
-      "sha256": "ff439259a6d72aeeeb52ee5f432da7a439e0076b6fec22565df0fa98178a41f3"
+      "bytes": 2815,
+      "sha256": "554fe00539ac6b49ca84e2ec2761932eb1f1972c4c0bb143ca587e3b5e19f8f0"
     },
     {
       "path": "LICENSE",
@@ -26,13 +26,18 @@
     },
     {
       "path": "README.md",
-      "bytes": 12822,
-      "sha256": "384c79746debba53e3681df8dce0ab614ee334f30903741587629a73a04f11aa"
+      "bytes": 13711,
+      "sha256": "8fecb18500440885f2688a3353c66af0783b9d4513937a8c461a18d45d2e6b7c"
     },
     {
       "path": "RGBMoCap.cmd",
       "bytes": 405,
       "sha256": "15a022a9c3c7ff5ec43bd55e35c46ea2befb1ae01953e67529b6dc1c8ded30f0"
+    },
+    {
+      "path": "Setup_GEMX.cmd",
+      "bytes": 937,
+      "sha256": "62d59069b4d612e92d3ff8db5f7cf75c70e0d1b2cb2f02d0112a10eee7ff76b9"
     },
     {
       "path": "Setup_MAMMA.cmd",
@@ -46,8 +51,8 @@
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "bytes": 9879,
-      "sha256": "7745b1a68af85ec4885549113e8f540b70263d122feeb05f8d904e2fcac174c8"
+      "bytes": 10921,
+      "sha256": "4dcb6d5ebc47973ded3e0e4bc98c6000cf4634f15469ff3502ae8b275e8602f1"
     },
     {
       "path": "app.py",
@@ -96,18 +101,18 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 73058,
-      "sha256": "2a3b7f70f1d61166ece8db724457308057a725d1696772c8d0b81e6933207af9"
+      "bytes": 74878,
+      "sha256": "65613f88e062eb3e664d556e7fd5de9207da1160ac84314ed9bf2c6c3701c23e"
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 16061,
-      "sha256": "402cbcd93299ae5a7e4f6937a15c691683d0fcce5b4b4d029373c8a10df82e0f"
+      "bytes": 16434,
+      "sha256": "42a7b073c79bb32654654feaec6e2d30aab162ebde59f6d40aa998312b3c15f9"
     },
     {
       "path": "docs/CITATIONS.md",
-      "bytes": 6491,
-      "sha256": "c6db246a24c3b718cffbe7277a691145d366bb3df019c3cd7eff9f7040270a9f"
+      "bytes": 7104,
+      "sha256": "e5b37b6c0d1ca5e0540dfe1e33f9ef7948d2c28f01f36f5abe64b2513b66aa8d"
     },
     {
       "path": "docs/MAMMA.md",
@@ -126,13 +131,13 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 68114,
-      "sha256": "be92c8342d1ca5f4206569cab79b2c557d3e94c44b105100f3d9bf19d9abe2c5"
+      "bytes": 69932,
+      "sha256": "d49c9f8dc37658bcb6f015cf7696d9b1ed80f706093c84f726ba03fe004f0e40"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 149407,
-      "sha256": "2b7407fb841494c77e88657b6ff812a20d939af37966ed2dd3da061062ca2111"
+      "bytes": 153288,
+      "sha256": "c1453d1a0bee0f6ee779ec10fa8ecb9a6b2ddf31d5fde71b2c236139a4e1bf7a"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -165,14 +170,19 @@
       "sha256": "9b8e13d8ebe4a742e262512f466e1e762f9c3cd4a201811f6d2a5bfb56aad97d"
     },
     {
+      "path": "docs/models/GEMX.md",
+      "bytes": 7199,
+      "sha256": "52d9b972f0377a0b1792b837b51c9e7b1617b459f6ee50ab4c8e2e2b096cd41a"
+    },
+    {
       "path": "docs/models/GVHMR.md",
       "bytes": 6057,
       "sha256": "bd3ec9b7e4192b3e860c4da6b58850da668d0c948effca4293afd01ba3844f0f"
     },
     {
       "path": "docs/models/PEAR.md",
-      "bytes": 24551,
-      "sha256": "8967cc2bbc74abacaa5b0923b7f821369b3fec10840b11259718722b72c24723"
+      "bytes": 24580,
+      "sha256": "a1a8842568a5ba2a3def5093ae91476392ac9ca60aadf6ac2aab1485146d0787"
     },
     {
       "path": "docs/models/PROMPTHMR.md",
@@ -181,8 +191,8 @@
     },
     {
       "path": "docs/models/README.md",
-      "bytes": 6785,
-      "sha256": "27f52898cf4f7ff8f6dc9e8b29e6769cff708c6083fb9bcec8d0e44cece80385"
+      "bytes": 7317,
+      "sha256": "7611c41e855e84bb18702f568ca4672561bc22ab38b55253c9fb3366601ded77"
     },
     {
       "path": "docs/samples/character-retargeting.jpg",
@@ -215,6 +225,11 @@
       "sha256": "0657ff52fb4f5e8c9464d4601f28233867ffd07f894ee71d31c08e6625cb0d6d"
     },
     {
+      "path": "gemx_worker_boot.py",
+      "bytes": 298,
+      "sha256": "ea6b4f6cca9b8f7f6c5672321e7d6cde5c35517a01dded95721dc2e1e3c6a1f4"
+    },
+    {
       "path": "install.cmd",
       "bytes": 309,
       "sha256": "517627faf9f08a4834341c3666b408d52128e6776d5b2ac12cce36192e389b46"
@@ -243,6 +258,16 @@
       "path": "installer/external-assets.json",
       "bytes": 26443,
       "sha256": "119d7059dbcd8a59b5a2afcb84512ef347577e7bc34a1536921f9badf5c5ef6e"
+    },
+    {
+      "path": "installer/gemx-models.json",
+      "bytes": 4515,
+      "sha256": "951a7d9306bad02f4664e365ac7d96014df3accff2c6933e4d9fc440d25ed8c1"
+    },
+    {
+      "path": "installer/gemx-runtime-lock.json",
+      "bytes": 23657,
+      "sha256": "0fff0ab861d29f624ea01466b253f54af92afc8eac10cbfdff9c3055c2448e68"
     },
     {
       "path": "installer/git-support-lock.json",
@@ -1035,6 +1060,11 @@
       "sha256": "c9a3bd6e973e7d64ca852f2448cf78abdf4e6a5a899c617f625e0d15372f28fe"
     },
     {
+      "path": "installer/verify_gemx.py",
+      "bytes": 2137,
+      "sha256": "8254e2259973e1f28165d2ac0bdfe8292923b8055386b4097099c36b4b1282ef"
+    },
+    {
       "path": "installer/verify_mamma.py",
       "bytes": 3557,
       "sha256": "eb6ccb88905e686d91ef46449f23644ab539ec890ae5b77bd4f9ce60aa55f454"
@@ -1091,8 +1121,8 @@
     },
     {
       "path": "mocap/blend_export.py",
-      "bytes": 6829,
-      "sha256": "ea555a2b3ebf745865bf1b63316b13642caab547cc7a33ec884f47cf2490f8c1"
+      "bytes": 7134,
+      "sha256": "579105bc565c823c0f32687fc69d1fe3ebbb428f576da1eb31e746ce8a253f16"
     },
     {
       "path": "mocap/blend_export_scene.py",
@@ -1131,8 +1161,8 @@
     },
     {
       "path": "mocap/bone_overlay.py",
-      "bytes": 7635,
-      "sha256": "f6c9c947df0ac7f03f2dc972f705318fdd99ca8bdac604a289819173a498c20d"
+      "bytes": 7971,
+      "sha256": "1956fd6cd5a224e1d380d81bbf45f81ad3a4780a484e6a4d38b7c292e1da62f0"
     },
     {
       "path": "mocap/bound_mesh_gl.py",
@@ -1151,8 +1181,8 @@
     },
     {
       "path": "mocap/cache_compat.py",
-      "bytes": 2926,
-      "sha256": "5735ce813903ef8af41cf5badec055479d4c788912f7735e2d4d63e2917dd701"
+      "bytes": 3173,
+      "sha256": "99a549430746f8acd3d639c351ab489738ac0c9b11908a3710e18063cf938a71"
     },
     {
       "path": "mocap/camera_background.py",
@@ -1176,8 +1206,8 @@
     },
     {
       "path": "mocap/camera_ui.py",
-      "bytes": 15410,
-      "sha256": "290e2bc811d6530d33f9250bc953408f862000c743586b085c002b78b28f91f4"
+      "bytes": 15609,
+      "sha256": "7c5c24fc8e9a1cee670756dbcc76d1f7812e2eb1c9d99a4cb4b96922d9532f25"
     },
     {
       "path": "mocap/capture.py",
@@ -1206,8 +1236,8 @@
     },
     {
       "path": "mocap/character_ui.py",
-      "bytes": 20764,
-      "sha256": "e1da3682bd95867c10dbcf5d7ca023e8e07c895da3590c513d6e97b7d5b5d21a"
+      "bytes": 20986,
+      "sha256": "4d32f73317402e9f0083b056649826356d6860bca459bf1fa367bf76b272ae28"
     },
     {
       "path": "mocap/compute_policy.py",
@@ -1286,8 +1316,8 @@
     },
     {
       "path": "mocap/export_copy.py",
-      "bytes": 4284,
-      "sha256": "eaecd4a99a39ab5ee75320de3afd4237d3c530177bb439c4d9b59ba8fe0f5aa0"
+      "bytes": 4942,
+      "sha256": "0018d20231ce7fd1f5d01fb56be60a1f0e7c739fbbb5aa0f01e8eedeceeed575"
     },
     {
       "path": "mocap/export_options.py",
@@ -1301,13 +1331,13 @@
     },
     {
       "path": "mocap/fbx_export.py",
-      "bytes": 4355,
-      "sha256": "26dc1e3d69d6362372fa8237d1c207f15d520f4bca1acfe5961f4c476f5e15c6"
+      "bytes": 5011,
+      "sha256": "328c447dd9426934555fd4c02d35d30c6771daa610b453c8d98aed74aa1b98de"
     },
     {
       "path": "mocap/fbx_writer.py",
-      "bytes": 11979,
-      "sha256": "79f0fa4b834618c29bb90d7caabd0275069a4b8b04f283541b08257cd8a4328d"
+      "bytes": 12176,
+      "sha256": "c3e3c23b0e58fab85294cf62fb84edab7b18b43f0799422dcd497fa35f829ff7"
     },
     {
       "path": "mocap/floor_overlay.py",
@@ -1395,14 +1425,69 @@
       "sha256": "5ce6cb19edfb4c3398afa382c2e1f0d235c55c2a3def17841dd4ea9d5c3a8234"
     },
     {
+      "path": "mocap/gemx_blend.py",
+      "bytes": 3430,
+      "sha256": "9b184b83ccf13abeebfd57b7ae587deff2d26abc6ab92cec179857fdfcb8b4c6"
+    },
+    {
+      "path": "mocap/gemx_blender_scene.py",
+      "bytes": 4907,
+      "sha256": "33eb889229fad50bc72a48fc57cae1ab59d84a74d58050f426ddb1af38c7cb61"
+    },
+    {
+      "path": "mocap/gemx_contact_solver.py",
+      "bytes": 4512,
+      "sha256": "01855c022e35ec8a28fe498e695209c58304eaaa6c0c91029ae4bf835725832e"
+    },
+    {
+      "path": "mocap/gemx_correct.py",
+      "bytes": 14204,
+      "sha256": "efeaba97b0d006dab24f216a9318e6330872c48c66858f484c4106f4a6d0999a"
+    },
+    {
+      "path": "mocap/gemx_models.py",
+      "bytes": 2105,
+      "sha256": "c48bc25961c279f9b361f91595885515ca9592f8feb188f1ce241dcb536a8d72"
+    },
+    {
+      "path": "mocap/gemx_pipeline.py",
+      "bytes": 15360,
+      "sha256": "2bf2f4b362768871f248024b0fdd2bc807f97d5d9e5eeabfc468a2a10596f4f8"
+    },
+    {
+      "path": "mocap/gemx_result.py",
+      "bytes": 6213,
+      "sha256": "7e12ff6e35d8e618b2718a94ed9214eca248d4e1b21d3a2bd485fe7530bbe425"
+    },
+    {
+      "path": "mocap/gemx_retarget.py",
+      "bytes": 1460,
+      "sha256": "4fc29c5616f127e3107421d5801b3dcf833aaa3ffe4fac224e3600904b5c533f"
+    },
+    {
+      "path": "mocap/gemx_runtime.py",
+      "bytes": 3109,
+      "sha256": "6266de14690c08f7311cd4c04d3bb1f77b0e0264269023f3324cae0ec8225edd"
+    },
+    {
+      "path": "mocap/gemx_skeleton_export.py",
+      "bytes": 5791,
+      "sha256": "bbd9b65c6fabb010ddd692530a3abd8c31421e57bc3f31256f409fdf2ef7466e"
+    },
+    {
+      "path": "mocap/gemx_ui.py",
+      "bytes": 2776,
+      "sha256": "c8d26ad5d02578307f1a5ef6ec2f333c36b9c893357f38fb6a59c08291d9115d"
+    },
+    {
       "path": "mocap/gpu_offload.py",
       "bytes": 3784,
       "sha256": "10ffb66c23b82aa9cc01dbb285222ce99b8bb10995258c877639ac2dd67e33ac"
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 109036,
-      "sha256": "42f8ed90c156e54f288ca1caa2bb70c1426fc495b46293f0f79acaeecedd5310"
+      "bytes": 111930,
+      "sha256": "eed9d7367cd27e78825dc80e32f20a0341fdb287df3cc9235b5c392dd4fe230b"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -1541,8 +1626,8 @@
     },
     {
       "path": "mocap/model_guide.py",
-      "bytes": 13618,
-      "sha256": "d96ba65d31bb49fe3b31a7a54a8795b9a9f6acc064546c69c83b1a5257a93c44"
+      "bytes": 14576,
+      "sha256": "eb6febfedc71c597e65b16005bd0135c64ac8164dfa32ba8375e6d6c83b7450b"
     },
     {
       "path": "mocap/model_session.py",
@@ -1551,13 +1636,13 @@
     },
     {
       "path": "mocap/models.py",
-      "bytes": 32707,
-      "sha256": "514d6e3cd16c0b08a185bf542814a0ce7b92ce8e84d7b002afb304138d5a9ea8"
+      "bytes": 33110,
+      "sha256": "c090b1e148a5f07088bced96ddeed5d1b29ddbb1da076b8fa682bd5672cec7cc"
     },
     {
       "path": "mocap/motion_tools.py",
-      "bytes": 11058,
-      "sha256": "17a8d9bb43ce84075d77f6451bd9021d311b6cfe903a36706712f61db9fb286f"
+      "bytes": 11687,
+      "sha256": "dcca380c0edea40663af3d4657da249c24d1c4838f9ac48a27018c2f9d9a27ae"
     },
     {
       "path": "mocap/multilevel_contacts.py",
@@ -1566,8 +1651,8 @@
     },
     {
       "path": "mocap/name_overlay.py",
-      "bytes": 4205,
-      "sha256": "67183cbfc6e8ea2ccb6ac0dd34be5f0f56cef3762b208f3dd9e600a8a109c5ec"
+      "bytes": 4216,
+      "sha256": "a43049723b75d63ad88ed3379accf3f965ba00faabaf98f7753e737cbca5c6f4"
     },
     {
       "path": "mocap/palm_contact.py",
@@ -1576,8 +1661,8 @@
     },
     {
       "path": "mocap/paths.py",
-      "bytes": 976,
-      "sha256": "df9985bcf6265b1369374630a48de77a8704cba20658c2d826bca5443b66ef05"
+      "bytes": 1132,
+      "sha256": "ac0bc5685912a0adac8bca5ed10f6004fbc1b9a88584c177d6dd3af1801a541f"
     },
     {
       "path": "mocap/pear/__init__.py",
@@ -1726,8 +1811,8 @@
     },
     {
       "path": "mocap/people_ui.py",
-      "bytes": 38557,
-      "sha256": "c96973b19d2ffa8052be89f7ac24727d0c7d949761ebc2e5e3d21fe9cbca3e77"
+      "bytes": 39235,
+      "sha256": "a7d250ec5c8110a4cee522b7e5b7a794fa540b55efadd8da62b1083e1ccc374c"
     },
     {
       "path": "mocap/person_names.py",
@@ -1756,8 +1841,8 @@
     },
     {
       "path": "mocap/preview_data.py",
-      "bytes": 22221,
-      "sha256": "56039242f441a693efb2ffa0823e07dbeeddf6ef300d9e2be087daf4d550bd8f"
+      "bytes": 22569,
+      "sha256": "b007b2107801ccfa47fb2a73ed66c3e89c87ff578e61b913c5a4a2fb58d85133"
     },
     {
       "path": "mocap/preview_export.py",
@@ -1871,8 +1956,8 @@
     },
     {
       "path": "mocap/result_artifacts.py",
-      "bytes": 5448,
-      "sha256": "2c631989d85176e6f13623943e6318cdfddb9561427cdd8c1446b6a2690658c5"
+      "bytes": 5680,
+      "sha256": "c5c4b38e842bb1b3429609ceafd8dcec566efae3fe0fcb7cd269e1c36ceed5d7"
     },
     {
       "path": "mocap/retarget/__init__.py",
@@ -1896,8 +1981,13 @@
     },
     {
       "path": "mocap/retarget/blender_io.py",
-      "bytes": 13066,
-      "sha256": "33c49e594bf0502e1e07cd1930751fa6974aed8ec62b73944ae3116ef8753a60"
+      "bytes": 13274,
+      "sha256": "431cecfc0b82dea62f788ae64f33ce29bd76ec90a9bc9c08e5b42757a95360d1"
+    },
+    {
+      "path": "mocap/retarget/blender_soma.py",
+      "bytes": 5791,
+      "sha256": "d50bb0f12165b96e95a0417784a93b0888d5148c37b2c9db2bb9444f396cb2cb"
     },
     {
       "path": "mocap/retarget/blender_textures.py",
@@ -1941,8 +2031,8 @@
     },
     {
       "path": "mocap/retarget/refresh.py",
-      "bytes": 1411,
-      "sha256": "d6e2402c61b531a6af464dcb00c754f0da1d33cbca71ef7dd870cc77b82780e4"
+      "bytes": 1433,
+      "sha256": "5291442a7a4cb923df75337a7758510cbb1f2a8e7b97a0129e0a76b0e9724cf4"
     },
     {
       "path": "mocap/retarget/runtime.py",
@@ -1981,13 +2071,13 @@
     },
     {
       "path": "mocap/retarget/worker.py",
-      "bytes": 4196,
-      "sha256": "0d23504f5437cf36764eb0d69d9a23613707719e8c6d8650d0f6e8fe4a91626f"
+      "bytes": 5455,
+      "sha256": "bb2cca0205f98422b41cedb1af34569da3ec378eb85352dc930ac375fa4848ba"
     },
     {
       "path": "mocap/rig_gl.py",
-      "bytes": 4266,
-      "sha256": "2dc13a0e66c3bd779bc2aece58ff8829ed451f0c69ce952c0a6280fe9110330b"
+      "bytes": 4335,
+      "sha256": "2986cfeda6a01541fd18c1613afde540bc3aefa01d00ef6692022e2cd1ea40b1"
     },
     {
       "path": "mocap/rig_mesh.py",
@@ -2041,13 +2131,13 @@
     },
     {
       "path": "mocap/source_bvh.py",
-      "bytes": 4417,
-      "sha256": "8a46d9ba006cc897315e0229ea2fb4bf87fdb26bf549429836d1ed25d1f45578"
+      "bytes": 4674,
+      "sha256": "32b4a9e017196efe67d538aa38670921d134d5a088ce4a0f7af5e2c3ec7afc21"
     },
     {
       "path": "mocap/source_export_dialog.py",
-      "bytes": 6579,
-      "sha256": "249553c514df565b1360fdb29a7f9b36e4d3b30db80318f4c964bb3e45c191f4"
+      "bytes": 7429,
+      "sha256": "9c9a30283305939668a13262057e5832aea5bd1fd702d7f4703f154bc37ab40b"
     },
     {
       "path": "mocap/source_export_worker.py",
@@ -2121,8 +2211,8 @@
     },
     {
       "path": "mocap/video.py",
-      "bytes": 12153,
-      "sha256": "6f739db8dec38a6848d644077bb827596912eacf7928e35b20e8da7ab89bd963"
+      "bytes": 12486,
+      "sha256": "deafa72429df581e75f8ac93e0e7766d30e9fd92bc151fe16a8579aac7cc0083"
     },
     {
       "path": "mocap/video_preview.py",
@@ -2146,8 +2236,8 @@
     },
     {
       "path": "mocap/worker_progress.py",
-      "bytes": 3210,
-      "sha256": "c3b12bed270ffea56272e750b234e06c6c49ce7eea980d0520dd0c8180c517aa"
+      "bytes": 3744,
+      "sha256": "4c9c549302dc4105724b05fdd48424d2118eaf5a06c1ba7bf70817e787b35c5d"
     },
     {
       "path": "mocap/workspace_ui.py",
@@ -12851,8 +12941,8 @@
     },
     {
       "path": "tools/check_source.py",
-      "bytes": 4019,
-      "sha256": "7b4c884279fefffc0e683842886eaed67e9a801a7e9ad9c5a7cea44ec9664340"
+      "bytes": 4034,
+      "sha256": "42da97caec50fb93c781fed91362d9ce92598ada8e3da5ac96731bd1112aa4ee"
     },
     {
       "path": "tools/configure_mamma.py",
@@ -12918,6 +13008,11 @@
       "path": "tools/setup_dev.py",
       "bytes": 2695,
       "sha256": "0a990562cf09f5d36e6cdd0d58a8fdd27cd6395e13802abc5b41a70bf15cd77b"
+    },
+    {
+      "path": "tools/setup_gemx.py",
+      "bytes": 6840,
+      "sha256": "9bfab00e8f31677e5cd6abfc1b4706dfea9a757382b511c01437de8848f91b36"
     },
     {
       "path": "tools/setup_mamma.py",

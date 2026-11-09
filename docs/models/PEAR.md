@@ -167,7 +167,7 @@ image and multiple people can cause loss or reacquisition of identity.
 1. Run `install.cmd` after updating; its pinned GeoCalib/Kornia support requires
    no extra Torch installation, TensorRT, CUDA compiler or separate PEAR setup CMD.
    GeoCalib code uses Apache-2.0 and its checkpoint uses CC BY 4.0; see
-   [citation and licenses](../CITATIONS.md#geocalib-pear-camera-align).
+   [citation and licenses](../CITATIONS.md#geocalib-pear-camera-align-and-mamma-background-gravity).
 2. In PEAR **Model Manager**, prepare **VGGT** and **GeoCalib**.
    Both are required for automatic alignment, including a single camera.
 3. Open synchronized views of the same performance, or assign every webcam slot.

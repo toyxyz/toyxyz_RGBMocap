@@ -184,10 +184,14 @@ def main(args):
         bpy.ops.wm.open_mainfile(filepath=io_path(out/f'{kind}-rest.blend'),load_ui=False)
         from .blender_textures import extract
         extract(out)
-    elif mode=='bake':
-        from . import blender_bake
-        blender_bake.OUT=out
-        arm,keyed=blender_bake.bake(rest[0],'motion','stance')
+    elif mode in ('bake','bake_soma'):
+        if mode=='bake_soma':
+            from .blender_soma import bake
+            arm,keyed=bake(out,rest[0],Path(rest[1]),Path(rest[2]) if len(rest)>2 else None)
+        else:
+            from . import blender_bake
+            blender_bake.OUT=out
+            arm,keyed=blender_bake.bake(rest[0],'motion','stance')
         n=bpy.context.scene.frame_end
         preview(out,arm,keyed,n)
         Path(io_path(out/'bake.json')).write_text(json.dumps(dict(keyed_bones=keyed,frames=n,object_animation_channels=0)),encoding='utf8')

@@ -5,7 +5,7 @@ from runtime_support import cache_dependency_files
 
 ROOT=Path(__file__).resolve().parents[1]
 SKIP={'.git','__pycache__','.bootstrap','.runtime','.cache','.setup','.venv','.venv-flow','.venv-hand','.venv-htd','.venv-exmr','build','dist','releases','models','projects','cache','character_scenes','.build-inputs','runtime','runtime_gui','runtime_flow','runtime_hand','runtime_htd','runtime_exmr','runtime_character','runtime_mamma'}
-SKIP.update(('runtime_prompthmr','runtime_pear'))
+SKIP.update(('runtime_prompthmr','runtime_pear','runtime_gemx'))
 FORBIDDEN={'.exe','.dll','.pyd','.pyc','.whl','.pt','.pth','.ckpt','.safetensors','.onnx','.npz','.npy','.pkl','.fbx','.bvh','.blend','.mp4','.vrm','.pmx','.vmd','.pmd','.vpd','.pmm','.avi','.mov','.mkv','.webm','.zip','.7z'}
 
 def main():

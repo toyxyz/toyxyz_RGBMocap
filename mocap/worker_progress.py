@@ -26,6 +26,11 @@ def download_progress(callback):
 
 def main():
     stage=sys.argv[1] if len(sys.argv)>1 else ''
+    if stage in {'people','person','track','pva','features','gvhmr','refine','footmr','handflow','rig','mesh','export','correct'} and '--project' in sys.argv:
+        from .gemx_result import is_project
+        if is_project(sys.argv[sys.argv.index('--project')+1]):
+            emit('failed',stage=stage,message='This operation requires a SMPL result. GEM-X uses native SOMA.')
+            return 1
     if stage in ('save_blend','save_blend_scene'):
         from .blend_export_worker import main as save_main
         return save_main(emit)
@@ -64,6 +69,9 @@ def main():
         configure_worker_cpu(stage)
         from .mamma_pipeline import main as mamma_main
         return mamma_main(sys.argv[1:])
+    if stage == 'gemx_contact_solve':
+        from .gemx_contact_solver import main as solve
+        return solve(sys.argv[2:], emit)
     if stage=='character':
         from .retarget.worker import main as character_main
         return character_main(sys.argv[2:])

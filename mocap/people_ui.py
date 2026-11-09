@@ -322,7 +322,15 @@ class PeopleWorkspace:
         state = load_people(root)
         if state is None:
             self.reset_people()
-            if (Path(project)/'tracking.npz').is_file():self.begin_single_tracking(project,loading=True)
+            if manifest.get('pipeline',{}).get('model')=='gemx':
+                from .gemx_result import current
+                if current(project,manifest):
+                    from .single_actor import preferences
+                    self._single_actor=preferences(project)
+                    self._single_actor.update(frames=manifest['frames'], observations=manifest['frames'])
+                    self._single_actor_project=Path(project)
+                    self.update_single_actor_row('1 primary person reconstructed')
+            elif (Path(project)/'tracking.npz').is_file():self.begin_single_tracking(project,loading=True)
             return
         self._single_actor = self._single_actor_project = None
         self.motion_view.single_actor_visible=True
@@ -392,7 +400,8 @@ class PeopleWorkspace:
             thumbnail=person.get('thumbnail')
             item.setIcon(QIcon(QPixmap.fromImage(thumbnail)) if thumbnail is not None else QIcon())
             count=person.get('observations',0)
-            item.setToolTip(tooltip_text(f"{person['name']} | Automatic single-person target | {count} observed frames\n"
+            item.setToolTip(tooltip_text(f"{person['name']} | GEM-X primary person\nCheck to show in the viewport." if self.model_choice.currentData()=='gemx' else
+                f"{person['name']} | Automatic single-person target | {count} observed frames\n"
                 'Check to extract and show; select to edit. Use Find person for identity-aware selection.\n'
                 'This tracker may switch people when they cross or overlap.'))
             self.people_list.setCurrentItem(item)

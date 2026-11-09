@@ -37,15 +37,18 @@ def preview_current(project,kind,loaded):
     except (OSError,ValueError):return False
 
 
-def geometry(rest,parents,ends,key):
+def geometry(rest,parents,ends,key,*,count=52,rest_axes=None):
     rest=np.asarray(rest,dtype=np.float64);parents=np.asarray(parents);ends=np.asarray(ends,dtype=np.float64)
-    if rest.shape!=(52,3) or parents.shape!=(52,) or ends.shape!=(52,3):
-        raise ValueError('Export skeleton metadata must contain 52 joints')
+    if rest.shape!=(count,3) or parents.shape!=(count,) or ends.shape!=(count,3):
+        raise ValueError(f'Export skeleton metadata must contain {count} joints')
     if not np.issubdtype(parents.dtype,np.integer) or not np.isfinite(rest).all() or not np.isfinite(ends).all() or parents[0]!=-1:
         raise ValueError('Invalid export skeleton metadata')
-    if any(not 0<=parents[j]<j for j in range(1,52)):raise ValueError('Invalid export hierarchy')
+    if any(not 0<=parents[j]<j for j in range(1,count)):raise ValueError('Invalid export hierarchy')
     vertices=[];faces=[];edges=[];segments=[]
     def append(points,triangles,bone,wire=(),smooth_center=None):
+        if rest_axes is not None:
+            points=points@rest_axes[bone]
+            if smooth_center is not None:smooth_center=smooth_center@rest_axes[bone]
         start=len(vertices)
         triangles=np.asarray(triangles,dtype=np.int32);p=points[triangles]
         if smooth_center is None:
@@ -75,7 +78,7 @@ def geometry(rest,parents,ends,key):
             j=(i+1)%8;tris.extend([(0,2+i,2+j),(1,18+j,18+i)])
             for ring in (2,10):tris.extend([(ring+i,ring+8+i,ring+8+j),(ring+i,ring+8+j,ring+j)])
         append(np.asarray(points),[tuple(reversed(t)) for t in tris],bone,smooth_center=center)
-    for bone in range(52):
+    for bone in range(count):
         children=np.flatnonzero(parents==bone)
         # One display bone per BVH joint, including palms and branching trunks.
         # Blender's importer places a branch tail at the mean child rest head.
@@ -88,7 +91,7 @@ def geometry(rest,parents,ends,key):
     offsets=rest.copy();offsets[1:]-=rest[parents[1:]]
     offsets=np.round(offsets,9).astype(np.float32)
     local_tails=[]
-    for bone in range(52):
+    for bone in range(count):
         children=np.flatnonzero(parents==bone)
         outgoing=offsets[children].sum(axis=0)/np.float32(len(children)) if len(children) else np.round(ends[bone],9).astype(np.float32)
         tail=offsets[bone]+outgoing
@@ -116,7 +119,8 @@ def geometry(rest,parents,ends,key):
         for center in ([display_tail] if connected else [np.zeros(3),display_tail]):
             sphere(center,length*.05,bone);joint_caps.append((bone,center.copy(),length*.05))
     packed=np.asarray(vertices,np.float32)
-    return dict(packed=packed,faces=np.asarray(faces,np.uint32),edges=np.asarray(edges,np.uint32),
+    if rest_axes is not None:segments=[(bone,child,delta@rest_axes[bone]) for bone,child,delta in segments]
+    return dict(packed=packed,faces=np.asarray(faces,np.uint32),edges=np.asarray(edges,np.uint32),bone_count=count,
         vertex_count=len(packed),mode='rig',key=('bone-overlay-v3',*key),segments=segments,
         endpoint_vertices=endpoint_vertices,octahedra=np.asarray(octahedra),joint_caps=joint_caps)
 

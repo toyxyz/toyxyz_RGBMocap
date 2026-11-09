@@ -72,12 +72,17 @@ you use them, after the base installation:
 | --- | --- | --- |
 | MAMMA | `Setup_MAMMA.cmd` | [MAMMA guide](docs/MAMMA.md) |
 | PromptHMR | `Setup_PromptHMR.cmd` | [PromptHMR guide](docs/models/PROMPTHMR.md) |
+| GEM-X | `Setup_GEMX.cmd` | [GEM-X guide](docs/models/GEMX.md) |
 
 MAMMA and PromptHMR require **Visual Studio 2022 C++ Build Tools**, the Windows SDK and
 **CUDA Toolkit 12.8** for local native builds. Close the app and review the
 provider terms before setup. Then reopen it and prepare the selected model's
 files in **Model Manager**. Their optional runtimes do not require each other;
 `install.cmd` and `update.cmd` do not install them.
+
+GEM-X uses the existing ExMR Python base with its own pinned inference packages.
+Run its separate setup after `install.cmd`, then prepare its public files in
+**Model Manager**. It does not require the C++ build tools or CUDA Toolkit.
 
 PEAR reuses the base shared runtime with a small support overlay prepared by
 `install.cmd` and `update.cmd`. No separate setup or compiler is required.
@@ -127,6 +132,7 @@ do not put passwords or account tokens in the agent chat.
 - Export source animation as FBX or BVH (Generic/Blender or 3ds Max Biped), with optional leading T-pose, per-person origin placement and symmetrical rest pose; export characters as FBX with or without meshes,
   or PMX character motion as VMD for MMD.
 - Export portable Blender projects with source animation, video and saved cameras; MAMMA can include animated body meshes and every camera.
+- Preview and correct GEM-X's native SOMA motion, retarget to humanoid characters, and export the Native77 skeleton as FBX or BVH. The Blender bundle includes the evaluated surface and input video.
 - Save side-by-side input video and the current 3D viewport as MP4 with **File > Export Preview...** (offline models).
 - Inspect source-video/bone alignment in Camera Preview and display saved cameras in 3D, with optional background rotation refinement for FlowHMR/ExMR.
 - Save projects with separate results for each AI model.
@@ -143,8 +149,10 @@ do not put passwords or account tokens in the agent chat.
    MAMMA detects people during reconstruction; keep **VGGT-Omega + GeoCalib (Automatic)** and
    enter an approximate **Reference Height (m)**, or import camera calibration.
    Click **Reconstruct 3D**.
-3. Review the motion, edit contacts if needed and **Apply Correction**.
-4. Use **File > Export...** to choose FBX, BVH or a portable Blender project, or import a character, retarget the motion and export it.
+3. Review the motion. For models with Motion Correction, edit contacts if needed
+   and click **Apply Correction**.
+4. Use **File > Export...** to choose a format supported by the source model, or
+   import a character, retarget the motion and export it.
 
 **PEAR · Live (Experimental)** tracks webcam or video input in real time. Tracking
 and pose estimates may be unstable. Click **Start Live Tracking** to attempt camera
@@ -167,12 +175,13 @@ motion quality was lower than **ExMR**. It does not support finger tracking.
 | [GVHMR](https://github.com/zju3dv/GVHMR) | SMPL-X | Optional HandFlow add-on | [GVHMR guide](docs/models/GVHMR.md) |
 | [MAMMA](https://mamma.is.tue.mpg.de/) · multi-view motion capture | SMPL-X | Included | [MAMMA guide](docs/MAMMA.md) |
 | [PromptHMR](https://github.com/yufu-wang/PromptHMR) | SMPL-X | Not generated | [PromptHMR guide](docs/models/PROMPTHMR.md) |
+| [GEM-X](https://github.com/NVlabs/GEM-X) · fast processing, relatively low motion quality in our tests | SOMA Native77 | Included | [GEM-X guide](docs/models/GEMX.md) |
 
 Requires 64-bit Windows, a compatible NVIDIA GPU/driver and OpenGL 4.3.
 Model files are acquired separately; some require registration and license acceptance.
 
-**Installed models and runtimes:** approximately **67.9 GB (63.2 GiB)** for the
-five offline models, including supported add-ons, Blender and FFmpeg. Based on the measured inventory plus GeoCalib for automatic MAMMA gravity, excluding
+**Installed models and runtimes:** approximately **77.8 GB (72.5 GiB)** for the
+six offline models, including supported add-ons, Blender and FFmpeg, when the GEM-X CUDA files can be shared. Based on the measured inventory, excluding
 projects, caches or retained downloads; shared files are counted once.
 
 | Configuration | Runtime | Models | Total |
@@ -180,18 +189,21 @@ projects, caches or retained downloads; shared files are counted once.
 | ExMR + FlowHMR + GVHMR and supported add-ons | 12.35 GiB | 28.89 GiB | 41.23 GiB |
 | MAMMA additional files | 6.11 GiB | 3.53 GiB | 9.65 GiB |
 | PromptHMR additional files, Fixed Camera | 6.22 GiB | 6.13 GiB | 12.34 GiB |
-| **Five offline models** | **24.68 GiB** | **38.55 GiB** | **63.22 GiB** |
+| GEM-X additional files, with CUDA sharing | 2.13 GiB | 7.11 GiB | 9.24 GiB |
+| **Six offline models** | **26.81 GiB** | **45.66 GiB** | **72.46 GiB** |
 | PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.84 GiB | ~2.85 GiB |
 
 Including PEAR, the estimated combined model/runtime total is about
-**66.07 GiB (70.9 GB)**, before the additional space listed below. GeoCalib weights (about **0.11 GiB**) are shared by MAMMA and PEAR and counted once; both also reuse VGGT. See the
+**75.31 GiB (80.9 GB)**, before the additional space listed below. If GEM-X
+cannot share the verified CUDA DLLs, add about **2.95 GiB**. GeoCalib weights
+(about **0.11 GiB**) are shared by MAMMA and PEAR and counted once; both also reuse VGGT. See the
 [PEAR camera guide](docs/models/PEAR.md#multiple-fixed-cameras-and-camera-align).
 
 Optional PromptHMR moving-camera support adds approximately **18.6 MiB** of
 native modules and **1.55 GiB** of weights beyond these totals; see its model guide.
 
-**MAMMA and PromptHMR require separate runtime installation:** run
-`Setup_MAMMA.cmd` or `Setup_PromptHMR.cmd` after `install.cmd`, as described
+**MAMMA, PromptHMR and GEM-X require separate runtime installation.** Run
+`Setup_MAMMA.cmd`, `Setup_PromptHMR.cmd` or `Setup_GEMX.cmd` after `install.cmd`, as described
 [above](#optional-model-runtimes). They are not installed by `install.cmd` or
 `update.cmd`; obtain weights separately in Model Manager.
 

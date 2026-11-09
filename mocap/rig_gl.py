@@ -43,13 +43,13 @@ class RigRenderer(MeshRenderer):
             # data but force a new pose upload even at the same frame index.
             self.asset_key=asset['key'];self.frame_key=None;return
         self.release_buffers();self.vertex_count=int(asset['vertex_count']);self.index_count=asset['faces'].size
-        self.raw=asset['mode']=='raw';self.vao.bind()
+        self.raw=asset['mode']=='raw';self.bone_count=asset.get('bone_count',52);self.vao.bind()
         if self.shared and self.shared.topology_key!=topology:raise ValueError('Shared raw meshes must have identical topology')
         self.model=self.shared.model if self.shared else self.buffer(asset.get('packed',np.zeros(7,np.float32)))
         self.vertices=self.buffer(self.vertex_count*32)
         self.offsets=self.shared.offsets if self.shared else self.buffer(asset.get('offsets',np.zeros(1,np.uint32)))
         self.neighbors=self.shared.neighbors if self.shared else self.buffer(asset.get('neighbors',np.zeros(1,np.uint32)))
-        self.frame=self.buffer((self.vertex_count*3 if self.raw else 52*16)*4)
+        self.frame=self.buffer((self.vertex_count*3 if self.raw else self.bone_count*16)*4)
         self.indices=self.shared.indices if self.shared else self.buffer(asset['faces'],QOpenGLBuffer.IndexBuffer);self.indices.bind()
         self.surface.bind();self.vertices.bind()
         for i,offset in ((0,0),(1,16)):
@@ -60,7 +60,7 @@ class RigRenderer(MeshRenderer):
     def deform(self,frame,key):
         if self.frame_key==key:return
         frame=np.ascontiguousarray(frame,dtype=np.float32)
-        expected=self.vertex_count*3 if self.raw else 52*16
+        expected=self.vertex_count*3 if self.raw else self.bone_count*16
         if frame.size!=expected or not np.isfinite(frame).all():raise ValueError('Invalid target render frame')
         self.frame.bind();self.frame.write(0,frame.tobytes(),frame.nbytes)
         for index,buffer in enumerate((self.model,self.vertices,self.offsets,self.neighbors,self.frame)):
