@@ -51,6 +51,7 @@ __pycache__/
 !/docs/samples/motion-capture.mp4
 !/docs/samples/character-retargeting.mp4
 !/docs/samples/multi-cam-mocap.mp4
+!/docs/samples/streaming-to-blender.mp4
 *.avi
 *.mov
 *.mkv

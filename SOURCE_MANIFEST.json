@@ -11,8 +11,8 @@
     },
     {
       "path": ".gitignore",
-      "bytes": 1969,
-      "sha256": "0e3d0224fa7c5192af73a5cbf853ef15e99e6aa95cbe4703673305389bc9c7cc"
+      "bytes": 2010,
+      "sha256": "3e6e615af5bf4debc62850578906d43d4f9cb8e1c338f1a34546e412a3529330"
     },
     {
       "path": "AGENTS.md",
@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 14478,
-      "sha256": "7e088f75ed7f24a8e04e0c59e7a77a40768e0416225437648a9b869e116de7eb"
+      "bytes": 14652,
+      "sha256": "18f29de72fdc12fa7af516e1f29fc50beefa752b01846b52c23681c2281c866b"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -243,6 +243,11 @@
       "path": "docs/samples/multi-cam-mocap.mp4",
       "bytes": 3633370,
       "sha256": "0657ff52fb4f5e8c9464d4601f28233867ffd07f894ee71d31c08e6625cb0d6d"
+    },
+    {
+      "path": "docs/samples/streaming-to-blender.mp4",
+      "bytes": 12490446,
+      "sha256": "82fce160b6290916382edd21012b99952be92323b245a04f2f3fd2af0268b5e5"
     },
     {
       "path": "gemx_worker_boot.py",
@@ -1076,8 +1081,8 @@
     },
     {
       "path": "installer/source-resources.json",
-      "bytes": 4263,
-      "sha256": "023b8e9a29cf58c42b76a7b6edb42d7f07e5d85e083593ea006da14d343a0ea6"
+      "bytes": 4444,
+      "sha256": "0c5506c2c733dadead7cc40a58e560a193f28e02f7f5a49e5be5d9f6728ace69"
     },
     {
       "path": "installer/verify_gemx.py",

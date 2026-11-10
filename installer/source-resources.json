@@ -98,6 +98,11 @@
       "sha256": "0657ff52fb4f5e8c9464d4601f28233867ffd07f894ee71d31c08e6625cb0d6d"
     },
     {
+      "path": "docs/samples/streaming-to-blender.mp4",
+      "bytes": 12490446,
+      "sha256": "82fce160b6290916382edd21012b99952be92323b245a04f2f3fd2af0268b5e5"
+    },
+    {
       "path": "blender_addon/rgbmocap_bone_stream.zip",
       "bytes": 9439,
       "sha256": "3e51960b75797f08a7e209ff50e8868c2ff0172a16582f3b6a853b59b5f04e72"

@@ -25,6 +25,12 @@ https://github.com/user-attachments/assets/4c0b290b-4a65-4287-8d22-c63c96b3d080
 
 [Download original sample](docs/samples/multi-cam-mocap.mp4)
 
+### Streaming to Blender
+
+https://github.com/user-attachments/assets/cc0e79bb-ecce-4752-ae14-3b6cea30c810
+
+[Download original sample](docs/samples/streaming-to-blender.mp4)
+
 ## Install and run
 
 1. Install [Git for Windows](https://git-scm.com/download/win). Open **Command Prompt**
