@@ -17,6 +17,9 @@ saved selection. Only implemented tools appear in the list.
 One-video input does not mean one-person output. ExMR, FlowHMR and GVHMR can
 process checked people independently after **Find person**. Without discovery,
 automatic tracking selects one person and may switch identity during overlap.
+On Windows, **Find person** also offers [optional SAM 3.1 tracking](SAM31.md)
+with text prompts and click selection for those three models. SAM 3.1 uses
+more VRAM than the Default tracker. See [measured VRAM](SAM31.md#vram-use).
 MAMMA detects and matches people across views during reconstruction; its
 **Find person** button is hidden.
 PromptHMR also tracks people during reconstruction. It defaults to two people
@@ -53,7 +56,9 @@ MAMMA uses synchronized views in a separate multi-view workflow.
    reopen it before preparing weights. `update.cmd` does not install either
    optional runtime; rerun its own setup if the app requests it after an update.
    GEM-X uses [Setup_GEMX.cmd](GEMX.md#setup), which reuses the ExMR Python
-   base and needs no local native build.
+   base and needs no local native build. The optional SAM 3.1 **Find person**
+   tracker for ExMR, FlowHMR and GVHMR uses [Setup_SAM31.cmd](SAM31.md#setup)
+   and a separate Model Manager download.
 3. Run `RGBMoCap.cmd`, select the model and use **Model Manager**. Follow each
    row's exact download/import instructions. Some files require registration
    and license acceptance; Google Drive downloads may need manual import.

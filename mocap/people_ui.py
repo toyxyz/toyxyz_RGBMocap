@@ -292,13 +292,24 @@ class PeopleWorkspace:
         self.find_person_button = QPushButton('Find person')
         self.find_person_button.setToolTip(tooltip_text('Find people in the video so you can choose who to reconstruct. Useful for multiple people or a specific person.'))
         self.find_person_button.clicked.connect(self.find_people)
-        bar.addWidget(self.find_person_button);bar.addStretch()
+        self.people_tracker = QComboBox()
+        self.people_tracker.setAccessibleName('Person tracking model')
+        self.people_tracker.addItem('Default', 'default')
+        self.people_tracker.addItem('SAM 3.1', 'sam31')
+        self.people_tracker.setToolTip('Choose the person tracker used by Find person.')
+        self._sam31_prompt = 'person'
+        bar.addWidget(self.find_person_button)
+        bar.addWidget(self.people_tracker)
+        bar.addStretch()
         movie_layout.addWidget(footer)
         layout.addWidget(movie,1)
         return body
 
     def update_people_readiness(self):
         enabled = not self.busy and not self.contact_saving
+        from .sam31_runtime import SUPPORTED
+        self.people_tracker.setVisible(self.model_choice.currentData() in SUPPORTED)
+        self.people_tracker.setEnabled(enabled)
         self.find_person_button.setEnabled(enabled and self.video_readable)
         self.people_list.setEnabled(enabled)
         self.person_takes.setEnabled(enabled)
@@ -606,6 +617,9 @@ class PeopleWorkspace:
 
     def find_people(self):
         if self.busy:return
+        from .sam31_runtime import SUPPORTED
+        if self.people_tracker.currentData() == 'sam31' and self.model_choice.currentData() in SUPPORTED:
+            return self.find_people_sam31()
         from .models import missing
         unavailable=missing('people')
         if unavailable:
@@ -622,6 +636,47 @@ class PeopleWorkspace:
                 self.start_jobs([('people',['--project',str(self.people_root)])])
                 return
         self.input_jobs(['people'])
+
+    def find_people_sam31(self):
+        from .models import missing
+        from .sam31_prompt_ui import PromptDialog
+        from .sam31_runtime import location
+
+        if self.video_view.frame is None or self.contact_saving:
+            return
+        if missing('sam31_people'):
+            self.status.setText('Prepare SAM 3.1 in Model Manager.')
+            self.open_model_manager()
+            return
+        try:
+            location()
+        except RuntimeError as error:
+            self.status.setText(str(error))
+            QMessageBox.information(self, 'SAM 3.1 Runtime', str(error))
+            return
+        self.stop_playback()
+        fps = self.info['fps']
+        first, end = self.processing_range()
+        mark_time = self.source_offset + self.video_view.index / fps
+        dialog = PromptDialog(self, self.video_view.frame, self._sam31_prompt)
+        if not dialog.exec():
+            return
+        prompt = dialog.prompt.text().strip() or 'person'
+        points = dialog.frame.points
+        if points and not first <= mark_time < end:
+            self.status.setText('Seek to a frame inside the trim before marking people.')
+            return
+        self._sam31_prompt = prompt
+        options = ['--sam31-options', json.dumps(dict(prompt=prompt, time=mark_time, points=points),
+                                                 ensure_ascii=True)]
+        if self.people_root is not None:
+            manifest = json.loads((self.people_root/'project.json').read_text(encoding='utf-8'))
+            root_start = float(manifest['start'])
+            root_end = min(float(manifest['end']), root_start + manifest['frames'] / manifest['fps'])
+            if abs(first-root_start) < 1e-6 and abs(end-root_end) < 1e-6:
+                self.start_jobs([('sam31_people', ['--project', str(self.people_root), *options])])
+                return
+        self.input_jobs(['sam31_people'], people_options=options)
 
     def input_person_jobs(self,stages,result):
         if self.people_state is None:return False

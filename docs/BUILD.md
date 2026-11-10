@@ -167,6 +167,16 @@ runtime registry and unpacked wheel contents. Avoid automatic line-ending rewrit
 of those files. When intentionally changing the registry, review and refresh the
 lock's registry hash; the development bootstrap rejects an unreviewed mismatch.
 
+## Optional SAM 3.1 tracker
+
+On Windows, `Setup_SAM31.cmd` installs a separate `runtime_sam31/` overlay
+on the pinned ExMR environment. Follow the [setup guide](models/SAM31.md).
+Keep the optional dependencies in `tools/setup_sam31.py` and the worker route
+through `sam31_worker_boot.py`. Model Manager verifies the checkpoint separately.
+Keep the overlay, weights and experiment outputs out of the source package.
+Verify text-only discovery, marking inside the trim, the last source frame on a
+high-FPS clip, and Default discovery after switching back.
+
 ## Optional MAMMA runtime
 
 Follow the [agent installation and native-build runbook](MAMMA_AGENT_SETUP.md)

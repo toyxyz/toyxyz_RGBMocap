@@ -53,6 +53,8 @@ Existing projects retain their saved selections.
 1. Select GVHMR, open one video and trim its **Video** track.
 2. Optionally run **Find person** and check the people to process. The selected
    row is the timeline/contact-edit target, independent of other visible people.
+   Choose **Default** or use [SAM 3.1](SAM31.md) on Windows for text prompts
+   and click selection.
 3. Prepare models for enabled add-ons and run **Reconstruct 3D**.
 4. Review the selected result and correction. Foot contacts and palm support
    are edited on the timeline; **Apply Correction** reuses inferred motion.

@@ -7,8 +7,12 @@ from functools import lru_cache
 from .result_artifacts import file_stat
 from .storage import sha256
 
-# Only child storage metadata changed; detection/tracking math is identical.
-DISCOVERY_STORAGE_COMPAT = {'096f62724e78996b2c944db45a2a3151e03a5a72d92ea7aad2ae000c796e2135': 'fc7db0d237d87776f0f65388b615e9c00968f1b06c988f332ca91558e7d0fd2d'}
+# Child storage metadata and the shared observation publisher changed.
+# Default detection and tracking math remain identical.
+DISCOVERY_STORAGE_COMPAT = {
+    '096f62724e78996b2c944db45a2a3151e03a5a72d92ea7aad2ae000c796e2135': 'fc7db0d237d87776f0f65388b615e9c00968f1b06c988f332ca91558e7d0fd2d',
+    'bde10530aaa842d5fa67751b08796c5065d2d24ab8aecb4b3509f40f2006d928': '39f6422998f9d77a501cd4ac88c2a62cf312cf2be0f01129e9c0e7b8a0dd2b5f',
+}
 
 
 def discovery_identity(path):

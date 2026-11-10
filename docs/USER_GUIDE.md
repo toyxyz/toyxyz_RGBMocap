@@ -150,6 +150,19 @@ the exact files, camera modes, native-build verification and repair steps.
 The Model Manager's **Runtime Setup...** button shows instructions; it does not
 run installation inside the app.
 
+### Optional SAM 3.1 person tracker
+
+After the base install, close RGB MoCap and run `Setup_SAM31.cmd`. This setup
+reuses ExMR's Python and CUDA runtime and requires native NVIDIA CUDA bfloat16
+support. Reopen the app, select ExMR, FlowHMR or GVHMR and choose **SAM 3.1**
+next to **Find person**. In **Model Manager**, use **Auto Download** on
+**SAM 3.1 Person Tracking (Optional)** or import the supported checkpoint.
+The base install and updater leave this optional setup for you to run.
+SAM 3.1 uses more VRAM than the Default YOLOv8x + OSNet tracker.
+See the [setup, usage and measured VRAM](models/SAM31.md#vram-use).
+
+### Update the app
+
 To update, close RGB MoCap and run `update.cmd` in the repository folder. It
 refuses to overwrite tracked local edits, requires the `main` branch, pulls only
 fast-forward changes and checks the runtimes. Back up or commit local changes
@@ -243,6 +256,10 @@ Shared model files and hardlinks are counted once.
 | GEM-X additional files, with CUDA sharing | 2.13 GiB | 7.11 GiB | 9.24 GiB |
 | **Six offline models** | **26.81 GiB** | **45.66 GiB** | **72.46 GiB** |
 | PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.84 GiB | ~2.85 GiB |
+
+The optional [SAM 3.1 tracker](models/SAM31.md#setup) adds about **1.75 GB**
+(**1.63 GiB**) for its checkpoint and about **25 MiB** for the runtime overlay
+measured on the test PC. It reuses the ExMR runtime. The table excludes it.
 
 Adding PEAR to all six offline sets gives an estimated combined total of about
 **75.31 GiB (80.9 GB)**. Without GEM-X DLL sharing, add about **2.95 GiB**.
@@ -394,6 +411,9 @@ opening a project restores its saved model. **Prepare Preview**, below
 
 All six offline models support contact correction and portable Blender bundles.
 ExMR, FlowHMR and GVHMR offer **Find person** for explicit people selection.
+The tracker selector defaults to **Default**. Choose **SAM 3.1** to use a text
+prompt and optional markers on the displayed video frame. See the
+[SAM 3.1 setup and workflow](models/SAM31.md).
 MAMMA and PromptHMR track people during reconstruction. These five SMPL-based
 models offer a 52-bone overlay and FBX/BVH export. GEM-X uses the 77-bone SOMA
 rig for its overlay and FBX, BVH and Blender exports. See the
@@ -666,7 +686,7 @@ an estimate and can leave residual sliding or penetration.
 
 | Control | Function |
 | --- | --- |
-| **Find person** | For ExMR/FlowHMR/GVHMR, discover people for explicit selection. Without it, tracking selects one person and may switch identity during overlap. MAMMA/PromptHMR track people during reconstruction; this button is hidden. |
+| **Find person** | For ExMR, FlowHMR and GVHMR, choose **Default** or [SAM 3.1](models/SAM31.md#track-people) and run discovery. Check the People rows you want to reconstruct. Without discovery, automatic tracking selects one person and may switch identity during overlap. MAMMA and PromptHMR track people during reconstruction and hide this button. |
 | **People checkboxes / selected row** | Checked rows control visibility and ExMR/FlowHMR/GVHMR reconstruction targets. MAMMA/PromptHMR reconstruct their detected/requested people together. The selected row controls timeline and contact editing. |
 | **Character checkboxes / selected row** | Show or hide imported characters independently of source people. Select a character to export it; right-click it for Retarget, Export Character or Remove Character. |
 | **People → ?** | Open instructions for people selection, names, colors and takes. The list footer shows only current status or warnings. |

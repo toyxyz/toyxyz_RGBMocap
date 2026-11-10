@@ -48,7 +48,7 @@ from .gemx_ui import GemXWorkspace
 STAGES['gemx_reconstruct']='Reconstruct Native SOMA / GEM-X'
 STAGES['gemx_correct']='Motion Correction / GEM-X'
 STAGES['save_project']='Save Project As'
-STAGES.update(people='Find People',person='Prepare Person Motion')
+STAGES.update(people='Find People',sam31_people='Find People with SAM 3.1',person='Prepare Person Motion')
 STAGES.update(flow_camera='Estimate Scene Camera / VGGT-Omega', flow_features='Extract Body and Hand Features / SAM', flowhmr='Reconstruct Motion / FlowHMR', flow_export='Prepare FlowHMR Preview and FBX', import_model='Import Model')
 STAGES.update(exmr_preprocess='ExMR Body, Hand and Foot Keypoints',exmr_features='ExMR Body and Hand Features',exmr='Reconstruct Motion / ExMR')
 
@@ -138,6 +138,9 @@ class ModelsDialog(QDialog):
                 {key for stage in (*self.tool.stages(refine=True, footmr=True, handflow=True),'people') for key in STAGE_REQUIREMENTS.get(stage, ())})
         if self.tool.key=='pear':keys.update(STAGE_REQUIREMENTS['pear_align'])
         if self.tool.key=='prompthmr':keys.update(STAGE_REQUIREMENTS['prompthmr_camera_assets'])
+        from .sam31_runtime import SUPPORTED
+        if self.tool.key in SUPPORTED and window.people_tracker.currentData() == 'sam31':
+            keys.update(STAGE_REQUIREMENTS['sam31_people'])
         if self.tool.key=='flowhmr':
             keys.add('flow_metadata')
             if window.flow_hamer.isChecked():
@@ -153,6 +156,11 @@ class ModelsDialog(QDialog):
         description = QLabel(f"Models for {self.tool.label} and compatible add-ons.\nUse Auto Download for public files, or Manual Download and Import for any model.\nRegistered body model files are not redistributed by this app.")
         description.setWordWrap(True)
         layout.addWidget(description)
+        if self.tool.key in SUPPORTED and window.people_tracker.currentData() == 'sam31':
+            sam_note = QLabel('SAM 3.1 is optional. Close RGB MoCap and run Setup_SAM31.cmd once. '
+                              'Use Auto Download on the SAM 3.1 row for the public 1.75 GB checkpoint.')
+            sam_note.setWordWrap(True)
+            layout.addWidget(sam_note)
         if self.tool.key=='mamma':
             from .mamma_manager import runtime_panel
             layout.addWidget(runtime_panel(self))
@@ -328,7 +336,7 @@ class ModelsDialog(QDialog):
 
     def pending_downloads(self):
         return [model for model in self.models
-                if (model.drive_id or model.download_url) and not ready(model)]
+                if model.key != 'sam31_people' and (model.drive_id or model.download_url) and not ready(model)]
 
     def start_download_all(self):
         if self.window.busy:
@@ -1019,7 +1027,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             self.stop_playback()
         super().hideEvent(event)
 
-    def input_jobs(self, stages, result=None):
+    def input_jobs(self, stages, result=None, *, people_options=None):
         if MOTION_TOOLS[self.model_choice.currentData()].input_setup_only:
             self.status.setText('MAMMA camera input setup is available; reconstruction is not integrated yet.')
             return
@@ -1029,13 +1037,14 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         if self.info is None or not self.video_readable:
             self.status.setText("Wait for the video preview to finish opening.")
             return
-        if 'people' not in stages and self._single_actor and not self._single_actor['checked']:
+        discovery = any(stage in ('people', 'sam31_people') for stage in stages)
+        if not discovery and self._single_actor and not self._single_actor['checked']:
             self.status.setText('Check Person 1 in the People list to reconstruct it.')
             return
-        if 'people' not in stages and self.input_person_jobs(stages,result):
+        if not discovery and self.input_person_jobs(stages,result):
             return
         unavailable = [model for stage in stages for model in ([] if self.model_choice.currentData()=='flowhmr' and stage=='flow_camera' and self.flow_sampling.currentData()==-1 else missing('flow_export' if self.model_choice.currentData()=='flowhmr' and stage in ('correct','export') else stage))]
-        if self.model_choice.currentData()=='flowhmr' and self.flow_hamer.isChecked():
+        if 'sam31_people' not in stages and self.model_choice.currentData()=='flowhmr' and self.flow_hamer.isChecked():
             from .flow_hamer import MODEL_KEYS
             from .models import BY_KEY
             unavailable += [BY_KEY[k] for k in MODEL_KEYS if not ready(BY_KEY[k])]
@@ -1063,8 +1072,15 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                                  '--correction-mode',self.correction_mode.currentData(),
                                  '--foot-lock',str(int(self.foot_lock.isChecked())),'--hand-lock',str(int(self.hand_lock.isChecked())),
                                  '--pelvis-offset',str(self.pelvis_offset.value())]
-        self.start_jobs([("prepare", prepare_args)]
-                        + [(stage, ["--result", result] if stage in {"export", "flow_export", "footmr", "handflow", "correct"} and result else None) for stage in stages])
+        jobs = [('prepare', prepare_args)]
+        for stage in stages:
+            arguments = None
+            if stage == 'sam31_people':
+                arguments = people_options
+            elif stage in {'export', 'flow_export', 'footmr', 'handflow', 'correct'} and result:
+                arguments = ['--result', result]
+            jobs.append((stage, arguments))
+        self.start_jobs(jobs)
 
     def run_analysis(self):
         self.input_jobs(["track", "pva"])
@@ -1355,7 +1371,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                     self.status.setText("Downloads complete. Check Model Manager for any required imports.")
                 elif self.current_stage == "import_model":
                     self.status.setText("Model setup complete.")
-                elif self.current_stage not in ('people','person'):
+                elif self.current_stage not in ('people','sam31_people','person'):
                     self.status.setText("Complete. Play the result or open the project folder.")
                 if self._batch_has_motion and elapsed is not None:
                     seconds = round(elapsed)
@@ -1384,7 +1400,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self._batch_inner_stage=stage
         if arguments is None:
             arguments = ["--project", str(self.project)]
-        elif stage in {"export", "footmr", "handflow", "correct", 'flow_export'} and "--project" not in arguments:
+        elif stage in {"export", "footmr", "handflow", "correct", 'flow_export', 'sam31_people'} and "--project" not in arguments:
             arguments = ["--project", str(self.project), *arguments]
         self.job_project = Path(arguments[arguments.index('--project')+1]) if '--project' in arguments else None
         if stage=='track':self.begin_single_tracking(self.job_project)

@@ -88,6 +88,12 @@ PEAR reuses the base shared runtime with a small support overlay prepared by
 `install.cmd` and `update.cmd`. No separate setup or compiler is required.
 Model files are prepared separately.
 
+For optional text-prompt and click-guided **Find person** tracking on Windows,
+run `Setup_SAM31.cmd` after the base setup. Then choose **SAM 3.1** next to
+**Find person** and use **Auto Download** on its 1.75 GB checkpoint row in
+**Model Manager**. SAM 3.1 uses more VRAM than **Default** tracking.
+See the [SAM 3.1 tracker guide](docs/models/SAM31.md#vram-use).
+
 ### Install with an AI agent
 
 After cloning, open this repository folder in a local coding agent such as Codex.
@@ -145,6 +151,8 @@ do not put passwords or account tokens in the agent chat.
    **File > Open Video**. For MAMMA, select it before opening synchronized camera
    videos; thumbnails switch the preview and one timeline trim applies to all views.
 2. For ExMR, FlowHMR or GVHMR, optionally use **Find person** to select people.
+   Choose **Default** or use [SAM 3.1](docs/models/SAM31.md#track-people) for
+   text prompts and click selection.
    PromptHMR tracks people together during reconstruction.
    MAMMA detects people during reconstruction; keep **VGGT-Omega + GeoCalib (Automatic)** and
    enter an approximate **Reference Height (m)**, or import camera calibration.

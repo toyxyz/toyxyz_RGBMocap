@@ -267,47 +267,54 @@ def discover(project, emit):
                 db.commit()
                 emit('progress',stage='people',current=index+1,total=manifest['frames'],message=f'Finding people: {len(people)} tracks')
         db.commit()
-        selected = []
-        focal = float(np.hypot(manifest['width'],manifest['height']))
-        K = np.array([[focal,0,manifest['width']/2],[0,focal,manifest['height']/2],[0,0,1]],np.float32)
-        for ident,entry in people.items():
-            if entry['observations'] < 3:
-                continue
-            target = safe_child(project,entry['preview'])
-            boxes = np.lib.format.open_memmap(target/'boxes.partial.npy',mode='w+',dtype=np.float32,shape=(manifest['frames'],4))
-            seen = np.lib.format.open_memmap(target/'seen.partial.npy',mode='w+',dtype=np.bool_,shape=(manifest['frames'],))
-            boxes[:] = np.nan;seen[:] = False
-            for row in db.execute('SELECT frame,x1,y1,x2,y2 FROM observations WHERE person=? ORDER BY frame',(ident,)):
-                boxes[row[0]] = row[1:];seen[row[0]] = True
-            np.savez_compressed(target/'tracking.npz',boxes=boxes,observed=seen,K=K)
-            boxes._mmap.close();seen._mmap.close()
-            (target/'boxes.partial.npy').unlink();(target/'seen.partial.npy').unlink()
-            entry['observation_id']=ident
-            entry['id']=len(selected)+1
-            entry['name']=f"Person {entry['id']}"
-            child = {**manifest,'stages':{},'people_root':os.path.relpath(project,target),'person_id':entry['id'],'person_preview':True}
-            from .project_storage import inherit_storage
-            inherit_storage(project,target,child)
-            atomic_json(target/'project.json',child)
-            for name in ('input.mp4','preview.mp4','preview.json'):
-                if (project/name).is_file():_link(project/name,target/name)
-            entry.pop('last_frame',None);entry.pop('_thumbnail_quality',None)
-            selected.append(entry)
-        if not selected:
-            raise RuntimeError('No stable person was found. Use a clip with a visible person for at least a few frames.')
-        # First displayed person is gray and checked even if short-lived ghosts were filtered.
-        selected[0]['checked'] = True;selected[0]['color'] = '#b5b5b5'
-        state = dict(version=VERSION,input=media_receipt(project),fingerprint=digest,people=selected,
-            observations=f'{generation}/observations.sqlite',active=selected[0]['id'],
-            method='BoT-SORT + OSNet x0.25 MSMT17',max_gap_seconds=.5)
         atomic_json(folder/'identity_decisions.json',registry.decisions)
-        save_people(project,state)
+        selected = publish_discovery(project, manifest, db, people, generation, digest,
+                                     'BoT-SORT + OSNet x0.25 MSMT17')
     finally:
         capture.release();db.close()
         del detector,encoder,tracker
         gc.collect();torch.cuda.empty_cache()
     emit('people_found',project=str(project),count=len(selected),cached=False)
     return project/'people.json'
+
+
+def publish_discovery(project, manifest, db, people, generation, digest, method):
+    import numpy as np
+    selected = []
+    focal = float(np.hypot(manifest['width'],manifest['height']))
+    K = np.array([[focal,0,manifest['width']/2],[0,focal,manifest['height']/2],[0,0,1]],np.float32)
+    for ident,entry in people.items():
+        if entry['observations'] < 3:
+            continue
+        target = safe_child(project,entry['preview'])
+        boxes = np.lib.format.open_memmap(target/'boxes.partial.npy',mode='w+',dtype=np.float32,shape=(manifest['frames'],4))
+        seen = np.lib.format.open_memmap(target/'seen.partial.npy',mode='w+',dtype=np.bool_,shape=(manifest['frames'],))
+        boxes[:] = np.nan;seen[:] = False
+        for row in db.execute('SELECT frame,x1,y1,x2,y2 FROM observations WHERE person=? ORDER BY frame',(ident,)):
+            boxes[row[0]] = row[1:];seen[row[0]] = True
+        np.savez_compressed(target/'tracking.npz',boxes=boxes,observed=seen,K=K)
+        boxes._mmap.close();seen._mmap.close()
+        (target/'boxes.partial.npy').unlink();(target/'seen.partial.npy').unlink()
+        entry['observation_id']=ident
+        entry['id']=len(selected)+1
+        entry['name']=f"Person {entry['id']}"
+        child = {**manifest,'stages':{},'people_root':os.path.relpath(project,target),'person_id':entry['id'],'person_preview':True}
+        from .project_storage import inherit_storage
+        inherit_storage(project,target,child)
+        atomic_json(target/'project.json',child)
+        for name in ('input.mp4','preview.mp4','preview.json'):
+            if (project/name).is_file():_link(project/name,target/name)
+        entry.pop('last_frame',None);entry.pop('_thumbnail_quality',None)
+        selected.append(entry)
+    if not selected:
+        raise RuntimeError('No stable person was found. Use a clip with a visible person for at least a few frames.')
+    # First displayed person is gray and checked even if short-lived ghosts were filtered.
+    selected[0]['checked'] = True;selected[0]['color'] = '#b5b5b5'
+    state = dict(version=VERSION,input=media_receipt(project),fingerprint=digest,people=selected,
+        observations=f'{generation}/observations.sqlite',active=selected[0]['id'],
+        method=method,max_gap_seconds=.5)
+    save_people(project,state)
+    return selected
 
 
 def prepare_person(project, ident, first, end, result, options, emit):

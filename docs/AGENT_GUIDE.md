@@ -96,6 +96,7 @@ Use **Model Manager** for the selected model and add-ons. Automatic download may
 | `Setup_MAMMA.cmd` | Optional independent MAMMA runtime | VS 2022 C++ tools/Windows SDK, CUDA Toolkit 12.8, provider license review |
 | `Setup_PromptHMR.cmd` | Optional independent PromptHMR runtime | Same build tools, separate provider license review; MAMMA/SDF not required |
 | `Setup_GEMX.cmd` | Optional GEM-X Windows runtime | Reuses the pinned ExMR CPython and compatible CUDA DLLs, keeps its own inference packages, verifies CUDA. No compiler required. |
+| `Setup_SAM31.cmd` | Optional SAM 3.1 Find person tracker for ExMR, FlowHMR and GVHMR on Windows | Base ExMR profile, Git, internet, upstream terms review and NVIDIA CUDA with native bfloat16. Uses pinned wheels and a separate overlay. |
 | `update.cmd` | Source update and base runtime verification | Close the app and preserve tracked edits; it does not install the optional runtimes |
 
 ### GEM-X support
@@ -137,6 +138,41 @@ fix; do not extend that exception to numerical/weight changes. No optional-runti
 rebuild is required. See [supporting downloads](models/PROMPTHMR.md#shared-supporting-model-download-cache).
 
 Model files are in `<installation>/models/` by default. To reuse a legitimate installation, close both apps, copy the complete models folder and its receipt/license files beside `RGBMoCap.cmd`, and check readiness in Model Manager. Do not copy old `runtime*` folders. SMPL Neutral is required by PromptHMR, although it is not required for ExMR/FlowHMR/GVHMR. Standard SMPL-X Neutral is shared by ExMR/GVHMR/PromptHMR; MAMMA uses its separate locked-head bodies. Exact requirements are defined by `mocap/models.py` and the chosen stages, not by guessed filenames.
+
+### SAM 3.1 person discovery
+
+1. Verify the base installation and ExMR runtime. Review the linked upstream
+   terms with the user. Close RGB MoCap, then run `Setup_SAM31.cmd`. Setup
+   stages the pinned Meta source and SHA-256-pinned wheels in a separate
+   `runtime_sam31/` overlay and tests native CUDA bfloat16 attention before
+   activation. It uses the base ExMR Python and Torch. Keep the ExMR pins and
+   the locked base runtime registry intact.
+2. In the app, choose ExMR, FlowHMR or GVHMR, then **SAM 3.1** next to
+   **Find person**. Open **Model Manager** and use **Auto Download** on the
+   optional SAM 3.1 row. For a manual import use the exact public Comfy-Org
+   FP16 safetensors file in the [tracker guide](models/SAM31.md#setup).
+   **Download All** skips this optional checkpoint.
+3. Test a short video with `person` and no markers, then seek to a clear frame
+   in the trim, mark a person and click **Track**. Markers select candidates
+   found by text in that frame. Check the desired People rows and run
+   **Reconstruct 3D**. Check **Default** separately when troubleshooting
+   detector behavior. A setup error and a missing checkpoint require different fixes.
+
+SAM 3.1 uses more VRAM than Default (YOLOv8x + OSNet). Treat the
+[measured VRAM peaks](models/SAM31.md#vram-use) as observations from specific
+clips. Exact overhead relative to Default remains unmeasured on matching
+inputs. Find person and 3D reconstruction run in separate stages.
+
+`mocap/sam31_discovery.py` uses the canonical 30 fps working video, the
+shared People publishing code and a discovery identity covering the media,
+tracker implementation, checkpoint, prompt and relevant frame/markers. Preserve
+the previous People result if a prompt or marker fails. Retain source trim
+validation and the nearest valid working frame, including the final frame of a
+high-FPS source. Keep the separate worker entry point and Resource Safety
+controls. SAM 3.1 here applies to offline discovery for the three listed models.
+MAMMA and PromptHMR keep their reconstruction trackers, GEM-X keeps its primary
+person detector, and PEAR keeps its live detector.
+See the [recorded checks](VALIDATION.md#sam-31-person-discovery-2026-11-10).
 
 ## Standard GUI workflow
 
@@ -243,7 +279,7 @@ corrected native actors feed the usual contact editing and FBX paths. See
 assumptions and adapter limits. The optional setup downloads official restricted source and builds native
 modules locally; Visual Studio 2022 C++ Build Tools and CUDA Toolkit 12.8 are
 prerequisites. Model Manager shows its runtime readiness and setup instructions.
-Do not claim clean-Windows or other-GPU validation or SAM 3.1 app support. Keep restricted upstream code, weights and derived bodies private.
+Do not claim clean-Windows or other-GPU validation for MAMMA. MAMMA uses SAM 2.1 masks. Keep restricted upstream code, weights and derived bodies private.
 
 For prerequisite checks, automatic setup, independent SAM 2/SDF builds, kernel
 verification, registration and rollback, use the

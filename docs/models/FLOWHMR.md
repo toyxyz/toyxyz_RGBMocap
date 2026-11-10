@@ -142,6 +142,8 @@ used another 2.13 GiB of allocated VRAM. These are one-PC observations.
 1. Select FlowHMR and **File > Open Video**, then trim the **Video** track.
 2. Use **Find person** if you need explicit selection or several people. Check
    processing targets; select a row to inspect its timeline and contacts.
+   Choose **Default** or use [SAM 3.1](SAM31.md) on Windows for text prompts
+   and click selection.
 3. Prepare the required files and choose the camera option, then **Reconstruct 3D**.
 4. Review contact correction, edit timings and **Apply Correction** if needed.
    Original motion is retained; applying contact changes does not rerun FlowHMR.

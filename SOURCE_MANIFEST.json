@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "date": "2026-11-09",
+  "date": "2026-11-10",
   "purpose": "Public source distribution; excludes model weights and runtime binaries",
   "version": "git-source",
   "files": [
@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 13711,
-      "sha256": "8fecb18500440885f2688a3353c66af0783b9d4513937a8c461a18d45d2e6b7c"
+      "bytes": 14190,
+      "sha256": "6b3dc160c7c2011426b9753d1bee2eb25063a2076e2bdba663b11c0601ecc7bb"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -50,9 +50,14 @@
       "sha256": "41ea984bcb4878ad39a9f53fa962cca22a9a84e416246ccc5412e13b192a019e"
     },
     {
+      "path": "Setup_SAM31.cmd",
+      "bytes": 644,
+      "sha256": "57d36e491a78af92b8fcacd98d78278899d177b39b5e51bdcab23755a64fcb85"
+    },
+    {
       "path": "THIRD_PARTY_NOTICES.md",
-      "bytes": 10921,
-      "sha256": "4dcb6d5ebc47973ded3e0e4bc98c6000cf4634f15469ff3502ae8b275e8602f1"
+      "bytes": 11363,
+      "sha256": "a202825a312e07ecbc789645a0837b684ac274b5f8816c25a229d014c9ebf2f0"
     },
     {
       "path": "app.py",
@@ -101,13 +106,13 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 75390,
-      "sha256": "f54d2feac79ece517bd4c41892ab9de62b7d20f60814d8ba528d2dd97b65b352"
+      "bytes": 77856,
+      "sha256": "4e4f3823ce1124ba592a21b8bc7a3c13df49af6563d24136cfd89584cd225174"
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 16434,
-      "sha256": "42a7b073c79bb32654654feaec6e2d30aab162ebde59f6d40aa998312b3c15f9"
+      "bytes": 16989,
+      "sha256": "16493775d88a50014c9678a893ee63a0bb04d32393b2ae5eddeff96ff63d8bbf"
     },
     {
       "path": "docs/CITATIONS.md",
@@ -131,13 +136,13 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 70155,
-      "sha256": "a1dc371db6fe0122dc726dd6650331691032b7112ed2a6bd2d3ee3f6a75ab101"
+      "bytes": 71356,
+      "sha256": "5acfe6598f55567d18597f37aedbb5f4268d43fda2cf669fa5cd311c5067483f"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 153288,
-      "sha256": "c1453d1a0bee0f6ee779ec10fa8ecb9a6b2ddf31d5fde71b2c236139a4e1bf7a"
+      "bytes": 154876,
+      "sha256": "dcc4b19f75e39a28d6d7efc62adbb816322995f583f992505d6558c8c94d537b"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -161,13 +166,13 @@
     },
     {
       "path": "docs/models/EXMR.md",
-      "bytes": 9854,
-      "sha256": "efb702c302376db8918dc71ea314033f7111e331c22d122ac191e6624bd9f6bd"
+      "bytes": 9955,
+      "sha256": "c2034befa319a570a32c419d60b42bbd63f8540af44e4543df88d4b55cf0811b"
     },
     {
       "path": "docs/models/FLOWHMR.md",
-      "bytes": 18685,
-      "sha256": "9b8e13d8ebe4a742e262512f466e1e762f9c3cd4a201811f6d2a5bfb56aad97d"
+      "bytes": 18786,
+      "sha256": "bb30b6c138d5e48effcbb7451881887d2cb007654244fb865aeade2d98e7e663"
     },
     {
       "path": "docs/models/GEMX.md",
@@ -176,8 +181,8 @@
     },
     {
       "path": "docs/models/GVHMR.md",
-      "bytes": 6057,
-      "sha256": "bd3ec9b7e4192b3e860c4da6b58850da668d0c948effca4293afd01ba3844f0f"
+      "bytes": 6158,
+      "sha256": "269c035adb3bf5640550986896b8bd86d7383c99e553e96c3fb02fb56e36c9c8"
     },
     {
       "path": "docs/models/PEAR.md",
@@ -191,8 +196,13 @@
     },
     {
       "path": "docs/models/README.md",
-      "bytes": 7317,
-      "sha256": "7611c41e855e84bb18702f568ca4672561bc22ab38b55253c9fb3366601ded77"
+      "bytes": 7708,
+      "sha256": "38e9a79cefbbc643d286eccb32d6278bbac8e681560a6802203c70057a39b66e"
+    },
+    {
+      "path": "docs/models/SAM31.md",
+      "bytes": 4310,
+      "sha256": "b0e08c16d6d9ae0c9460a1322263ce189bb1435d79939e87aa3f0f298040e83f"
     },
     {
       "path": "docs/samples/character-retargeting.jpg",
@@ -1181,8 +1191,8 @@
     },
     {
       "path": "mocap/cache_compat.py",
-      "bytes": 3173,
-      "sha256": "99a549430746f8acd3d639c351ab489738ac0c9b11908a3710e18063cf938a71"
+      "bytes": 3374,
+      "sha256": "ee8fc4771bb0ef51a2c439a8ef4f5be276ca152249db7eb2a2594abb94988916"
     },
     {
       "path": "mocap/camera_background.py",
@@ -1491,8 +1501,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 112145,
-      "sha256": "c09a7f6724f473c7a3410049fe643f35b4db24e1a6ec37b5581af314d7a25a72"
+      "bytes": 113117,
+      "sha256": "a0254af007780a18a7bac9892da646cba9b6a182497f259f42064865ff32a36d"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -1631,8 +1641,8 @@
     },
     {
       "path": "mocap/model_guide.py",
-      "bytes": 14576,
-      "sha256": "eb6febfedc71c597e65b16005bd0135c64ac8164dfa32ba8375e6d6c83b7450b"
+      "bytes": 14885,
+      "sha256": "f435c4efda823c39b48650727ef3484f2924d8523e1ac78d2378d7dd41374d90"
     },
     {
       "path": "mocap/model_session.py",
@@ -1641,8 +1651,8 @@
     },
     {
       "path": "mocap/models.py",
-      "bytes": 33110,
-      "sha256": "c090b1e148a5f07088bced96ddeed5d1b29ddbb1da076b8fa682bd5672cec7cc"
+      "bytes": 33707,
+      "sha256": "cda4cc4e58d7d47bf1337ae9216be81a2003778d1277d99c94a26064a8d8bd39"
     },
     {
       "path": "mocap/motion_tools.py",
@@ -1666,8 +1676,8 @@
     },
     {
       "path": "mocap/paths.py",
-      "bytes": 1132,
-      "sha256": "ac0bc5685912a0adac8bca5ed10f6004fbc1b9a88584c177d6dd3af1801a541f"
+      "bytes": 1262,
+      "sha256": "8ba4a3c702e54aec9c053d60298d76d68d3ba7b332b0fb2df73e1de2c3d32f47"
     },
     {
       "path": "mocap/pear/__init__.py",
@@ -1806,8 +1816,8 @@
     },
     {
       "path": "mocap/pear_ui.py",
-      "bytes": 35286,
-      "sha256": "78217cde55f9d200f8fb71fa0b3e2d909b1ca4ca682276d800cb28faeaebfa7f"
+      "bytes": 35322,
+      "sha256": "5abcb0c7a2901781d530d4f1b71a943c22084050b890f599945a13ad4fd7e2b4"
     },
     {
       "path": "mocap/people_store.py",
@@ -1816,8 +1826,8 @@
     },
     {
       "path": "mocap/people_ui.py",
-      "bytes": 39235,
-      "sha256": "a7d250ec5c8110a4cee522b7e5b7a794fa540b55efadd8da62b1083e1ccc374c"
+      "bytes": 42006,
+      "sha256": "f4cb6bf93c750ff2100fbd75dc30bfb180ab01c639c364e647b01db4cad2d1f5"
     },
     {
       "path": "mocap/person_names.py",
@@ -1826,8 +1836,8 @@
     },
     {
       "path": "mocap/person_tracking.py",
-      "bytes": 22695,
-      "sha256": "39f6422998f9d77a501cd4ac88c2a62cf312cf2be0f01129e9c0e7b8a0dd2b5f"
+      "bytes": 22826,
+      "sha256": "bde10530aaa842d5fa67751b08796c5065d2d24ab8aecb4b3509f40f2006d928"
     },
     {
       "path": "mocap/playback.py",
@@ -2098,6 +2108,26 @@
       "path": "mocap/runtime_registry.py",
       "bytes": 4846,
       "sha256": "68ae06b6c230612066591c2380506dae6886b2ccb779d79c938ff14cb9894b0d"
+    },
+    {
+      "path": "mocap/sam31_discovery.py",
+      "bytes": 10474,
+      "sha256": "19422e33e47e0f337099ffc585bba1c96a66c2ffbc869ac0d352050bde15b2df"
+    },
+    {
+      "path": "mocap/sam31_engine.py",
+      "bytes": 3644,
+      "sha256": "201f3e39aece5cc651a0e618bc49280d101b4436e8ed1a201b678c707371bc6f"
+    },
+    {
+      "path": "mocap/sam31_prompt_ui.py",
+      "bytes": 2984,
+      "sha256": "b6cd5e108e2097068fe9d4c0f2fae46ad94b3843398fb253008d9bf8667136e5"
+    },
+    {
+      "path": "mocap/sam31_runtime.py",
+      "bytes": 1151,
+      "sha256": "312aef10c1b4c226f1e143c804c5ed242899cabb3e7705bafc639c95dbc06463"
     },
     {
       "path": "mocap/scene_camera.py",
@@ -2378,6 +2408,11 @@
       "path": "requirements/runtime-shared.txt",
       "bytes": 1852,
       "sha256": "4b16c39f044851acb3d53e5337b2980dcbea789503aea091e5648c3fd4c1f72c"
+    },
+    {
+      "path": "sam31_worker_boot.py",
+      "bytes": 524,
+      "sha256": "2a3bdeacfb71e14ecd32d2f0eef9166b6147330290bd1f7428abfdd3a2f10d45"
     },
     {
       "path": "scene_boot.py",
@@ -12946,8 +12981,8 @@
     },
     {
       "path": "tools/check_source.py",
-      "bytes": 4034,
-      "sha256": "42da97caec50fb93c781fed91362d9ce92598ada8e3da5ac96731bd1112aa4ee"
+      "bytes": 4050,
+      "sha256": "ea90344998ca0971b38acc8740a565d568d4aac2fa97b2560b90391806f80722"
     },
     {
       "path": "tools/configure_mamma.py",
@@ -13043,6 +13078,11 @@
       "path": "tools/setup_prompthmr_camera.py",
       "bytes": 7067,
       "sha256": "e013f504e214b470ff7793e6b530c4a8f7b6f0916aeb89663207126279c32717"
+    },
+    {
+      "path": "tools/setup_sam31.py",
+      "bytes": 4348,
+      "sha256": "741f2276aba2f630870d25328c228ee1b25f4abaed61a8f52240203df0bac484"
     },
     {
       "path": "tools/stage_assets.py",

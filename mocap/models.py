@@ -25,6 +25,11 @@ class Model:
 
 
 MODELS_LIST = [
+    Model("sam31_people", "SAM 3.1 Person Tracking (Optional)", "sam31/sam3.1_multiplex_fp16.safetensors",
+          "https://huggingface.co/Comfy-Org/sam3.1/blob/5febd4769e8802cdfdb75e1f733abd8c68434a85/checkpoints/sam3.1_multiplex_fp16.safetensors",
+          minimum_bytes=1745546848,
+          download_url="https://huggingface.co/Comfy-Org/sam3.1/resolve/5febd4769e8802cdfdb75e1f733abd8c68434a85/checkpoints/sam3.1_multiplex_fp16.safetensors",
+          expected_sha256="9ba99c92703c2e8b4f47de2d34a539bb8e18923049e238b780d70dbe6368eb03"),
     Model("person_reid", "Person Identity / OSNet", "reid/osnet_x0_25_msmt17.pth",
           "https://kaiyangzhou.github.io/deep-person-reid/MODEL_ZOO", "1Kkx2zW89jq_NETu4u42CFZTMVD5Hwm6e", 1_000_000,
           expected_sha256='cf55163d78fc44c62c82f85ab62d39f10438679b5abe8c698ae08cfa84aa6e18'),
@@ -237,6 +242,7 @@ STAGE_REQUIREMENTS = {
     'pear_assets': ('pear','pear_geometry','pear_yolo'),
     'pear_align': ('flow_vggt','pear_geocalib'),
     "people": ("yolo", "person_reid"),
+    "sam31_people": ("sam31_people",),
     "track": ("yolo",), "pva": ("pva",),
     "features": ("hmr2", "vitpose"),
     "gvhmr": ("hmr2", "vitpose", "gvhmr", "smplx"),
@@ -266,7 +272,7 @@ def ready(model: Model) -> bool:
         from .pear_models import geometry_ready
         return geometry_ready()
     valid=model.path.is_file() and model.path.stat().st_size >= model.minimum_bytes
-    if valid and (model.key.startswith(('flow','hand','exmr','mamma','phmr','pear','gemx')) or model.key in ('smplh','mano_right')):
+    if valid and (model.key.startswith(('flow','hand','exmr','mamma','phmr','pear','gemx','sam31')) or model.key in ('smplh','mano_right')):
         import json
         try:
             receipt=json.loads(model.path.with_suffix(model.path.suffix+'.receipt.json').read_text(encoding='utf-8'))
