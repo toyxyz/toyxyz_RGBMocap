@@ -8,6 +8,7 @@ from .result_artifacts import file_stat
 
 
 def run(request, emit=lambda *a, **k:None):
+    from .blend_support import build, cleanup, partial
     from .fbx_writer import write
     from .gemx_result import is_project
     from .scene_export import context
@@ -16,6 +17,7 @@ def run(request, emit=lambda *a, **k:None):
     rows=json.loads(request.read_text(encoding='utf-8'))
     if not isinstance(rows,list) or not 1<=len(rows)<=4096:raise ValueError('Invalid export request')
     staged=[];origins={};committed=[];native_checks=[]
+    compatibility_dirs=[]
     try:
         destinations = {Path(row['target']).resolve() for row in rows}
         if len(destinations) != len(rows):raise ValueError('Duplicate export destination')
@@ -25,14 +27,29 @@ def run(request, emit=lambda *a, **k:None):
             if source is None or source.resolve()!=Path(row['source']).resolve():
                 raise ValueError('Selected target motion changed. Prepare Preview and export again.')
             if target.suffix.lower()!='.fbx':raise ValueError('Choose an FBX destination')
-            temporary=target.with_name('.'+target.name+'.rgbmocap-'+request.stem+'.partial')
+            temporary=partial(target,request)
+            output=temporary
+            work=None
+            if row.get('fbx_compatibility',False):
+                work=temporary
+                work.mkdir()
+                owner=work/'.rgbmocap-owner'
+                try:
+                    owner.write_text(request.stem,encoding='utf-8')
+                except OSError:
+                    owner.unlink(missing_ok=True)
+                    work.rmdir()
+                    raise
+                compatibility_dirs.append(work)
+                temporary=work/'source.fbx'
+                output=work/'compatible.fbx'
             if is_project(project):
                 from .gemx_skeleton_export import write as write_soma
 
                 def progress(done,total):
                     emit('progress',stage='save_fbx',current=i*total+done,total=len(rows)*total,message='Export SOMA FBX')
 
-                staged.append((temporary,target))
+                staged.append((output,target,work))
                 native_checks.append(write_soma(temporary,row,source,destinations,'fbx',progress))
                 continue
             meta=project/(kind+'_mixamo.json');info=json.loads(meta.read_text(encoding='utf-8'))
@@ -44,7 +61,7 @@ def run(request, emit=lambda *a, **k:None):
             stamps=[file_stat(p) for p in paths]
             scene=row.get('scene')
             if scene is not None and context(scene['root'],project)!=scene:raise ValueError('Scene placement changed. Export again.')
-            staged.append((temporary,target))
+            staged.append((output,target,work))
             committed.append((project,kind,paths,stamps,scene))
             with np.load(project/info['asset_file'],allow_pickle=False) as data:
                 needed=('parents','fbx_rest','fbx_rest_frames','fbx_display_frames','fbx_tip_local')
@@ -67,6 +84,11 @@ def run(request, emit=lambda *a, **k:None):
                       transform=transform,progress=progress,
                       rig_name=row.get('rig_name','SourceAnimation'),prepend_tpose=row.get('prepend_tpose',False),symmetric_bind=symmetric)
             finally:frames._mmap.close()
+        for work in compatibility_dirs:
+            build(work,'fbx_compatibility_scene.py',emit,'save_fbx')
+            if not (work/'compatible.fbx').is_file():
+                raise RuntimeError('Blender did not create the compatible FBX.')
+            (work/'source.fbx').unlink()
         for verify in native_checks:verify()
         for project,kind,paths,stamps,scene in committed:
             if [file_stat(p) for p in paths]!=stamps or selected_export(project,kind)!=paths[1]:
@@ -75,5 +97,7 @@ def run(request, emit=lambda *a, **k:None):
         for temporary,target,*_ in staged:os.replace(temporary,target)
         return len(staged)
     finally:
-        for temporary,*_ in staged:temporary.unlink(missing_ok=True)
+        for output,_,work in staged:
+            if work is None:output.unlink(missing_ok=True)
+        for work in compatibility_dirs:cleanup(work,request)
         request.unlink(missing_ok=True)

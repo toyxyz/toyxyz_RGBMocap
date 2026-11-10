@@ -381,6 +381,13 @@ verified 3ds Max behavior from the Blender/numerical checks alone.
 changing AI worker/cache fingerprints. Keep selected-result, pending contact and
 shared-scene guards, generation checks and atomic destination replacement in
 `fbx_export.py`/`export_copy.py`. Unchecked FBX output must remain identical.
+**FBX Compatibility (Maya)** is default-off and applies to source FBX, including
+GEM-X Native77. The worker prepares the selected take with the existing export
+options, then runs `fbx_compatibility_scene.py` in the included Blender runtime.
+Reuse the existing rest-pose sampler so the final FBX keeps the original bind
+pose and writes animation keys to bones. Verify the source generation again
+before publishing the converted file. The worker owns and cleans its staging
+folder using the Blender export marker.
 The optional leading pose is animation, not a replacement bind pose; validate
 both original-frame and fractional-frame suffix poses in Blender after changes.
 

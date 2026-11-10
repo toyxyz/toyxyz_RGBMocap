@@ -694,6 +694,9 @@ depth and contacts between people are estimates; collision avoidance is not prov
 For SMPL-based motion, choose **FBX (.fbx)**, **BVH (.bvh)** or
 **Blender project + video (.blend)**. **Add T-pose before motion** defaults off.
 GEM-X offers [Native77 FBX, BVH and Blender exports](#gem-x-soma-blender-bundles).
+For FBX, enable **FBX Compatibility (Maya)** to use the included Blender
+runtime for the final export. The file retains the skeleton's rest pose and
+animation and can also be opened in Blender. This option defaults off.
 For SMPL BVH, choose **Generic / Blender** (default) or **3ds Max Biped** in the
 **BVH profile** list.
 The selected, applied result is exported. Each checked

@@ -15,6 +15,9 @@ class SourceExportDialog(QDialog):
         if self.model!='gemx':self.profile.addItem('3ds Max Biped','biped')
         self.profile.setToolTip('Generic / Blender keeps anatomical names and original rotation orders. 3ds Max Biped uses Character Studio names and uniform ZXY rotations. Both keep metre units and Y up.')
         self.profile_label=QLabel('BVH profile');form.addRow(self.profile_label,self.profile)
+        self.fbx_compatibility=QCheckBox('FBX Compatibility (Maya)')
+        self.fbx_compatibility.setToolTip('Use the included Blender runtime to write an FBX for Maya and Blender. Unchecked uses the original FBX writer.')
+        layout.addWidget(self.fbx_compatibility)
         self.whole_scene=QCheckBox('MAMMA whole scene: body meshes and all cameras');layout.addWidget(self.whole_scene)
         self.whole_scene.setToolTip('Export checked people, exact animated surfaces, reference skeletons and every calibrated camera/video. Keeps the original timeline. Mesh caches can be large.')
         self.tpose=QCheckBox('Add T-pose before motion');self.tpose.setChecked(False)
@@ -42,6 +45,7 @@ class SourceExportDialog(QDialog):
     def update_format(self):
         fmt=self.format.currentData();blend=fmt=='blend';whole=blend and self.model=='mamma' and self.whole_scene.isChecked()
         self.profile_label.setVisible(fmt=='bvh');self.profile.setVisible(fmt=='bvh')
+        self.fbx_compatibility.setVisible(fmt=='fbx')
         self.whole_scene.setVisible(blend and self.model=='mamma');self.tpose.setEnabled(not whole);self.tpose.setVisible(not whole)
         for control in (self.place_at_origin,self.symmetric_rest):control.setVisible(not blend);control.setEnabled(not blend)
         self.animate_camera.setVisible(blend and not whole)
@@ -64,6 +68,7 @@ class SourceExportDialog(QDialog):
         if self.model=='gemx' and self.format.currentData()=='blend':return dict(format='blend',animate_camera=False)
         fmt=self.format.currentData();whole=fmt=='blend' and self.model=='mamma' and self.whole_scene.isChecked()
         value=dict(format='blend_scene' if whole else fmt,bvh_profile=self.profile.currentData() if fmt=='bvh' else 'generic',prepend_tpose=self.tpose.isChecked() and not whole)
+        if fmt=='fbx':value['fbx_compatibility']=self.fbx_compatibility.isChecked()
         value.update(place_at_origin=self.place_at_origin.isChecked() and fmt in ('fbx','bvh'),symmetric_rest=self.model!='gemx' and self.symmetric_rest.isChecked() and fmt in ('fbx','bvh'))
         if fmt=='blend':value.update(animate_camera=self.animate_camera.isChecked(),background_refine=self.background_refine.isChecked() and self.animate_camera.isChecked() and self.model in ('flowhmr','exmr'),camera_translation_scale=self.translation_scale.value())
         return value

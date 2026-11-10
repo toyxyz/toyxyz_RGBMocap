@@ -1853,6 +1853,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         from .storage import atomic_json
         request=self.project/('.fbx-export-'+uuid.uuid4().hex+'.json')
         rows=[]
+        options=getattr(self,'_source_export_options',{})
+        compatible=options.get('format','fbx')=='fbx' and options.get('fbx_compatibility',False)
         if getattr(self,'_source_export_options',{}).get('format')=='blend':
             from .blend_export_ui import targets
             files=targets(files)
@@ -1862,6 +1864,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 row['rig_name']=self.export_person_name(project)
                 row['prepend_tpose']=getattr(self,'_source_export_options',{}).get('prepend_tpose',False)
                 row['bvh_profile']=getattr(self,'_source_export_options',{}).get('bvh_profile','generic')
+                if compatible:row['fbx_compatibility']=True
                 for key in ('place_at_origin','symmetric_rest'):
                     row[key]=getattr(self,'_source_export_options',{}).get(key,False) and getattr(self,'_source_export_options',{}).get('format','fbx') in ('fbx','bvh')
                 row['origin_group']=str(Path(project).resolve())

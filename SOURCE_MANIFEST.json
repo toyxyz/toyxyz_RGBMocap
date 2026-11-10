@@ -101,8 +101,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 74878,
-      "sha256": "65613f88e062eb3e664d556e7fd5de9207da1160ac84314ed9bf2c6c3701c23e"
+      "bytes": 75390,
+      "sha256": "f54d2feac79ece517bd4c41892ab9de62b7d20f60814d8ba528d2dd97b65b352"
     },
     {
       "path": "docs/BUILD.md",
@@ -131,8 +131,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 69932,
-      "sha256": "d49c9f8dc37658bcb6f015cf7696d9b1ed80f706093c84f726ba03fe004f0e40"
+      "bytes": 70155,
+      "sha256": "a1dc371db6fe0122dc726dd6650331691032b7112ed2a6bd2d3ee3f6a75ab101"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -1330,9 +1330,14 @@
       "sha256": "a20cffba37b83709095f5a0adf7cc1408ff0a68d37565a409a6527a64953a31b"
     },
     {
+      "path": "mocap/fbx_compatibility_scene.py",
+      "bytes": 2705,
+      "sha256": "8e958a35fd39d29ab28c2a4d61be2b8150d75c3623fcd6a317f7b00f011027b5"
+    },
+    {
       "path": "mocap/fbx_export.py",
-      "bytes": 5011,
-      "sha256": "328c447dd9426934555fd4c02d35d30c6771daa610b453c8d98aed74aa1b98de"
+      "bytes": 5996,
+      "sha256": "43bf7a71285059e43b4966b38cf10317db5cd2685b7b1d34c88dd6a2fc331e25"
     },
     {
       "path": "mocap/fbx_writer.py",
@@ -1486,8 +1491,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 111930,
-      "sha256": "eed9d7367cd27e78825dc80e32f20a0341fdb287df3cc9235b5c392dd4fe230b"
+      "bytes": 112145,
+      "sha256": "c09a7f6724f473c7a3410049fe643f35b4db24e1a6ec37b5581af314d7a25a72"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -2136,8 +2141,8 @@
     },
     {
       "path": "mocap/source_export_dialog.py",
-      "bytes": 7429,
-      "sha256": "9c9a30283305939668a13262057e5832aea5bd1fd702d7f4703f154bc37ab40b"
+      "bytes": 7846,
+      "sha256": "d5c445be9861f0c75d8f235fde049c413c7e109dec3651ab49e0aa3d3c15d406"
     },
     {
       "path": "mocap/source_export_worker.py",
