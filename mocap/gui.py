@@ -40,6 +40,7 @@ STAGES["handflow"] = "Infer Fingers / HandFlow"
 STAGES['correct'] = 'Motion Correction'
 from .workspace_ui import build_workspace
 from .people_ui import PeopleWorkspace
+from .stream_ui import StreamWorkspace
 from .project_save_ui import ProjectSaving
 from .project_workspace_ui import ModelWorkspace
 STAGES.update(mamma_prepare='Prepare Multi-view Videos',mamma_masks='MAMMA Person Masks',mamma_landmarks='MAMMA Surface Landmarks',mamma_camera='MAMMA Cameras',mamma_fit='MAMMA 3D Fit',mamma_publish='MAMMA Motion Correction and Preview')
@@ -381,7 +382,7 @@ from .prompthmr_ui import PromptHMRWorkspace
 from .pear_ui import PearWorkspace
 from .preview_export_ui import PreviewExportWorkspace
 
-class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,QMainWindow):
+class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,StreamWorkspace,QMainWindow):
     def __init__(self, video: Path | None = None):
         super().__init__()
         self.setWindowTitle("RGB MoCap | Motion Workspace")
@@ -1606,6 +1607,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
 
     def cancel_job(self):
         self.pear_leave()
+        self._stream_timer.stop()
+        self.close_stream()
         self.pear_stop_scan()
         if self.character_process is not None:
             self.cancel_character();return

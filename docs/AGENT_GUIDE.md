@@ -339,6 +339,14 @@ input generations and atomically replace only a finished destination. Cancel
 and window close must reap the encoder before destroying its QThread. Keep test
 projects, input media and output videos outside the public source package.
 
+### Blender bone streaming
+
+See the [installation steps and controls](USER_GUIDE.md#stream-bones-to-blender). Install `blender_addon/rgbmocap_bone_stream.zip` from Blender's **Add-ons > Install from Disk** menu. The ZIP contains the adjacent Python source as `rgbmocap_bone_stream/__init__.py` and the MIT license. Keep the packaged source and the hash in `installer/source-resources.json` synchronized when the add-on changes.
+
+`mocap/stream_ui.py` samples ready frames for checked offline people, independently of People visibility. Multi-person streams use each take's shared scene transform. Selecting PEAR stops the stream. `mocap/bone_stream.py` sends Blender Z-up rest and pose matrices on a background thread and keeps only the latest live snapshot. The listener binds to `127.0.0.1:49168`. Selection metadata is requested by compatible receivers.
+
+`blender_addon/rgbmocap_bone_stream.py` applies poses on Blender's main thread, within the scene and view layer chosen at Connect. The stream collection stores references to its original armatures, keyed by person and rest skeleton. Keep those references when reusing rigs. Clean checks selection and scene references again at confirmation and skips armatures used by other objects. Bake reads the recorded takes on the sender thread, writes a separate Action in Blender, and detaches only after the action is assigned successfully. The app unchecks that person after Blender acknowledges completion.
+
 ### Saved camera display and source export implementation
 
 `mocap/camera_tracks.py` adapts committed camera receipts without inference or

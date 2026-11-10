@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "purpose": "Hash-verified importer assets, prebuilt correction module and approved README samples; no model weights or private project data",
+  "purpose": "Hash-verified importer assets, prebuilt correction module, README samples, and the Blender stream add-on package",
   "files": [
     {
       "path": "third_party/character_import/io_scene_vrm/common/mtoon0.blend",
@@ -96,6 +96,11 @@
       "path": "docs/samples/multi-cam-mocap.mp4",
       "bytes": 3633370,
       "sha256": "0657ff52fb4f5e8c9464d4601f28233867ffd07f894ee71d31c08e6625cb0d6d"
+    },
+    {
+      "path": "blender_addon/rgbmocap_bone_stream.zip",
+      "bytes": 9439,
+      "sha256": "3e51960b75797f08a7e209ff50e8868c2ff0172a16582f3b6a853b59b5f04e72"
     }
   ]
 }

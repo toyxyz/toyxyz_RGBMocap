@@ -1,5 +1,22 @@
 # Source package validation
 
+## Blender bone streaming (2026-11-10)
+
+- Installed the same source ZIP through Blender's **Install from Disk**
+  operator in isolated Blender 4.5.0 and 5.2.3 environments. The application
+  exercised two-person streaming, selection changes, timeline gaps and
+  reconnecting to an edited rig.
+- Checked that switching to another scene or view layer paused application
+  without creating rigs there. Clean rejected stale confirmation after
+  disconnect and preserved referenced, shared and independently copied rigs.
+- Baked 91 frames across two takes from 30 fps source motion into a
+  24 fps Blender scene. Sampled bone matrices matched the incoming poses
+  within 0.00003 per component. The existing action and constraint were
+  retained, and the other rig stayed connected. An interrupted bake kept
+  the original action attached.
+- Verified basic live playback with add-on versions 1.0 and 1.1 connected
+  to the new sender. Full Bake and Clean workflows use the current ZIP.
+
 ## SAM 3.1 person discovery (2026-11-10)
 
 - On the existing Windows development installation, checked launch and all

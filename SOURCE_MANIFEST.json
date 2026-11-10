@@ -11,8 +11,8 @@
     },
     {
       "path": ".gitignore",
-      "bytes": 1927,
-      "sha256": "8ca92bc1dfe6b6bd5ebb3188701d11598dfaa99921ee50e068c192b82e837433"
+      "bytes": 1969,
+      "sha256": "0e3d0224fa7c5192af73a5cbf853ef15e99e6aa95cbe4703673305389bc9c7cc"
     },
     {
       "path": "AGENTS.md",
@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 14190,
-      "sha256": "6b3dc160c7c2011426b9753d1bee2eb25063a2076e2bdba663b11c0601ecc7bb"
+      "bytes": 14478,
+      "sha256": "7e088f75ed7f24a8e04e0c59e7a77a40768e0416225437648a9b869e116de7eb"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -95,6 +95,16 @@
       "sha256": "dd979b5fc133646599fbee417048997b6114088f2eb257b3ed6f61df24545e89"
     },
     {
+      "path": "blender_addon/rgbmocap_bone_stream.py",
+      "bytes": 31924,
+      "sha256": "10d1a013cf4fb63a38bcfe45080a68a7ee449adb07b2569fa11ef0479ccd4ead"
+    },
+    {
+      "path": "blender_addon/rgbmocap_bone_stream.zip",
+      "bytes": 9439,
+      "sha256": "3e51960b75797f08a7e209ff50e8868c2ff0172a16582f3b6a853b59b5f04e72"
+    },
+    {
       "path": "developer-build/motion-correction/README.md",
       "bytes": 1917,
       "sha256": "8956b1687f5db922169eee413b88d3d8772346e48b8bd72b1eab5d9d8437f9ca"
@@ -106,8 +116,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 77856,
-      "sha256": "4e4f3823ce1124ba592a21b8bc7a3c13df49af6563d24136cfd89584cd225174"
+      "bytes": 79315,
+      "sha256": "05e6c3b383926f7f33638c32cf6fcd3f2455833fcbed693e18ccc2c50150e009"
     },
     {
       "path": "docs/BUILD.md",
@@ -136,13 +146,13 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 71356,
-      "sha256": "5acfe6598f55567d18597f37aedbb5f4268d43fda2cf669fa5cd311c5067483f"
+      "bytes": 74019,
+      "sha256": "9a9672401fed4afb3995a1bd53ea613f67c2dd02681d6d9eec5c5cfb85c7f946"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 154876,
-      "sha256": "dcc4b19f75e39a28d6d7efc62adbb816322995f583f992505d6558c8c94d537b"
+      "bytes": 155857,
+      "sha256": "c49a4a70273173df3c04e8cec112dc06e84e2bd52ed2a4666f68832a02bd12ce"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -1066,8 +1076,8 @@
     },
     {
       "path": "installer/source-resources.json",
-      "bytes": 4100,
-      "sha256": "c9a3bd6e973e7d64ca852f2448cf78abdf4e6a5a899c617f625e0d15372f28fe"
+      "bytes": 4263,
+      "sha256": "023b8e9a29cf58c42b76a7b6edb42d7f07e5d85e083593ea006da14d343a0ea6"
     },
     {
       "path": "installer/verify_gemx.py",
@@ -1171,8 +1181,13 @@
     },
     {
       "path": "mocap/bone_overlay.py",
-      "bytes": 7971,
-      "sha256": "1956fd6cd5a224e1d380d81bbf45f81ad3a4780a484e6a4d38b7c292e1da62f0"
+      "bytes": 8283,
+      "sha256": "aeee1c041b8da29034549f3e5a4bb8ee76feb9fb9e7accd34793a3f28e01b593"
+    },
+    {
+      "path": "mocap/bone_stream.py",
+      "bytes": 10570,
+      "sha256": "d90feaa80e9dd05425376e28e29c372bcc0042d51c706a0adb80f8249033a803"
     },
     {
       "path": "mocap/bound_mesh_gl.py",
@@ -1471,8 +1486,8 @@
     },
     {
       "path": "mocap/gemx_result.py",
-      "bytes": 6213,
-      "sha256": "7e12ff6e35d8e618b2718a94ed9214eca248d4e1b21d3a2bd485fe7530bbe425"
+      "bytes": 6321,
+      "sha256": "47624241627dc4885da06360492765d2e5a5f473f08d3b5629767db25970658a"
     },
     {
       "path": "mocap/gemx_retarget.py",
@@ -1501,8 +1516,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 113117,
-      "sha256": "a0254af007780a18a7bac9892da646cba9b6a182497f259f42064865ff32a36d"
+      "bytes": 113234,
+      "sha256": "dae76c42aa561bf7251f0336aaeaf2d0eb39ab30ca3d8a3eac1d425c6c5b1868"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -1816,8 +1831,8 @@
     },
     {
       "path": "mocap/pear_ui.py",
-      "bytes": 35322,
-      "sha256": "5abcb0c7a2901781d530d4f1b71a943c22084050b890f599945a13ad4fd7e2b4"
+      "bytes": 35427,
+      "sha256": "6ef9043948ddb02c9c3f01045f0b463dbc9bd1d7bf72d2c7ab51f1ab60b73126"
     },
     {
       "path": "mocap/people_store.py",
@@ -1826,8 +1841,8 @@
     },
     {
       "path": "mocap/people_ui.py",
-      "bytes": 42006,
-      "sha256": "f4cb6bf93c750ff2100fbd75dc30bfb180ab01c639c364e647b01db4cad2d1f5"
+      "bytes": 42496,
+      "sha256": "5f81a38597b1a9af0fccc0d8ff94caf5531bee6fa950a705b00ac4f6bd7a1bd6"
     },
     {
       "path": "mocap/person_names.py",
@@ -2136,8 +2151,8 @@
     },
     {
       "path": "mocap/scene_data.py",
-      "bytes": 19045,
-      "sha256": "a6e7c168de35a73cb0fa2f3b06b2bc4324c6a11c8be4528821f13337cf011529"
+      "bytes": 19083,
+      "sha256": "fa3e11fdd4ec954b6cf9688f4d462f1e628767e147b21ba63d768d406c0d1dba"
     },
     {
       "path": "mocap/scene_export.py",
@@ -2200,6 +2215,11 @@
       "sha256": "9bcf0813f382c9825e3ab558ca0496d3ccbd8dc00cf4d64d4930c3e60fe509e0"
     },
     {
+      "path": "mocap/stream_ui.py",
+      "bytes": 11481,
+      "sha256": "aee06b6f2fd7f0885029b2a3b401c305d6827bf8774f6ba6d731cd4633e6416a"
+    },
+    {
       "path": "mocap/surface_landmarks.py",
       "bytes": 2916,
       "sha256": "7869bdf2743082ce242244430bc93da599d572d43d0ae1ee2de1a291084f6a6f"
@@ -2216,8 +2236,8 @@
     },
     {
       "path": "mocap/theme.py",
-      "bytes": 4737,
-      "sha256": "372ba64c2a3464d80ea7d280d5abca61a0031e92ec8498b93df7ef8d166971a3"
+      "bytes": 5302,
+      "sha256": "04ae999c15c4bea448ded2a0afe0f5568668c49842c5fe2a6a4d699ecb35a0d9"
     },
     {
       "path": "mocap/timeline.py",

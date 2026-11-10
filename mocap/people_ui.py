@@ -8,8 +8,8 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt, QSize, QRect, Signal, QPersistentModelIndex, QEvent
 from PySide6.QtGui import QColor, QIcon, QPixmap, QPainter, QPen
-from PySide6.QtWidgets import (QWidget,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,
-    QListWidget,QListWidgetItem,QColorDialog,QComboBox,QFileDialog,
+from PySide6.QtWidgets import (QWidget,QFrame,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,
+    QListWidget,QListWidgetItem,QColorDialog,QComboBox,QFileDialog,QTabWidget,
     QStyledItemDelegate,QStyleOptionViewItem,QToolTip,QStyle,QMenu,QInputDialog,QMessageBox)
 
 from .people_store import load_people,save_people,root_for,safe_child,DEFAULT_COLOR
@@ -240,10 +240,19 @@ class PeopleWorkspace:
         body = QWidget()
         layout = QHBoxLayout(body)
         layout.setContentsMargins(0,0,0,0);layout.setSpacing(2)
-        self.people_panel = QWidget()
+        self.people_panel = QFrame()
         self.people_panel.setObjectName('editor')
         self.people_panel.setMinimumWidth(158);self.people_panel.setMaximumWidth(240)
-        column = QVBoxLayout(self.people_panel)
+        tabs_layout = QVBoxLayout(self.people_panel)
+        tabs_layout.setContentsMargins(0,0,0,0)
+        self.people_tabs = QTabWidget()
+        self.people_tabs.setObjectName('peopleTabs')
+        tabs_layout.addWidget(self.people_tabs)
+        people_page = QWidget()
+        self.people_tabs.addTab(people_page, 'People')
+        self.people_tabs.addTab(self.build_stream_page(), 'Stream')
+        self.people_tabs.currentChanged.connect(self.stream_tab_changed)
+        column = QVBoxLayout(people_page)
         column.setContentsMargins(6,6,6,6);column.setSpacing(5)
         header=QHBoxLayout()
         header.addWidget(QLabel('People'));header.addStretch()

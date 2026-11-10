@@ -708,6 +708,21 @@ People share correction mode/floor; timings and pelvis offsets remain per person
 Apply Correction updates all available takes, including hidden ones. Relative
 depth and contacts between people are estimates; collision avoidance is not provided.
 
+## Stream bones to Blender
+
+1. Download the [RGB MoCap Bone Stream ZIP](../blender_addon/rgbmocap_bone_stream.zip?raw=1). In Blender 4.5 or later, open **Edit > Preferences > Add-ons**. If you previously installed the single-file build, remove that add-on before installing the ZIP.
+2. Open the menu in the upper-right corner of **Add-ons**, choose **Install from Disk**, select the ZIP, and enable **RGB MoCap Bone Stream**. Keep the ZIP intact for installation.
+3. In RGB MoCap, open a project with prepared offline motion. In the left **Stream** tab, choose **Blender** and check the people to send. The default target is **None**. The Stream checkboxes are separate from the People tab's visibility checkboxes.
+4. In Blender's 3D Viewport, press **N**, open **RGB MoCap > RGB MoCap Bone Stream**, and click **Connect**. The default port is **49168**. Play or scrub the RGB MoCap timeline to update the armatures. The stream is tied to the Blender scene and view layer used when connecting. Returning to them resumes the preview.
+
+The add-on receives live bone poses, including root motion, with each person's rest skeleton. It updates the viewport without creating keyframes. The connection is local to this computer and supports offline people. PEAR, imported characters and meshes are outside this stream.
+
+**Disconnect** leaves the Blender objects in place. Connecting to the same person and rest skeleton reuses the existing armature and its edits. Unchecking a person in RGB MoCap hides that armature in Blender. Changing the target to **None** closes the stream.
+
+Use **Clean** in Object Mode to review and remove inactive stream rigs in the current scene. While connected, checked people keep their rigs through gaps in their takes. Clean also preserves rigs referenced by other Blender objects, shared rigs, and completed bakes. After disconnecting, all otherwise eligible inactive stream rigs can be removed. Blender asks before removing them and requires a new confirmation if the connection, scene, or view layer changes.
+
+Use **Bake** in Object Mode to save all recorded frames for the active streaming armature as a new Blender Action. If only one armature is streaming, Bake uses it automatically. The action includes root motion and uses the existing Blender scene FPS. Gaps between takes hold the previous pose until the next recorded frame. RGB MoCap can bake up to 36,000 timeline frames. After success, the app unchecks that person and the armature becomes a regular Blender object. Other people remain connected. Save the Blender file to keep the action. Use matching versions of RGB MoCap and the add-on for all controls.
+
 ## FBX and Blender
 
 **File → Export...** opens the options for the selected source model.

@@ -135,6 +135,12 @@ def open_preview(project,kind,cancelled=lambda:False):
             with np.load(project/info['asset_file'],allow_pickle=False) as source:
                 asset['bones']=geometry(source['rest'],source['parents'],source['ends'],asset['key'])
                 asset['parents']=source['parents'].copy()
+                from .bone_stream import StreamRig
+                try:
+                    asset['stream_rig']=StreamRig.mixamo(info['names'],source)
+                except (OSError,ValueError,KeyError,TypeError):
+                    # Old preview assets may lack the full export bind.
+                    pass
         except (OSError,ValueError,KeyError) as error:
             asset['bone_warning']='Export bone overlay unavailable: '+str(error)
     return result

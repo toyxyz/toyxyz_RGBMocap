@@ -12,6 +12,10 @@ QLabel#status { color:#b8b8b8; padding:3px 6px; }
 QLabel#taskInfo { color:#b9d9ff; padding:3px 6px; }
 QFrame#editor { background:#303030; border:1px solid #191919; }
 QWidget#editorHeader { background:#292929; border-bottom:1px solid #191919; }
+QTabWidget#peopleTabs::pane { background:#303030; border:0; }
+QTabWidget#peopleTabs QTabBar::tab { background:#292929; border:1px solid #191919; padding:5px 11px; }
+QTabWidget#peopleTabs QTabBar::tab:!selected:hover { background:#454545; }
+QTabWidget#peopleTabs QTabBar::tab:selected { background:#477bb7; border-color:#37689d; color:white; }
 QGroupBox { border:1px solid #202020; border-radius:2px; margin-top:17px; padding:9px 7px 7px; font-weight:600; }
 QGroupBox::title { subcontrol-origin:margin; left:8px; padding:0 3px; color:#c5c5c5; }
 QPushButton { background:#454545; border:1px solid #242424; border-radius:3px; padding:5px 9px; }
@@ -29,11 +33,11 @@ QCheckBox::indicator { width:14px; height:14px; border:1px solid #949494; border
 QCheckBox::indicator:hover { border-color:#d8e9ff; background:#404c59; }
 QCheckBox::indicator:checked { border-color:#c7ddf6; background:#477bb7; image:url("CHECK_ICON"); }
 QCheckBox::indicator:disabled { border-color:#666666; background:#353535; }
-QListWidget#peopleList::item { min-height:24px; }
-QListWidget#peopleList::indicator { width:16px; height:16px; border:1px solid #949494; border-radius:2px; background:#303030; }
-QListWidget#peopleList::indicator:hover { border-color:#d8e9ff; background:#404c59; }
-QListWidget#peopleList::indicator:checked { border-color:#c7ddf6; background:#477bb7; image:url("CHECK_ICON"); }
-QListWidget#peopleList::indicator:disabled { border-color:#666666; background:#353535; }
+QListWidget#peopleList::item,QListWidget#streamPeopleList::item { min-height:24px; }
+QListWidget#peopleList::indicator,QListWidget#streamPeopleList::indicator { width:16px; height:16px; border:1px solid #949494; border-radius:2px; background:#303030; }
+QListWidget#peopleList::indicator:hover,QListWidget#streamPeopleList::indicator:hover { border-color:#d8e9ff; background:#404c59; }
+QListWidget#peopleList::indicator:checked,QListWidget#streamPeopleList::indicator:checked { border-color:#c7ddf6; background:#477bb7; image:url("CHECK_ICON"); }
+QListWidget#peopleList::indicator:disabled,QListWidget#streamPeopleList::indicator:disabled { border-color:#666666; background:#353535; }
 QProgressBar { background:#242424; border:0; height:3px; }
 QProgressBar::chunk { background:#658fbd; }
 QTextEdit,QTableWidget { background:#242424; border:1px solid #181818; selection-background-color:#477bb7; }

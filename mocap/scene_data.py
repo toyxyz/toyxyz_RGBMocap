@@ -90,20 +90,21 @@ class PeopleScene:
             self.summary=dict(floor=float(self.reference['floor']),height=height,
                 center=center,span=max(bounds)+float(np.ptp(centers,axis=0).max()))
 
+    def take_at(self,ident,seconds,preferred=None):
+        selected=self.by_project.get(preferred) if preferred else None
+        if selected is not None and selected.ident==ident:
+            frame=selected.frame_at(seconds)
+            if frame is not None:return selected,frame
+        slot=bisect.bisect_right(self.starts.get(ident,()),seconds+1e-7)-1
+        if slot<0:return None
+        first,end,take=self.spans[ident][slot]
+        if not first-1e-7<=seconds<end-1e-7:return None
+        frame=take.frame_at(seconds)
+        return (take,frame) if frame is not None else None
+
     def actors_at(self,seconds,visible,preferred=None):
-        result=[]
-        for ident in sorted(visible):
-            selected=self.by_project.get(preferred) if preferred else None
-            if selected is not None and selected.ident!=ident:selected=None
-            frame=selected.frame_at(seconds) if selected else None
-            if frame is not None:take=selected
-            else:
-                slot=bisect.bisect_right(self.starts.get(ident,()),seconds+1e-7)-1
-                if slot<0:continue
-                first,end,take=self.spans[ident][slot]
-                if not first-1e-7<=seconds<end-1e-7:continue
-                frame=take.frame_at(seconds)
-            if frame is not None:result.append((take,frame))
+        result=[entry for ident in sorted(visible)
+                if (entry:=self.take_at(ident,seconds,preferred)) is not None]
         used={id(take) for take,_ in result}
         for take in self.active:
             if id(take) not in used:

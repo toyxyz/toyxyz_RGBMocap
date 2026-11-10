@@ -129,6 +129,7 @@ class PearWorkspace(PearMultiWorkspace):
             if not self._pear_active:
                 self.stop_playback();self.remember_workspace_model()
                 self._pear_active=True;self._pear_running=False;self._pear_last=None
+                self.suspend_stream()
                 self._pear_media_restore=dict(info=self.info,video_path=self.video_path,source_offset=self.source_offset,source_end=self.source_end,
                     value=self.slider.value(),minimum=self.slider.minimum(),maximum=self.slider.maximum(),clip_in=self.slider.clip_in,clip_out=self.slider.clip_out,
                     filename=self.filename.text(),fps_label=self.fps_label.text(),track=self.slider.video_track_label,source_key=self.video_view._source_key,path=self.video_view._source_key[0] if self.video_view._source_key else None)
@@ -146,6 +147,7 @@ class PearWorkspace(PearMultiWorkspace):
     def pear_leave(self):
         if not self._pear_active:return
         self._pear_active=False;self.pear_poll_timer.stop();self.pear_close_session();self.pear_shutdown_multi()
+        self.stream_tab_changed(self.people_tabs.currentIndex())
         if self.pear_inputs and self._pear_media_restore:
             saved=self._pear_media_restore;self.info=saved['info'];self.video_path=saved['video_path'];self.source_offset=saved['source_offset'];self.source_end=saved['source_end']
             self.slider.setRange(saved['minimum'],saved['maximum']);self.slider.clip_in=saved['clip_in'];self.slider.clip_out=saved['clip_out'];self.slider.video_track_label=saved['track'];self.slider.setValue(saved['value'])

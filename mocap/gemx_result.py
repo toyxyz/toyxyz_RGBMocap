@@ -128,4 +128,6 @@ def load_variant(result, n, kind, folder, geometry, adjacency, motion_summary, F
                  topology_key=(str(project / ASSET), *file_stat(project / ASSET)))
     bone_asset = geometry(rig['rest'][:, :3, 3], rig['parents'], rig['ends'], key,
                           count=JOINT_COUNT, rest_axes=rig['rest'][:, :3, :3])
-    result.target_assets[kind] = {'bones': bone_asset, 'raw_asset': asset}
+    from .bone_stream import StreamRig
+    result.target_assets[kind] = {'bones': bone_asset, 'raw_asset': asset,
+                                  'stream_rig': StreamRig.soma(rig)}
