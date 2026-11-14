@@ -38,3 +38,19 @@ def sha256(path: Path) -> str:
 def project_key(source: Path, start: float, end: float) -> str:
     payload = f"{source.resolve()}|{source.stat().st_size}|{source.stat().st_mtime_ns}|{start:.6f}|{end:.6f}|v1"
     return hashlib.sha256(payload.encode()).hexdigest()[:14]
+
+
+def path_message(error: BaseException) -> str:
+    """Name the Windows path limit instead of a misleading missing-file error."""
+    names = [os.fspath(p) for p in (getattr(error, 'filename', None), getattr(error, 'filename2', None)) if isinstance(p, (str, os.PathLike))]
+    name = max(names, key=len, default='')
+    # Files fail from 260 characters; WinError 206 also covers folders over 247.
+    if os.name!='nt' or not isinstance(error, OSError) or not name or len(name)<260 and getattr(error,'winerror',None)!=206:return str(error)
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SYSTEM\CurrentControlSet\Control\FileSystem') as key:
+            if winreg.QueryValueEx(key, 'LongPathsEnabled')[0]:return str(error)
+    except FileNotFoundError:pass  # An absent value is the Windows default: disabled.
+    except OSError:return str(error)
+    return (f'The path is too long for Windows ({len(name)} characters; long paths are disabled). Use a shorter installation '
+            f'folder such as C:\\RGBMoCap or save the project to a shorter folder, or enable Windows long paths. Path: {name}')

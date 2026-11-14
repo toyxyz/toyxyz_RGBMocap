@@ -10,6 +10,7 @@ from .scene_camera import read_camera,validate_transform,take_projects,VERSION
 from .preview_data import FrameArray,mapped_array,close_array,motion_summary,LoadCancelled
 from .motion_tools import result_is_current
 from .result_artifacts import artifacts_current
+from .storage import path_message
 
 
 class SceneTake:
@@ -306,7 +307,7 @@ class SceneDataLoader(QThread):
                 else:self.ready.emit(generation,result)
             except LoadCancelled:pass
             except Exception as error:
-                if not cancelled():self.failed.emit(generation,str(error))
+                if not cancelled():self.failed.emit(generation,path_message(error))
 
     @staticmethod
     def cache_current(scene,kind,cancelled):
