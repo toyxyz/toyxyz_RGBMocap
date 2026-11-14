@@ -9,7 +9,7 @@ import traceback
 from pathlib import Path
 
 from .paths import ROOT
-from .storage import atomic_json, sha256
+from .storage import atomic_json, path_message, sha256
 from .resource_cache import code_hash
 from .motion_tools import MOTION_TOOLS, resolve_motion_result, RESULTS, result_sources, result_options, result_is_current, base_result, body_result, has_handflow, require_supported_project, UnsupportedMotionTool
 
@@ -400,7 +400,7 @@ def main() -> int:
                 state = json.loads(state_path.read_text(encoding="utf-8"))
                 state.setdefault("stages", {})[args.stage] = {"status": "failed", "error": str(error)}
                 atomic_json(state_path, state)
-        message=str(error)
+        message=path_message(error)
         if isinstance(error,MemoryError) or 'out of memory' in message.lower():
             from .memory_mode import GUIDANCE
             message='Processing ran out of memory and stopped safely. '+GUIDANCE+' Completed stages can be reused.'

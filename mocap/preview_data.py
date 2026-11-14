@@ -10,6 +10,7 @@ from collections import OrderedDict
 
 import numpy as np
 from .motion_tools import RESULTS, result_is_current
+from .storage import path_message
 from PySide6.QtCore import QThread, Signal
 
 
@@ -428,4 +429,4 @@ class PreviewDataLoader(QThread):
             except Exception as error:
                 result.close()
                 if not cancelled():
-                    self.failed.emit(generation, str(error))
+                    self.failed.emit(generation, path_message(error))

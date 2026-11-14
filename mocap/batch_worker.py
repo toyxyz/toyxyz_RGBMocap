@@ -22,7 +22,7 @@ def main(argv, emit):
     from .compute_policy import configure_worker_cpu
     threads=configure_worker_cpu(PHASES[args.stage][phase])
     from .model_session import ModelSession,set_memory_budget
-    from .storage import atomic_json
+    from .storage import atomic_json,path_message
     import torch
     torch.set_num_threads(threads)
     os.environ['RGB_MOCAP_STAGE']=PHASES[args.stage][phase]
@@ -91,7 +91,7 @@ def main(argv, emit):
             state.setdefault('stages',{})[PHASES[args.stage][phase]]=dict(status='failed',error=str(error))
             atomic_json(active/'project.json',state)
             (active/(args.stage+'_error.log')).write_text(details,encoding='utf-8')
-        message=str(error)
+        message=path_message(error)
         if isinstance(error,MemoryError) or 'out of memory' in message.lower():
             from .memory_mode import GUIDANCE
             message+=' '+GUIDANCE
