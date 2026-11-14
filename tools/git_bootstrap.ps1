@@ -12,17 +12,30 @@ function Get-Sha256([string]$path) {
     finally { $hasher.Dispose(); $stream.Dispose() }
 }
 if (!(Test-Path -LiteralPath $uv) -or (Get-Sha256 $uv) -ne $lock.uv_sha256) {
-    $zip = Join-Path $resources 'uv-download.zip'
+    # The archive is named after the pinned version, so a new uv pin never reuses an old download.
+    $zip = Join-Path $resources ('uv-' + $lock.uv_version + '.zip')
     $extract = Join-Path $resources 'uv-extracted'
     $url = 'https://releases.astral.sh/github/uv/releases/download/' + $lock.uv_version + '/uv-x86_64-pc-windows-msvc.zip'
+    Remove-Item -LiteralPath (Join-Path $resources 'uv-download.zip') -Force -ErrorAction SilentlyContinue
     if (!(Test-Path -LiteralPath $zip)) {
         Write-Host 'Downloading the verified uv bootstrap...'
-        Invoke-WebRequest -Uri $url -OutFile $zip
+        $partial = $zip + '.partial'
+        Invoke-WebRequest -Uri $url -OutFile $partial
+        Move-Item -LiteralPath $partial -Destination $zip -Force
     }
-    if (!(Test-Path -LiteralPath $extract)) { Expand-Archive -LiteralPath $zip -DestinationPath $extract -Force }
-    $candidate = Get-ChildItem -LiteralPath $extract -Filter uv.exe -File -Recurse | Select-Object -First 1
-    if (!$candidate -or (Get-Sha256 $candidate.FullName) -ne $lock.uv_sha256) { throw 'The uv bootstrap hash does not match the pinned version. Remove the downloaded bootstrap archive and retry.' }
-    Copy-Item -LiteralPath $candidate.FullName -Destination $uv -Force
+    if (Test-Path -LiteralPath $extract) { Remove-Item -LiteralPath $extract -Recurse -Force }
+    try {
+        Expand-Archive -LiteralPath $zip -DestinationPath $extract -Force
+        $candidate = Get-ChildItem -LiteralPath $extract -Filter uv.exe -File -Recurse | Select-Object -First 1
+        if (!$candidate -or (Get-Sha256 $candidate.FullName) -ne $lock.uv_sha256) { throw 'The uv bootstrap hash does not match the pinned version. Rerun to download it again.' }
+        Copy-Item -LiteralPath $candidate.FullName -Destination $uv -Force
+    } catch {
+        # A truncated or mismatched archive must not block the next attempt.
+        Remove-Item -LiteralPath $zip -Force -ErrorAction SilentlyContinue
+        throw
+    } finally {
+        Remove-Item -LiteralPath $extract -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
 $pythonDir = Join-Path $setup 'python'
 $env:UV_PYTHON_INSTALL_DIR = $pythonDir
