@@ -1501,6 +1501,12 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                     self.handle_event(json.loads(line[len("@@MOCAP@@"):]))
                 except (ValueError, KeyError) as error:
                     self.log.append(str(error))
+                except Exception as error:
+                    # Stop the queue: later stages would use a half-applied result.
+                    import traceback
+                    self.log.append(traceback.format_exc().rstrip())
+                    self.failed=True;self.task_timer.stop();self.task_info.setText('Failed')
+                    self.status.setText('Processing failed. Cannot apply worker result: '+str(error));self.log.append(self.status.text())
             elif line.strip():
                 self.log.append(line.rstrip())
 
@@ -1573,17 +1579,19 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.log.ensureCursorVisible()
 
     def process_finished(self, code, _):
-        self.read_stdout(final=True)
-        self.read_stderr(final=True)
-        if code != 0 and not self.cancelled:
-            self.failed = True
-            if "failed" not in self.status.text():
-                self.status.setText("Processing stopped. See the console for details.")
-        self.process.deleteLater()
-        self.process = None
-        self.task_state.finish(time.monotonic(),not self.failed and not self.cancelled and code==0)
-        self.cleanup_fbx_export()
-        self.next_job()
+        # Only next_job clears busy, and Cancel cannot reach a finished worker.
+        try:
+            self.read_stdout(final=True)
+            self.read_stderr(final=True)
+            if code != 0 and not self.cancelled:
+                self.failed = True
+                if "failed" not in self.status.text():
+                    self.status.setText("Processing stopped. See the console for details.")
+            self.process.deleteLater()
+            self.process = None
+            self.task_state.finish(time.monotonic(),not self.failed and not self.cancelled and code==0)
+            self.cleanup_fbx_export()
+        finally:self.next_job()
 
     def process_error(self, error):
         if error == QProcess.FailedToStart:
