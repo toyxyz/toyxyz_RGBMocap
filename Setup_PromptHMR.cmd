@@ -8,7 +8,7 @@ echo Native SAM2 build needs Visual Studio 2022 C++ Build Tools and CUDA Toolkit
 echo Review https://github.com/yufu-wang/PromptHMR/blob/main/LICENSE
 echo Non-commercial scientific research use only; other dependencies have separate licenses.
 choice /c YN /n /m "I reviewed these licenses and agree to the permitted use. Continue? [Y/N] "
-if errorlevel 2 exit /b 1
+if not "%errorlevel%"=="1" exit /b 1
 echo Optional moving-camera support uses DroidCalib [AGPL-3.0], LieTorch and Metric3D.
 echo Review https://github.com/boschresearch/DroidCalib/blob/main/LICENSE
 echo and https://github.com/YvanYin/Metric3D/blob/main/LICENSE before choosing Y.
@@ -16,7 +16,7 @@ echo Camera support reuses Python/Torch; allow an additional 6 GiB for building,
 echo plus 1.55 GiB for the two camera models obtained separately in Model Manager.
 set "phmr_camera="
 choice /c YN /n /m "Prepare moving-camera support as well? [Y/N] "
-if not errorlevel 2 set "phmr_camera=--camera"
+if "%errorlevel%"=="1" set "phmr_camera=--camera"
 if not exist "runtime\python.exe" (
   echo Run install.cmd first.
   pause
