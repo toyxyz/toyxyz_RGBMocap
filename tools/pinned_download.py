@@ -44,7 +44,7 @@ def transient(exc):
                             socket.timeout, socket.gaierror, http.client.IncompleteRead, http.client.RemoteDisconnected))
 
 
-def download(cache, name, spec, *, open_url=None, clock=time.monotonic, sleep=time.sleep, cancel=None):
+def download(cache, name, spec, *, open_url=None, clock=time.monotonic, sleep=time.sleep, cancel=None, interval=2, budget=None):
     if Path(name).name != name or name in ('', '.', '..') or ':' in name or '\\' in name:
         raise ValueError('Invalid support download name')
     url = spec['url']
@@ -76,7 +76,7 @@ def download(cache, name, spec, *, open_url=None, clock=time.monotonic, sleep=ti
     began = clock()
     # Large Blender archives get a size-aware total budget, independent of the
     # finite socket timeout. All retries share this budget.
-    budget = max(180., min(7200., 120. + size / (128 * 1024)))
+    budget = budget or max(180., min(7200., 120. + size / (128 * 1024)))
 
     def check():
         if cancel:
@@ -131,7 +131,7 @@ def download(cache, name, spec, *, open_url=None, clock=time.monotonic, sleep=ti
                         if count > size:
                             raise ValueError('Support download exceeds pinned size')
                         output.write(chunk)
-                        if clock() - last >= 2:
+                        if clock() - last >= interval:
                             print('Downloading %s: %.1f/%.1f MiB (%.0f s)' %
                                   (name, count / 1024**2, size / 1024**2, clock() - began), flush=True)
                             last = clock()
