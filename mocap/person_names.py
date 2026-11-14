@@ -25,7 +25,7 @@ def export_stem(name):
 
 def export_path(folder,stem,used,suffix='.fbx'):
     """Reserve names across both this batch and existing files on Windows."""
-    if suffix not in ('.fbx','.bvh'):raise ValueError('Unsupported source export format')
+    if suffix not in ('.fbx','.bvh','.blend'):raise ValueError('Unsupported source export format')
     candidate=Path(folder)/(stem+suffix);number=2
     while candidate.name.casefold() in used or candidate.exists():
         candidate=Path(folder)/(stem+f'_{number}'+suffix);number+=1
