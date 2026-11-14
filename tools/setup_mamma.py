@@ -13,7 +13,6 @@ import subprocess
 import sys
 from functools import lru_cache
 import urllib.parse
-import urllib.request
 import zipfile
 import posixpath
 import stat
@@ -26,6 +25,7 @@ from installer import engine
 from installer.mamma_adapters import adapt_engine,adapt_sdf
 from tools.session_lock import app_lock
 from tools.support_components import download,extract
+from tools import pinned_download
 from mocap.storage import atomic_json
 
 
@@ -79,15 +79,10 @@ def fetch_package(row,cache):
     folder=cache/row['sha256'];folder.mkdir(exist_ok=True)
     path=folder/row['filename']
     if path.is_file() and path.stat().st_size==row['bytes'] and engine.sha(path)==row['sha256']:return path
-    partial=path.with_name(path.name+'.partial')
-    print('Downloading '+row['name']+' '+row['version'],flush=True)
-    try:
-        with urllib.request.urlopen(row['url'],timeout=120) as response,partial.open('wb') as output:
-            shutil.copyfileobj(response,output,1024**2)
-        if partial.stat().st_size!=row['bytes'] or engine.sha(partial)!=row['sha256']:
-            raise ValueError('Package SHA-256/size mismatch: '+row['name'])
-        os.replace(partial,path)
-    finally:partial.unlink(missing_ok=True)
+    # A partial from the earlier non-resumable download has no pin to resume from.
+    path.with_name(path.name+'.partial').unlink(missing_ok=True)
+    # Slow links must still finish a 3 GB wheel in one run; stalls are caught by the socket timeout and retries.
+    os.replace(pinned_download.download(folder,row['filename'],row,interval=15,budget=24*3600.),path)
     return path
 
 
