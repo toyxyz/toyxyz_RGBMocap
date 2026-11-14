@@ -101,12 +101,26 @@ def save_project(request, emit=lambda *a, **k: None, cancelled=lambda: False):
             raise SaveCancelled('Project save cancelled. The current project was kept.')
     def signature(s):
         return s.st_size, s.st_mtime_ns
+    def inode(s):
+        # Find person hardlinks one clip into every person and take folder; copy it once.
+        return (s.st_dev, s.st_ino) if s.st_nlink > 1 and s.st_ino else None
     last = 0.
     done = 0
+    staged = {}
     def copy_file(path, dest, before):
         nonlocal done, last
         check()
         dest.parent.mkdir(parents=True, exist_ok=True)
+        key = inode(before)
+        if key in staged:
+            try:
+                os.link(staged[key], dest)
+            except OSError:
+                pass
+            else:
+                if signature(dest.stat()) != signature(before):
+                    raise ValueError('Project files changed while saving. Try again when processing is idle.')
+                return
         with path.open('rb') as src, dest.open('xb') as dst:
             while True:
                 check()
@@ -123,12 +137,20 @@ def save_project(request, emit=lambda *a, **k: None, cancelled=lambda: False):
         shutil.copystat(path, dest)
         if signature(dest.stat()) != signature(before):
             raise ValueError('The destination cannot preserve project file timestamps. Choose another drive.')
+        if key:
+            staged[key] = dest
     try:
         emit('progress', phase='scan', current=0, total=0, message='Checking project files and free space')
         total = 0
+        counted = set()
         if source:
             for path, stamp in files(source):
                 check()
+                key = inode(stamp)
+                if key in counted:
+                    continue
+                if key:
+                    counted.add(key)
                 total += stamp.st_size
         if not media_internal:
             total += media.stat().st_size
