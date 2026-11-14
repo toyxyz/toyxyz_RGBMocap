@@ -34,7 +34,7 @@ class CharacterWorkspace:
                 if isinstance(self.people_list.item(i).data(Qt.UserRole),str):self.people_list.takeItem(i)
             self.people_list.blockSignals(blocked)
             self.character_loader.reset();self.character_assets.clear();self.motion_view.clear_characters()
-            self.character_root=root;self.characters=[]
+            self.character_root=root;self.characters=[];self.character_index_unreadable=False
             p=root/'characters/index.json'
             if p.is_file():
                 try:
@@ -46,7 +46,9 @@ class CharacterWorkspace:
                             self.character_path(c['animation'])
                             for take in c.get('takes',[]):self.character_path(c['animation']+'/'+take['folder'])
                     self.characters=data
-                except (ValueError,OSError,KeyError) as exc:self.status.setText('Cannot load characters: '+str(exc))
+                except (ValueError,OSError,KeyError) as exc:
+                    self.character_index_unreadable=True
+                    self.status.setText('Cannot load characters: '+str(exc))
             for c in self.characters:self.request_character(c)
             if pending and len(pending)+len(self.characters)>8:
                 self.status.setText('Imported session characters were kept separately: the project would exceed 8 characters.')
@@ -63,7 +65,14 @@ class CharacterWorkspace:
         if not p.is_relative_to(base):raise ValueError('Invalid character project path')
         return p
 
-    def save_characters(self):atomic_json(self.character_root/'characters/index.json',self.characters)
+    def save_characters(self,characters=None):
+        p=self.character_root/'characters/index.json'
+        if getattr(self,'character_index_unreadable',False) and p.is_file():
+            # Replacing an index that failed to load would drop every earlier character.
+            # Keep a copy first; if it cannot be copied (locked/offline), the save fails too.
+            shutil.copy2(p,p.with_name('index.unreadable-'+time.strftime('%Y%m%d-%H%M%S')+'.json'))
+        self.character_index_unreadable=False
+        atomic_json(p,self.characters if characters is None else characters)
 
     def selected_character(self):
         item=self.people_list.currentItem()
@@ -177,7 +186,7 @@ class CharacterWorkspace:
         remaining=[c for c in self.characters if c['id']!=ident]
         if len(remaining)==len(self.characters):return
         # Commit before changing the UI; a failed save must leave the row usable.
-        try:atomic_json(self.character_root/'characters/index.json',remaining)
+        try:self.save_characters(remaining)
         except OSError as exc:
             self.status.setText('Cannot remove character: '+str(exc));return
         self.characters=remaining
