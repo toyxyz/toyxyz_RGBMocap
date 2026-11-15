@@ -9,6 +9,7 @@ import warnings
 import zlib
 import numpy as np
 from scipy.spatial.transform import Rotation
+from .export_options import FBX_A_POSE_DEGREES
 from .source_bvh import continuous_angles
 
 TICKS = 46186158000
@@ -65,9 +66,40 @@ def _euler(matrix):
         return Rotation.from_matrix(matrix).as_euler('xyz',degrees=True)
 
 
+def _arm_bind(names, parents, rest, basis, rest_pose):
+    """Rotate each arm subtree while leaving parent-relative translations fixed."""
+    if rest_pose not in ('a', 't'):
+        raise ValueError('Unknown FBX rest pose.')
+    target = np.radians(-FBX_A_POSE_DEGREES if rest_pose == 'a' else 0.)
+    positions, axes = rest.copy(), basis.copy()
+    defaults = {}
+    indices = {name: index for index, name in enumerate(names)}
+    for side in ('Left', 'Right'):
+        arm, elbow = indices.get(side + 'Arm'), indices.get(side + 'ForeArm')
+        if arm is None or elbow is None or parents[elbow] != arm:
+            raise ValueError('FBX rest pose requires named upper arms and forearms.')
+        direction = rest[elbow] - rest[arm]
+        horizontal = np.hypot(direction[0], direction[2])
+        if horizontal < 1e-10 and abs(direction[1]) < 1e-10:
+            raise ValueError('FBX rest pose requires a nonzero upper-arm length.')
+        # Tilt about a horizontal axis perpendicular to the arm's heading.
+        # Use the anatomical outward direction when the arm is vertical.
+        axis = (np.array((-direction[2], 0., direction[0])) / horizontal if horizontal >= 1e-10
+                else np.array((0., 0., 1. if side == 'Left' else -1.)))
+        rotation = Rotation.from_rotvec(axis * (target - np.arctan2(direction[1], horizontal))).as_matrix()
+        subtree = np.zeros(len(parents), dtype=bool)
+        subtree[arm] = True
+        for joint in range(arm + 1, len(parents)):
+            subtree[joint] = subtree[parents[joint]]
+        positions[subtree] = (rest[subtree] - rest[arm]) @ rotation.T + rest[arm]
+        axes[subtree] = rotation @ basis[subtree]
+        defaults[arm] = basis[arm].T @ axes[arm]
+    return positions, axes, defaults
+
+
 def write(path, names, parents, rest, rest_frames, display, tip_local, frames, fps,
           transform=None, progress=lambda *args:None, rig_name='SourceAnimation', prepend_tpose=False,symmetric_bind=None,
-          expected_bones=52):
+          expected_bones=52, rest_pose=None):
     """Write one committed mapped take; working rotation arrays are one bone wide."""
     from .person_names import validate_name
     rig_name=validate_name(rig_name)
@@ -101,6 +133,9 @@ def write(path, names, parents, rest, rest_frames, display, tip_local, frames, f
             display.append(reference_frame(delta))
         display=np.asarray(display);rest_frames=display
         tip_local=np.einsum('nji,nj->ni',display,ends)
+    bind_positions, bind_axes, rest_defaults = rest, rest_frames, {}
+    if rest_pose is not None:
+        bind_positions, bind_axes, rest_defaults = _arm_bind(names, parents, rest, rest_frames, rest_pose)
     from .scene_camera import validate_transform
     transform=validate_transform(np.eye(4) if transform is None else transform)
     ids=np.arange(1000,1000+expected_bones);objects=[];connections=[]
@@ -108,14 +143,17 @@ def write(path, names, parents, rest, rest_frames, display, tip_local, frames, f
     # Empty parent is an FBX armature container, not an extra animated bone.
     objects.append(node('Model',900,rig_name+'\0\1Model','Null',children=[node('Version',232),properties()]))
     link(900,0)
-    local_rest=[];offsets=[]
+    local_rest=[]
     for j,p in enumerate(parents):
         R=rest_frames[j] if p<0 else rest_frames[p].T@rest_frames[j]
         t=rest[j] if p<0 else rest_frames[p].T@(rest[j]-rest[p])
-        local_rest.append(R);offsets.append(t)
+        local_rest.append(R)
+        # The bind change lives in the static rotation. Keeping PreRotation and
+        # the original Euler keys preserves the complete animated curve.
+        default = _euler(rest_defaults[j]) if j in rest_defaults else (0., 0., 0.)
         children=[node('Version',232),properties(
             prop('Lcl Translation','Lcl Translation',*map(float,t),flags='A'),
-            prop('Lcl Rotation','Lcl Rotation',0.,0.,0.,flags='A'),
+            prop('Lcl Rotation','Lcl Rotation',*map(float,default),flags='A'),
             prop('Lcl Scaling','Lcl Scaling',1.,1.,1.,flags='A'),
             prop('PreRotation','Vector3D',*map(float,_euler(R))),
             prop('RotationActive','bool',True),prop('RotationOrder','enum',0),
@@ -133,7 +171,7 @@ def write(path, names, parents, rest, rest_frames, display, tip_local, frames, f
     # Store an explicit bind-pose table in addition to the node defaults.
     pose_nodes=[node('PoseNode',children=[node('Node',900),node('Matrix',np.eye(4).T.reshape(-1))])]
     for j in range(expected_bones):
-        M=np.eye(4);M[:3,:3]=rest_frames[j];M[:3,3]=rest[j]
+        M=np.eye(4);M[:3,:3]=bind_axes[j];M[:3,3]=bind_positions[j]
         pose_nodes.append(node('PoseNode',children=[node('Node',int(ids[j])),node('Matrix',M.T.reshape(-1))]))
     objects.append(node('Pose',5000,'BindPose\0\1Pose','BindPose',children=[node('Type','BindPose'),node('Version',100),node('NbPoseNodes',len(pose_nodes)),*pose_nodes]))
     # Zero-based file times import at frame 1 with Blender's default offset 1.
@@ -186,13 +224,18 @@ def write(path, names, parents, rest, rest_frames, display, tip_local, frames, f
                 if not np.isfinite(actual).all() or np.max(abs(actual-source_offsets[j]))>2e-5:
                     raise ValueError('Non-rigid bone offset in committed source animation')
             if not np.isfinite(local).all():raise ValueError('Non-finite FBX animation')
-            if prepend_tpose:
-                # Identity BVH world frames describe the straight-arm export bind.
-                # Display axes transport that T-pose into the FBX bone basis.
+            if prepend_tpose and rest_pose is None:
                 pose=transform[:3,:3]@display[j] if p<0 else display[p].T@display[j]
                 local=np.concatenate((pose[None],local))
-            angles=np.degrees(continuous_angles(np.radians(_euler(np.asarray(local_rest[j]).T@local))))
-            curves(j,'Lcl Rotation',angles);progress(j+1,expected_bones)
+            pre = local_rest[j]
+            angles = continuous_angles(np.radians(_euler(pre.T @ local)))
+            if prepend_tpose and rest_pose is not None:
+                leading = pre.T @ transform[:3,:3] @ bind_axes[j] if p < 0 else rest_defaults.get(j, np.eye(3))
+                # Choose an equivalent leading key near the first motion key
+                # without shifting or rewrapping any of the motion keys.
+                pair = np.vstack((angles[0], np.radians(_euler(leading))))
+                angles = np.vstack((continuous_angles(pair)[1], angles))
+            curves(j,'Lcl Rotation',np.degrees(angles));progress(j+1,expected_bones)
         out.write(b'\0'*13);end=out.tell();out.seek(start);out.write(struct.pack('<IIIB',end,0,0,7));out.seek(end)
         _element(out,node('Connections',children=connections))
         _element(out,node('Takes',children=[node('Current','Motion')]))

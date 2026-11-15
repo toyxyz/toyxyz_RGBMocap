@@ -82,7 +82,8 @@ def run(request, emit=lambda *a, **k:None):
                 write(temporary,info['names'],a['parents'],a['fbx_rest'],a['fbx_rest_frames'],
                       a['fbx_display_frames'],a['fbx_tip_local'],frames,info['fps'],
                       transform=transform,progress=progress,
-                      rig_name=row.get('rig_name','SourceAnimation'),prepend_tpose=row.get('prepend_tpose',False),symmetric_bind=symmetric)
+                      rig_name=row.get('rig_name','SourceAnimation'),prepend_tpose=row.get('prepend_tpose',False),
+                      symmetric_bind=symmetric,rest_pose=row.get('fbx_rest_pose'))
             finally:frames._mmap.close()
         for work in compatibility_dirs:
             build(work,'fbx_compatibility_scene.py',emit,'save_fbx')

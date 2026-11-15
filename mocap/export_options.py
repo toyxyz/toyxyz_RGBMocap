@@ -1,6 +1,9 @@
 """Optional transforms of exported copies, never of committed source motion."""
 import numpy as np
 
+# Mean upper-arm depression in Epic's two MetaHuman DNA Calibration body binds.
+FBX_A_POSE_DEGREES = 54
+
 
 def symmetric_rest(names, parents, rest, ends):
     """Mirror averaged paired segments; place the central chain vertically."""

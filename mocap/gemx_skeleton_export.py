@@ -85,7 +85,7 @@ def write(path, row, source, destinations, fmt, progress):
         tips = np.einsum('nji,nj->ni', display, directions)
         write_fbx(path, names, parents, rest, display, display, tips, frames, FPS,
                   transform=transform, progress=progress, rig_name=row.get('rig_name', 'SourceAnimation'),
-                  prepend_tpose=prepend, expected_bones=JOINT_COUNT)
+                  prepend_tpose=prepend, expected_bones=JOINT_COUNT, rest_pose=row.get('fbx_rest_pose'))
     else:
         parent = parents[1:]
         positions = frames[:, :, :3, 3]

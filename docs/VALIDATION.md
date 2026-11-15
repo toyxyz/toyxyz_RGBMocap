@@ -1,5 +1,22 @@
 # Source package validation
 
+## Source FBX A-pose and T-pose (2026-11-15)
+
+- Measured upper-arm axes in Epic's MetaHuman DNA Calibration body bind
+  matrices. The female reference measures 52.62° below horizontal and the
+  male reference 54.66°. The exporter uses their rounded mean of 54°.
+- Exported committed 52-joint and Native77 results as direct and Maya-compatible
+  FBX. Checked A/T selection with and without the leading frame, origin
+  placement, and mirrored rest on the 52-joint rig. Blender 4.5.0 confirmed
+  both rest angles and leading frames, with a maximum difference of 0.000039
+  per world-matrix component across keyed and half frames compared with the
+  legacy export at matching times. Bone lengths agreed within 0.000001 m.
+- Maya 2027 imported four compatibility files with the animation take and
+  reproduced the selected 0° or 54° upper-arm angle in the leading frame.
+  Unreal Engine import and retargeting were outside these checks.
+- Checked source export dialog visibility, fixed layout, and emitted options
+  in ExMR, FlowHMR, MAMMA and GEM-X.
+
 ## Blender bone streaming (2026-11-10)
 
 - Installed the same source ZIP through Blender's **Install from Disk**

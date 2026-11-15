@@ -432,8 +432,15 @@ Reuse the existing rest-pose sampler so the final FBX keeps the original bind
 pose and writes animation keys to bones. Verify the source generation again
 before publishing the converted file. The worker owns and cleans its staging
 folder using the Blender export marker.
-The optional leading pose is animation, not a replacement bind pose; validate
-both original-frame and fractional-frame suffix poses in Blender after changes.
+Source FBX requests may set `fbx_rest_pose` to `t` or `a`, including Native77.
+Apply the pose after any symmetrical-rest geometry changes. Rotate the entire
+upper-arm subtree about the shoulder so child offsets and terminal tip offsets
+stay fixed in parent space. Write the choice to the bind-pose table and static
+arm rotations. Keep the same PreRotation and motion key values so FBX tracks
+keep their interpolation between keys. The optional first frame follows the
+selected reference. Older requests without the field use the legacy writer
+behavior. Validate the bind and keyed/fractional poses after reimport, including
+the Blender compatibility pass.
 
 ### Portable Blender export implementation
 

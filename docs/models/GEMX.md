@@ -46,8 +46,9 @@ an update, rerun `Setup_GEMX.cmd`.
    SOMA skeleton with body and finger motion at 30 fps. The BVH uses the
    **Generic / Blender** profile, metres and Y up. **Place at origin** centers
    the first root horizontally while preserving height and travel.
-   **Add T-pose before motion** inserts one frame using the shaped SOMA rest pose
-   at the first motion frame's root position. The Blender bundle includes the
+   FBX offers **Rest pose** with **T-pose** or **A-pose** for the shaped SOMA rig.
+   The optional leading frame uses the selected FBX pose or the native rest
+   pose for BVH, at the first motion frame's root position. The Blender bundle includes the
    editable rig, separate evaluated surface cache and synchronized **Input Video**
    scene. Keep the `.blend`, `surface.pc2` and `video.mp4` together.
 4. Import a humanoid character through **File > Import Character**, right-click

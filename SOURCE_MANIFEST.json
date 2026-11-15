@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 14652,
-      "sha256": "18f29de72fdc12fa7af516e1f29fc50beefa752b01846b52c23681c2281c866b"
+      "bytes": 14689,
+      "sha256": "977f6dc70e091069af3dcdb6e91f7cfdf384cbab2b40c80c4d12f572a57eb2a8"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -116,8 +116,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 79315,
-      "sha256": "05e6c3b383926f7f33638c32cf6fcd3f2455833fcbed693e18ccc2c50150e009"
+      "bytes": 79813,
+      "sha256": "139453e9eafeeb2b23248cffec004247dd9ab11bc20604c0ec1b04591a825028"
     },
     {
       "path": "docs/BUILD.md",
@@ -146,13 +146,13 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 74019,
-      "sha256": "9a9672401fed4afb3995a1bd53ea613f67c2dd02681d6d9eec5c5cfb85c7f946"
+      "bytes": 74502,
+      "sha256": "1b5f6ba55c273f9da09bb9a99253e5024043658b1dfeffb1de84176b1c257916"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 155857,
-      "sha256": "c49a4a70273173df3c04e8cec112dc06e84e2bd52ed2a4666f68832a02bd12ce"
+      "bytes": 156909,
+      "sha256": "7204cf6dfa567bdc79213315fd8da8b96042fea6c0dc6f8af7e764d8058c2503"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -186,8 +186,8 @@
     },
     {
       "path": "docs/models/GEMX.md",
-      "bytes": 7199,
-      "sha256": "52d9b972f0377a0b1792b837b51c9e7b1617b459f6ee50ab4c8e2e2b096cd41a"
+      "bytes": 7290,
+      "sha256": "14aa4755f145ffb81953c7431d68a632dab13a064e3047910f8e3e47d185f0e0"
     },
     {
       "path": "docs/models/GVHMR.md",
@@ -1351,8 +1351,8 @@
     },
     {
       "path": "mocap/export_options.py",
-      "bytes": 6700,
-      "sha256": "d6c5dc96def560c5605c5d0cfbedf83a66c7fdcd769a353f54e648e9b8cc5218"
+      "bytes": 6805,
+      "sha256": "e1a5230c607074f2c05d3f7dded0fe74c81d0fec047c73eb7506038b58baa5f5"
     },
     {
       "path": "mocap/fbx_bind.py",
@@ -1366,13 +1366,13 @@
     },
     {
       "path": "mocap/fbx_export.py",
-      "bytes": 5996,
-      "sha256": "43bf7a71285059e43b4966b38cf10317db5cd2685b7b1d34c88dd6a2fc331e25"
+      "bytes": 6054,
+      "sha256": "b59a169d4d87704729a4cdad51dea46351615b888641882e1ad062fd819228d1"
     },
     {
       "path": "mocap/fbx_writer.py",
-      "bytes": 12176,
-      "sha256": "c3e3c23b0e58fab85294cf62fb84edab7b18b43f0799422dcd497fa35f829ff7"
+      "bytes": 14781,
+      "sha256": "1598c7d9f7eceb2a6761c40959b21dfa0609b51e6d9cd6d265536ec59608dbe0"
     },
     {
       "path": "mocap/floor_overlay.py",
@@ -1506,8 +1506,8 @@
     },
     {
       "path": "mocap/gemx_skeleton_export.py",
-      "bytes": 5791,
-      "sha256": "bbd9b65c6fabb010ddd692530a3abd8c31421e57bc3f31256f409fdf2ef7466e"
+      "bytes": 5827,
+      "sha256": "b73e7ab084b8055474987ece1793a2bc150db3d7cd0df15002d5d04ea22cd708"
     },
     {
       "path": "mocap/gemx_ui.py",
@@ -1521,8 +1521,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 113234,
-      "sha256": "dae76c42aa561bf7251f0336aaeaf2d0eb39ab30ca3d8a3eac1d425c6c5b1868"
+      "bytes": 113384,
+      "sha256": "91d4d09c1fe07a7c36e1b548ad6878c7c0f48ed64181502c8a313341430bc932"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -2191,8 +2191,8 @@
     },
     {
       "path": "mocap/source_export_dialog.py",
-      "bytes": 7846,
-      "sha256": "d5c445be9861f0c75d8f235fde049c413c7e109dec3651ab49e0aa3d3c15d406"
+      "bytes": 9020,
+      "sha256": "cfe43d0d05f33b959b178bbabce3f9f3ea5b195111f3867801cf64505cf996df"
     },
     {
       "path": "mocap/source_export_worker.py",

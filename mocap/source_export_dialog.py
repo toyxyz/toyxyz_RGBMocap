@@ -1,6 +1,9 @@
 """Source-motion export options; existing character exports remain separate."""
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QFormLayout,QComboBox,QCheckBox,QLabel,QDialogButtonBox,QDoubleSpinBox
 
+from .export_options import FBX_A_POSE_DEGREES
+
+
 class SourceExportDialog(QDialog):
     def __init__(self,parent=None):
         super().__init__(parent);self.setWindowTitle('Export');self.setFixedSize(660,400)
@@ -15,13 +18,20 @@ class SourceExportDialog(QDialog):
         if self.model!='gemx':self.profile.addItem('3ds Max Biped','biped')
         self.profile.setToolTip('Generic / Blender keeps anatomical names and original rotation orders. 3ds Max Biped uses Character Studio names and uniform ZXY rotations. Both keep metre units and Y up.')
         self.profile_label=QLabel('BVH profile');form.addRow(self.profile_label,self.profile)
+        self.fbx_rest_pose = QComboBox()
+        self.fbx_rest_pose.addItem('T-pose', 't')
+        self.fbx_rest_pose.addItem('A-pose', 'a')
+        self.fbx_rest_pose.setToolTip(
+            f'Choose the exported FBX reference pose. A-pose lowers the upper arms to '
+            f'{FBX_A_POSE_DEGREES}° below horizontal. Motion keys keep their original poses.')
+        self.fbx_rest_label = QLabel('Rest pose')
+        form.addRow(self.fbx_rest_label, self.fbx_rest_pose)
         self.fbx_compatibility=QCheckBox('FBX Compatibility (Maya)')
         self.fbx_compatibility.setToolTip('Use the included Blender runtime to write an FBX for Maya and Blender. Unchecked uses the original FBX writer.')
         layout.addWidget(self.fbx_compatibility)
         self.whole_scene=QCheckBox('MAMMA whole scene: body meshes and all cameras');layout.addWidget(self.whole_scene)
         self.whole_scene.setToolTip('Export checked people, exact animated surfaces, reference skeletons and every calibrated camera/video. Keeps the original timeline. Mesh caches can be large.')
         self.tpose=QCheckBox('Add T-pose before motion');self.tpose.setChecked(False)
-        self.tpose.setToolTip('Insert a T-pose at the first motion frame root position. Original frames shift by one; their poses and timing intervals stay unchanged.')
         layout.addWidget(self.tpose)
         self.place_at_origin=QCheckBox('Place at origin');layout.addWidget(self.place_at_origin)
         self.place_at_origin.setToolTip("Center each person's first exported frame on world X/Z. Height and travel are preserved. People are centered independently; their relative placement changes.")
@@ -40,12 +50,17 @@ class SourceExportDialog(QDialog):
         layout.addStretch(1)
         buttons=QDialogButtonBox(QDialogButtonBox.Save|QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Save).setText('Continue...');buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);layout.addWidget(buttons)
-        for signal in (self.format.currentIndexChanged,self.whole_scene.toggled,self.animate_camera.toggled):signal.connect(self.update_format)
+        for signal in (self.format.currentIndexChanged,self.fbx_rest_pose.currentIndexChanged,self.whole_scene.toggled,self.animate_camera.toggled):signal.connect(self.update_format)
         self.update_format()
     def update_format(self):
         fmt=self.format.currentData();blend=fmt=='blend';whole=blend and self.model=='mamma' and self.whole_scene.isChecked()
         self.profile_label.setVisible(fmt=='bvh');self.profile.setVisible(fmt=='bvh')
         self.fbx_compatibility.setVisible(fmt=='fbx')
+        self.fbx_rest_label.setVisible(fmt == 'fbx')
+        self.fbx_rest_pose.setVisible(fmt == 'fbx')
+        leading = self.fbx_rest_pose.currentText() if fmt == 'fbx' else 'T-pose'
+        self.tpose.setText(f'Add {leading} before motion')
+        self.tpose.setToolTip(f'Insert the {leading} at the first motion frame root position. The original motion starts one frame later.')
         self.whole_scene.setVisible(blend and self.model=='mamma');self.tpose.setEnabled(not whole);self.tpose.setVisible(not whole)
         for control in (self.place_at_origin,self.symmetric_rest):control.setVisible(not blend);control.setEnabled(not blend)
         self.animate_camera.setVisible(blend and not whole)
@@ -56,19 +71,23 @@ class SourceExportDialog(QDialog):
             self.symmetric_rest.hide();self.symmetric_rest.setEnabled(False)
             if blend:self.tpose.hide();self.animate_camera.hide()
             self.note.setText('Exports the native SOMA skeleton, exact animated surface and synchronized video in a new Blender bundle folder. Keep the files together.' if blend else
-                              'Exports the selected SOMA Native77 skeleton and motion at 30 fps. BVH uses metres and Y up. Add T-pose inserts one frame using the native rest pose.')
+                              'Exports the selected SOMA Native77 skeleton and motion at 30 fps. The optional first frame uses the selected FBX rest pose.' if fmt == 'fbx' else
+                              'Exports the selected SOMA Native77 skeleton and motion at 30 fps. BVH uses metres and Y up. The optional first frame uses the native rest pose.')
             self.layout().activate()
             return
         text=('Creates a new folder containing the .blend, videos and mesh caches. Keep the folder together. Bodies are baked PC2 surfaces; skeletons are separate editable references. No T-pose is inserted.' if whole else
               'Creates a new folder containing the .blend and synchronized video. Keep both together. The video is a camera-view background, not a render background. Saved camera movement is approximate.' if blend else
-              'Exports the selected source skeleton. BVH uses metres and Y up. The T-pose is an extra animation frame; it does not replace the character bind pose.')
+              'Exports the selected source skeleton with the chosen FBX rest pose. The matching first animation frame is optional.' if fmt == 'fbx' else
+              'Exports the selected source skeleton. BVH uses metres and Y up. The T-pose is an optional first animation frame.')
         self.note.setText(text)
         self.layout().activate()
     def options(self):
         if self.model=='gemx' and self.format.currentData()=='blend':return dict(format='blend',animate_camera=False)
         fmt=self.format.currentData();whole=fmt=='blend' and self.model=='mamma' and self.whole_scene.isChecked()
         value=dict(format='blend_scene' if whole else fmt,bvh_profile=self.profile.currentData() if fmt=='bvh' else 'generic',prepend_tpose=self.tpose.isChecked() and not whole)
-        if fmt=='fbx':value['fbx_compatibility']=self.fbx_compatibility.isChecked()
+        if fmt == 'fbx':
+            value['fbx_compatibility'] = self.fbx_compatibility.isChecked()
+            value['fbx_rest_pose'] = self.fbx_rest_pose.currentData()
         value.update(place_at_origin=self.place_at_origin.isChecked() and fmt in ('fbx','bvh'),symmetric_rest=self.model!='gemx' and self.symmetric_rest.isChecked() and fmt in ('fbx','bvh'))
         if fmt=='blend':value.update(animate_camera=self.animate_camera.isChecked(),background_refine=self.background_refine.isChecked() and self.animate_camera.isChecked() and self.model in ('flowhmr','exmr'),camera_translation_scale=self.translation_scale.value())
         return value

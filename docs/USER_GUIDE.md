@@ -727,7 +727,15 @@ Use **Bake** in Object Mode to save all recorded frames for the active streaming
 
 **File → Export...** opens the options for the selected source model.
 For SMPL-based motion, choose **FBX (.fbx)**, **BVH (.bvh)** or
-**Blender project + video (.blend)**. **Add T-pose before motion** defaults off.
+**Blender project + video (.blend)**. The optional leading reference frame defaults off.
+For source FBX, choose **Rest pose → T-pose** (default) or **A-pose**.
+T-pose sets horizontal upper arms. A-pose sets the upper arms 54° below
+horizontal, based on the mean of the two upper-arm angles measured in
+[Epic's MetaHuman body reference rigs](https://github.com/EpicGames/MetaHuman-DNA-Calibration/tree/main/data/body).
+The rest pose selection works with Maya compatibility, per-person origin
+placement and, where offered, symmetrical rest. It preserves the recorded
+poses and length of each bone. The optional leading FBX frame uses the
+selected A- or T-pose.
 GEM-X offers [Native77 FBX, BVH and Blender exports](#gem-x-soma-blender-bundles).
 For FBX, enable **FBX Compatibility (Maya)** to use the included Blender
 runtime for the final export. The file retains the skeleton's rest pose and
@@ -743,11 +751,9 @@ SMPL source-person exports use a 52-bone hierarchy with **Hips** as root and pla
 anatomical names by default. The Biped profile renames exported joints as described
 below. It retains
 actor lengths, SMPL-neutral curved limbs/feet, calibrated rest axes and straight
-open fingers. FBX stores rest transforms separately. With the T-pose option off,
-no extra frame is inserted. When enabled, one reference animation frame is placed
-before the original motion, at its initial root position; original frames shift
-by one and retain their poses, frame rate and intervals. The option does not
-replace the bind pose or edit project motion/contact timings.
+open fingers. The optional reference frame goes before the original motion and
+uses its initial root position. The original motion starts one frame later
+at the same frame rate.
 
 **Place at origin** and **Symmetrical rest pose** default off and apply only to
 source-skeleton FBX/BVH exports, including both BVH profiles. They are unavailable
@@ -757,8 +763,8 @@ for Blender project exports and do not change imported-character exports.
   Z=0, preserving its height, facing and subsequent travel. People are centered
   independently, so their relative scene placement is intentionally removed.
   Multiple exported takes of one person share the first exported take's constant
-  offset rather than resetting at every tracking gap. An optional leading T-pose
-  uses the same centered start.
+  offset rather than resetting at every tracking gap. An optional leading reference
+  frame uses the same centered start.
 - **Symmetrical rest pose:** average paired left/right segment lengths and mirror
   their reference directions, including shoulders, feet, hands, fingers and end
   tips. The central spine/neck/head chain is vertical. Motion timing and canonical
@@ -846,8 +852,9 @@ by one to keep the original motion and video paired.
 ### GEM-X SOMA Blender bundles
 
 GEM-X FBX and BVH contain the shaped SOMA Native77 skeleton and its 30 fps
-animation. BVH uses the **Generic / Blender** profile. Both formats offer
-**Place at origin** and a reference frame from the native rest pose.
+animation. Both formats offer **Place at origin**. FBX offers a choice of A- or
+T-pose for the rest pose and optional leading frame. BVH uses the
+**Generic / Blender** profile and the native rest pose for its optional leading frame.
 
 The native bundle opens in the **SOMA Motion** scene with an editable 77-bone
 reference rig and a separate baked mesh. **Input Video** is a synchronized
