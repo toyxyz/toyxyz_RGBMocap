@@ -168,8 +168,12 @@ shared People publishing code and a discovery identity covering the media,
 tracker implementation, checkpoint, prompt and relevant frame/markers. Preserve
 the previous People result if a prompt or marker fails. Retain source trim
 validation and the nearest valid working frame, including the final frame of a
-high-FPS source. Keep the separate worker entry point and Resource Safety
-controls. SAM 3.1 here applies to offline discovery for the three listed models.
+high-FPS source. Keep the detector's final forward batch within the trim.
+Resource Mode can offload tracker state and mask caches to CPU RAM. The SAM 3.1
+entry point retries a fast CUDA OOM once in a fresh ExMR process and publishes
+only the completed result. Preserve Resource Safety and retain OOM recovery
+when its limits are disabled. SAM 3.1 applies to offline discovery for the three
+listed models.
 MAMMA and PromptHMR keep their reconstruction trackers, GEM-X keeps its primary
 person detector, and PEAR keeps its live detector.
 See the [recorded checks](VALIDATION.md#sam-31-person-discovery-2026-11-10).

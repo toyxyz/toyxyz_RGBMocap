@@ -4,14 +4,32 @@ import argparse
 import hashlib
 import json
 import math
+import shutil
 import sqlite3
 import uuid
-from contextlib import closing
+from contextlib import closing, contextmanager, nullcontext
 from itertools import chain
 from pathlib import Path
 
+from .compute_policy import GIB
 from .people_store import load_people, media_receipt, person_color, safe_child
 from .storage import sha256
+
+
+RETRY_WITH_OFFLOAD = 75
+
+
+class _FastTrackingOOM(RuntimeError):
+    """A fresh offloaded worker may recover the fast attempt."""
+
+
+def _fast_vram_estimate(count, width, height, bidirectional):
+    # Heuristic for routing. The bidirectional path retains full-frame masks.
+    # Default peak reservations for 150/443 marked frames were 13.81/18.48 GiB.
+    frame_bytes = 12 * 1024**2
+    if bidirectional:
+        frame_bytes += 4 * width * height
+    return (12 if bidirectional else 11) * GIB + count * frame_bytes
 
 
 def selected_ids(outputs, points):
@@ -31,15 +49,14 @@ def selected_ids(outputs, points):
     return selected
 
 
-def discover(project, prompt, anchor_time, points, emit):
+def discover(project, prompt, anchor_time, points, emit, *, force_offload=False):
     import cv2
-    import numpy as np
     import torch
     from . import sam31_engine
     from .compute_policy import configure_worker_cpu
+    from .memory_mode import announce, available_vram, decide, requested_mode
     from .model_session import set_memory_budget
     from .models import BY_KEY, ready
-    from .person_tracking import publish_discovery
     from .sam31_runtime import REVISION, SUPPORTED, activate, location
 
     manifest = json.loads((project / 'project.json').read_text(encoding='utf-8'))
@@ -80,8 +97,36 @@ def discover(project, prompt, anchor_time, points, emit):
     set_memory_budget(*torch.cuda.mem_get_info())
     cv2.setNumThreads(2)
     activate(folder)
+    budget = available_vram()
+    estimate = _fast_vram_estimate(count, width, height, 0 < seed < count-1)
+    use_offload = force_offload or decide(requested_mode(), budget, estimate) == 'low_memory'
+    reason = (f'Available GPU budget {budget/GIB:.2f} GiB; '
+              f'fast-path estimate {estimate/GIB:.2f} GiB.')
+    if force_offload:
+        reason = 'Retrying with CPU tracking state and mask cache after CUDA out of memory.'
+    elif use_offload:
+        reason += ' Tracking state and mask cache will use CPU RAM.'
+    announce('SAM 3.1 person tracking', 'low_memory' if use_offload else 'auto', reason, emit)
     emit('progress', current=0, total=count, message='Loading SAM 3.1')
-    predictor = sam31_engine.predictor(weight.path, folder)
+    try:
+        predictor = sam31_engine.predictor(weight.path, folder)
+        scope = sam31_engine.offload_tracking(predictor) if use_offload else nullcontext()
+        with scope:
+            result = _track(project, manifest, predictor, digest, prompt, seed, points, emit)
+    except torch.cuda.OutOfMemoryError as error:
+        if use_offload:
+            raise
+        raise _FastTrackingOOM(str(error)) from error
+    emit('people_found', project=str(project), count=len(result), cached=False)
+    return project / 'people.json'
+
+
+def _track(project, manifest, predictor, digest, prompt, seed, points, emit):
+    import cv2
+    import numpy as np
+    from .person_tracking import publish_discovery
+
+    count, width, height = (manifest[key] for key in ('frames', 'width', 'height'))
     generation = 'people/' + uuid.uuid4().hex
     output = safe_child(project, generation)
     output.mkdir(parents=True)
@@ -90,7 +135,7 @@ def discover(project, prompt, anchor_time, points, emit):
     if count < 12 or (seed and min(seed, count-seed) < 12):
         predictor.model.batched_grounding_batch_size = 1
         predictor.model.postprocess_batch_size = 1
-    with closing(sqlite3.connect(output / 'observations.sqlite')) as db:
+    with _discard_on_oom(output), closing(sqlite3.connect(output / 'observations.sqlite')) as db:
         db.execute('CREATE TABLE observations(person INTEGER, frame INTEGER, x1 REAL,y1 REAL,x2 REAL,y2 REAL, score REAL, PRIMARY KEY(person,frame))')
         session = predictor.handle_request(dict(type='start_session', resource_path=str(project / 'input.mp4'),
                                                 offload_video_to_cpu=True))['session_id']
@@ -107,8 +152,11 @@ def discover(project, prompt, anchor_time, points, emit):
             else:
                 directions = ('forward', 'backward')
             for direction in directions:
+                # The pinned detector uses this untrimmed forward span to
+                # bound its last batch, even if propagation clips it itself.
+                span = count-seed if direction == 'forward' else count
                 requests = predictor.handle_stream_request(dict(type='propagate_in_video', session_id=session,
-                    start_frame_index=seed, max_frame_num_to_track=count, propagation_direction=direction,
+                    start_frame_index=seed, max_frame_num_to_track=span, propagation_direction=direction,
                     evict_cached_frame_outputs=len(directions) == 1))
                 if anchor is not None:
                     # A reverse pass starts one frame before the seed.
@@ -170,11 +218,24 @@ def discover(project, prompt, anchor_time, points, emit):
         db.commit()
         entries = dict(sorted(people.items(), key=lambda row: (-row[1]['observations'], row[0])))
         result = publish_discovery(project, manifest, db, entries, generation, digest, 'SAM 3.1')
-    emit('people_found', project=str(project), count=len(result), cached=False)
-    return project / 'people.json'
+    return result
 
 
-def main(arguments, emit):
+@contextmanager
+def _discard_on_oom(output):
+    import torch
+
+    try:
+        yield
+    except torch.cuda.OutOfMemoryError:
+        # This attempt has not committed People results. Remove its own
+        # generation after closing SQLite, leaving the active result available.
+        shutil.rmtree(output, ignore_errors=True)
+        raise
+
+
+
+def main(arguments, emit, *, force_offload=False):
     parser = argparse.ArgumentParser()
     parser.add_argument('--project', required=True, type=Path)
     parser.add_argument('--sam31-options', required=True)
@@ -189,9 +250,12 @@ def main(arguments, emit):
         if len(prompt) > 256 or len(points) > 16 or not math.isfinite(anchor) or any(
                 not 0 <= x < 1 or not 0 <= y < 1 for x, y in points):
             raise ValueError('Invalid SAM 3.1 prompt or markers.')
-        output = discover(args.project, prompt, anchor, points, emit)
+        output = discover(args.project, prompt, anchor, points, emit, force_offload=force_offload)
         emit('complete', stage=stage, output=str(output), elapsed=monotonic()-started)
         return 0
+    except _FastTrackingOOM as error:
+        emit('info', message=f'SAM 3.1 CUDA out of memory in fast tracking. {error}')
+        return RETRY_WITH_OFFLOAD
     except Exception as error:
         import traceback
         traceback.print_exc()

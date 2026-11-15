@@ -60,6 +60,7 @@ for its live and alignment workers; its offline resource controls remain hidden.
 | GVHMR and add-ons | Use existing adaptive image batches and bounded processing. Preserve full-context FP32 attention; use the validated query split only when dense attention does not fit or after its supported OOM recovery. |
 | MAMMA | Offload the VGGT camera transformer blocks. Masks, FP32 landmarks and 3D fitting keep their current settings; this is not full-MAMMA model offloading. |
 | PromptHMR | Retains one-image batches and full temporal context; additional block offloading is not implemented. |
+| SAM 3.1 Find person | Store track history and mask caches in CPU RAM. Automatic compares the GPU budget with the estimated workload and retries a fast CUDA OOM once in a fresh worker. Keep the existing video resolution, frames and batch settings. |
 
 PEAR is a separate live tool: the offline Resource Mode control is hidden. Its
 fixed-length bone path uses FP16 encoding/FP32 decoding, one requested frame per

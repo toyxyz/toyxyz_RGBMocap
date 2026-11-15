@@ -2,6 +2,8 @@
 
 import functools
 import sys
+from collections import UserDict
+from contextlib import contextmanager
 from types import ModuleType
 from unittest.mock import patch
 
@@ -82,3 +84,87 @@ def predictor(weights, folder):
     result.model.batched_grounding_batch_size = 4
     result.model.postprocess_batch_size = 4
     return result
+
+
+class _CpuMasks(UserDict):
+    """Keep frame masks on the host and load masks individually on access."""
+
+    def __init__(self, masks, device):
+        self.device = device
+        super().__init__(masks)
+
+    def __setitem__(self, key, mask):
+        super().__setitem__(key, mask.cpu())
+
+    def __getitem__(self, key):
+        return super().__getitem__(key).to(self.device)
+
+    def copy(self):
+        return dict(self.items())
+
+
+class _CpuMaskCache(dict):
+    def __init__(self, device):
+        super().__init__()
+        self.device = device
+
+    def __setitem__(self, frame, masks):
+        super().__setitem__(frame, _CpuMasks(masks, self.device))
+
+
+def _compatible_storage(operation):
+    @functools.wraps(operation)
+    def call(destination, source, key, source_key, *args, **kwargs):
+        if key in destination and source[source_key].device != destination[key].device:
+            source = {**source, source_key: source[source_key].to(destination[key].device)}
+        return operation(destination, source, key, source_key, *args, **kwargs)
+    return call
+
+
+@contextmanager
+def offload_tracking(predictor):
+    import torch
+    from sam3.model import video_tracking_multiplex as multiplex
+
+    model = predictor.model
+    tracker = model.tracker.model
+    init_video = model.init_state
+    reset_video = model.reset_state
+    init_tracker = tracker.init_state
+    device = next(model.parameters()).device
+
+    @functools.wraps(init_video)
+    def init_with_cpu_masks(*args, **kwargs):
+        state = init_video(*args, **kwargs)
+        state['cached_frame_outputs'] = _CpuMaskCache(device)
+        return state
+
+    @functools.wraps(reset_video)
+    def reset_with_cpu_masks(state, *args, **kwargs):
+        result = reset_video(state, *args, **kwargs)
+        state['cached_frame_outputs'] = _CpuMaskCache(device)
+        return result
+
+    @functools.wraps(init_tracker)
+    def init_with_cpu_state(*args, **kwargs):
+        kwargs['offload_state_to_cpu'] = True
+        return init_tracker(*args, **kwargs)
+
+    def sync_cpu_copies(operation):
+        @functools.wraps(operation)
+        def call(inference_state, *args, **kwargs):
+            result = operation(inference_state, *args, **kwargs)
+            # The pinned tracker queues non-blocking copies to storage.
+            # Complete those copies before its CPU masks are read or modified.
+            torch.cuda.current_stream(device=inference_state['device']).synchronize()
+            return result
+        return call
+
+    # Reconditioning and adding new objects mix resident and stored tensors.
+    with (patch.multiple(model, init_state=init_with_cpu_masks, reset_state=reset_with_cpu_masks),
+          patch.multiple(tracker, init_state=init_with_cpu_state,
+                         _run_single_frame_inference=sync_cpu_copies(tracker._run_single_frame_inference),
+                         _run_memory_encoder=sync_cpu_copies(tracker._run_memory_encoder)),
+          patch.multiple(multiplex, _append=_compatible_storage(multiplex._append),
+                         _merge=_compatible_storage(multiplex._merge))):
+        yield

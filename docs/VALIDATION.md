@@ -95,6 +95,22 @@
   and worker routing. This pass did not measure tracking accuracy across
   footage, test a clean Windows installation, or run those models end to end.
 
+## SAM 3.1 CPU offloading (2026-11-15)
+
+- On Windows with an RTX 5090 and the installed ExMR/SAM 3.1 runtime, ran
+  the 443-frame two-person marker clip with Low Memory. All saved box
+  coordinates matched the corresponding fast run. Peak PyTorch allocation
+  fell from 17.46 GiB to 11.75 GiB, with peak reservation falling from
+  18.48 GiB to 12.65 GiB.
+- At a simulated 12.9 GiB PyTorch cap, Automatic selected offloading for
+  the 150-frame marker clip and tracked both people. Forcing the fast path
+  in the test triggered a real CUDA OOM. The supervisor used a fresh worker
+  once, and its offloaded track matched the fast reference for all frames.
+- At a simulated 10.4 GiB cap, offloading could still run out of memory on
+  the 443-frame clip. The worker preserved the previous People result and
+  discarded its partial generation. The allocator caps were tested on the
+  RTX 5090.
+
 ## Resource Safety control (2026-11-03)
 
 The default-on checkbox below Resource Mode controls the existing desktop

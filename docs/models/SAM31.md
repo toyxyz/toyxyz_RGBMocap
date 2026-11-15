@@ -63,9 +63,15 @@ during mask generation was **10.68 GiB with SAM 3.1** and **1.77 GiB with
 SAM 2.1** under the tested settings. Those measurements describe the mask
 stage in that experiment. The app's MAMMA workflow uses SAM 2.1.
 
-These figures describe observed peaks. The VRAM needed for a given run can
-vary with the footage and tracking settings. Find person runs separately from
-3D reconstruction.
+Under **Resource Mode > Automatic**, SAM 3.1 moves the tracker's history
+and mask cache to CPU RAM when the available VRAM budget looks tight. If GPU
+tracking raises a CUDA out-of-memory error, the app retries once in a fresh
+worker with CPU offloading. **Low Memory** starts with offloading. The console
+shows which path is running. Offloading preserves frame and image settings
+and can increase system RAM use and processing time.
+
+These figures describe observed peaks. Memory needs vary with footage and
+tracking settings. Find person runs separately from 3D reconstruction.
 
 ## Troubleshooting
 
@@ -76,9 +82,9 @@ vary with the footage and tracking settings. Find person runs separately from
   description or mark the intended people in a clear frame. Long occlusions
   can still cause a lost track or identity switch. If a marker misses, retry
   on a frame where the torso is visible.
-- If memory runs low, use a shorter trim or switch to **Default** and run
-  **Find person** again. Resource Safety applies to SAM 3.1. Videos and
-  prompts are processed locally.
+- If CPU offloading still runs out of memory, close other GPU applications,
+  use a shorter trim, or switch to **Default** for **Find person**.
+  Resource Safety applies to SAM 3.1. Videos and prompts are processed locally.
 
 See [recorded validation](../VALIDATION.md#sam-31-person-discovery-2026-11-10)
-for the tested workflows.
+for the tested workflows and the [CPU offloading results](../VALIDATION.md#sam-31-cpu-offloading-2026-11-15).

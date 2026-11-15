@@ -159,6 +159,9 @@ next to **Find person**. In **Model Manager**, use **Auto Download** on
 **SAM 3.1 Person Tracking (Optional)** or import the supported checkpoint.
 The base install and updater leave this optional setup for you to run.
 SAM 3.1 uses more VRAM than the Default YOLOv8x + OSNet tracker.
+**Resource Mode > Automatic** offloads tracking state to CPU RAM when VRAM
+is tight and can retry once after CUDA runs out of memory. **Low Memory**
+starts with CPU offloading, which can use more system RAM.
 See the [setup, usage and measured VRAM](models/SAM31.md#vram-use).
 
 ### Update the app

@@ -98,6 +98,8 @@ For optional text-prompt and click-guided **Find person** tracking on Windows,
 run `Setup_SAM31.cmd` after the base setup. Then choose **SAM 3.1** next to
 **Find person** and use **Auto Download** on its 1.75 GB checkpoint row in
 **Model Manager**. SAM 3.1 uses more VRAM than **Default** tracking.
+**Resource Mode > Automatic** can offload tracking state and masks to system
+RAM when VRAM is tight and retry once after CUDA runs out of memory.
 See the [SAM 3.1 tracker guide](docs/models/SAM31.md#vram-use).
 
 ### Install with an AI agent

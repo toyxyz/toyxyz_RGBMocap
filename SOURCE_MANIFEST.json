@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 14689,
-      "sha256": "977f6dc70e091069af3dcdb6e91f7cfdf384cbab2b40c80c4d12f572a57eb2a8"
+      "bytes": 14835,
+      "sha256": "49f8677fd6796ce2e28e053147c2516a7cc3ff8995a82e9ac5a2e9052c8b9f89"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -116,8 +116,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 80881,
-      "sha256": "b0faa9b4885b7dafe6b650630c9266dd4359b26f1b586d5a20898d7388fb5fb4"
+      "bytes": 81131,
+      "sha256": "018595ebdd061f6f34005e455eeaaf0ee1e2d874f1f4d977375d7cc2f3b5d724"
     },
     {
       "path": "docs/BUILD.md",
@@ -141,18 +141,18 @@
     },
     {
       "path": "docs/PERFORMANCE.md",
-      "bytes": 25858,
-      "sha256": "a258094f5bbdd9321e2bc48bb58cc9a3ebdd58372cbf7a12280c8ebf2295ec5e"
+      "bytes": 26109,
+      "sha256": "4527104ce7ea9d121b9b3404cced28d2a7b0c822c9de7b7ff4aeb718be359c9d"
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 75527,
-      "sha256": "9b082d70ba7888fd91086b2a231b4457abffbd7bb31305ae6bbd15a4539d97dd"
+      "bytes": 75735,
+      "sha256": "2f1aa532c43cfa4fb3c6d305cd67d91a4e4a4b794da3a55c64c69143ebe3c941"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 158949,
-      "sha256": "6be8abecd5f59f26e99d3e5a374c47dce30fd560bebcc130a8aa4cb7c24dc23c"
+      "bytes": 159839,
+      "sha256": "9ae3b4b8a355ff3be78a24bf032cff5943e6379a24076c829ebfea84d9a899a4"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -211,8 +211,8 @@
     },
     {
       "path": "docs/models/SAM31.md",
-      "bytes": 4310,
-      "sha256": "b0e08c16d6d9ae0c9460a1322263ce189bb1435d79939e87aa3f0f298040e83f"
+      "bytes": 4846,
+      "sha256": "fe9db6e83d9701e90af7f7f1a13949b152395d44f7fdc72dbdfae1f672ed25d8"
     },
     {
       "path": "docs/samples/character-retargeting.jpg",
@@ -2131,13 +2131,13 @@
     },
     {
       "path": "mocap/sam31_discovery.py",
-      "bytes": 10474,
-      "sha256": "19422e33e47e0f337099ffc585bba1c96a66c2ffbc869ac0d352050bde15b2df"
+      "bytes": 13155,
+      "sha256": "7a56352aadd295da891bfe8ee6092045186bd914fe64c0f4aba3b589025f8466"
     },
     {
       "path": "mocap/sam31_engine.py",
-      "bytes": 3644,
-      "sha256": "201f3e39aece5cc651a0e618bc49280d101b4436e8ed1a201b678c707371bc6f"
+      "bytes": 6832,
+      "sha256": "a1bdcf5a5880b4775cb2d16f8078b83dfc38b88cd18f5921fa9595c8bcbc3036"
     },
     {
       "path": "mocap/sam31_prompt_ui.py",
@@ -2436,8 +2436,8 @@
     },
     {
       "path": "sam31_worker_boot.py",
-      "bytes": 524,
-      "sha256": "2a3bdeacfb71e14ecd32d2f0eef9166b6147330290bd1f7428abfdd3a2f10d45"
+      "bytes": 1432,
+      "sha256": "e43756a29882616f8aac6bf338bc1288edd1af3243b0bc923466a3cf0f09a2db"
     },
     {
       "path": "scene_boot.py",
