@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 15121,
-      "sha256": "97f526b6085b63682f1cba2d02c83c79116bdf4a491fa32b3ed4d9ed1e4271e3"
+      "bytes": 15312,
+      "sha256": "310c6171ec2921146821bc1d3001788cdda6171e9351b2defa838a1c0a8f58c4"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -116,8 +116,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 82460,
-      "sha256": "357c846e35486d42be10b5ef34ae01b4b8b349a9573416a853489e07c3d1e3dd"
+      "bytes": 82905,
+      "sha256": "ff1c042730a14b9a8d7af854a6d14b8d26ea1cfc69114badc2f5efdcb762da5c"
     },
     {
       "path": "docs/BUILD.md",
@@ -146,13 +146,13 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 77782,
-      "sha256": "70ad32c51d1b6b9adb4aa8cef846257df127f55792c3ddf5dc068dc5986782fa"
+      "bytes": 79027,
+      "sha256": "98139df602a97d48ecf5cf1a615979e1202ccf2afefabf6871d2c4190e2e16c3"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 159839,
-      "sha256": "9ae3b4b8a355ff3be78a24bf032cff5943e6379a24076c829ebfea84d9a899a4"
+      "bytes": 160916,
+      "sha256": "a67bae816767ea82c953fad8d8691c78989e1e7346d8ccf842fd6ffda7607d59"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -1166,8 +1166,8 @@
     },
     {
       "path": "mocap/blend_export_ui.py",
-      "bytes": 2748,
-      "sha256": "04554c3150feacefebe5edf3a59773e37b67f6dd16fb338ef0b105654ee4563e"
+      "bytes": 2405,
+      "sha256": "c9ba3cb8ea474f6455e0438a7d7334b185fbba08de9a37ef18c1dbc26539bfa2"
     },
     {
       "path": "mocap/blend_export_worker.py",
@@ -1176,8 +1176,8 @@
     },
     {
       "path": "mocap/blend_multicam_export.py",
-      "bytes": 10822,
-      "sha256": "2d0e1894cc3d897ac0865b8927c209a7c730485617a82d947564331e59c721f3"
+      "bytes": 10426,
+      "sha256": "cb0809327d233f298ac116a5ed3aad07d69cd4850be41e4774990483cb6d0a8a"
     },
     {
       "path": "mocap/blend_multicam_scene.py",
@@ -1376,8 +1376,8 @@
     },
     {
       "path": "mocap/face_export.py",
-      "bytes": 4775,
-      "sha256": "57d7c62aa282503c6324fe075cc9472d9dbd919773892833388b4cfecb0b3c28"
+      "bytes": 4935,
+      "sha256": "7ea147aba1de7b1abc676b639f7851a6dea105a6dd27e5a8254fa9b9620cf87d"
     },
     {
       "path": "mocap/face_overlay.py",
@@ -1571,8 +1571,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 118011,
-      "sha256": "ea7f38579801e73d8788b4cbf67d1e1de1a0d32a56d3ed0ce22a7ea32de1f649"
+      "bytes": 120150,
+      "sha256": "c1502dfe5b24d0cd0268b2303c5c54031f5e7c9ebe741858932cbef631279e2e"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -1896,8 +1896,8 @@
     },
     {
       "path": "mocap/people_ui.py",
-      "bytes": 42860,
-      "sha256": "94d981217dd2999474fdfff65354fd953037ccd823db357117b3b8ca8f7790c3"
+      "bytes": 45709,
+      "sha256": "28581900ab10e1bbad50a6b765979a445b58adbc0cce1b7ad63192c85268cdab"
     },
     {
       "path": "mocap/person_names.py",
@@ -2216,8 +2216,8 @@
     },
     {
       "path": "mocap/scene_export.py",
-      "bytes": 6848,
-      "sha256": "40fe1c952d2e862ef51b1908ec5dac290fc17e4ac0a4fd66e0bf7801acc0d54d"
+      "bytes": 8175,
+      "sha256": "d3e5030058a2ddca593870956a2274f909d6c4d2410d69dccc242a942adf49c7"
     },
     {
       "path": "mocap/scene_floor.py",
@@ -2246,8 +2246,8 @@
     },
     {
       "path": "mocap/source_export_dialog.py",
-      "bytes": 10251,
-      "sha256": "861e01d2e052a2817c007ca8acbc3535d8b75579cc95dc8f157c668467958a31"
+      "bytes": 17028,
+      "sha256": "8811a6a1594ae76282dcaa6fd95ba8bf250428106b814df46f0eaf558f7a29d4"
     },
     {
       "path": "mocap/source_export_worker.py",
@@ -2288,6 +2288,11 @@
       "path": "mocap/surface_roll.py",
       "bytes": 10804,
       "sha256": "c0decfcbf0f471332ed3769911c6195c24aba0bf9522bedcc88ddf1d13cfb4a2"
+    },
+    {
+      "path": "mocap/take_selection.py",
+      "bytes": 6245,
+      "sha256": "306fc7fe42b4eae5f66e5333eefa0eb130d71f6c192bcd5a238653b5e3b2a973"
     },
     {
       "path": "mocap/task_progress.py",
@@ -2356,8 +2361,8 @@
     },
     {
       "path": "mocap/workspace_ui.py",
-      "bytes": 40180,
-      "sha256": "35adb198afeb233b9a911e5aff2715f2c8705ed0e15172a82b70ac58d3cbbb05"
+      "bytes": 40216,
+      "sha256": "09f2a2f3901cb58b521b0ac09ef762bf9205b81d25aa9baedefc1c02ae013d3e"
     },
     {
       "path": "native_compat/LICENSE",

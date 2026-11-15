@@ -180,6 +180,13 @@ See the [recorded checks](VALIDATION.md#sam-31-person-discovery-2026-11-10).
 
 ## Standard GUI workflow
 
+The People take selector shows the saved frame range and the readiness of the
+selected motion result. Export can select exact take paths across people. Validate
+the chosen paths before opening the destination picker and again in the worker.
+Whole-scene MAMMA Blender exports and their optional face TXT files resolve the
+same take paths. Legacy scene requests specifying only people include all of
+those people's takes.
+
 ### Face capture
 
 **Track Face** starts the isolated ExMR-Python CPU worker after successful body
@@ -332,7 +339,7 @@ change is needed. Paired 7/14.2-second mask tests cut time 17–21%, changed RAM
 3. Choose camera and processing settings, then **Reconstruct 3D**. Processing runs on a 30 fps working clip, without changing the original video. Progress and cancellation are in the app. **Prepare Preview** rebuilds previews from existing motion without rerunning inference.
 4. Review motion and contacts. **Enable Correction** selects corrected output; Foot defaults on and Hand off for new work. Flat Ground uses a common floor; Multi Level retains inferred contact heights and does not reconstruct terrain. Inspect automatic contacts; hand contacts represent support, not hanging/object tracking.
 5. Edit L/R foot and hand intervals on the timeline, then **Apply Correction**. Pending changes are not applied until then; stale corrected export is blocked. Applying also refreshes linked retargeted characters. Correction and preview do not require fresh AI inference.
-6. **File > Export...** opens FBX/BVH/Blender format selection, the BVH-only Generic/Blender (default) or 3ds Max Biped profile, and the default-off **Add T-pose before motion** option. Multiple checked people/takes produce separate named files. Source skeleton exports use the committed 52-bone Hips hierarchy; the Biped profile renames joints in the exported copy. Optional T-pose export adds one reference frame without editing the cached motion or contacts; original motion shifts by one frame. Blender creates portable video/camera bundles; MAMMA additionally offers whole-scene PC2 bodies and every calibrated camera without a T-pose. Character exports keep their separate FBX/VMD dialog.
+6. Open **File > Export...** and select FBX, BVH or Blender. Use **Export scope** to choose the current take, all takes for checked people, or individual takes through **Choose takes…**. A blocked export lists each affected person and frame range with the cause and next action. FBX and BVH save separate files for separate takes. Blender can also combine the selected takes in one file; MAMMA whole-scene export keeps the original timeline and all calibrated cameras. The BVH profile renames joints in the exported copy when Biped is selected. An optional leading reference frame shifts the exported motion by one frame and follows the FBX A/T reference-pose choice. Character exports have their own FBX/VMD dialog.
 
 See [the full workflow and controls](USER_GUIDE.md#start-here). Do not confuse viewport toggles, automatic detection and applied motion corrections. No general scene geometry or collision reconstruction is implied.
 

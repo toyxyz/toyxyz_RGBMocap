@@ -2,6 +2,7 @@
 from __future__ import annotations
 from .tooltips import tooltip_text
 from .ui_refresh import batch_readiness
+from .validation_snapshot import read_only_checks
 import json
 from collections import OrderedDict
 from pathlib import Path
@@ -22,7 +23,7 @@ PEOPLE_HELP = (
     'edit their contact timings. Selecting a row does not change its checkbox.\n\n'
     'Right-click a row to rename it. Click its color square to change the display color. '
     'Names are used for FBX files and rigs; colors affect the preview only.\n\n'
-    'If a person has separate visible sections, use the take list to switch between them.\n\n'
+    'Use the take list to switch between saved frame ranges and see which results are ready.\n\n'
     'Automatic single-person tracking may switch people when they cross or overlap. '
     'Use Find person when keeping a specific identity matters.'
 )
@@ -200,16 +201,19 @@ class PeopleWorkspace:
         """Rebuild all available actor/take corrections against one plane."""
         from .motion_tools import RESULTS,result_sources,base_result,result_is_current
         jobs=[]
+        skipped=[]
+        bases=result_sources(base_result(kind))
         for person in self.people_state['people']:
-            for take in person.get('takes',[]):
+            for number,take in enumerate(person.get('takes',[]),1):
                 project=safe_child(self.people_root,take['project'])
-                bases=result_sources(base_result(kind))
                 available=all((project/RESULTS[base][0]).is_file() and result_is_current(project,base) for base in bases)
                 if not available:
                     if person.get('checked'):
-                        self.status.setText(f"{person['name']}: selected base motion is unavailable. Reconstruct it first.");return
+                        skipped.append(f"{person['name']}, Take {number}")
                     continue
                 jobs.extend((stage,['--project',str(project),'--result',kind]) for stage in ('correct','export'))
+        for name in skipped:
+            self.log.append(f'{name}: Apply Correction skipped this take because its base motion is unavailable. Reconstruct it first.')
         if not jobs:
             self.status.setText('Reconstruct a person before applying the shared scene floor.');return
         self._people_batch=True
@@ -482,10 +486,12 @@ class PeopleWorkspace:
         try:
             self.person_takes.clear()
             takes=person.get('takes',[]) if person else []
-            for index,take in enumerate(takes):
-                path=safe_child(self.people_root,take['project'])
-                self.person_takes.addItem(f"Take {index+1} | frames {take['first']+1}-{take['end']}",take['project'])
-                if path==self.project:self.person_takes.setCurrentIndex(index)
+            for choice in self.take_choices([person] if person else []):
+                index=self.person_takes.count()
+                self.person_takes.addItem(f'{choice.frames} · {choice.status}',
+                                          choice.project.relative_to(self.people_root.resolve()).as_posix())
+                self.person_takes.setItemData(index, choice.label, Qt.ToolTipRole)
+                if choice.project==self.project:self.person_takes.setCurrentIndex(index)
             self.person_takes.setVisible(len(takes)>1)
         finally:self.person_takes.blockSignals(False)
 
@@ -761,40 +767,87 @@ class PeopleWorkspace:
             path=self._people_return_project;self._people_return_project=None
             self.activate_person(ident,path)
 
-    def export_checked_people(self):
-        """Export all selected people and takes with the chosen layout."""
-        if not self.people_state:return False
-        people=self.checked_people()
-        if len(people)<2 and not (people and len(people[0].get('takes',[]))>1):return False
-        from .motion_tools import selected_export,result_is_current
-        files=[]
+    @read_only_checks
+    def take_choices(self, people=None, paths=None, validate_scene=False):
+        from .motion_tools import base_result, selected_export
+        from .take_selection import TakeChoice, TakeIssue, diagnose_take
+
+        if not self.people_state or self.people_root is None:
+            return []
+        people=self.people_state['people'] if people is None else people
+        choices=[]
+        kind=self.active_result
+        edits=self.contact_tracks.get(base_result(kind),{})
         for person in people:
             takes=person.get('takes',[])
-            if not takes:
-                self.status.setText(f"No motion for {person['name']}. Run Reconstruct 3D first.");return True
             for number,take in enumerate(takes,1):
                 project=safe_child(self.people_root,take['project'])
-                source=selected_export(project,self.active_result) if result_is_current(project,self.active_result) else None
-                if source is None:
-                    self.status.setText(f"{person['name']}, take {number}: displayed result unavailable or correction pending.");return True
-                from .person_names import export_stem
-                stem=export_stem(person['name'])+(f'_take_{number:02d}' if len(takes)>1 else '')
-                files.append((source,stem))
+                if paths is not None and project not in paths:
+                    continue
+                active=project==self.project
+                pending=active and kind.startswith('corrected_') and (self.contact_saving or edits.get('unsaved'))
+                try:
+                    source=self.current_export() if active else selected_export(project,kind)
+                    issue=diagnose_take(project,kind,pending) if source is None else None
+                except (OSError,ValueError,KeyError,TypeError) as error:
+                    from .storage import path_error_message
+                    source=None
+                    issue=TakeIssue('Prepare Preview', 'Saved take data could not be verified. '+path_error_message(error),
+                                    'Select the take and click Prepare Preview.')
+                if source is not None and validate_scene:
+                    from .scene_export import context
+                    try:
+                        context(self.people_root,project)
+                    except (OSError,ValueError,KeyError) as error:
+                        from .storage import path_error_message
+                        issue=TakeIssue('Prepare Preview', path_error_message(error),
+                                        'Select the take and click Prepare Preview to rebuild the shared scene.')
+                        source=None
+                choices.append(TakeChoice(person['id'],person['name'],number,len(takes),
+                                          take['first'],take['end'],project,source,issue))
+        return choices
+
+    def checked_take_exports(self, paths=None):
+        problems=[]
+        if paths is None:
+            people=self.checked_people() if self.people_state is not None else []
+            if not people:
+                raise ValueError('Check a person in the People list to export their takes.')
+            for person in people:
+                if not person.get('takes'):
+                    problems.append(f"{person['name']}\nReason: This person has no saved takes.\nWhat to do: Run Reconstruct 3D.")
+            choices=self.take_choices(people,validate_scene=True)
+        else:
+            paths=set(paths)
+            if not paths:
+                raise ValueError('Choose at least one take to export.')
+            choices=self.take_choices(paths=paths,validate_scene=True)
+            if {choice.project for choice in choices}!=paths:
+                raise ValueError('The selected takes changed. Open Choose takes and update the selection.')
+        problems.extend(choice.issue.report(choice.label) for choice in choices if choice.issue is not None)
+        if problems:
+            raise ValueError('\n\n'.join(problems))
+        return choices
+
+    def export_checked_people(self, files):
         options = self._source_export_options
         fmt = options['format']
+        if len(files)==1:
+            choice=files[0]
+            self.export_source_take(choice.project,choice.source,choice.stem)
+            return
         if fmt == 'blend' and options.get('blend_layout') == 'combined':
             from .blend_export_ui import choose_combined
             target = choose_combined(self)
             if target is not None:
-                self.submit_fbx_exports([(source.parent, self.active_result, source, target) for source, _ in files])
-            return True
-        folder=QFileDialog.getExistingDirectory(self,'Export Checked People')
+                self.submit_fbx_exports([(choice.project,self.active_result,choice.source,target) for choice in files])
+            return
+        folder=QFileDialog.getExistingDirectory(self,'Export Checked Takes')
         if folder:
             copies=[]
             from .person_names import export_path
             used={p.name.casefold() for p in Path(folder).iterdir()}
-            for source,name in files:
-                target=export_path(folder,name,used,suffix='.'+fmt)
-                copies.append((source.parent,self.active_result,source,target))
+            for choice in files:
+                target=export_path(folder,choice.stem,used,suffix='.'+fmt)
+                copies.append((choice.project,self.active_result,choice.source,target))
             self.submit_fbx_exports(copies)
-        return True

@@ -616,7 +616,7 @@ def build_workspace(w):
     w.save_project_action.setToolTip(tooltip_text('Save a separate project folder with a new name and location, including its video, motion and settings. Continue working in the saved copy.'))
     file_menu.addSeparator()
     w.export_action = file_menu.addAction("Export...", w.save_fbx)
-    w.export_action.setToolTip(tooltip_text('Export the displayed motion as FBX, BVH or a portable Blender project. Multiple people export separately; MAMMA also offers a whole-scene Blender bundle.'))
+    w.export_action.setToolTip(tooltip_text('Export the displayed motion as FBX, BVH or a portable Blender project. Choose the current take or all takes of checked people when available. MAMMA also offers a whole-scene Blender bundle.'))
     w.export_preview_action = file_menu.addAction('Export Preview...', w.save_preview)
     w.export_preview_action.setToolTip(tooltip_text('Save the selected input video beside the current 3D viewport as MP4 over the timeline trim. Keeps the current view, visible people/characters and viewport overlays. Includes source audio when available. Not available in PEAR live mode.'))
     w.export_preview_action.setEnabled(False)

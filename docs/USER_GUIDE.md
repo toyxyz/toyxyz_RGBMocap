@@ -738,7 +738,7 @@ an estimate and can leave residual sliding or penetration.
 | **Character checkboxes / selected row** | Show or hide imported characters independently of source people. Select a character to export it; right-click it for Retarget, Export Character or Remove Character. |
 | **People → ?** | Open instructions for people selection, names, colors and takes. The list footer shows only current status or warnings. |
 | **Rename... / color square** | Right-click a row to rename it; click its square to change display color. The name is also used for FBX filenames and rig names. |
-| **Take selector** | Choose a visible section when a person leaves and reappears. Long unseen gaps are separate takes. |
+| **Take selector** | Switch between a person's saved frame ranges. Each row shows whether the chosen motion result is ready or needs work. Long tracking gaps can create separate takes, and reconstructing a different trim can save an overlapping range. |
 | **Overlays / Bone Overlay** | Show video observations / source export bones. Bone Overlay is drawn above source meshes and imported characters. Display only. |
 | **View direction / Frame All** | Choose a camera direction / fit visible people in the 3D view. Left drag orbits, middle/right drag pans, wheel zooms. |
 | **Floor Grid / Correction Floor** | Show the gray zero-height reference grid / orange correction floor preview. Neither applies correction. |
@@ -752,8 +752,9 @@ an estimate and can leave residual sliding or penetration.
 ExMR/FlowHMR/GVHMR process checked people independently; MAMMA and PromptHMR
 reconstruct people together from their respective inputs. Results are shown in a shared scene.
 People share correction mode/floor; timings and pelvis offsets remain per person/take.
-Apply Correction updates all available takes, including hidden ones. Relative
-depth and contacts between people are estimates; collision avoidance is not provided.
+Apply Correction updates all available takes, including hidden ones. Checked
+takes with missing base motion are listed in Console and can be reconstructed separately.
+Relative depth and contacts between people are estimates; collision avoidance is not provided.
 
 ## Stream bones to Blender
 
@@ -789,10 +790,26 @@ runtime for the final export. The file retains the skeleton's rest pose and
 animation and can also be opened in Blender. This option defaults off.
 For SMPL BVH, choose **Generic / Blender** (default) or **3ds Max Biped** in the
 **BVH profile** list.
-The selected, applied result is exported. Each checked
-person/take gets a separate named file and rig; duplicate filenames get suffixes.
-People exports use the viewport's shared placement. Takes retain their own frame
-counts; align their start times when combining different source intervals.
+When there are multiple takes to choose from, **Export scope** offers three choices.
+
+- **Current take** exports the displayed result and is the default for one checked person.
+- **All takes for checked people** is the default when several people are checked.
+- **Selected takes → Choose takes…** lets you check individual ready takes across
+  people. The list shows each person's name, frame range and status. This selection
+  is independent of the People visibility checkboxes.
+
+The options window stays open if any requested take is unavailable. It lists each
+blocked take with its person, frame range, reason and suggested action. In
+**Choose takes…**, click a row to read its details. Choose **Apply Correction**
+when the saved correction is out of date, **Prepare Preview** when the export
+skeleton or preview needs rebuilding, or **Reconstruct 3D** when the take has no
+saved motion. You can also choose only the ready takes and export those first.
+MAMMA whole-scene export uses the requested takes and retains the original scene
+timeline and cameras.
+
+Separate-file exports preserve each take's frame count and shared placement.
+Duplicate filenames get suffixes. A combined Blender export keeps the relative
+start times of the exported takes.
 
 SMPL source-person exports use a 52-bone hierarchy with **Hips** as root and plain
 anatomical names by default. The Biped profile renames exported joints as described
@@ -921,10 +938,10 @@ For character FBX or VMD, first retarget to a supported character. See the
 ### MAMMA whole-scene Blender projects
 
 When MAMMA is selected, the Blender format also shows **MAMMA whole scene: body
-meshes and all cameras**. Check it to export checked people and their visible
-takes together, all saved calibrated cameras, synchronized video panels, and a
-separate camera-view scene for each camera. The original common timeline is
-retained; the T-pose option is unavailable for this export.
+meshes and all cameras**. Enable it and use **Export scope** to choose which takes
+to include. The file includes all saved calibrated cameras, synchronized video
+panels, and a separate camera-view scene for each camera. It keeps the original
+common timeline. The leading reference frame option is unavailable for this export.
 
 Body surfaces are baked **PC2 mesh caches**, including the selected applied
 correction. Reference armatures are separate editable skeletons; they are **not

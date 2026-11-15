@@ -16,18 +16,22 @@ def plan(request, stage):
         if not payload.get('export_face'):
             return []
         root=Path(payload['root']).resolve()
+        from .scene_export import scene_take_rows
         state=load_people(root)
-        rows=[dict(project=str(safe_child(root,t['project'])),target=payload['target'],
-                   rig_name=actor['name'],export_face=True)
-              for actor in state['people'] if actor['id'] in payload['people'] for t in actor['takes']]
+        rows=[dict(project=str(safe_child(root,take['project'])),target=payload['target'],
+                   rig_name=person['name'],export_face=True)
+              for person,take in scene_take_rows(state,payload['people'],payload.get('takes'))]
         origin=float(manifest(root)['start'])
         leading=False
     elif isinstance(payload,dict):
         rows=payload['takes']
         if not any(row.get('export_face') for row in rows):
             return []
-        origin=min(float(manifest(Path(row['project']))['start']) for row in rows)
-        leading=bool(rows and rows[0].get('prepend_tpose'))
+        timed=sorted(((float(manifest(Path(row['project']))['start']),row) for row in rows),
+                     key=lambda entry:entry[0])
+        origin=timed[0][0]
+        rows=[row for _,row in timed]
+        leading=bool(rows[0].get('prepend_tpose'))
     else:
         rows=payload
         origin,leading=None,False

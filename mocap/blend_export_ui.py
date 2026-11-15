@@ -20,28 +20,22 @@ def choose_combined(parent):
     return Path(name).with_suffix('.blend') if name else None
 
 
-def export_scene(w):
+def export_scene(w, takes):
     from .storage import atomic_json
-    from .people_store import safe_child
-    from .motion_tools import selected_export
     from .blend_support import partial,read
     try:
         if w.people_root is None or read(w.people_root/'project.json').get('pipeline',{}).get('model')!='mamma':
             raise ValueError('Open a reconstructed MAMMA people scene first.')
-        people=w.checked_people()
-        if not people:raise ValueError('Check the people to include in the scene.')
-        for person in people:
-            if not person['takes']:raise ValueError(person['name']+': no reconstructed motion.')
-            for take in person['takes']:
-                if selected_export(safe_child(w.people_root,take['project']),w.active_result) is None:
-                    raise ValueError(person['name']+': Apply Correction or Prepare Preview for the selected result first.')
+        if not takes:raise ValueError('Choose at least one ready take to export.')
+        people=list(dict.fromkeys(take.person_id for take in takes))
+        take_paths=[take.project.relative_to(w.people_root.resolve()).as_posix() for take in takes]
         name,_=QFileDialog.getSaveFileName(w,'Export MAMMA Blender Scene','MAMMA scene.blend','Blender (*.blend)',options=QFileDialog.DontConfirmOverwrite)
         if not name:return
         target=Path(name)
         if target.suffix.lower()!='.blend':target=target.with_suffix('.blend')
         target=targets([(None,None,None,target)])[0][3]
         request=w.project/('.scene-export-'+uuid.uuid4().hex+'.json')
-        atomic_json(request,dict(root=str(w.people_root),kind=w.active_result,people=[p['id'] for p in people],target=str(target),
+        atomic_json(request,dict(root=str(w.people_root),kind=w.active_result,people=people,takes=take_paths,target=str(target),
                                  export_face=w._source_export_options.get('export_face',False)))
         w._motion_export_targets=[str(target)];w._fbx_export_cleanup=(request,[partial(target.parent,request)])
         w.start_jobs([('save_blend_scene',['--project',str(w.project),'--output',str(request)])])

@@ -1,5 +1,23 @@
 # Source package validation
 
+## Take selection and export diagnostics (2026-11-15)
+
+- In a saved Windows FlowHMR project with two people and three takes per person,
+  Export identified the four blocked takes by person, frame range, reason and
+  action. Saved contact edits and interrupted skeleton preparation had distinct
+  diagnostics. **Current take** showed only the selected take's status, and the
+  take chooser displayed details for unavailable rows.
+- Selected ready takes across both people, including a person unchecked in the
+  People list. Ran the FBX and BVH workers and opened the combined .blend in
+  Blender to verify that only the two requested takes were present. Also
+  checked the current-take and checked-people defaults.
+- Created a MAMMA whole-scene .blend with one requested take and verified that
+  it retained the saved cameras. Verified that the accompanying Face TXT plan
+  selected the same take.
+- Ran **Apply Correction** on a copy of the FlowHMR project and verified that the
+  stale older takes became exportable while takes without reconstruction remained
+  unavailable.
+
 ## One-file Blender export (2026-11-15)
 
 - Exported two existing ExMR actors into one `.blend` and checked the

@@ -9,7 +9,7 @@ from .blend_support import Bundle,read,copy_video,build,disk_check
 
 def run(request, emit=lambda *a, **k: None):
     from .people_store import safe_child, load_people
-    from .scene_export import context
+    from .scene_export import context, scene_take_rows
     from .scene_camera import validate_transform, read_camera
     from .mamma_body import WORLD_ROTATION
     from .mesh_data import reference_vertices
@@ -33,31 +33,27 @@ def run(request, emit=lambda *a, **k: None):
         cameras=read(track(work/'camera-world.json'));entries=read(track(work/'inputs.json'))
         if len(entries)<2 or set(cameras)!={e['id'] for e in entries}:raise ValueError('Camera calibration and videos differ')
         people=load_people(root);track(root/'people.json');track(root/'people_scene.json')
-        ids=spec['people'];kind=spec['kind']
-        if not isinstance(ids,list) or not 1<=len(ids)<=8 or len(set(ids))!=len(ids):raise ValueError('Select at least one person')
-        selected=[p for p in people['people'] if p['id'] in ids]
-        if len(selected)!=len(ids):raise ValueError('Selected people changed')
+        kind=spec['kind']
+        selected=scene_take_rows(people,spec['people'],spec.get('takes'))
         n=int(state['frames']);fps=float(state['fps']);actors=[]
         if not 1<=n<=1800 or not np.isfinite(fps) or fps<=0:raise ValueError('Invalid MAMMA scene timing')
-        for person in selected:
-            if not person['takes']:raise ValueError('Selected person has no animation')
-            for take in person['takes']:
-                p=safe_child(root,take['project']);meta=read(track(p/'project.json'))
-                source=selected_export(p,kind)
-                if source is None or not result_is_current(p,kind) or not artifacts_current(p,kind):
-                    raise ValueError(person['name']+': selected result is stale. Apply Correction or Prepare Preview first.')
-                track(source);scene=context(root,p)
-                if not np.allclose(scene['transform'],np.eye(4),atol=1e-6):raise ValueError('MAMMA actors must share one native world')
-                first,end=map(int,meta['person_frames'])
-                if not 0<=first<end<=n or end-first!=meta['frames'] or abs(meta['fps']-fps)>1e-6:raise ValueError('Invalid actor timing')
-                info=read(track(p/(kind+'_mesh.json')))
-                if Path(info['frames_file']).name!=info['frames_file']:raise ValueError('Invalid mesh cache path')
-                asset=track(Path(info['asset']));frames=track(p/info['frames_file'])
-                if info.get('version')!=1 or info['frames']!=end-first:raise ValueError('Prepare the current mesh preview first')
-                for suffix in ('_mixamo.json','_artifacts.json'):
-                    track(p/(kind+suffix))
-                checks.append((p,source,scene))
-                actors.append(dict(project=p,name=person['name'],color=person['color'],first=first,end=end,asset=asset,frames=frames,source=source,scene=scene))
+        for person,take in selected:
+            p=safe_child(root,take['project']);meta=read(track(p/'project.json'))
+            source=selected_export(p,kind)
+            if source is None or not result_is_current(p,kind) or not artifacts_current(p,kind):
+                raise ValueError(person['name']+': selected result is stale. Apply Correction or Prepare Preview first.')
+            track(source);scene=context(root,p)
+            if not np.allclose(scene['transform'],np.eye(4),atol=1e-6):raise ValueError('MAMMA actors must share one native world')
+            first,end=map(int,meta['person_frames'])
+            if not 0<=first<end<=n or end-first!=meta['frames'] or abs(meta['fps']-fps)>1e-6:raise ValueError('Invalid actor timing')
+            info=read(track(p/(kind+'_mesh.json')))
+            if Path(info['frames_file']).name!=info['frames_file']:raise ValueError('Invalid mesh cache path')
+            asset=track(Path(info['asset']));frames=track(p/info['frames_file'])
+            if info.get('version')!=1 or info['frames']!=end-first:raise ValueError('Prepare the current mesh preview first')
+            for suffix in ('_mixamo.json','_artifacts.json'):
+                track(p/(kind+suffix))
+            checks.append((p,source,scene))
+            actors.append(dict(project=p,name=person['name'],color=person['color'],first=first,end=end,asset=asset,frames=frames,source=source,scene=scene))
         primary=entries[0]['id'];camera_jobs=[]
         for i,e in enumerate(entries):
             name=e['id']

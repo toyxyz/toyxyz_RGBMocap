@@ -533,8 +533,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.reset_trim_button.setEnabled(self.slider.trim_enabled)
         character=self.selected_character()
         self.export_action.setText('Export Character...' if character else 'Export...')
-        self.export_action.setEnabled(not self.busy and (bool(character.get('takes')) and not character.get('needs_retarget') if character else self.project is not None and self.current_export() is not None))
-        self.export_action.setToolTip(tooltip_text("Choose a character export format and whether to include its mesh. PMX characters also support VMD motion." if character else "Export the displayed motion as FBX, BVH or a portable Blender project. Multiple people export separately; MAMMA also offers a whole-scene Blender bundle."))
+        self.export_action.setEnabled(not self.busy and (bool(character.get('takes')) and not character.get('needs_retarget') if character else self.source_export_available()))
+        self.export_action.setToolTip(tooltip_text("Choose a character export format and whether to include its mesh. PMX characters also support VMD motion." if character else "Export the current take or all takes of checked people as FBX, BVH or a portable Blender project."))
         self.play_button.setEnabled(self.info is not None and self.video_readable)
         for action in self.open_actions:
             action.setEnabled(not self.busy)
@@ -634,6 +634,13 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
     def refinement_changed(self, enabled):
         self.set_active_result(self.selected_result())
 
+    def source_export_available(self):
+        if self._pear_active or self.project is None:
+            return False
+        if self.people_state and any(person.get('takes') for person in self.people_state['people']):
+            return True
+        return self.current_export() is not None
+
     def current_export(self):
         if self._pear_active:return None
         info=self.contact_tracks.get(base_result(self.active_result))
@@ -703,6 +710,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.motion_correction.blockSignals(False)
         self.refresh_results()
         self.request_people_scene()
+        if self.people_state:
+            self.populate_person_takes()
         self.update_readiness()
 
     def choose_video(self):
@@ -1933,30 +1942,61 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
     def save_fbx(self):
         if self.selected_character() is not None:
             self.export_character(self.selected_character());return
-        if self.busy or self.current_export() is None:
+        if self.busy or not self.source_export_available():
             self.status.setText('Selected motion is unavailable or has pending correction edits. Apply Correction / Prepare Preview before exporting.');return
         from .source_export_dialog import SourceExportDialog
-        dialog=SourceExportDialog(self)
+        people=self.checked_people() if self.people_state is not None else []
+        take_count=sum(len(person.get('takes',[])) for person in self.people_state['people']) if self.people_state else 0
+        show_take_scope=len(people)>1 or take_count>1 or (take_count==1 and not people)
+        dialog=SourceExportDialog(self,show_take_scope=show_take_scope,default_all_takes=len(people)>1,
+                                  validate=self.validate_source_export,
+                                  take_choices=lambda: self.take_choices(validate_scene=True))
         if dialog.exec()!=QDialog.Accepted:return
-        if self.current_export() is None:
-            self.status.setText('Motion changed while choosing export options. Apply Correction / Prepare Preview first.');return
         self._source_export_options=dialog.options()
         if self._source_export_options['format']=='blend_scene':
             from .blend_export_ui import export_scene
-            export_scene(self);return
-        if self.export_checked_people():return
+            export_scene(self,dialog.checked_exports);return
+        if dialog.checked_exports is not None:
+            self.export_checked_people(dialog.checked_exports)
+            return
         source = self.current_export()
-        if source:
-            from .person_names import export_stem
-            fmt=self._source_export_options['format']
-            default=export_stem(self.export_person_name(self.project))+'.'+fmt
-            name, _ = QFileDialog.getSaveFileName(self, "Export", default, fmt.upper()+" (*."+fmt+")",options=QFileDialog.DontConfirmOverwrite if fmt=='blend' else QFileDialog.Option(0))
-            if name:
-                if not Path(name).suffix:name+='.'+fmt
-                self.submit_fbx_exports([(self.project,self.active_result,source,Path(name))])
+        if source is None:
+            self.status.setText('Motion changed while choosing export options. Apply Correction or run Prepare Preview first.')
+            return
+        from .person_names import export_stem
+        current=self.take_choices(paths={self.project})
+        stem=current[0].stem if current else export_stem(self.export_person_name(self.project))
+        self.export_source_take(self.project,source,stem)
+
+    def export_source_take(self, project, source, stem):
+        fmt=self._source_export_options['format']
+        default=stem+'.'+fmt
+        name, _ = QFileDialog.getSaveFileName(self, "Export", default, fmt.upper()+" (*."+fmt+")",options=QFileDialog.DontConfirmOverwrite if fmt=='blend' else QFileDialog.Option(0))
+        if name:
+            if not Path(name).suffix:name+='.'+fmt
+            self.submit_fbx_exports([(project,self.active_result,source,Path(name))])
+
+    def validate_source_export(self, options):
+        scope=options['take_scope']
+        if scope=='all':
+            return self.checked_take_exports()
+        if scope=='selected':
+            return self.checked_take_exports(options['selected_takes'])
+        if options['format']=='blend_scene' or self.take_choices(paths={self.project}):
+            return self.checked_take_exports([self.project])
+        if self.current_export() is None:
+            from .take_selection import diagnose_take
+            edits=self.contact_tracks.get(base_result(self.active_result),{})
+            pending=self.active_result.startswith('corrected_') and (self.contact_saving or edits.get('unsaved'))
+            issue=diagnose_take(self.project,self.active_result,pending)
+            raise ValueError(issue.report('Current take'))
+        return None
 
     def submit_fbx_exports(self,files):
-        if self.busy or not files or self.current_export() is None:return
+        if self.busy or not files:return
+        if any(project==self.project for project,_,_,_ in files) and self.current_export() is None:
+            self.status.setText('Motion changed while choosing the destination. Apply Correction or run Prepare Preview first.')
+            return
         import uuid
         from .storage import atomic_json
         request=self.project/('.fbx-export-'+uuid.uuid4().hex+'.json')
