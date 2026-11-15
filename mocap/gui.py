@@ -10,6 +10,7 @@ import os
 from collections import deque
 from pathlib import Path
 import time
+import traceback
 
 from PySide6.QtCore import QElapsedTimer, QEvent, QProcess, QProcessEnvironment, QTimer, Qt, QUrl
 from PySide6.QtGui import QColor, QDesktopServices, QKeySequence, QShortcut, QTextOption
@@ -1419,6 +1420,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.task_timer.start();self.update_task_progress()
         self.progress.setRange(0, 0)
         self.buffer = ""
+        self._worker_event_failed = False
         self._stdout_decoder = codecs.getincrementaldecoder("utf-8")("replace")
         self._stderr_decoder = codecs.getincrementaldecoder("utf-8")("replace")
         self._stderr_buffer = ""
@@ -1488,7 +1490,15 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                     atomic_json(path,state)
                 except (OSError,ValueError) as error:self.log.append('Could not save stopped stage: '+str(error))
 
+    def worker_completion_error(self, error):
+        self._worker_event_failed = True
+        self.failed = True
+        from .storage import path_error_message
+        self.status.setText('Processing failed while applying worker output. '+path_error_message(error))
+        self.log.append(traceback.format_exc().rstrip())
+
     def read_stdout(self, final=False):
+        if self.process is None:return
         if self.processing_guard:self.processing_guard.output()
         self.buffer += self._stdout_decoder.decode(bytes(self.process.readAllStandardOutput()), final=final)
         if final and self.buffer and not self.buffer.endswith("\n"):self.buffer += "\n"
@@ -1496,15 +1506,26 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             self.buffer = self.buffer[-65536:]
         while "\n" in self.buffer:
             line, self.buffer = self.buffer.split("\n", 1)
-            if line.startswith("@@MOCAP@@"):
-                try:
-                    self.handle_event(json.loads(line[len("@@MOCAP@@"):]))
-                except (ValueError, KeyError) as error:
-                    self.log.append(str(error))
-            elif line.strip():
-                self.log.append(line.rstrip())
+            if not line.startswith("@@MOCAP@@"):
+                if line.strip():self.log.append(line.rstrip())
+                continue
+            try:
+                event = json.loads(line[len("@@MOCAP@@"):])
+            except ValueError as error:
+                self.log.append('Invalid worker message: ' + str(error))
+                continue
+            if not isinstance(event, dict) or not isinstance(event.get('type'), str):
+                self.log.append('Invalid worker event.')
+                continue
+            if self._worker_event_failed:
+                continue
+            try:
+                self.handle_event(event)
+            except Exception as error:
+                self.worker_completion_error(error)
 
     def read_stderr(self, final=False):
+        if self.process is None:return
         if self.processing_guard:self.processing_guard.output()
         text = self._stderr_decoder.decode(bytes(self.process.readAllStandardError()), final=final)
         self._stderr_buffer = (self._stderr_buffer + text.replace("\r", "\n"))[-65536:]
@@ -1573,17 +1594,32 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.log.ensureCursorVisible()
 
     def process_finished(self, code, _):
-        self.read_stdout(final=True)
-        self.read_stderr(final=True)
-        if code != 0 and not self.cancelled:
-            self.failed = True
-            if "failed" not in self.status.text():
-                self.status.setText("Processing stopped. See the console for details.")
-        self.process.deleteLater()
-        self.process = None
-        self.task_state.finish(time.monotonic(),not self.failed and not self.cancelled and code==0)
-        self.cleanup_fbx_export()
-        self.next_job()
+        if self.process is None:return
+        try:
+            try:
+                self.read_stdout(final=True)
+            finally:
+                self.read_stderr(final=True)
+            if code != 0 and not self.cancelled:
+                self.failed = True
+                if "failed" not in self.status.text():
+                    self.status.setText("Processing stopped. See the console for details.")
+        except Exception as error:
+            self.worker_completion_error(error)
+        finally:
+            process, self.process = self.process, None
+            try:
+                if process is not None:process.deleteLater()
+                self.cleanup_fbx_export()
+            except Exception as error:
+                self.worker_completion_error(error)
+            finally:
+                try:
+                    self.task_state.finish(time.monotonic(),not self.failed and not self.cancelled and code==0)
+                except Exception as error:
+                    self.worker_completion_error(error)
+                finally:
+                    self.next_job()
 
     def process_error(self, error):
         if error == QProcess.FailedToStart:
@@ -1873,10 +1909,16 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         request=self.project/('.fbx-export-'+uuid.uuid4().hex+'.json')
         rows=[]
         options=getattr(self,'_source_export_options',{})
-        compatible=options.get('format','fbx')=='fbx' and options.get('fbx_compatibility',False)
-        if getattr(self,'_source_export_options',{}).get('format')=='blend':
+        fmt = options.get('format', 'fbx')
+        compatible = fmt == 'fbx' and options.get('fbx_compatibility', False)
+        combined = fmt == 'blend' and options.get('blend_layout') == 'combined'
+        if fmt == 'blend':
             from .blend_export_ui import targets
-            files=targets(files)
+            if combined:
+                target = targets(files[:1])[0][3]
+                files = [(project, kind, source, target) for project, kind, source, _ in files]
+            else:
+                files = targets(files)
         try:
             for project,kind,source,target in files:
                 row=dict(project=str(project),kind=kind,source=str(source),target=str(target))
@@ -1902,13 +1944,17 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 rows.append(row)
         except (OSError,ValueError,KeyError) as error:
             self.status.setText('Cannot export shared scene: '+str(error));return
-        atomic_json(request,rows)
-        self._motion_export_targets=[str(target) for _,_,_,target in files]
-        self._fbx_export_cleanup=(request,[target.with_name('.'+target.name+'.rgbmocap-'+request.stem+'.partial') for _,_,_,target in files])
-        stage='copy_bvh' if getattr(self,'_source_export_options',{}).get('format','fbx')=='bvh' else 'save_fbx'
-        if getattr(self,'_source_export_options',{}).get('format')=='blend':
+        destinations = list(dict.fromkeys(target for _, _, _, target in files))
+        atomic_json(request, dict(target=str(destinations[0]), takes=rows) if combined else rows)
+        self._motion_export_targets = [str(target) for target in destinations]
+        stage = 'copy_bvh' if fmt == 'bvh' else 'save_fbx'
+        if fmt == 'blend':
             from .blend_support import partial
-            stage='save_blend';self._fbx_export_cleanup=(request,[partial(target.parent,request) for _,_,_,target in files])
+            stage = 'save_blend'
+            staging = [partial(target.parent, request) for target in destinations]
+        else:
+            staging = [target.with_name('.'+target.name+'.rgbmocap-'+request.stem+'.partial') for target in destinations]
+        self._fbx_export_cleanup = (request, staging)
         self.start_jobs([(stage,['--project',str(self.project),'--output',str(request)])])
 
     def cleanup_fbx_export(self):

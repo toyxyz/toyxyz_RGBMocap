@@ -1,5 +1,40 @@
 # Source package validation
 
+## One-file Blender export (2026-11-15)
+
+- Exported two existing ExMR actors into one `.blend` and checked the
+  shared placement against a separate export in Blender 4.5. Both actors
+  shared one video file. Reopened the result after moving the bundle.
+- Checked a staggered two-take timeline with a gap. Armature visibility,
+  camera markers, video start frames and the optional shared lead-in followed
+  the intended intervals.
+- Exercised layout selection for ExMR, FlowHMR, MAMMA and GEM-X. The GEM-X
+  single-result route exported its Native77 rig, surface cache and video.
+
+## Windows stability and export checks (2026-11-15)
+
+- Exercised the checked-people export entry point and created separate
+  Blender 4.5 bundles with video for two existing ExMR takes. Tested existing
+  folder and case-insensitive conflicts plus FBX/BVH name allocation.
+- Ran the batch consent conditions with Y, N, interrupt and error return
+  codes. Verified that PromptHMR camera installation requires its own Y.
+- Exercised Qt QProcess callbacks with normal completion, malformed lines,
+  handler and cleanup exceptions, worker failure, nonzero exit and cancel.
+  Checked UTF-8 output and JSON reporting for a lone surrogate.
+- Tested valid, missing and unreadable character indexes with backup and
+  commit failures. Confirmed that originals and earlier backups survive.
+- Saved a test workspace on NTFS. Checked linked files, copy independence,
+  timestamps, disk limits, link fallback, cancellation, amended sources,
+  and manifest isolation.
+- Tested download interruption and resume, cache reuse, bad content and
+  redirect validation. Downloaded a small pinned wheel from its upstream
+  host and verified its hash. Tested uv reuse, version change, truncated
+  archive, wrong hash and retry in Windows PowerShell.
+- Exercised Windows path classification for an actual overlong name plus
+  synthetic missing paths, Unicode length and long-path registry states.
+  Full optional runtime installation and new model inference were outside
+  this pass.
+
 ## Source FBX A-pose and T-pose (2026-11-15)
 
 - Measured upper-arm axes in Epic's MetaHuman DNA Calibration body bind

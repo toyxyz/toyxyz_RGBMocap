@@ -14,6 +14,12 @@ def targets(files):
     return result
 
 
+def choose_combined(parent):
+    name, _ = QFileDialog.getSaveFileName(parent, 'Export One Blender File', 'Motion.blend',
+                                           'Blender (*.blend)', options=QFileDialog.DontConfirmOverwrite)
+    return Path(name).with_suffix('.blend') if name else None
+
+
 def export_scene(w):
     from .storage import atomic_json
     from .people_store import safe_child

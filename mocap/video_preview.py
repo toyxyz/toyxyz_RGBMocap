@@ -152,7 +152,8 @@ class PreviewDecoder(QThread):
                         capture.release()
                         capture = None
                     if not self._obsolete(generation):
-                        self.failed.emit(generation, str(error))
+                        from .storage import path_error_message
+                        self.failed.emit(generation, path_error_message(error))
                         with self.condition:
                             if generation == self.generation:
                                 self.path = None

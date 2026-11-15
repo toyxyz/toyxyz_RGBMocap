@@ -103,7 +103,7 @@ have not yet been verified; compatibility reports are welcome.
    cd toyxyz_RGBMocap
    ```
 
-   Avoid protected folders such as Program Files. The commands below are for
+   Use a short, writable installation path such as C:\RGBMoCap. The commands below are for
    Command Prompt; in PowerShell, prefix each `.cmd` filename with `.\`.
 2. Run `install.cmd` with an internet connection. It downloads and verifies
    pinned Python environments, Blender 4.5.0, FFmpeg 7.1.1 and small upstream
@@ -226,6 +226,9 @@ Rerun `install.cmd`; the component summary is `.setup/git-components.json`.
 Failed mandatory base installation or an unresolved update still blocks launch.
 Do not manually remove `.setup/git-sync.pending` to bypass that protection.
 
+MAMMA and PromptHMR package setup shows download progress and reuses
+verified downloads. Rerun setup to resume a partially downloaded package.
+
 Pinned support downloads retry transient network failures up to three attempts
 with bounded waiting and validated partial-download recovery. HTTPS certificate
 and final size/SHA-256 checks remain required. Permanent errors are reported
@@ -317,6 +320,15 @@ may be outside the installation folder.
 | `<install folder>\.setup\gemx-downloads\` | Verified GEM-X wheel and source download cache. Remove contents after setup finishes. Keep `runtime_gemx/`, `.setup/gemx-runtime.json` and the ExMR Python base. |
 | `<install folder>\.setup\pear-downloads\` | PEAR source/support and camera-alignment archives. Contents can be removed after installation/update finishes; repair may download them again. Keep `runtime_pear`, `.setup/pear-runtime.json` and `.setup/pear-alignment.json`. |
 | `<install folder>\temp\` | Local PEAR Torch/kernel temporary cache. Contents can be removed after closing the app and its workers; the next run can recreate them. |
+
+On file systems that support hardlinks, **Save Project As** preserves shared
+files within the new copy, including videos used by several people or takes.
+The new project remains independent of the original. On other file systems
+the save can require additional disk space for separate copies.
+
+If a project's character index cannot be read, the app preserves a copy under
+`characters/index.unreadable-*.json` before it saves a replacement. A failed
+backup stops the save. Keep the backup when recovering the character list.
 
 Repeated work mainly grows project data: each model has its own result folder.
 Inside `exmr`, `flowhmr` or `gvhmr`, different processing ranges can add `clips`
@@ -822,14 +834,19 @@ destination. **PEAR live mode does not support preview export.**
 
 ### Portable Blender projects
 
-For SMPL-based motion, choose **Blender project + video (.blend)** in
-**File > Export...**, then choose an output filename. The exporter creates a
-**new subfolder** containing the
-`.blend`, `video.mp4`, `camera_report.json` and instructions. Existing folders are
-retained; a numbered folder is chosen when needed. For several checked people
-or takes, each gets its own portable folder. The selected applied motion and
-shared placement are preserved. Original inference, project files, contacts and
-camera receipts are not rewritten; stale results remain blocked.
+For SMPL-based motion, choose **Blender project + video (.blend)** under
+**File > Export...** and select a **Blender output** layout.
+
+- **Separate Blender files** creates a portable folder for each selected person
+  or take. Each folder contains a `.blend`, `video.mp4` and the export report.
+- **One Blender file** puts all selected people and takes in one `.blend`
+  scene, with their shared placement and relative start times. Each take is
+  visible during its recorded interval. Camera markers switch the background
+  video as playback moves between intervals. Identical clips share one
+  exported video file. Keep the video files beside the `.blend`.
+
+Each layout creates new folders and adds a number if a folder already exists.
+Apply pending corrections or prepare a stale preview before exporting.
 
 Open the `.blend` in Blender 4.5 or newer. **Numpad 0** enters the source-camera
 view and **Space** plays. The skeleton is editable; its object has no animated
@@ -846,8 +863,9 @@ background corrections. Disabling tracking exports the first saved camera as a
 fixed camera. These choices affect only the exported camera, never body motion.
 Movement scale and reconstruction error can prevent exact video alignment; this
 is not measured camera calibration. The export report records the choices.
-An optional T-pose adds one animation frame and delays the video/camera timeline
-by one to keep the original motion and video paired.
+An optional T-pose adds one animation frame and delays the video and camera
+timeline to keep playback synchronized. In **One Blender file**, the option
+adds one shared lead-in frame for the takes that start first.
 
 ### GEM-X SOMA Blender bundles
 

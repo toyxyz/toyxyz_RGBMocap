@@ -35,6 +35,50 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def windows_long_paths_enabled():
+    import winreg
+    try:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SYSTEM\CurrentControlSet\Control\FileSystem') as key:
+            value, kind = winreg.QueryValueEx(key, 'LongPathsEnabled')
+            return bool(value) if kind == winreg.REG_DWORD else None
+    except FileNotFoundError:
+        return False
+    except OSError:
+        return None
+
+
+def path_error_message(error):
+    """Return a displayable error, with context when Windows may hit MAX_PATH."""
+    message = str(error).encode('utf-8', errors='backslashreplace').decode('utf-8')
+    if os.name != 'nt' or not isinstance(error, OSError):
+        return message
+    winerror = getattr(error, 'winerror', None)
+    hint = ' Use a shorter installation or project folder, or shorten the filename.'
+    if winerror == 206:
+        return 'Windows rejected a path as too long.' + hint + ' ' + message
+    if winerror not in (2, 3, 123):
+        return message
+
+    def windows_units(value):
+        return len(value.encode('utf-16-le', errors='surrogatepass')) // 2
+
+    for name in (error.filename, error.filename2):
+        if not isinstance(name, str) or name.startswith(('\\\\?\\', '\\\\.\\')):
+            continue
+        try:
+            path = Path(os.path.abspath(name))
+        except (OSError, ValueError):
+            continue
+        if winerror == 123:
+            if any(windows_units(part) > 255 for part in path.parts[1:]):
+                return 'A filename or folder name exceeds 255 UTF-16 characters.' + hint + ' ' + message
+            continue
+        length = windows_units(str(path))
+        if length >= 260 and windows_long_paths_enabled() is False:
+            return f'Windows long paths are disabled and this path has {length} UTF-16 characters.' + hint + ' ' + message
+    return message
+
+
 def project_key(source: Path, start: float, end: float) -> str:
     payload = f"{source.resolve()}|{source.stat().st_size}|{source.stat().st_mtime_ns}|{start:.6f}|{end:.6f}|v1"
     return hashlib.sha256(payload.encode()).hexdigest()[:14]

@@ -22,6 +22,8 @@ POLICY_ONLY = {
 # UTF-8 log streams change no SAM features. Complete-byte matching means
 # any subsequent numerical edit still invalidates the affected cache.
 LOGGING_ONLY = {
+    # Worker diagnostics and UTF-8 output only.
+    "17aa8fe0702554071c70b348eb3caea421c16dfd2051de52e30ade4be14138cf": "883d9dde808cf27c86611cb85f0e28ffcb3541639d417d2f68c4c7e1b2d00855",
     "db6fd57ca78c6dfab27142b9e99db207fcc1021933f1c4cfeb599c5fdad321ed": "c1abd10ec3143cfa7d7b97283a461fa858b73f55338cde7d7842cf030eff0b95",
     "141809da55236c2cbbf3f26f9e925362bcac6197d3883406347fa6b3ac7b7174": "319f211033a21d0fa1a83dd01a45676844df93cf95680e0d9fb7242883e3ba42"
 }

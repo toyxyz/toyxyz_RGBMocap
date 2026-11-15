@@ -762,7 +762,7 @@ class PeopleWorkspace:
             self.activate_person(ident,path)
 
     def export_checked_people(self):
-        """Multiple selected people/takes export separately, without fabricated gaps."""
+        """Export all selected people and takes with the chosen layout."""
         if not self.people_state:return False
         people=self.checked_people()
         if len(people)<2 and not (people and len(people[0].get('takes',[]))>1):return False
@@ -780,13 +780,21 @@ class PeopleWorkspace:
                 from .person_names import export_stem
                 stem=export_stem(person['name'])+(f'_take_{number:02d}' if len(takes)>1 else '')
                 files.append((source,stem))
+        options = self._source_export_options
+        fmt = options['format']
+        if fmt == 'blend' and options.get('blend_layout') == 'combined':
+            from .blend_export_ui import choose_combined
+            target = choose_combined(self)
+            if target is not None:
+                self.submit_fbx_exports([(source.parent, self.active_result, source, target) for source, _ in files])
+            return True
         folder=QFileDialog.getExistingDirectory(self,'Export Checked People')
         if folder:
             copies=[]
             from .person_names import export_path
             used={p.name.casefold() for p in Path(folder).iterdir()}
             for source,name in files:
-                target=export_path(folder,name,used,suffix='.'+getattr(self,'_source_export_options',{}).get('format','fbx'))
+                target=export_path(folder,name,used,suffix='.'+fmt)
                 copies.append((source.parent,self.active_result,source,target))
             self.submit_fbx_exports(copies)
         return True

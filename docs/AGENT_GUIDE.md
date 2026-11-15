@@ -472,6 +472,11 @@ interval, transport the skeleton once through its existing shared placement, and
 use cameras already in that common world without applying the placement twice.
 Optional camera tracking, movement scale and background refinement affect only
 exported cameras. T-pose shifts both motion and video by one frame.
+One-file requests use a single staging bundle and assign take offsets from the
+earliest selected source start at the common export frame rate. The Blender
+builder offsets each armature action, keys take visibility and binds background
+cameras to timeline markers. Reuse identical video files and keep paths relative
+to the bundle. When enabled, the leading T-pose occupies one shared frame.
 
 `blend_multicam_export.py` adapts PR #18's full-scene pipeline: current checked
 MAMMA people/takes, full selected SMPL-X LBS surfaces streamed one frame at a
@@ -509,6 +514,12 @@ runtime dependency, source motion or contact change is part of export.
 - MAMMA retargeting must use `mocap.mamma_body.body_path(project)`, including its actor-specific folded shape data. Never substitute the standard SMPL-X body used by ExMR/GVHMR, or require that extra model for a MAMMA-only workflow.
 
 ## Projects, state and protection
+
+**Save Project As** counts shared hardlinked files once and creates any new
+links entirely inside the copy. If a destination cannot create a hardlink,
+recheck the space budget before falling back to copying. Keep project manifests
+independent so staging can rewrite location metadata. Character index writes
+preserve unreadable input files before committing a replacement.
 
 - Default projects live under `<installation>/projects/`; **Save Project As** creates and switches to a copy at a user-selected location. Open the saved `project.json` using **File > Open Project**. A project contains model-specific `exmr`, `flowhmr`, `gvhmr`, `mamma` or `prompthmr` result folders; model switching loads existing results when available. MAMMA saves all input camera videos. People, takes, contact edits and imported characters are project data.
 - `models/`, `projects/`, `cache/`, `character_scenes/`, `runtime*/` and `.setup/` are local data, not source artifacts. User project folders can also be outside the checkout. Never assume `.gitignore` protects a path that was already tracked or will be force-added. Check `git status` and tracked files before committing; do not upload model weights, video, personal data, credentials, generated motion or caches. Explicitly approved README sample assets are exceptions.
@@ -880,6 +891,10 @@ The GUI uses separate incremental UTF-8 decoders for each worker channel and
 character job. Preserve decoder state between pipe chunks and flush at EOF;
 never decode each arbitrary chunk independently. Keep existing buffer limits.
 PEAR's binary IPC remains binary and must not pass through these decoders.
+Single and batch workers report the original failure even if writing an error log
+fails. Use the Windows path diagnostic for the console and preview messages.
+A GUI handler exception stops the pending queue, drains logs and releases the
+finished process. Invalid protocol lines are logged as malformed.
 
 Use `mocap.image_io.read_image` / `write_image` for filesystem-backed OpenCV
 images on Windows. They retain the existing codec and pixels, while Python

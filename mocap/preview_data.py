@@ -428,4 +428,5 @@ class PreviewDataLoader(QThread):
             except Exception as error:
                 result.close()
                 if not cancelled():
-                    self.failed.emit(generation, str(error))
+                    from .storage import path_error_message
+                    self.failed.emit(generation, path_error_message(error))

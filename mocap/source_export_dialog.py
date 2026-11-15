@@ -14,6 +14,12 @@ class SourceExportDialog(QDialog):
         self.format.addItem('FBX (.fbx)','fbx');self.format.addItem('BVH (.bvh)','bvh')
         self.format.addItem('Blender project + video (.blend)','blend')
         form.addRow('Format',self.format)
+        self.blend_layout = QComboBox()
+        self.blend_layout.addItem('Separate Blender files', 'separate')
+        self.blend_layout.addItem('One Blender file', 'combined')
+        self.blend_layout.setToolTip('Combine the selected people and takes on one Blender timeline, or export one bundle per take.')
+        self.blend_layout_label = QLabel('Blender output')
+        form.addRow(self.blend_layout_label, self.blend_layout)
         self.profile=QComboBox();self.profile.addItem('Generic / Blender','generic')
         if self.model!='gemx':self.profile.addItem('3ds Max Biped','biped')
         self.profile.setToolTip('Generic / Blender keeps anatomical names and original rotation orders. 3ds Max Biped uses Character Studio names and uniform ZXY rotations. Both keep metre units and Y up.')
@@ -50,12 +56,14 @@ class SourceExportDialog(QDialog):
         layout.addStretch(1)
         buttons=QDialogButtonBox(QDialogButtonBox.Save|QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Save).setText('Continue...');buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);layout.addWidget(buttons)
-        for signal in (self.format.currentIndexChanged,self.fbx_rest_pose.currentIndexChanged,self.whole_scene.toggled,self.animate_camera.toggled):signal.connect(self.update_format)
+        for signal in (self.format.currentIndexChanged,self.fbx_rest_pose.currentIndexChanged,self.blend_layout.currentIndexChanged,self.whole_scene.toggled,self.animate_camera.toggled):signal.connect(self.update_format)
         self.update_format()
     def update_format(self):
         fmt=self.format.currentData();blend=fmt=='blend';whole=blend and self.model=='mamma' and self.whole_scene.isChecked()
         self.profile_label.setVisible(fmt=='bvh');self.profile.setVisible(fmt=='bvh')
         self.fbx_compatibility.setVisible(fmt=='fbx')
+        self.blend_layout_label.setVisible(blend and not whole)
+        self.blend_layout.setVisible(blend and not whole)
         self.fbx_rest_label.setVisible(fmt == 'fbx')
         self.fbx_rest_pose.setVisible(fmt == 'fbx')
         leading = self.fbx_rest_pose.currentText() if fmt == 'fbx' else 'T-pose'
@@ -76,18 +84,19 @@ class SourceExportDialog(QDialog):
             self.layout().activate()
             return
         text=('Creates a new folder containing the .blend, videos and mesh caches. Keep the folder together. Bodies are baked PC2 surfaces; skeletons are separate editable references. No T-pose is inserted.' if whole else
+              'Puts the selected people and takes in one .blend on a shared timeline. Keep the synchronized videos beside it.' if blend and self.blend_layout.currentData() == 'combined' else
               'Creates a new folder containing the .blend and synchronized video. Keep both together. The video is a camera-view background, not a render background. Saved camera movement is approximate.' if blend else
               'Exports the selected source skeleton with the chosen FBX rest pose. The matching first animation frame is optional.' if fmt == 'fbx' else
               'Exports the selected source skeleton. BVH uses metres and Y up. The T-pose is an optional first animation frame.')
         self.note.setText(text)
         self.layout().activate()
     def options(self):
-        if self.model=='gemx' and self.format.currentData()=='blend':return dict(format='blend',animate_camera=False)
+        if self.model=='gemx' and self.format.currentData()=='blend':return dict(format='blend',animate_camera=False,blend_layout=self.blend_layout.currentData())
         fmt=self.format.currentData();whole=fmt=='blend' and self.model=='mamma' and self.whole_scene.isChecked()
         value=dict(format='blend_scene' if whole else fmt,bvh_profile=self.profile.currentData() if fmt=='bvh' else 'generic',prepend_tpose=self.tpose.isChecked() and not whole)
         if fmt == 'fbx':
             value['fbx_compatibility'] = self.fbx_compatibility.isChecked()
             value['fbx_rest_pose'] = self.fbx_rest_pose.currentData()
         value.update(place_at_origin=self.place_at_origin.isChecked() and fmt in ('fbx','bvh'),symmetric_rest=self.model!='gemx' and self.symmetric_rest.isChecked() and fmt in ('fbx','bvh'))
-        if fmt=='blend':value.update(animate_camera=self.animate_camera.isChecked(),background_refine=self.background_refine.isChecked() and self.animate_camera.isChecked() and self.model in ('flowhmr','exmr'),camera_translation_scale=self.translation_scale.value())
+        if fmt=='blend':value.update(blend_layout=self.blend_layout.currentData(),animate_camera=self.animate_camera.isChecked(),background_refine=self.background_refine.isChecked() and self.animate_camera.isChecked() and self.model in ('flowhmr','exmr'),camera_translation_scale=self.translation_scale.value())
         return value
