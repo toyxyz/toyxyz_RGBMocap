@@ -42,6 +42,11 @@ def main(args):
             folder=Path(job['animation'])/take['folder']
             options=dict(format=job.get('format','fbx'),include_mesh=job.get('include_mesh',True))
             invoke('export',out,folder,target,json.dumps(take.get('transform')),job['source_name'],json.dumps(options))
+        if job.get('export_face'):
+            from ..face_export import publish
+            rows=[(dict(project=take['source'],target=target,rig_name=job['source_name']),None,False)
+                  for take,target in zip(job['takes'],job['files']) if take.get('source')]
+            publish(rows,lambda _event,message:report(message))
         result=dict(files=job['files'])
     else:
         from .source import prepare,stamp

@@ -46,7 +46,8 @@ class ModelWorkspace:
 
     def workspace_view(self):
         fps=self.info['fps'] if self.info else 30.
-        return dict(camera_background=self.camera_tools.background_options(),source_time=self.source_offset+self.slider.value()/fps,
+        return dict(track_face=self.track_face.isChecked(),
+            camera_background=self.camera_tools.background_options(),source_time=self.source_offset+self.slider.value()/fps,
             trim_time=[self.source_offset+self.slider.clip_in/fps,self.source_offset+self.slider.clip_out/fps],
             camera={**{key:np.asarray(getattr(self.motion_view,key)).tolist()
                     for key in ('yaw','pitch','distance','pan','scene_center')},'target':self.motion_view.target().tolist()})
@@ -108,7 +109,10 @@ class ModelWorkspace:
             self.clear_mamma_inputs()
             self.workspace_root=root
             self._workspace_camera=None
-            return self.switch_workspace_model(state['active_model'],opening=True)
+            if not self.switch_workspace_model(state['active_model'],opening=True):
+                return False
+            self.restore_track_face(state.get('view',{}).get('track_face',False))
+            return True
         except (OSError,ValueError,KeyError) as error:
             self.status.setText('Cannot open project: '+str(error));return False
 

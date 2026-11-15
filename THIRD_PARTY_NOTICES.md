@@ -26,6 +26,7 @@ they are not bundled with the application.
 
 | Component | License / essential conditions |
 | --- | --- |
+| [MediaPipe](https://github.com/google-ai-edge/mediapipe) | Optional CPU face capture. The app downloads hash-pinned Python wheels, the [Face Landmarker model bundle](https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker) and canonical face geometry on first use. [MediaPipe license](https://github.com/google-ai-edge/mediapipe/blob/v0.10.32/LICENSE), [Face Blendshape model card](https://storage.googleapis.com/mediapipe-assets/Model%20Card%20Blendshape%20V2.pdf). |
 | [GVHMR](https://github.com/zju3dv/GVHMR) | Educational, research and nonprofit use only; derived changes must be open-source and noncommercial. [License](third_party/GVHMR/LICENSE). |
 | [ExMR](https://github.com/twehrbein/ExMR) / [FootMR](https://github.com/twehrbein/FootMR) | GVHMR-derived educational, research and nonprofit terms. [ExMR license](third_party/ExMR/LICENSE), [FootMR license](third_party/FootMR/LICENSE). |
 | [FlowHMR](https://github.com/flowhmr/flowhmr) | Apache-2.0 source. [License](third_party/FlowHMR/LICENSE). Supporting models have separate terms below. |

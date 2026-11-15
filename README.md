@@ -102,6 +102,11 @@ run `Setup_SAM31.cmd` after the base setup. Then choose **SAM 3.1** next to
 RAM when VRAM is tight and retry once after CUDA runs out of memory.
 See the [SAM 3.1 tracker guide](docs/models/SAM31.md#vram-use).
 
+**Track Face** adds CPU face tracking for saved video. The 3D viewport shows
+facial landmarks on SMPL-X, SMPL-H and SOMA surfaces. **Export Face (.txt)**
+saves ARKit-style coefficients and timing alongside the chosen motion export.
+See [Face capture](docs/USER_GUIDE.md#face-capture).
+
 ### Install with an AI agent
 
 After cloning, open this repository folder in a local coding agent such as Codex.

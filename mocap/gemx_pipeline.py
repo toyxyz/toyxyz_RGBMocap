@@ -179,15 +179,18 @@ def reconstruct(request, cfg):
                 config[section]['batch_size'] = batch
             emit('info', message=f'GEM-X · fixed camera · image batch {batch} · {length} frames')
             with VideoFrames(clip) as frames:
-                sequence, _, _ = build_body_conditions(frames, config, device='cuda', progress=progress)
+                sequence, tracks, _ = build_body_conditions(frames, config, device='cuda', progress=progress)
             progress('Predicting native temporal SOMA motion')
             predictor = load_predictor(config['motion']['checkpoint'], config['motion'],
                                        stats_path=config['motion']['stats'], device='cuda')
             result = run_motion(predictor, sequence, device='cuda')
-            return {key: value.detach().cpu() for key, value in result['pred_soma_params_global'].items()}
+            parameters = {key: value.detach().cpu() for key, value in result['pred_soma_params_global'].items()}
+            return parameters, tracks.boxes_xyxy, tracks.observed_primary
 
         batch = 1 if effective_mode() == 'low_memory' or free < 5*1024**3 else 4
-        parameters = retry_cuda(infer, batch, lambda value: progress(f'Retrying GEM-X with image batch {value}'))
+        parameters, face_boxes, observed = retry_cuda(infer, batch, lambda value: progress(f'Retrying GEM-X with image batch {value}'))
+        if face_boxes.shape == (length,4) and observed.shape == (length,):
+            np.savez_compressed(project/'gemx_face_boxes.npz',boxes=face_boxes,observed=observed)
         shapes = {'global_orient': 3, 'body_pose': 228, 'transl': 3,
                   'identity_coeffs': 128, 'scale_params': 57}
         if set(parameters) != set(shapes):

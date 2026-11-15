@@ -6,7 +6,7 @@ from .export_options import FBX_A_POSE_DEGREES
 
 class SourceExportDialog(QDialog):
     def __init__(self,parent=None):
-        super().__init__(parent);self.setWindowTitle('Export');self.setFixedSize(660,400)
+        super().__init__(parent);self.setWindowTitle('Export');self.setFixedSize(660,435)
         self.model=parent.model_choice.currentData() if parent is not None and hasattr(parent,'model_choice') else None
         layout=QVBoxLayout(self);layout.setContentsMargins(18,18,18,18);layout.setSpacing(12)
         form=QFormLayout();form.setVerticalSpacing(12);layout.addLayout(form)
@@ -52,6 +52,9 @@ class SourceExportDialog(QDialog):
         if parent is not None and hasattr(parent,'camera_tools'):self.translation_scale.setValue(parent.camera_tools.scale.value())
         self.translation_scale.setToolTip('Approximate saved camera movement. 0 fixes the camera center; 1 uses the estimate. This does not change the source animation.')
         self.scale_label=QLabel('Camera movement scale');form.addRow(self.scale_label,self.translation_scale)
+        self.export_face=QCheckBox('Export Face (.txt)')
+        self.export_face.setToolTip('Save frame numbers, source and export times, and ARKit-style expression values for each tracked person.')
+        layout.addWidget(self.export_face)
         self.note=QLabel();self.note.setWordWrap(True);layout.addWidget(self.note)
         layout.addStretch(1)
         buttons=QDialogButtonBox(QDialogButtonBox.Save|QDialogButtonBox.Cancel)
@@ -91,7 +94,7 @@ class SourceExportDialog(QDialog):
         self.note.setText(text)
         self.layout().activate()
     def options(self):
-        if self.model=='gemx' and self.format.currentData()=='blend':return dict(format='blend',animate_camera=False,blend_layout=self.blend_layout.currentData())
+        if self.model=='gemx' and self.format.currentData()=='blend':return dict(format='blend',animate_camera=False,blend_layout=self.blend_layout.currentData(),export_face=self.export_face.isChecked())
         fmt=self.format.currentData();whole=fmt=='blend' and self.model=='mamma' and self.whole_scene.isChecked()
         value=dict(format='blend_scene' if whole else fmt,bvh_profile=self.profile.currentData() if fmt=='bvh' else 'generic',prepend_tpose=self.tpose.isChecked() and not whole)
         if fmt == 'fbx':
@@ -99,4 +102,5 @@ class SourceExportDialog(QDialog):
             value['fbx_rest_pose'] = self.fbx_rest_pose.currentData()
         value.update(place_at_origin=self.place_at_origin.isChecked() and fmt in ('fbx','bvh'),symmetric_rest=self.model!='gemx' and self.symmetric_rest.isChecked() and fmt in ('fbx','bvh'))
         if fmt=='blend':value.update(blend_layout=self.blend_layout.currentData(),animate_camera=self.animate_camera.isChecked(),background_refine=self.background_refine.isChecked() and self.animate_camera.isChecked() and self.model in ('flowhmr','exmr'),camera_translation_scale=self.translation_scale.value())
+        value['export_face']=self.export_face.isChecked()
         return value

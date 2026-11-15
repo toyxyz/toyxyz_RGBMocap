@@ -14,6 +14,9 @@ class CharacterExportDialog(QDialog):
         self.mesh=QCheckBox('Include character mesh');self.mesh.setChecked(True)
         self.mesh.setToolTip('Checked: save the character mesh and skeleton animation. Unchecked: save only the skeleton and animation.')
         layout.addWidget(self.mesh)
+        self.export_face=QCheckBox('Export Face (.txt)')
+        self.export_face.setToolTip('Save expression channels and timing from the source person in a separate text file.')
+        layout.addWidget(self.export_face)
         self.note=QLabel();self.note.setWordWrap(True);layout.addWidget(self.note)
         buttons=QDialogButtonBox(QDialogButtonBox.Save|QDialogButtonBox.Cancel)
         buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);layout.addWidget(buttons)
@@ -34,4 +37,4 @@ class CharacterExportDialog(QDialog):
         self.fit_note()
 
     def options(self):
-        return dict(format=self.format.currentData(),include_mesh=self.format.currentData()=='fbx' and self.mesh.isChecked())
+        return dict(format=self.format.currentData(),include_mesh=self.format.currentData()=='fbx' and self.mesh.isChecked(),export_face=self.export_face.isChecked())

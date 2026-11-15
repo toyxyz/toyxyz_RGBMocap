@@ -164,6 +164,38 @@ is tight and can retry once after CUDA runs out of memory. **Low Memory**
 starts with CPU offloading, which can use more system RAM.
 See the [setup, usage and measured VRAM](models/SAM31.md#vram-use).
 
+### Face capture
+
+Turn on **Track Face** above **Processing Resources** to analyze faces when body
+reconstruction finishes. On a saved project with prepared video, turning on
+the checkbox starts face tracking directly. Face capture runs on CPU. The
+first run downloads the pinned MediaPipe runtime and model into the app cache.
+
+Projects save the **Track Face** checkbox. Reopening a project restores the
+setting and reuses any current face tracking data. **Save Project As** includes
+the facial data even when **Track Face** is off.
+
+For a People scene, check the people to track. MAMMA and PromptHMR use the
+saved actor motion and camera to locate each face in the primary camera.
+The landmarks follow the visible source mesh for each person, including
+SMPL-X, SMPL-H and SOMA.
+Use **Face Overlay** next to **Bone Overlay** in the 3D Viewport header to
+show or hide the landmarks. The overlay uses the latest valid expression
+through detection gaps. Before the first successful detection, the overlay
+is empty. Distant, heavily turned
+or obscured faces can lead to longer held intervals.
+
+Turn on **Export Face (.txt)** in the export dialog to save a UTF-8,
+tab-separated sidecar next to each motion file. Combined Blender exports
+save a sidecar for each take. The TXT includes these fields.
+
+| Field | Meaning |
+| --- | --- |
+| `export_frame`, `export_seconds` | Frame and time in the exported motion. The first frame index is zero. An inserted reference pose and combined-scene offsets are reflected here. |
+| `source_frame`, `source_seconds` | Zero-based frame in the prepared capture clip and time in the source video. |
+| `state`, `last_detected_source_frame` | `tracked`, `held`, `missing` or `reference`, plus the source frame that supplied the expression. |
+| ARKit channel names | Expression weights from 0 to 1. `tongueOut` is unsupported and uses zero where an expression is present. Missing values are blank. |
+
 ### Update the app
 
 To update, close RGB MoCap and run `update.cmd` in the repository folder. It
@@ -714,7 +746,7 @@ an estimate and can leave residual sliding or penetration.
 | **Lock** | Show active hand/foot contacts as translucent horizontal discs in timeline colors. Hand discs are at palm height, including raised supports. Display only. |
 | **Name** | Show list names above visible people and imported characters. Text stays upright and the same screen size as you move the camera. Rename a person from the list's right-click menu. |
 | **Timeline ruler / blue frame box** | Click or drag to seek. Track editing does not seek. Wheel zooms; middle drag or Shift+wheel pans. |
-| **Playback / frame number / speed** | Space plays/pauses; arrows step one frame, Shift+arrows one second. Enter a frame number to jump. Playback speed affects preview only. |
+| **Playback / frame number / speed** | Space plays/pauses; arrows step one frame, Shift+arrows one second. Enter a frame number to jump. Playback plays the video's audio when available. MAMMA uses the selected camera's audio. Playback speed affects preview only. |
 | **Timeline Frame All / Reset Trim** | Fit the full timeline / restore the full clip range. |
 
 ExMR/FlowHMR/GVHMR process checked people independently; MAMMA and PromptHMR

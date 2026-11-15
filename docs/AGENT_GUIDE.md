@@ -180,6 +180,26 @@ See the [recorded checks](VALIDATION.md#sam-31-person-discovery-2026-11-10).
 
 ## Standard GUI workflow
 
+### Face capture
+
+**Track Face** starts the isolated ExMR-Python CPU worker after successful body
+processing or when enabled on a prepared project. `face_runtime.py` stages
+hash-pinned MediaPipe wheels and model assets into the optional app cache.
+`face_capture.npz` is a project-local derived file keyed to the working video
+and Person track generations. The project view stores **Track Face** separately
+from the archive. Restore the checkbox with its signal blocked so opening a
+project can reuse the archive without launching capture. **Save Project As**
+copies the archive and preserves the timestamps used to validate it.
+Per-person validity determines a deterministic
+last-observation hold on the viewport and in exports, including backward seeks.
+Keep capture off the GUI thread and never feed it into body inference or contact
+correction. MAMMA and PromptHMR locate faces in the primary camera with saved
+initial joints and the take camera. The viewport binds expression contours to
+the installed mesh surface in the same per-take transform. GEM-X retains its primary person boxes
+for new results; legacy single-person projects use CPU face search and tracking.
+Face TXT sidecars use the selected export’s FPS and timeline offsets. Verify
+per-person associations, hold behavior, unmapped channels and leading frames.
+
 ### PromptHMR setup and verification
 
 Follow [the detailed setup/workflow guide](models/PROMPTHMR.md). It is a

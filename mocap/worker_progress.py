@@ -40,7 +40,7 @@ def main():
     if stage=='camera_reference':
         from .camera_reference import main as camera_main
         return camera_main()
-    if stage=='copy_bvh':
+    if stage in ('copy_bvh','save_fbx'):
         from .source_export_worker import main as save_main
         return save_main(emit)
     if stage=='flow_mamma_gravity':

@@ -102,6 +102,8 @@ class MotionView(ViewportBase):
         self.character_name_points=[]
         self.render_mode='raw';self.show_bones=True
         self.target_frames=None;self.target_asset=None;self.raw_asset=None;self.native_vertices=None
+        self.show_faces=True
+        self.face_archive=None;self.face_surfaces={};self.face_manifests={}
         self.target_renderers={};self.bone_renderers={};self.bone_error=None;self.native_required=False
         # A bounded world-space disk, reused for either foot on every frame.
         angles = np.arange(64) * (2 * math.pi / 64)
@@ -934,6 +936,9 @@ class MotionView(ViewportBase):
         # Final independent depth layer: exported bones stay above characters,
         # with the same ordering whether Bone Overlay was on or off previously.
         self.draw_bones(painter,bone_actors)
+        if self.show_faces and self.face_archive is not None:
+            from .face_overlay import draw_faces
+            draw_faces(self,bone_actors,lines3d)
         if self._empty_people_notice and not characters_drawn:
             painter.setPen(QColor('#bcbcbc'))
             painter.drawText(self.rect().adjusted(25,60,-25,-60),Qt.AlignCenter|Qt.TextWordWrap,

@@ -266,7 +266,8 @@ def save_project(request, emit=lambda *a, **k: None, cancelled=lambda: False):
             if view_trim:
                 view_trim=[round(view_trim[0]*scale),min(prepared['frames'],round(view_trim[1]*scale))]
         atomic_json(staging / 'workspace_state.json', dict(version=1, name=target.name,
-            active=active_relative.as_posix(), frame=view_frame, trim=view_trim))
+            active=active_relative.as_posix(), frame=view_frame, trim=view_trim,
+            track_face=(request.get('workspace_view') or {}).get('track_face',False)))
         check()
         if target.exists():
             raise ValueError('The destination appeared during saving. Choose another folder name.')

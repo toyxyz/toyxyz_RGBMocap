@@ -13,6 +13,9 @@ COMPAT = ROOT / "native_compat"
 
 
 def worker_command(stage: str, *args: str) -> list[str]:
+    if stage == 'face_track':
+        from .face_runtime import command as face_command
+        return face_command(args)
     if stage == 'sam31_people':
         from .sam31_runtime import command as sam31_command
         return sam31_command(args)
