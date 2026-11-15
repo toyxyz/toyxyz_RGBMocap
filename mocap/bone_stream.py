@@ -115,6 +115,7 @@ class BoneStream:
         self.listener = socket.socket()
         try:
             self.listener.bind(('127.0.0.1', port))
+            self.port = self.listener.getsockname()[1]
             self.listener.listen(1)
             self.listener.settimeout(.1)
         except OSError:

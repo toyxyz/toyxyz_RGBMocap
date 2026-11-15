@@ -4,7 +4,8 @@ import json
 from queue import Empty
 
 from PySide6.QtCore import QSignalBlocker, QTimer, Qt
-from PySide6.QtWidgets import QComboBox, QLabel, QListWidget, QListWidgetItem, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (QComboBox, QHBoxLayout, QLabel, QListWidget, QListWidgetItem,
+                               QPushButton, QSpinBox, QVBoxLayout, QWidget)
 
 from .bone_stream import BoneStream, MAX_ACTORS, MAX_BAKE_FRAMES, PORT
 
@@ -23,6 +24,29 @@ class StreamWorkspace:
         self.stream_target.addItems(['None', 'Blender'])
         self.stream_target.setAccessibleName('Stream target')
         column.addWidget(self.stream_target)
+        self.stream_port_controls = QWidget()
+        port_controls = QVBoxLayout(self.stream_port_controls)
+        port_controls.setContentsMargins(0, 0, 0, 0)
+        port_controls.setSpacing(4)
+        port_label = QLabel('Port')
+        port_controls.addWidget(port_label)
+        port_row = QHBoxLayout()
+        self.stream_port = QSpinBox()
+        self.stream_port.setRange(1024, 65535)
+        self.stream_port.setValue(PORT)
+        self.stream_port.setKeyboardTracking(False)
+        self.stream_port.setAccessibleName('Blender stream port')
+        self.stream_port.setToolTip('Match this port in Blender. Press Enter or leave the field to apply.')
+        port_label.setBuddy(self.stream_port)
+        port_row.addWidget(self.stream_port, 1)
+        reset_port = QPushButton('Reset')
+        reset_port.setAccessibleName('Reset Blender stream port')
+        reset_port.setToolTip(f'Restore the default Blender stream port ({PORT}).')
+        reset_port.clicked.connect(self.reset_stream_port)
+        port_row.addWidget(reset_port)
+        port_controls.addLayout(port_row)
+        column.addWidget(self.stream_port_controls)
+        self.stream_port_controls.hide()
         self.stream_people = QListWidget()
         self.stream_people.setObjectName('streamPeopleList')
         self.stream_people.setAccessibleName('People to stream')
@@ -33,6 +57,7 @@ class StreamWorkspace:
         column.addWidget(self.stream_status)
 
         self._stream_sender = None
+        self._stream_port_error = None
         self._stream_scope = None
         self._stream_checked = set()
         self._stream_rows = None
@@ -42,6 +67,7 @@ class StreamWorkspace:
         self._stream_timer.setTimerType(Qt.PreciseTimer)
         self._stream_timer.timeout.connect(self.update_stream)
         self.stream_target.currentIndexChanged.connect(self.change_stream_target)
+        self.stream_port.editingFinished.connect(self.apply_stream_port)
         self.stream_people.itemChanged.connect(self.stream_person_changed)
         return page
 
@@ -53,16 +79,38 @@ class StreamWorkspace:
             self._stream_timer.stop()
 
     def change_stream_target(self, index):
-        self.close_stream()
-        if index == 1 and not self._pear_active:
+        blender = index == 1 and not self._pear_active
+        self.stream_port_controls.setVisible(blender)
+        if blender:
+            self.apply_stream_port()
+        else:
+            self._stream_port_error = None
+            self.close_stream()
+            self.stream_tab_changed(self.people_tabs.currentIndex())
+
+    def reset_stream_port(self):
+        self.stream_port.setValue(PORT)
+        self.apply_stream_port()
+
+    def apply_stream_port(self):
+        if self.stream_target.currentIndex() != 1 or self._pear_active:
+            return
+        port = self.stream_port.value()
+        active = self._stream_sender
+        self._stream_port_error = None
+        if active is None or active.port != port:
             try:
-                self._stream_sender = BoneStream()
+                sender = BoneStream(port)
             except OSError as error:
-                with QSignalBlocker(self.stream_target):
-                    self.stream_target.setCurrentIndex(0)
-                self.stream_status.setText(f'Cannot start Blender stream on port {PORT}.')
-                self.log.append(f'Blender stream could not start: {error}')
-                return
+                if active is None:
+                    self._stream_port_error = f'Cannot open port {port}. Choose another port or press Enter to retry.'
+                else:
+                    self.stream_port.setValue(active.port)
+                    self._stream_port_error = f'Cannot open port {port}. Still listening on 127.0.0.1:{active.port}.'
+                self.log.append(f'Blender stream could not open port {port}: {error}')
+            else:
+                self.close_stream()
+                self._stream_sender = sender
         self.stream_tab_changed(self.people_tabs.currentIndex())
 
     def close_stream(self):
@@ -239,10 +287,11 @@ class StreamWorkspace:
                 sender.publish(actors, tuple(selected.values()) if checked is not None else None)
                 self._stream_frame = key
             if not connected:
-                status = f'Waiting for Blender\n127.0.0.1:{PORT}'
+                status = f'Waiting for Blender\n127.0.0.1:{sender.port}'
             elif not self._stream_checked:
                 status = 'Connected. Check people to stream.'
             else:
                 status = f'Connected · {len(sources)} people at this frame'
+        status = self._stream_port_error or status
         if self.stream_status.text() != status:
             self.stream_status.setText(status)

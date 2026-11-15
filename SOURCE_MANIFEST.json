@@ -116,8 +116,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 82905,
-      "sha256": "ff1c042730a14b9a8d7af854a6d14b8d26ea1cfc69114badc2f5efdcb762da5c"
+      "bytes": 83232,
+      "sha256": "d8b2d8e53a5c4ca780791d559255b56b6dfd111b6223043e8cc75bebc11f2341"
     },
     {
       "path": "docs/BUILD.md",
@@ -146,8 +146,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 79027,
-      "sha256": "98139df602a97d48ecf5cf1a615979e1202ccf2afefabf6871d2c4190e2e16c3"
+      "bytes": 79430,
+      "sha256": "68c8096da995843ea4d1fc57e6bc58e2c515d29e70ad75ca6d2a51fcafce2f33"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -1201,8 +1201,8 @@
     },
     {
       "path": "mocap/bone_stream.py",
-      "bytes": 10570,
-      "sha256": "d90feaa80e9dd05425376e28e29c372bcc0042d51c706a0adb80f8249033a803"
+      "bytes": 10625,
+      "sha256": "2ae5d34074ba3aef28f25d23934f9f687df7d3890086081ac9e5b6d272ae8bb1"
     },
     {
       "path": "mocap/bound_mesh_gl.py",
@@ -2276,8 +2276,8 @@
     },
     {
       "path": "mocap/stream_ui.py",
-      "bytes": 11481,
-      "sha256": "aee06b6f2fd7f0885029b2a3b401c305d6827bf8774f6ba6d731cd4633e6416a"
+      "bytes": 13771,
+      "sha256": "ee9ce28df84da54ebf7f473ddadf20c4a5a44964dbbe2edc9a9a39d1bf7cb519"
     },
     {
       "path": "mocap/surface_landmarks.py",
