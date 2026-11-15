@@ -44,7 +44,8 @@ def main(args):
             invoke('export',out,folder,target,json.dumps(take.get('transform')),job['source_name'],json.dumps(options))
         if job.get('export_face'):
             from ..face_export import publish
-            rows=[(dict(project=take['source'],target=target,rig_name=job['source_name']),None,False)
+            rows=[(dict(project=take['source'],target=target,rig_name=job['source_name'],
+                        face_format=job.get('face_format','txt')),None,False)
                   for take,target in zip(job['takes'],job['files']) if take.get('source')]
             publish(rows,lambda _event,message:report(message))
         result=dict(files=job['files'])

@@ -103,8 +103,8 @@ RAM when VRAM is tight and retry once after CUDA runs out of memory.
 See the [SAM 3.1 tracker guide](docs/models/SAM31.md#vram-use).
 
 **Track Face** adds CPU face tracking for saved video. The 3D viewport shows
-facial landmarks on SMPL-X, SMPL-H and SOMA surfaces. **Export Face (.txt)**
-saves ARKit-style coefficients and timing alongside the chosen motion export.
+facial landmarks on SMPL-X, SMPL-H and SOMA surfaces. **Export Face** saves
+ARKit-style coefficients alongside the chosen motion as TXT or Unreal Live Link Face CSV.
 See [Face capture](docs/USER_GUIDE.md#face-capture).
 
 ### Install with an AI agent

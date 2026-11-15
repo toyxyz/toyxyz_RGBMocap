@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, Q
     QTableWidget, QTableWidgetItem, QHeaderView, QPlainTextEdit, QAbstractItemView)
 
 from .export_options import FBX_A_POSE_DEGREES
+from .face_export_ui import FaceExportControls
 from .tooltips import tooltip_text
 
 
@@ -75,9 +76,8 @@ class SourceExportDialog(QDialog):
         if parent is not None and hasattr(parent,'camera_tools'):self.translation_scale.setValue(parent.camera_tools.scale.value())
         self.translation_scale.setToolTip('Approximate saved camera movement. 0 fixes the camera center; 1 uses the estimate. This does not change the source animation.')
         self.scale_label=QLabel('Camera movement scale');form.addRow(self.scale_label,self.translation_scale)
-        self.export_face=QCheckBox('Export Face (.txt)')
-        self.export_face.setToolTip('Save frame numbers, source and export times, and ARKit-style expression values for each tracked person.')
-        layout.addWidget(self.export_face)
+        self.face_export = FaceExportControls()
+        layout.addWidget(self.face_export)
         self.note=QLabel();self.note.setWordWrap(True);layout.addWidget(self.note)
         self.validation_error=QPlainTextEdit()
         self.validation_error.setReadOnly(True)
@@ -161,19 +161,18 @@ class SourceExportDialog(QDialog):
     def options(self):
         fmt=self.format.currentData();whole=fmt=='blend' and self.model=='mamma' and self.whole_scene.isChecked()
         scope=self.take_scope.currentData() if self.show_take_scope else ('all' if whole else 'current')
-        selection=dict(take_scope=scope)
+        selection=dict(take_scope=scope,**self.face_export.options())
         if scope=='selected':
             selection['selected_takes']=self.selected_take_paths or ()
         if self.model=='gemx' and fmt=='blend':
             return dict(format='blend',animate_camera=False,blend_layout=self.blend_layout.currentData(),
-                        export_face=self.export_face.isChecked(),**selection)
+                        **selection)
         value=dict(format='blend_scene' if whole else fmt,bvh_profile=self.profile.currentData() if fmt=='bvh' else 'generic',prepend_tpose=self.tpose.isChecked() and not whole,**selection)
         if fmt == 'fbx':
             value['fbx_compatibility'] = self.fbx_compatibility.isChecked()
             value['fbx_rest_pose'] = self.fbx_rest_pose.currentData()
         value.update(place_at_origin=self.place_at_origin.isChecked() and fmt in ('fbx','bvh'),symmetric_rest=self.model!='gemx' and self.symmetric_rest.isChecked() and fmt in ('fbx','bvh'))
         if fmt=='blend':value.update(blend_layout=self.blend_layout.currentData(),animate_camera=self.animate_camera.isChecked(),background_refine=self.background_refine.isChecked() and self.animate_camera.isChecked() and self.model in ('flowhmr','exmr'),camera_translation_scale=self.translation_scale.value())
-        value['export_face']=self.export_face.isChecked()
         return value
 
 

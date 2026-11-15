@@ -1,5 +1,19 @@
 # Source package validation
 
+## Unreal Live Link Face CSV export (2026-11-16)
+
+- Exported an FBX and a 199-frame facial CSV from the Windows app using a saved
+  face track. Verified that the CSV header matches an iPhone ARKit recording,
+  and that the default face TXT matches the previous writer byte for byte.
+- Imported the CSV into an empty Unreal Engine 5.7 content folder with the
+  LiveLinkFaceImporter plugin enabled. Verified the Level Sequence, all 61
+  channels, and changing facial keys. Also checked a short 24 fps clip, a
+  delayed start, and a single-frame CSV.
+- Verified face CSV files beside BVH and separate and combined Blender exports,
+  and checked the selected-take path used by MAMMA scene requests. The user
+  confirmed MetaHuman playback in Unreal Engine 5.7 with a separate
+  581-frame export.
+
 ## Take selection and export diagnostics (2026-11-15)
 
 - In a saved Windows FlowHMR project with two people and three takes per person,

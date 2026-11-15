@@ -2018,6 +2018,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 row['rig_name']=self.export_person_name(project)
                 row['prepend_tpose']=options.get('prepend_tpose',False)
                 row['export_face']=options.get('export_face',False)
+                row['face_format']=options.get('face_format','txt')
                 row['bvh_profile']=getattr(self,'_source_export_options',{}).get('bvh_profile','generic')
                 if compatible:row['fbx_compatibility']=True
                 if options.get('format') == 'fbx' and 'fbx_rest_pose' in options:

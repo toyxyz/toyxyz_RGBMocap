@@ -185,9 +185,10 @@ through detection gaps. Before the first successful detection, the overlay
 is empty. Distant, heavily turned
 or obscured faces can lead to longer held intervals.
 
-Turn on **Export Face (.txt)** in the export dialog to save a UTF-8,
-tab-separated sidecar next to each motion file. Combined Blender exports
-save a sidecar for each take. The TXT includes these fields.
+Turn on **Export Face** in the export dialog and choose a face format. Each
+exported take with saved face tracking gets a face file beside the motion
+export. **RGB MoCap Face (.txt)** is the default. This UTF-8, tab-separated
+file includes these fields.
 
 | Field | Meaning |
 | --- | --- |
@@ -195,6 +196,29 @@ save a sidecar for each take. The TXT includes these fields.
 | `source_frame`, `source_seconds` | Zero-based frame in the prepared capture clip and time in the source video. |
 | `state`, `last_detected_source_frame` | `tracked`, `held`, `missing` or `reference`, plus the source frame that supplied the expression. |
 | ARKit channel names | Expression weights from 0 to 1. `tongueOut` is unsupported and uses zero where an expression is present. Missing values are blank. |
+
+Choose **Unreal Live Link Face (.csv)** to save an iOS ARKit-style recording.
+
+1. In Unreal Engine, enable **LiveLinkFaceImporter**, restart the editor, then
+   import the CSV in the Content Browser. Unreal creates a **Level Sequence**.
+2. Open that imported sequence in Sequencer and select the assembled MetaHuman
+   actor in the level. In Unreal Engine 5.7, enable **Use Live Link** and
+   **Use ARKit** in the actor's Details panel. Set **Live Link Subject** to the
+   name on the imported track. Older MetaHuman Blueprints may show
+   **Use ARKit Face** and **ARKit Face Subj**.
+3. Play or scrub the imported sequence to preview the expressions. If the face
+   stays still, expand the Live Link track and check for changing keys in a
+   curve such as **JawOpen**. Check playback in this sequence before adding it
+   to another sequence.
+
+See the [Epic import and playback steps](https://dev.epicgames.com/documentation/en-us/unreal-engine/recording-face-animation-on-ios-device-in-unreal-engine#using-csv-facial-recordings-in-unreal-engine).
+
+CSV timecodes follow the motion export timeline, including leading reference
+frames and combined-scene offsets. A lost detection holds the latest tracked
+expression when available. Frames with no available expression and reference
+frames use zeros. `tongueOut` and the nine standalone head/eye rotation fields
+are zero. The `eyeLook…` expression channels still carry tracked weights. Use
+the exported body animation for head motion.
 
 ### Update the app
 

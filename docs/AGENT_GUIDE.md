@@ -183,7 +183,7 @@ See the [recorded checks](VALIDATION.md#sam-31-person-discovery-2026-11-10).
 The People take selector shows the saved frame range and the readiness of the
 selected motion result. Export can select exact take paths across people. Validate
 the chosen paths before opening the destination picker and again in the worker.
-Whole-scene MAMMA Blender exports and their optional face TXT files resolve the
+Whole-scene MAMMA Blender exports and their optional face files resolve the
 same take paths. Legacy scene requests specifying only people include all of
 those people's takes.
 
@@ -204,8 +204,15 @@ correction. MAMMA and PromptHMR locate faces in the primary camera with saved
 initial joints and the take camera. The viewport binds expression contours to
 the installed mesh surface in the same per-take transform. GEM-X retains its primary person boxes
 for new results; legacy single-person projects use CPU face search and tracking.
-Face TXT sidecars use the selected export’s FPS and timeline offsets. Verify
-per-person associations, hold behavior, unmapped channels and leading frames.
+Face sidecars use the selected export’s FPS and timeline offsets. The default
+TXT includes source timing and tracking status. `face_export.py` writes optional
+Live Link Face CSV in the recorded iOS ARKit column order with a 30 fps timecode
+clock and fractional frames for other export rates. The Unreal importer infers
+30 or 60 fps from the largest frame field, so keep the CSV timecode base at 30.
+Verify per-person associations, hold behavior, zero placeholders, leading frames
+and imported Level Sequence timing. For playback, open the imported sequence
+in Sequencer and bind the assembled MetaHuman actor to its Live Link subject.
+The user guide lists the controls verified in Unreal Engine 5.7.
 
 ### PromptHMR setup and verification
 
