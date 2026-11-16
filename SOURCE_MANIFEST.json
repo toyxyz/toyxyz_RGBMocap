@@ -2141,8 +2141,8 @@
     },
     {
       "path": "mocap/retarget/solver.py",
-      "bytes": 63233,
-      "sha256": "fc450a4e8bea925c4c55814ed4d42369dea38f3306bae3b5527ecd7d7eeb82f1"
+      "bytes": 63242,
+      "sha256": "dcaac7b75fa4e8faf5f93f0f923190fd15341ba103c2b75c46278468fc0e94c5"
     },
     {
       "path": "mocap/retarget/source.py",
@@ -2508,6 +2508,11 @@
       "path": "scene_boot.py",
       "bytes": 303,
       "sha256": "c0b07c153f2f6a0bf762c2c88f38ac8d1f5a1d10f5e8028a7cfa11db3664d03e"
+    },
+    {
+      "path": "tests/test_retarget_empty_foot_contacts.py",
+      "bytes": 2289,
+      "sha256": "4d40287e2b20ddab9b3489e2166c46c66aa20be49642b862b0c59dd5dcb10dfb"
     },
     {
       "path": "third_party/ExMR/LICENSE",
