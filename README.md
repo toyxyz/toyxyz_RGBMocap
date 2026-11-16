@@ -177,6 +177,9 @@ do not put passwords or account tokens in the agent chat.
 4. Use **File > Export...** to choose a format supported by the source model, or
    import a character, retarget the motion and export it.
 
+In Blender 5.0 or later, use the [Toyxyz Blender Retargeter](https://github.com/toyxyz/toyxyz-blender-retargeter)
+add-on to transfer exported RGB MoCap animation to another humanoid rig.
+
 **PEAR · Live (Experimental)** tracks webcam or video input in real time. Tracking
 and pose estimates may be unstable. Click **Start Live Tracking** to attempt camera
 alignment and begin the bone preview. If alignment fails, tracking continues from

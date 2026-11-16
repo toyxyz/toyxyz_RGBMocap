@@ -18,7 +18,14 @@ class FaceExportControls(QWidget):
         self.format.hide()
         self.checkbox.toggled.connect(self.format.setVisible)
         layout.addWidget(self.format, 1)
+        self.smooth = QCheckBox('Smooth Face')
+        self.smooth.setChecked(True)
+        self.smooth.setToolTip('Reduce expression jitter using channel-specific One Euro filtering. Uncheck to export the captured values.')
+        self.smooth.hide()
+        self.checkbox.toggled.connect(self.smooth.setVisible)
+        layout.addWidget(self.smooth)
         layout.addStretch(1)
 
     def options(self):
-        return dict(export_face=self.checkbox.isChecked(), face_format=self.format.currentData())
+        return dict(export_face=self.checkbox.isChecked(), face_format=self.format.currentData(),
+                    smooth_face=self.smooth.isChecked())

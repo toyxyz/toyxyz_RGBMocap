@@ -188,7 +188,11 @@ or obscured faces can lead to longer held intervals.
 Turn on **Export Face** in the export dialog and choose a face format. Each
 exported take with saved face tracking gets a face file beside the motion
 export. **RGB MoCap Face (.txt)** is the default. This UTF-8, tab-separated
-file includes these fields.
+file includes these fields. **Smooth Face** is on by default for both face
+formats. It applies channel-specific One Euro filtering to saved expression
+values. Blink, gaze and speech channels respond faster than brow and cheek
+channels. Uncheck it to export the captured values. You can compare both
+outputs from the same capture. The setting affects the exported expressions.
 
 | Field | Meaning |
 | --- | --- |

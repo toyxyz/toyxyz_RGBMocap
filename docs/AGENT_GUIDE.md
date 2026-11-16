@@ -212,7 +212,11 @@ clock and fractional frames for other export rates. The Unreal importer infers
 Verify per-person associations, hold behavior, zero placeholders, leading frames
 and imported Level Sequence timing. For playback, open the imported sequence
 in Sequencer and bind the assembled MetaHuman actor to its Live Link subject.
-The user guide lists the controls verified in Unreal Engine 5.7.
+The user guide lists the controls verified in Unreal Engine 5.7. The export
+UI enables **Smooth Face** by default. The worker reuses the PEAR adaptive
+filter on each actor's valid capture samples before resolving export frames.
+Keep unfiltered captures reusable and use the same filtered values for TXT and
+CSV. Missing and held frame behavior follows the existing export rules.
 
 ### PromptHMR setup and verification
 

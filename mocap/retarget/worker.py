@@ -45,7 +45,7 @@ def main(args):
         if job.get('export_face'):
             from ..face_export import publish
             rows=[(dict(project=take['source'],target=target,rig_name=job['source_name'],
-                        face_format=job.get('face_format','txt')),None,False)
+                        face_format=job.get('face_format','txt'),smooth_face=job.get('smooth_face',False)),None,False)
                   for take,target in zip(job['takes'],job['files']) if take.get('source')]
             publish(rows,lambda _event,message:report(message))
         result=dict(files=job['files'])

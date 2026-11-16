@@ -37,7 +37,8 @@ def export_scene(w, takes):
         request=w.project/('.scene-export-'+uuid.uuid4().hex+'.json')
         options=w._source_export_options
         atomic_json(request,dict(root=str(w.people_root),kind=w.active_result,people=people,takes=take_paths,target=str(target),
-                                 export_face=options.get('export_face',False),face_format=options.get('face_format','txt')))
+                                 export_face=options.get('export_face',False),face_format=options.get('face_format','txt'),
+                                 smooth_face=options.get('smooth_face',False)))
         w._motion_export_targets=[str(target)];w._fbx_export_cleanup=(request,[partial(target.parent,request)])
         w.start_jobs([('save_blend_scene',['--project',str(w.project),'--output',str(request)])])
     except (OSError,ValueError,KeyError) as error:w.status.setText('MAMMA scene export unavailable: '+str(error))

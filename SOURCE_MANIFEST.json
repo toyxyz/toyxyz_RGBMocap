@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 15323,
-      "sha256": "cf881694b3cbd4043de6fac51f55d026d982919bd2ee018e1a5fe5a437c8025b"
+      "bytes": 15511,
+      "sha256": "c8b077c20b4b12d3d30573c70206475c3c2d36a0f10d9279deb4af99f42bf04a"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -116,8 +116,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 83773,
-      "sha256": "c196cdacd1406d16466ecc2318c426e817d96ea492ebd6322fc7b084c636d35b"
+      "bytes": 84087,
+      "sha256": "914389adf9c953e90a8068e57d71e2f1ca3b1918b8115c5e756f591e933210da"
     },
     {
       "path": "docs/BUILD.md",
@@ -146,8 +146,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 80989,
-      "sha256": "3af914293a322eb357f3a2a58436b648b91e7863eb0d1c24f8a5064befda1a30"
+      "bytes": 81341,
+      "sha256": "cfb856b7a78489e4bfb34f90bddc6d82aa58b4f41ba6253905d8e0cd3549442b"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -1166,8 +1166,8 @@
     },
     {
       "path": "mocap/blend_export_ui.py",
-      "bytes": 2474,
-      "sha256": "d121e709105f9857d2b3ea41784d3b499f384114de6284ada202b0dec4f5ccf1"
+      "bytes": 2553,
+      "sha256": "3e8c8b4aedad2b6795605fd19c832f7189f93aa3dfde222842d60a333b4ca819"
     },
     {
       "path": "mocap/blend_export_worker.py",
@@ -1376,13 +1376,13 @@
     },
     {
       "path": "mocap/face_export.py",
-      "bytes": 7801,
-      "sha256": "dea79ce7f0bcc12161d2b39b95bfd6c59b96a627839023247b06539a4f125607"
+      "bytes": 9751,
+      "sha256": "381f841583b273f8b704ef10a202f89b218f97f2d662ba467c9c661e8b767140"
     },
     {
       "path": "mocap/face_export_ui.py",
-      "bytes": 1180,
-      "sha256": "7a45a005d27de278a68db4bd0e3a1e1810aa2cf3cb982f95bc0b2d6cb19568ea"
+      "bytes": 1589,
+      "sha256": "fc04d3e38b9d89be681c52a910ee9f4ce32c72215abf4ca9fd4095855bd0af18"
     },
     {
       "path": "mocap/face_overlay.py",
@@ -1576,8 +1576,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 120218,
-      "sha256": "d466aa37c24f3b76967f1930dddd905d18bf844307f0810be7df678f4b029c17"
+      "bytes": 120286,
+      "sha256": "6fc3435036bcd54d8423051c8813aef038dff873f39419e4ec0c193559f13006"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -2166,8 +2166,8 @@
     },
     {
       "path": "mocap/retarget/worker.py",
-      "bytes": 5859,
-      "sha256": "299ebb7151f6b047e2c0f5da4aba8d5c2103bc8e097827e06258e32fcf0e62dc"
+      "bytes": 5900,
+      "sha256": "cd52e1405627ee64ececf17a0aaa70bbfccd732a6839fe316be481c3b1464b77"
     },
     {
       "path": "mocap/rig_gl.py",
