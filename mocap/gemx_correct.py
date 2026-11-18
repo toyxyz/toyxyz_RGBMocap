@@ -13,6 +13,7 @@ from contextlib import contextmanager
 from .gemx_result import ASSET, FPS, JOINT_COUNT, MESH, POSE, PARAMETERS, RECEIPT, VERTEX_COUNT, current, load_rig, manifest
 from .result_artifacts import file_stat
 from .storage import atomic_json, sha256
+from .platform_compat import NO_WINDOW
 
 KIND = 'corrected_initial'
 RECORD = 'soma-correction.json'
@@ -197,7 +198,7 @@ def run(project, cfg, emit):
                 arguments = [project, plan, solved, report_path]
                 with subprocess.Popen(command(ROOT, 'gemx_contact_solve', arguments, frozen=True),
                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8',
-                                      errors='replace', creationflags=subprocess.CREATE_NO_WINDOW) as child:
+                                      errors='replace', creationflags=NO_WINDOW) as child:
                     for line in child.stdout:
                         print(line, end='', flush=True)
                     if child.wait():

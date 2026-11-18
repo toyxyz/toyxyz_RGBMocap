@@ -265,7 +265,7 @@ class CharacterWorkspace:
 
     def start_character_job(self,job):
         from .retarget.runtime import blender
-        from .runtime_registry import command
+        from .paths import worker_command
         try:
             if job['mode']!='adopt':blender()
             path=self.character_root/'characters'/('job-'+uuid.uuid4().hex+'.json');atomic_json(path,job)
@@ -274,7 +274,7 @@ class CharacterWorkspace:
                 from .gemx_result import is_project
                 if not is_project(job['takes'][0]['project']):
                     args+=['--project',job['takes'][0]['project']]
-            cmd=command(ROOT,'character',args,frozen=getattr(sys,'frozen',False))
+            cmd=worker_command('character',*args)
         except Exception as exc:
             self.character_refresh_queue=[]
             self.status.setText(str(exc));return

@@ -9,6 +9,7 @@ import numpy as np
 from .storage import atomic_json,sha256
 from .result_artifacts import file_stat
 from .mamma_body import make_actor_body,model_for,convert_motion,contact_probabilities,WORLD_ROTATION
+from .platform_compat import NO_WINDOW
 
 
 def media_link(source,destination):
@@ -119,7 +120,7 @@ def publish(job,emit):
                 else:
                     import subprocess
                     subprocess.run([executable('ffmpeg'),'-v','error','-i',str(group/'input.mp4'),'-vf',f'trim=start_frame={first}:end_frame={end},setpts=PTS-STARTPTS',
-                        '-an','-c:v','libx264','-crf','18','-preset','fast','-threads','2',str(project/'input.mp4')],check=True,creationflags=0x08000000)
+                        '-an','-c:v','libx264','-crf','18','-preset','fast','-threads','2',str(project/'input.mp4')],check=True,creationflags=NO_WINDOW)
             atomic_json(project/'scene_camera.json',dict(version=VERSION,sources=camera_sources(project),model=file_stat(project/state['mamma_body']['file']),
                 world_to_camera=transform.tolist(),K=primary['intrinsic_matrix'],htd_compatible=False,source_model='mamma',method='One calibrated MAMMA world; fixed camera, exact shaped pelvis'))
             relative=project.relative_to(group).as_posix()

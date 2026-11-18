@@ -28,5 +28,8 @@ def worker_command(stage: str, *args: str) -> list[str]:
     if stage.startswith('mamma_') and stage not in ('mamma_prepare','mamma_publish'):
         from .mamma_runtime import command as mamma_command
         return mamma_command(stage,args)
+    from .platform_compat import IS_WINDOWS, dev_worker_command
+    if not IS_WINDOWS:
+        return dev_worker_command(ROOT, stage, args)
     from .runtime_registry import command
     return command(ROOT, stage, args, frozen=bool(getattr(sys, "frozen", False)))

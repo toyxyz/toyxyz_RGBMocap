@@ -14,6 +14,7 @@ import uuid
 from .gemx_result import ASSET, FILES, FPS, JOINT_COUNT, MESH, PARAMETERS, POSE, RECEIPT, VERTEX_COUNT
 from .result_artifacts import file_stat
 from .storage import atomic_json, sha256
+from .platform_compat import NO_WINDOW
 
 
 def emit(kind, **values):
@@ -139,7 +140,7 @@ def reconstruct(request, cfg):
                    '-map', '0:v:0', '-vf', 'fps=30:start_time=0,pad=ceil(iw/2)*2:ceil(ih/2)*2',
                    '-frames:v', str(length), '-c:v', 'libx264', '-crf', '18', '-pix_fmt', 'yuv420p',
                    '-threads', '2', '-an', '-movflags', '+faststart', str(clip)]
-        child = subprocess.run(command, capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        child = subprocess.run(command, capture_output=True, creationflags=NO_WINDOW)
         if child.returncode:
             raise ValueError('Cannot prepare working video: ' + child.stderr[-1000:].decode('utf-8', 'replace'))
         media = probe(clip)
