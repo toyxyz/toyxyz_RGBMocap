@@ -29,6 +29,9 @@ downloads its own Python 3.10 / 3.12 through `uv`, so the system Python is irrel
 - `retarget/runtime.py`: finds `blender` (set `RGBMOCAP_BLENDER` to the binary or its folder).
 - `PYOPENGL_PLATFORM` is `egl` instead of `win32` in the ExMR and HandFlow workers.
 - New: `tools/setup_linux.py`, `launch_linux.py`, `RGBMoCap.sh`.
+- `launch_linux.py` defaults `QT_QPA_PLATFORM=xcb` (X11/XWayland). On Wayland, Qt's EGL path can
+  fail to create the viewport's OpenGL 4.3 core context (`QEGLPlatformContext: Failed to create
+  context: 3009`). Override with `QT_QPA_PLATFORM=wayland ./RGBMoCap.sh`.
 
 ## Not done yet
 

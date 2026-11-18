@@ -1,0 +1,47 @@
+From 42e28e4ede051d45d8b82a8d5c038ce8a97355f3 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 18 Nov 2026 23:31:56 +0000
+Subject: [PATCH] Linux launcher: default Qt to the xcb platform
+
+On Wayland Qt uses EGL, where the viewport's OpenGL 4.3 core context can
+fail with EGL_BAD_MATCH (3009). Default to X11/XWayland (GLX) with
+setdefault so QT_QPA_PLATFORM=wayland still overrides it.
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018BtAfAgLbEsjyqaN5564yF
+---
+ docs/LINUX_PORT.md | 3 +++
+ launch_linux.py    | 3 +++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/docs/LINUX_PORT.md b/docs/LINUX_PORT.md
+index 47921cf..2b6b0f1 100644
+--- a/docs/LINUX_PORT.md
++++ b/docs/LINUX_PORT.md
+@@ -29,6 +29,9 @@ downloads its own Python 3.10 / 3.12 through `uv`, so the system Python is irrel
+ - `retarget/runtime.py`: finds `blender` (set `RGBMOCAP_BLENDER` to the binary or its folder).
+ - `PYOPENGL_PLATFORM` is `egl` instead of `win32` in the ExMR and HandFlow workers.
+ - New: `tools/setup_linux.py`, `launch_linux.py`, `RGBMoCap.sh`.
++- `launch_linux.py` defaults `QT_QPA_PLATFORM=xcb` (X11/XWayland). On Wayland, Qt's EGL path can
++  fail to create the viewport's OpenGL 4.3 core context (`QEGLPlatformContext: Failed to create
++  context: 3009`). Override with `QT_QPA_PLATFORM=wayland ./RGBMoCap.sh`.
+ 
+ ## Not done yet
+ 
+diff --git a/launch_linux.py b/launch_linux.py
+index 9384e98..dc70855 100644
+--- a/launch_linux.py
++++ b/launch_linux.py
+@@ -28,6 +28,9 @@ data = Path(os.environ.setdefault('RGB_MOCAP_DATA', str(root))).resolve()
+ os.environ.update(PYTHONDONTWRITEBYTECODE='1', HF_HOME=str(data / 'cache/huggingface'),
+                   TORCH_HOME=str(data / 'cache/torch'), XDG_CACHE_HOME=str(data / 'cache'))
+ sys.dont_write_bytecode = True
++# On Wayland Qt uses EGL, where the viewport's OpenGL 4.3 core context can fail with
++# EGL_BAD_MATCH (error 3009). X11/XWayland uses GLX. Override: QT_QPA_PLATFORM=wayland
++os.environ.setdefault('QT_QPA_PLATFORM', 'xcb')
+ 
+ from app import main  # noqa: E402
+ 
+-- 
+2.43.0
+

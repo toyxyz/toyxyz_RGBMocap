@@ -28,6 +28,9 @@ data = Path(os.environ.setdefault('RGB_MOCAP_DATA', str(root))).resolve()
 os.environ.update(PYTHONDONTWRITEBYTECODE='1', HF_HOME=str(data / 'cache/huggingface'),
                   TORCH_HOME=str(data / 'cache/torch'), XDG_CACHE_HOME=str(data / 'cache'))
 sys.dont_write_bytecode = True
+# On Wayland Qt uses EGL, where the viewport's OpenGL 4.3 core context can fail with
+# EGL_BAD_MATCH (error 3009). X11/XWayland uses GLX. Override: QT_QPA_PLATFORM=wayland
+os.environ.setdefault('QT_QPA_PLATFORM', 'xcb')
 
 from app import main  # noqa: E402
 
