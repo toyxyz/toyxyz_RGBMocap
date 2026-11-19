@@ -3,6 +3,7 @@
 Native SMPL-H is retained. The upstream generator conditions on camera rotation,
 not metric camera translation; scene placement is a separate constant offset.
 """
+from .process_memory import peak_ram_bytes
 from pathlib import Path
 import gc, hashlib, json, math, os, sys, uuid
 import numpy as np
@@ -432,7 +433,7 @@ def run_stage(project,stage,result,emit,force=False):
     latest.setdefault('stages',{})[stage]=dict(status='complete',elapsed=time.monotonic()-started,output=str(output))
     atomic_json(project/'project.json',latest)
     emit('complete',stage=stage,output=str(output),cached=False,elapsed=time.monotonic()-started,
-         peak_ram_gib=psutil.Process().memory_info().peak_wset/1024**3,
+         peak_ram_gib=peak_ram_bytes()/1024**3,
          peak_cuda_allocated_gib=torch.cuda.max_memory_allocated()/1024**3 if torch.cuda.is_initialized() else 0)
 
 
@@ -480,4 +481,4 @@ def run_post(project,stage,result,emit,force=False):
     atomic_json(project/'project.json',latest)
     if stage in ('export','flow_export','rig','mesh'):(project/'flow_export_pending.json').unlink(missing_ok=True)
     emit('complete',stage=stage,output=str(output),cached=cached,elapsed=time.monotonic()-started,
-        peak_ram_gib=psutil.Process().memory_info().peak_wset/1024**3)
+        peak_ram_gib=peak_ram_bytes()/1024**3)

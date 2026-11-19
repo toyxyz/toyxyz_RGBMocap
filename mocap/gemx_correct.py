@@ -197,7 +197,7 @@ def run(project, cfg, emit):
                 arguments = [project, plan, solved, report_path]
                 with subprocess.Popen(command(ROOT, 'gemx_contact_solve', arguments, frozen=True),
                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8',
-                                      errors='replace', creationflags=subprocess.CREATE_NO_WINDOW) as child:
+                                      errors='replace', creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0)) as child:
                     for line in child.stdout:
                         print(line, end='', flush=True)
                     if child.wait():

@@ -33,7 +33,7 @@ def run_step(command,root,cancel,log):
     started=time.monotonic();notice=started
     with Path(log).open('w',encoding='utf-8') as output:
         process=subprocess.Popen([str(v) for v in command],cwd=root,env=engine.clean_env(root),
-            stdout=output,stderr=subprocess.STDOUT,creationflags=0x08000000)
+            stdout=output,stderr=subprocess.STDOUT,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
         try:
             while process.poll() is None:
                 engine.check_cancel(cancel);time.sleep(.2)
@@ -42,7 +42,7 @@ def run_step(command,root,cancel,log):
                     print('MAMMA setup: '+Path(log).stem+' is working ('+str(round(notice-started))+' s).',flush=True)
         except BaseException:
             subprocess.run([str(Path(os.environ['SystemRoot'])/'System32/taskkill.exe'),'/PID',str(process.pid),'/T','/F'],
-                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=0x08000000)
+                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
             process.wait(timeout=30);raise
     if process.returncode:
         raise RuntimeError('A setup step failed. '+Path(log).read_text(encoding='utf-8',errors='replace')[-3500:])
@@ -163,7 +163,7 @@ def setup(args):
             adapt_sdf(sources/'sdf')
             os.replace(sources/'mamma',stage/'engine')
             cap=subprocess.run([str(py),'-I','-X','utf8','-c',"import torch;assert torch.cuda.is_available();print('.'.join(map(str,torch.cuda.get_device_capability())))"],
-                capture_output=True,text=True,encoding='utf-8',errors='replace',check=True,creationflags=0x08000000).stdout.strip()
+                capture_output=True,text=True,encoding='utf-8',errors='replace',check=True,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0)).stdout.strip()
             if not __import__('re').fullmatch(r'\d+\.\d+',cap):raise ValueError('Invalid CUDA architecture.')
             build=stage/'build-native.cmd'
             lines=['@echo off','setlocal DisableDelayedExpansion','chcp 65001 >nul','call '+quoted(vc),'if errorlevel 1 exit /b 1',

@@ -89,7 +89,7 @@ def configure(python, engine, root=ROOT, managed_id=None):
             'import torch,numpy,scipy,smplx,timm,torchvision,sam2,pytorch_sdf,open_clip;'
             'print(json.dumps(dict(python=list(sys.version_info[:3]),packages={n:m.version(n) for n in '+repr(list(PACKAGES))+'},cuda=torch.cuda.is_available(),compute_capability=list(torch.cuda.get_device_capability()) if torch.cuda.is_available() else None)))')
     result = subprocess.run([str(python), '-I','-X','utf8', '-c', code], capture_output=True, text=True,
-                            encoding='utf-8', errors='replace', timeout=120, creationflags=0x08000000)
+                            encoding='utf-8', errors='replace', timeout=120, creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
     if result.returncode:
         raise RuntimeError('MAMMA runtime import check failed:\n'+result.stderr[-4000:])
     checked = json.loads(result.stdout.strip().splitlines()[-1])

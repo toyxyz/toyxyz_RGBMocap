@@ -1,5 +1,5 @@
 """Latest-frame PEAR preview. No inference archives, recordings or project writes."""
-import sys,threading,json,time,traceback
+import os,sys,threading,json,time,traceback
 
 def main():
     import os
@@ -196,11 +196,12 @@ class LatestCamera:
         self.thread=threading.Thread(target=self.run,args=(device,height),daemon=True);self.thread.start()
     def run(self,device,height):
         try:
-            for backend,index in ((self.cv.CAP_MSMF,device.get('mf_index')),(self.cv.CAP_DSHOW,device.get('ds_index'))):
+            candidates=((self.cv.CAP_MSMF,device.get('mf_index')),(self.cv.CAP_DSHOW,device.get('ds_index'))) if os.name=='nt' else ((self.cv.CAP_V4L2,device.get('v4l_path')),(self.cv.CAP_V4L2,device.get('mf_index')))
+            for backend,index in candidates:
                 if index is None:continue
                 cap=None
                 try:
-                    cap=self.cv.VideoCapture(int(index),backend)
+                    cap=self.cv.VideoCapture(index if isinstance(index,str) else int(index),backend)
                     if cap.isOpened():
                         cap.set(self.cv.CAP_PROP_FRAME_WIDTH,1280 if height==720 else 640);cap.set(self.cv.CAP_PROP_FRAME_HEIGHT,height)
                         cap.set(self.cv.CAP_PROP_FPS,30)

@@ -56,13 +56,13 @@ def run(command,root,cancel,log):
     check_cancel(cancel)
     with Path(log).open('w',encoding='utf8') as output:
         p=subprocess.Popen([str(x) for x in command],cwd=root,env=clean_env(root),stdout=output,stderr=subprocess.STDOUT,
-                           creationflags=subprocess.CREATE_NO_WINDOW)
+                           creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
         try:
             while p.poll() is None:
                 check_cancel(cancel);time.sleep(.2)
         except BaseException:
             subprocess.run([str(Path(os.environ['SystemRoot'])/'System32/taskkill.exe'),'/PID',str(p.pid),'/T','/F'],
-                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=subprocess.CREATE_NO_WINDOW)
+                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
             p.wait(timeout=30);raise
     if p.returncode:
         tail=Path(log).read_text(encoding='utf8',errors='replace')[-3500:]

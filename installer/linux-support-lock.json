@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "note": "Linux counterparts of installer/git-support-lock.json. Blender hash from download.blender.org/release/Blender4.5/blender-4.5.0.sha256; FFmpeg hash from the GitHub release asset digest; uv hash from the release .sha256 file.",
+  "uv": {
+    "version": "0.13.1",
+    "url": "https://github.com/astral-sh/uv/releases/download/0.13.1/uv-x86_64-unknown-linux-gnu.tar.gz",
+    "sha256": "eadd9d27c134ab5ac1ffd4473b97a741407f3ea238288f03121fc4deddf90220"
+  },
+  "blender": {
+    "url": "https://download.blender.org/release/Blender4.5/blender-4.5.0-linux-x64.tar.xz",
+    "bytes": 376170648,
+    "sha256": "1188b95cc12321c770b631939f7c25a096910b6f884a990bf9c0f62d52b38aec",
+    "archive_root": "blender-4.5.0-linux-x64"
+  },
+  "ffmpeg": {
+    "url": "https://github.com/FFmpeg-Builds/FFmpeg-Builds/releases/download/autobuild-2026-07-31-14-10/ffmpeg-n7.1.5-12-g1fdbca85aa-linux64-gpl-7.1.tar.xz",
+    "bytes": 119007364,
+    "sha256": "c1e6caf48923dd8e6bc5e54d51ba70c321175b8162ae9c414c392990e72f0e79",
+    "archive_root": "ffmpeg-n7.1.5-12-g1fdbca85aa-linux64-gpl-7.1"
+  },
+  "torch_index": "https://download.pytorch.org/whl/cu128",
+  "pear_alignment": {
+    "kornia_rs": {
+      "url": "https://files.pythonhosted.org/packages/e9/af/459207ad974d4b0540ff949d0fe2f6197eca905dc4db15b58a230ad5c902/kornia_rs-0.1.9-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "filename": "kornia_rs-0.1.9-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "bytes": 2759368,
+      "sha256": "ba36918487a6c9f3b8914562fa94011b82fc4fa822b626763babaf3669aaece1"
+    }
+  }
+}

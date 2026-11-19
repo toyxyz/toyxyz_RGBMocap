@@ -1,4 +1,4 @@
-"""Windows shared camera frames. One capture owner, bounded independent readers."""
+"""Shared camera frames (Windows mutex; lock file on Linux). One capture owner, bounded independent readers."""
 import ctypes,os,re,struct,time,uuid,math
 from multiprocessing import shared_memory
 import numpy as np
@@ -8,9 +8,32 @@ MAX_FRAME=64*1024**2
 MAX_TOTAL=512*1024**2
 FORMAT=struct.Struct('<QdI')
 
-class Mutex:
+class PosixMutex:
+    """Cross-process lock file in /dev/shm; released by the kernel if its owner dies."""
     def __init__(self,name,create):
-        if os.name!='nt':raise RuntimeError('Live shared camera streams require Windows.')
+        import fcntl
+        self.fcntl=fcntl;self.path='/dev/shm/'+name;self.owner=create
+        self.handle=os.open(self.path,os.O_RDWR|(os.O_CREAT if create else 0),0o600)
+    def acquire(self,milliseconds=0):
+        deadline=time.monotonic()+milliseconds/1000
+        while True:
+            try:self.fcntl.flock(self.handle,self.fcntl.LOCK_EX|self.fcntl.LOCK_NB);return True
+            except BlockingIOError:
+                if time.monotonic()>=deadline:return False
+                time.sleep(.001)
+    def release(self):self.fcntl.flock(self.handle,self.fcntl.LOCK_UN)
+    def close(self):
+        if self.handle is not None:
+            os.close(self.handle);self.handle=None
+            if self.owner:
+                try:os.unlink(self.path)
+                except OSError:pass
+
+class Mutex:
+    def __new__(cls,name,create):
+        if os.name!='nt':return PosixMutex(name,create)
+        return super().__new__(cls)
+    def __init__(self,name,create):
         dll=ctypes.WinDLL('kernel32',use_last_error=True)
         dll.CreateMutexW.argtypes=[ctypes.c_void_p,ctypes.c_int,ctypes.c_wchar_p];dll.CreateMutexW.restype=ctypes.c_void_p
         dll.OpenMutexW.argtypes=[ctypes.c_ulong,ctypes.c_int,ctypes.c_wchar_p];dll.OpenMutexW.restype=ctypes.c_void_p
@@ -70,6 +93,10 @@ class RemoteCamera:
         self.memory=None;self.mutex=None;self.pixels=None;self.sequence=0
         try:
             self.mutex=Mutex(name+'-lock',False);self.memory=shared_memory.SharedMemory(name=name,create=False)
+            if os.name!='nt':
+                # Python < 3.13 registers attached segments for unlink at reader exit; the writer owns it.
+                from multiprocessing import resource_tracker
+                resource_tracker.unregister(self.memory._name,'shared_memory')
             if not HEADER+size<=self.memory.size<=HEADER+MAX_FRAME+65536:raise ValueError('Shared webcam allocation size changed')
             self.pixels=np.ndarray(tuple(shape),np.uint8,buffer=self.memory.buf,offset=HEADER)
             self.pixels.setflags(write=False)

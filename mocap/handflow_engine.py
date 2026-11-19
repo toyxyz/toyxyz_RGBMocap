@@ -28,7 +28,7 @@ def infer(project,emit,n):
     from .paths import UPSTREAM,COMPAT,MODELS
     from .models import BY_KEY
     from .compute_policy import retry_cuda
-    os.environ['PYOPENGL_PLATFORM']='win32'
+    os.environ['PYOPENGL_PLATFORM']='win32' if os.name=='nt' else 'egl'
     os.environ['WANDB_MODE']='disabled'
     os.environ['YOLO_CONFIG_DIR']=str(MODELS/'handflow/settings')
     # Only pinned/checksummed official weights enter this worker. Upstream

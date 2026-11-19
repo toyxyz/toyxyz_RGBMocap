@@ -102,7 +102,7 @@ def infer(work,entries,frames,rotations,intrinsics,emit):
     digest=sha256(request)
     process=subprocess.Popen([str(ROOT/'runtime/python.exe'),'-I','-X','utf8','-B','-u',
         str(ROOT/'worker_boot.py'),'flow_mamma_gravity',str(request)],stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,text=True,encoding='utf-8',errors='replace',creationflags=0x08000000)
+        stderr=subprocess.STDOUT,text=True,encoding='utf-8',errors='replace',creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
     tail=[]
     try:
         while True:

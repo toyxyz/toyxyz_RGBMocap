@@ -23,7 +23,7 @@ def run(command,log):
     with log.open('w',encoding='utf8') as out:
         env=engine.clean_env(ROOT);cache=ROOT/'cache/prompthmr-setup'
         env.update(YOLO_CONFIG_DIR=str(cache/'yolo'),MPLCONFIGDIR=str(cache/'mpl'),HF_HOME=str(cache/'hf'),TORCH_HOME=str(cache/'torch'),HF_HUB_OFFLINE='1')
-        p=subprocess.Popen(list(map(str,command)),cwd=ROOT,env=env,stdout=out,stderr=subprocess.STDOUT,creationflags=0x08000000)
+        p=subprocess.Popen(list(map(str,command)),cwd=ROOT,env=env,stdout=out,stderr=subprocess.STDOUT,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
         started=notice=time.monotonic()
         try:
             while p.poll() is None:
@@ -31,7 +31,7 @@ def run(command,log):
                 if time.monotonic()-notice>=15:
                     notice=time.monotonic();print('PromptHMR setup: '+log.stem+' is working ('+str(round(notice-started))+' s).',flush=True)
         except BaseException:
-            subprocess.run([str(Path(os.environ['SystemRoot'])/'System32/taskkill.exe'),'/PID',str(p.pid),'/T','/F'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=0x08000000)
+            subprocess.run([str(Path(os.environ['SystemRoot'])/'System32/taskkill.exe'),'/PID',str(p.pid),'/T','/F'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
             p.wait(timeout=30);raise
     if p.returncode:raise RuntimeError('PromptHMR setup failed: '+log.read_text(encoding='utf8',errors='replace')[-4000:])
 
@@ -92,7 +92,7 @@ def setup():
             adapt_engine(sources/'prompthmr');os.replace(sources/'prompthmr',stage/'engine')
             install_python_source(sources/'detectron2',target,'detectron2')
             run([uv,'pip','install','--python',py,'--target',target,'--no-deps','--no-build-isolation','--no-index','--offline','--link-mode','copy',sources/'chumpy'],logs/'prompthmr-chumpy.log')
-            cap=subprocess.run([str(py),'-I','-X','utf8','-c',"import torch;assert torch.cuda.is_available();print('.'.join(map(str,torch.cuda.get_device_capability())))"],capture_output=True,text=True,encoding='utf-8',errors='replace',check=True,creationflags=0x08000000).stdout.strip()
+            cap=subprocess.run([str(py),'-I','-X','utf8','-c',"import torch;assert torch.cuda.is_available();print('.'.join(map(str,torch.cuda.get_device_capability())))"],capture_output=True,text=True,encoding='utf-8',errors='replace',check=True,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0)).stdout.strip()
             if not __import__('re').fullmatch(r'\d+\.\d+',cap):raise ValueError('Invalid CUDA architecture.')
             build=stage/'build-native.cmd'
             lines=['@echo off','setlocal DisableDelayedExpansion','chcp 65001 >nul','call '+quoted(vc),'if errorlevel 1 exit /b 1',

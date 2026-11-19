@@ -1,4 +1,5 @@
 """Optional finger-only HaMeR pass, isolated from FlowHMR's Python runtime."""
+from .process_memory import peak_ram_bytes
 from pathlib import Path
 import json,os,subprocess,uuid,zipfile
 from .paths import ROOT,UPSTREAM
@@ -177,4 +178,4 @@ def run(project,emit):
     load_hands(project,n)
     atomic_json(project/'flow_hamer_receipt.json',dict(identity=identity,output=file_stat(target)))
     emit('progress',current=n,total=n,phase='hamer',message='HaMeR finger smoothing complete')
-    emit('info',message=f'HaMeR finger pass: {time.monotonic()-started:.2f} s; peak allocated VRAM {torch.cuda.max_memory_allocated()/2**30:.2f} GiB; peak worker RAM {psutil.Process().memory_info().peak_wset/2**30:.2f} GiB.')
+    emit('info',message=f'HaMeR finger pass: {time.monotonic()-started:.2f} s; peak allocated VRAM {torch.cuda.max_memory_allocated()/2**30:.2f} GiB; peak worker RAM {peak_ram_bytes()/2**30:.2f} GiB.')

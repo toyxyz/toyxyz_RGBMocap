@@ -106,6 +106,8 @@ third_party/**/.git/
 # One versioned, verified native module; models and runtimes remain excluded.
 !/prebuilt/motion-correction/_motion_correction.cp310-win_amd64.pyd
 /tools/bin/
+# Linux: locally compiled motion correction module and its build marker.
+/third_party/KimodoMotionCorrection/bin/
 
 # Local temporary shader/kernel caches
 /temp/

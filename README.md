@@ -73,6 +73,27 @@ Tested with **Unreal Engine 5.7.4**; see the included English README and asset n
    Keep the console open while the app runs. Prepare the AI model files separately
    using **Model Manager**; some require account registration and manual download.
 
+### Linux (unofficial, experimental)
+
+The base app (ExMR, FlowHMR, GVHMR, PEAR support, retargeting and export) can be
+installed on x86-64 Linux with an NVIDIA GPU. It needs `git`, `curl`, `cmake`,
+`g++`, Python 3.10 or later to start the installer, and an X11 session with
+OpenGL 4.3:
+
+```bash
+git clone https://github.com/toyxyz/toyxyz_RGBMocap.git
+cd toyxyz_RGBMocap
+./install.sh      # same version pins as install.cmd, Linux wheels; safe to rerun
+./RGBMoCap.sh
+```
+
+`install.sh` runs `tools/install_linux.py`, which builds the same separated
+runtimes from `installer/runtime-lock.json`, downloads the Linux builds pinned in
+`installer/linux-support-lock.json` (Blender 4.5.0, FFmpeg 7.1) and compiles
+motion correction from `third_party/KimodoMotionCorrection`. `update.sh` pulls
+and reruns it. MAMMA, PromptHMR, GEM-X, SAM 3.1 and the Unreal Live Link sender
+remain Windows-only, and the PEAR webcam path is untested on Linux.
+
 To update, close the app and run `update.cmd` from the same folder. See the
 [installation guide](docs/USER_GUIDE.md#install) for disk space, prerequisites
 and recovery.

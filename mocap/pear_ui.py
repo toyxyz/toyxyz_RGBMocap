@@ -1,5 +1,5 @@
 """Transient live tool; offline projects and committed motion remain untouched."""
-import time,subprocess,re,threading,json
+import os,time,subprocess,re,threading,json
 from pathlib import Path
 import numpy as np
 from PySide6.QtCore import Qt,QTimer
@@ -21,6 +21,12 @@ class CameraScan:
             from PySide6.QtMultimedia import QMediaDevices
             devices=[dict(name=d.description(),id=bytes(d.id()).hex(),mf_index=i) for i,d in enumerate(QMediaDevices.videoInputs())]
         except (ImportError,RuntimeError):pass
+        if os.name!='nt':
+            # Linux port: Qt reports V4L2 capture nodes; OpenCV opens them by path.
+            for d in devices:
+                path=bytes.fromhex(d['id']).decode('utf8',errors='replace')
+                if path.startswith('/dev/video'):d['v4l_path']=path
+            self.devices=devices;return
         try:
             from .paths import ROOT
             if self.cancelled.is_set():return

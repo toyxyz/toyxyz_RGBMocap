@@ -132,7 +132,7 @@ def publish(job,emit):
                 if first==0 and end==n:media_link(group/'input.mp4',project/'input.mp4')
                 else:
                     subprocess.run([executable('ffmpeg'),'-v','error','-i',str(group/'input.mp4'),'-vf',f'trim=start_frame={first}:end_frame={end},setpts=PTS-STARTPTS',
-                        '-an','-c:v','libx264','-crf','18','-preset','fast','-threads','2',str(project/'input.mp4')],check=True,creationflags=0x08000000)
+                        '-an','-c:v','libx264','-crf','18','-preset','fast','-threads','2',str(project/'input.mp4')],check=True,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
             cam_record=dict(version=VERSION,sources=camera_sources(project),model=file_stat(BY_KEY['smplx'].path),
                 world_to_camera=transform.tolist(),K=K.tolist(),htd_compatible=False,source_model='prompthmr',method='Native shared PromptHMR world; no independent actor alignment')
             if moving:cam_record['camera_track']={**camera_track,'path':os.path.relpath(group/'camera_track.npz',project)}

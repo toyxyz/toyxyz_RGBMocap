@@ -47,7 +47,7 @@ def activate():
         if not (root/name).is_dir():raise RuntimeError('ExMR runtime is missing. Repair the application installation.')
     for path in (root,root/'third_party/sapiens2',root/'third_party/hamer'):
         if str(path) not in sys.path:sys.path.insert(0,str(path))
-    os.environ.update(PYOPENGL_PLATFORM='win32',WANDB_MODE='disabled',PYTHONNOUSERSITE='1')
+    os.environ.update(PYOPENGL_PLATFORM='win32' if os.name=='nt' else 'egl',WANDB_MODE='disabled',PYTHONNOUSERSITE='1')
     weights=HOME/'cache/exmr/assets';weights.mkdir(parents=True,exist_ok=True)
     for key,name in LINKS.items():
         source=BY_KEY[key].path
@@ -162,7 +162,7 @@ def frame_dir(project,n):
         if json.loads((directory/'receipt.json').read_text(encoding='utf-8'))==identity and len(list(directory.glob('*.jpg')))==n:return directory
     except (OSError,ValueError):pass
     for path in directory.glob('*.jpg'):path.unlink()
-    subprocess.run([executable('ffmpeg'),'-v','error','-i',str(project/'input.mp4'),'-vsync','0','-q:v','2','-start_number','0','-threads','2','-y',str(directory/'%06d.jpg')],check=True,creationflags=0x08000000)
+    subprocess.run([executable('ffmpeg'),'-v','error','-i',str(project/'input.mp4'),'-vsync','0','-q:v','2','-start_number','0','-threads','2','-y',str(directory/'%06d.jpg')],check=True,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
     if len(list(directory.glob('*.jpg')))!=n:raise ValueError('ExMR frame count differs from project')
     atomic_json(directory/'receipt.json',identity)
     return directory

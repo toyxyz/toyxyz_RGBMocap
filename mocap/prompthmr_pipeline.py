@@ -97,7 +97,7 @@ def prepare(path,job):
     atomic_json(work/'pending.json',identity)
     vf=f"trim=start={job['start']:.9f}:end={job['end']:.9f},setpts=PTS-STARTPTS,fps=30,scale=trunc(iw/2)*2:trunc(ih/2)*2"
     subprocess.run([executable('ffmpeg'),'-v','error','-i',job['video'],'-an','-vf',vf,'-frames:v',str(n),'-fps_mode','cfr',
-        '-c:v','libx264','-preset','fast','-crf','18','-pix_fmt','yuv420p','-threads','2',str(work/'input.mp4')],check=True,creationflags=0x08000000)
+        '-c:v','libx264','-preset','fast','-crf','18','-pix_fmt','yuv420p','-threads','2',str(work/'input.mp4')],check=True,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
     result=probe(work/'input.mp4')
     if result['frames']!=n or abs(result['fps']-30)>.001:raise ValueError('Working video frame count does not match the selected trim.')
     atomic_json(work/'media.json',result)

@@ -11,6 +11,9 @@ def prepare(cache=None):
         current=configuration();print('Keeping verified PEAR camera alignment support.',flush=True);return current
     except (OSError,ValueError,KeyError,TypeError):pass
     lock=json.loads((ROOT/'installer/pear-alignment.json').read_text('utf8'))
+    if __import__('os').name!='nt':
+        # Linux port: same kornia_rs version, manylinux wheel instead of the Windows one.
+        lock['sources'].update(json.loads((ROOT/'installer/linux-support-lock.json').read_text('utf8'))['pear_alignment'])
     base=base_identity()
     cache=Path(cache) if cache else ROOT/'.setup/pear-downloads';cache.mkdir(parents=True,exist_ok=True)
     folder=ROOT/'runtime_pear'/('alignment-'+identity()[:16]+'-'+uuid.uuid4().hex[:8])
