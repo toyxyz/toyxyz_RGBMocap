@@ -33,6 +33,7 @@ from .theme import STYLE
 STAGES["mesh"] = "Prepare SMPL-X Mesh"
 STAGES['rig']='Prepare Bone Preview'
 STAGES['save_fbx']='Save FBX'
+STAGES['stream_reference']='Export Live Link Reference Rig'
 STAGES['copy_bvh']='Save BVH'
 STAGES['save_blend']='Save Blender Project'
 STAGES['save_blend_scene']='Save MAMMA Blender Scene'
@@ -1051,6 +1052,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.timer.start(max(1, math.ceil(remaining * 1000)))
 
     def shutdown_preview(self):
+        self._stream_timer.stop()
+        self.close_stream()
         if hasattr(self,'camera_tools'):self.camera_tools.close()
         self.shutdown_mamma()
         self.stop_playback()
@@ -1403,12 +1406,13 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                                    (f' · Elapsed {duration(elapsed)}' if elapsed is not None else ''))
             self.progress.setRange(0, 100)
             self.progress.setValue(0 if self.failed or self.cancelled else 100)
-            if self.current_stage in ('save_fbx','copy_bvh','save_blend','save_blend_scene'):
+            if self.current_stage in ('save_fbx','copy_bvh','save_blend','save_blend_scene','stream_reference'):
                 # Saving a derived file does not replace scene/preview data.
                 # Reloading the people scene here moves a following camera.
                 if not self.failed and not self.cancelled:
                     paths=getattr(self,'_motion_export_targets',[])
-                    self.status.setText('Motion export complete.'+(' '+paths[0] if len(paths)==1 else f' {len(paths)} files.' if paths else ''))
+                    message = 'Reference rig export complete.' if self.current_stage == 'stream_reference' else 'Motion export complete.'
+                    self.status.setText(message+(' '+paths[0] if len(paths)==1 else f' {len(paths)} files.' if paths else ''))
                     for path in paths:self.log.append('Exported: '+path)
                 self.update_readiness()
                 return

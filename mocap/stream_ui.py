@@ -4,10 +4,12 @@ import json
 from queue import Empty
 
 from PySide6.QtCore import QSignalBlocker, QTimer, Qt
-from PySide6.QtWidgets import (QComboBox, QHBoxLayout, QLabel, QListWidget, QListWidgetItem,
+from PySide6.QtWidgets import (QComboBox, QFileDialog, QHBoxLayout, QLabel, QListWidget, QListWidgetItem,
                                QPushButton, QSpinBox, QVBoxLayout, QWidget)
 
 from .bone_stream import BoneStream, MAX_ACTORS, MAX_BAKE_FRAMES, PORT
+from .paths import ROOT
+from .unreal_stream import UnrealStream, subject_name
 
 
 def stream_rig(asset):
@@ -21,7 +23,7 @@ class StreamWorkspace:
         column.setContentsMargins(5, 5, 5, 5)
         column.addWidget(QLabel('Target'))
         self.stream_target = QComboBox()
-        self.stream_target.addItems(['None', 'Blender'])
+        self.stream_target.addItems(['None', 'Blender', 'Unreal Live Link'])
         self.stream_target.setAccessibleName('Stream target')
         column.addWidget(self.stream_target)
         self.stream_port_controls = QWidget()
@@ -47,6 +49,22 @@ class StreamWorkspace:
         port_controls.addLayout(port_row)
         column.addWidget(self.stream_port_controls)
         self.stream_port_controls.hide()
+        self.stream_unreal_controls = QWidget()
+        unreal_controls = QVBoxLayout(self.stream_unreal_controls)
+        unreal_controls.setContentsMargins(0, 0, 0, 0)
+        note = QLabel('Body bones · offline motion\nIn Unreal: Live Link > Add Source > Message Bus Source > RGB MoCap.')
+        note.setWordWrap(True)
+        unreal_controls.addWidget(note)
+        retry = QPushButton('Retry connection')
+        retry.setToolTip('Restart the optional Live Link sender after setup or a connection error.')
+        retry.clicked.connect(self.restart_unreal_stream)
+        unreal_controls.addWidget(retry)
+        self.stream_reference_button = QPushButton('Export Reference FBX...')
+        self.stream_reference_button.setToolTip('Export the exact reference rig for the highlighted person at the current frame. Uses the Blender runtime.')
+        self.stream_reference_button.clicked.connect(self.export_stream_reference)
+        unreal_controls.addWidget(self.stream_reference_button)
+        column.addWidget(self.stream_unreal_controls)
+        self.stream_unreal_controls.hide()
         self.stream_people = QListWidget()
         self.stream_people.setObjectName('streamPeopleList')
         self.stream_people.setAccessibleName('People to stream')
@@ -80,13 +98,31 @@ class StreamWorkspace:
 
     def change_stream_target(self, index):
         blender = index == 1 and not self._pear_active
+        unreal = index == 2 and not self._pear_active
         self.stream_port_controls.setVisible(blender)
+        self.stream_unreal_controls.setVisible(unreal)
+        self._stream_port_error = None
         if blender:
+            if isinstance(self._stream_sender, UnrealStream):
+                self.close_stream()
             self.apply_stream_port()
+        elif unreal:
+            self.restart_unreal_stream()
         else:
-            self._stream_port_error = None
             self.close_stream()
             self.stream_tab_changed(self.people_tabs.currentIndex())
+
+    def restart_unreal_stream(self):
+        if self.stream_target.currentIndex() != 2 or self._pear_active:
+            return
+        self.close_stream()
+        self._stream_port_error = None
+        try:
+            self._stream_sender = UnrealStream(ROOT)
+        except (OSError, ValueError) as error:
+            self._stream_port_error = str(error)
+            self.log.append('Unreal Live Link: ' + str(error))
+        self.stream_tab_changed(self.people_tabs.currentIndex())
 
     def reset_stream_port(self):
         self.stream_port.setValue(PORT)
@@ -148,22 +184,78 @@ class StreamWorkspace:
             return ((1, actor['name'] if actor else 'Person 1'),)
         return ()
 
-    def stream_sources_at_playhead(self, rows):
+    def stream_source_at_playhead(self, ident, name):
         view = self.motion_view
+        if self.people_state:
+            if self.scene_data is None:
+                return None
+            current = self.scene_data.take_at(ident, view.scene_time, self.project)
+            if current is None:
+                return None
+            take, frame = current
+            rig, frames, transform = stream_rig(take.target_asset), take.arrays.get('rig'), take.transform
+        else:
+            rig, frames = stream_rig(view.target_asset), view.target_frames
+            frame, transform = view.index, None
+        if rig is not None and frames is not None and 0 <= frame < len(frames):
+            return ident, name, rig, frames, frame, transform
+        return None
+
+    def stream_sources_at_playhead(self, rows):
         for ident, name in rows:
-            if ident not in self._stream_checked:
-                continue
-            if self.people_state:
-                current = self.scene_data.take_at(ident, view.scene_time, self.project)
-                if current is None:
-                    continue
-                take, frame = current
-                rig, frames, transform = stream_rig(take.target_asset), take.arrays.get('rig'), take.transform
-            else:
-                rig, frames = stream_rig(view.target_asset), view.target_frames
-                frame, transform = view.index, None
-            if rig is not None and frames is not None and 0 <= frame < len(frames):
-                yield ident, name, rig, frames, frame, transform
+            if ident in self._stream_checked:
+                source = self.stream_source_at_playhead(ident, name)
+                if source is not None:
+                    yield source
+
+    def export_stream_reference(self):
+        if self._pear_active or self.busy:
+            return
+        from pathlib import Path
+        from uuid import uuid4
+        from .unreal_stream import rig_schema
+        from .storage import atomic_json
+        from .blend_support import partial
+        item = self.stream_people.currentItem()
+        if item is None:
+            self.status.setText('Highlight a person in Stream before exporting the reference rig.')
+            return
+        ident = item.data(Qt.UserRole)
+        row = next(((i, n) for i, n in self._stream_rows or () if i == ident), None)
+        source = self.stream_source_at_playhead(*row) if row else None
+        if source is None:
+            self.status.setText('No prepared motion for this person at the current frame. Seek inside a ready take.')
+            return
+        try:
+            # Small metadata only; FBX writing runs in a separate CPU worker.
+            schema = rig_schema(source[2])
+            subject = subject_name(self.stream_actor_id(ident), row[1])
+            filename = subject + '_rig_' + schema['rig'][:8] + '.fbx'
+            path, _ = QFileDialog.getSaveFileName(self, 'Export Live Link Reference Rig',
+                                                 str(Path.home() / 'Documents' / filename), 'FBX files (*.fbx)')
+            if not path:
+                return
+            if self.busy:
+                raise ValueError('Wait for the current job before exporting a reference rig.')
+            current = self.stream_source_at_playhead(*row)
+            if current is None or current[2].key != schema['rig']:
+                raise ValueError('The current reference rig changed. Select the take and export again.')
+            target = Path(path).resolve()
+            if target.suffix.lower() != '.fbx':
+                target = target.with_suffix('.fbx')
+                if target.exists():
+                    raise ValueError('Choose the complete .fbx filename to confirm replacing an existing file.')
+            project_root = self.people_root or self.project
+            if project_root and target.is_relative_to(Path(project_root).resolve()):
+                raise ValueError('Choose an export destination outside the source project folder.')
+            request = ROOT / 'cache/unreal_stream' / ('reference-' + uuid4().hex + '.json')
+            request.parent.mkdir(parents=True, exist_ok=True)
+            atomic_json(request, dict(target=str(target), schema=schema))
+            self._fbx_export_cleanup = request, [partial(target, request)]
+            self._motion_export_targets = [str(target)]
+            self.start_jobs([('stream_reference', ['--output', str(request)])])
+        except (OSError, ValueError, KeyError) as error:
+            self.status.setText('Cannot export reference rig: ' + str(error))
 
     def stream_bake_plan(self, ident, actor, key):
         fps = float(self.info['fps'])
@@ -247,7 +339,7 @@ class StreamWorkspace:
             self._stream_rows = None
             self._stream_frame = None
         sender = self._stream_sender
-        if sender is not None:
+        if isinstance(sender, BoneStream):
             self.stream_bake_commands(sender)
         rows = self.stream_people_with_motion()
         if rows != self._stream_rows:
@@ -256,19 +348,25 @@ class StreamWorkspace:
                 for ident, name in rows:
                     item = QListWidgetItem(name, self.stream_people)
                     item.setData(Qt.UserRole, ident)
+                    item.setToolTip('Unreal subject: ' + subject_name(self.stream_actor_id(ident), name))
                     item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
                     item.setCheckState(Qt.Checked if ident in self._stream_checked else Qt.Unchecked)
             self._stream_rows = rows
 
+        self.stream_reference_button.setEnabled(bool(rows) and not getattr(self, 'busy', False))
         if sender is None:
             status = 'Select a target to stream.' if rows else 'Prepare motion to list people.'
         else:
             error = sender.error()
             if error:
-                self.log.append(f'Blender stream: {error}')
+                target = 'Unreal Live Link' if isinstance(sender, UnrealStream) else 'Blender stream'
+                self.log.append(f'{target}: {error}')
+                if isinstance(sender, UnrealStream):
+                    self._stream_port_error = str(error)
+            unreal = isinstance(sender, UnrealStream)
             connected = sender.connected
-            sources = tuple(self.stream_sources_at_playhead(rows)) if connected else ()
-            checked = tuple(sorted(self._stream_checked)) if connected else None
+            sources = tuple(self.stream_sources_at_playhead(rows)) if connected or unreal else ()
+            checked = tuple(sorted(self._stream_checked)) if connected or unreal else None
             key = (checked, tuple((ident, name, rig.key, id(frames), frame, id(transform))
                                   for ident, name, rig, frames, frame, transform in sources))
             if key != self._stream_frame:
@@ -282,11 +380,15 @@ class StreamWorkspace:
                          rig, frame, frames[frame], transform)
                         for ident, name, rig, frames, frame, transform in sources)
                 except (OSError, ValueError, IndexError) as error:
-                    self.log.append(f'Blender stream could not read motion: {error}')
+                    self.log.append(f'Bone stream could not read motion: {error}')
                     actors = ()
                 sender.publish(actors, tuple(selected.values()) if checked is not None else None)
                 self._stream_frame = key
-            if not connected:
+            if unreal and not sender.ready:
+                status = 'Starting Unreal Live Link sender…'
+            elif unreal and not connected:
+                status = 'Waiting for Unreal. Add Message Bus Source > RGB MoCap.'
+            elif not connected:
                 status = f'Waiting for Blender\n127.0.0.1:{sender.port}'
             elif not self._stream_checked:
                 status = 'Connected. Check people to stream.'

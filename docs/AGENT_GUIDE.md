@@ -389,6 +389,66 @@ See the [installation steps and controls](USER_GUIDE.md#stream-bones-to-blender)
 
 `blender_addon/rgbmocap_bone_stream.py` applies poses on Blender's main thread, within the scene and view layer chosen at Connect. The stream collection stores references to its original armatures, keyed by person and rest skeleton. Keep those references when reusing rigs. Clean checks selection and scene references again at confirmation and skips armatures used by other objects. Bake reads the recorded takes on the sender thread, writes a separate Action in Blender, and detaches only after the action is assigned successfully. The app unchecks that person after Blender acknowledges completion.
 
+### Unreal Live Link body streaming
+
+See [the optional setup and retarget guide](UNREAL_LIVE_LINK.md). Stream target
+2 is Unreal Live Link; 0 remains None and 1 remains Blender. Keep PEAR excluded.
+`Setup_UnrealStream.cmd` / `tools/setup_unreal_stream.py` build the source in
+`developer-build/unreal-live-link` against the user's installed UE 5.7+ and
+verify commandlet startup before keeping a receipt in `runtime_unreal_stream`.
+They do not modify the shared inference registry or distribute engine binaries.
+
+`mocap/unreal_stream.py` shares the prepared StreamRig/playhead source contract,
+converts off the GUI thread, and retains a bounded latest snapshot. The bridge
+uses official ILiveLinkProvider and stock Message Bus reception. Do not replace
+the verified cm/parent-local quaternion basis with Blender matrices directly:
+rest and animation must use the same handedness/facing conversion. Preserve
+multi-person scene transforms, reference/leaf lengths, removal on missing motion,
+reference refresh on rest changes, and actual Provider HasConnection status.
+
+Default paused pose refresh is 30 Hz and reference 10 Hz. Switching targets,
+entering PEAR or exiting closes only this app's owned bridge. Window close/aboutToQuit
+explicitly closes the transport; its non-daemon thread reaps the owned process off
+the GUI thread. Do not rely on the thread flag to initiate shutdown; a lost IPC heartbeat
+also stops the native bridge. Keep Blender's port rollback, packets and Bake
+commands on its own path. Test numeric round trips, real native reception and
+GUI selection/seek/scope changes. Receipt/build success alone does not verify
+MetaHuman retarget quality. Do not copy test MetaHuman assets into the repository.
+
+The Stream **Export Reference FBX...** button freezes the highlighted person's
+current stream rig, independently of its checkbox/connection. `stream_reference`
+is dispatched by `worker_progress.py` in the shared CPU runtime; do not put this
+presentation-only operation in the inference fingerprint worker. The reference
+writer derives the same Unreal local rest transforms as `rig_schema`, attaches
+a procedural weighted mesh to every joint, then uses the installed Blender
+writer to produce a standard FBX with no animation/extra leaf bones. Preserve
+the verified cm/unit-scale and Z/X bone-axis options in
+`mocap/stream_reference_scene.py`. Raw intermediate FBX is private to Blender.
+Final files are atomically published; owned staging/requests are cleaned on
+success, failure or cancellation. Failed export must retain an existing target.
+A reference-only completion must not reload the people scene or change playback
+placement. Window/app shutdown must close the stream even when no job is busy.
+
+The final reference display mesh is rebuilt in the imported armature's local
+space inside Blender, with weight-1 named groups and a standard Armature modifier.
+Do not reuse the intermediate display skin's bind matrices or change the verified
+reference/pose basis to compensate for geometry errors. Validate displayed skin
+separately from skeleton matrices. Keep Unicode label/name limits consistent with
+Unreal FString UTF-16 lengths; truncate labels without splitting a code point,
+and reject overlong bone identities rather than truncating them.
+
+Publish sample projects as separate Release assets, never as app source payloads.
+Use an explicit allowlist of Content, the required project/config files, English
+README, licenses, reference/schema, preview and sanitized validation records.
+Exclude Binaries/Source/Plugins, Saved, Intermediate, DerivedDataCache, sender
+builds, models, videos, private IDs/paths and editor-user state. Inspect embedded
+import metadata as well as loose files; preserve runtime geometry/DNA data and
+clean only public-copy reimport provenance with editor APIs. Keep Epic asset terms
+separate from the authored source license. Default the public sample Subject to
+None and explain choosing the user's actual motion Subject. Audit the recursive
+dependency tree, archive CRC/per-file hashes, and load a separately extracted
+content-only project without the experiment's Receiver module or junctions.
+
 ### Saved camera display and source export implementation
 
 `mocap/camera_tracks.py` adapts committed camera receipts without inference or

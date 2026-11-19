@@ -106,3 +106,15 @@ existing Flow runtime. VGGT retains its existing upstream/model terms; its weigh
 file is reused, not bundled again. GeoCalib's public checkpoint is obtained
 separately through Model Manager under CC BY 4.0; the upstream
 LICENSE-WEIGHTS is retained with support files. No TensorRT engine/runtime is distributed.
+
+
+## Optional Unreal Live Link sender
+
+RGB MoCap authors the optional provider/commandlet source in
+`developer-build/unreal-live-link`. Setup builds it locally against the user's
+separately installed Unreal Engine. The installation retains its Epic notices
+and terms; no Unreal Engine binaries or MetaHuman assets are bundled in this
+source checkout. The separately downloadable Unreal sample contains a generated
+MetaHuman assembly under its applicable Epic terms; its own asset notices
+distinguish that content from RGB MoCap-authored MIT material.
+The receiver uses Unreal's built-in Live Link Message Bus Source.

@@ -801,6 +801,27 @@ Use **Clean** in Object Mode to review and remove inactive stream rigs in the cu
 
 Use **Bake** in Object Mode to save all recorded frames for the active streaming armature as a new Blender Action. If only one armature is streaming, Bake uses it automatically. The action includes root motion and uses the existing Blender scene FPS. Gaps between takes hold the previous pose until the next recorded frame. RGB MoCap can bake up to 36,000 timeline frames. After success, the app unchecks that person and the armature becomes a regular Blender object. Other people remain connected. Save the Blender file to keep the action. Use matching versions of RGB MoCap and the add-on for all controls.
 
+## Stream bones to Unreal Live Link
+
+In **Stream > Target**, choose **Unreal Live Link** and check prepared offline people.
+Run **Setup_UnrealStream.cmd** once first; it requires an installed Unreal Engine
+5.7+ and Visual Studio C++ tools. In Unreal enable the built-in Live Link and UDP
+Messaging plugins, then add **Message Bus Source > RGB MoCap**.
+The stream includes body/finger bones, reference poses and bone lengths;
+MetaHuman retarget setup remains in Unreal. Default **None**, Blender and PEAR
+behavior are preserved. See the [full setup, network and retarget guide](UNREAL_LIVE_LINK.md).
+
+Use **Export Reference FBX...** for the highlighted person at a ready timeline
+frame to create a matching source Skeletal Mesh for Unreal IK retargeting.
+The reference preserves the current 52-bone or SOMA Native77 rest skeleton.
+It uses the existing Blender runtime and does not include motion or the human mesh.
+
+A [downloadable UE 5.7 sample project](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-sample-v1/RGBMoCap_Unreal_LiveLink_Sample_UE5.7_v1.zip) provides the source-rig and
+MetaHuman retarget setup. Open its `.uproject`, then select your actual motion
+Subject in `ABP_RGBMoCap_LiveSource` (default **None**). Match the reference rig;
+the sample uses one SMPL 52-bone rig and does not automatically adapt to Native77.
+The sample's English README includes connection and asset-use instructions.
+
 ## FBX and Blender
 
 **File → Export...** opens the options for the selected source model.

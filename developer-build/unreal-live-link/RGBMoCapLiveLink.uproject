@@ -1,0 +1,18 @@
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.7",
+  "DisableEnginePluginsByDefault": true,
+  "Modules": [
+    {
+      "Name": "RGBMoCapLiveLink",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "UdpMessaging",
+      "Enabled": true
+    }
+  ]
+}

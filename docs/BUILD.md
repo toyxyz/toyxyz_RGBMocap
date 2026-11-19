@@ -35,6 +35,17 @@ before publishing the environment. Only allowlisted identical CUDA DLLs are
 shared. See the [GEM-X guide](models/GEMX.md#setup) before changing the locks
 or working on its native preview, retarget and Blender paths.
 
+## Optional Unreal Live Link sender
+
+The Windows source build supports **Setup_UnrealStream.cmd** with an installed
+UE 5.7+ and Visual Studio 2022 C++ tools/Windows SDK. See
+[setup and implementation](UNREAL_LIVE_LINK.md). It compiles only the app-owned
+commandlet module, verifies startup and removes compiler intermediates by default.
+Use `--engine "D:/Epic Games/UE_5.7"` for a custom engine path and
+`--keep-build-cache` for repeated development builds. Epic engine binaries are
+not packaged with RGB MoCap. Keep this optional support separate from base AI
+runtime setup and the licensed test-project assets.
+
 ## Environments
 
 Run `python tools/setup_dev.py --plan` to review groups. Then run the same command

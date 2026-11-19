@@ -23,6 +23,7 @@ __pycache__/
 !/blender_addon/rgbmocap_bone_stream.zip
 *.7z
 *.tar*
+!/developer-build/unreal-live-link/Source/RGBMoCapLiveLinkEditor.Target.cs
 *.log
 *.partial
 *.part

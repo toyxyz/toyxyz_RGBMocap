@@ -1,5 +1,126 @@
 # Source package validation
 
+## Unreal streaming release review and portable sample (2026-11-19)
+
+- Two completed Astra reviews assessed the sender, reference export, lifecycle,
+  protocol and release evidence (37,030 total API tokens). The final review
+  accepted the source fixes with no demonstrated remaining release blocker,
+  conditional on the archive/extraction checks completed below. This supersedes
+  the earlier blocked Astra attempt recorded in the initial streaming checks.
+- Fixed the reference FBX display skin: rebuild and bind the visualization in
+  the imported armature's actual rest space instead of retaining an incompatible
+  intermediate bind. Re-exported 52- and 77-bone GUI references and imported both
+  through normal UE 5.7.4 legacy and Interchange importers. Named hierarchy,
+  local rest transforms and active bone counts passed; maximum position error
+  was 0.0000455 cm and rotation error 0.002955 degrees. The previously scattered
+  display vertices now remain within the expected limb-sized bounds.
+- Aligned Python name/label limits with Unreal's UTF-16 string units, including
+  astral Unicode boundary tests. All 14 unit tests passed, including reference
+  validation/atomic publication and the existing empty-foot-contact regression.
+  UI regression checks covered Blender packets, occupied ports, target switching,
+  paused/seek poses, absent motion, selection before connection and PEAR exclusion.
+- Startup cancellation and two rapid close/restart cases reaped owned provider
+  processes and threads. A native receiver checked 195 evaluations across
+  Native77/52/Native77 schema replacements and reconnect: maximum position error
+  was 0.00000954 cm and normalized quaternion angle error 0.00000418 degrees.
+  This verifies transport/schema replacement, not automatic target IK-rig swaps.
+- The content-only sample passed ordinary Simulate game-world playback using
+  the actual app sender and stock Message Bus source. The hidden source and
+  342-bone MetaHuman body matched reference results at frames 0/80/180 and after
+  continuous playback; key-joint position error was below 0.00002 cm. Body/face
+  head alignment, changing motion and sender restart followed by stock-source
+  recreation passed. No forced skeletal updates or custom receiver module was
+  used. Concurrent local providers were isolated only in the test transport.
+- The separate sample ZIP contains 315 payload files plus its hash manifest
+  (316 entries), 965,438,961 uncompressed bytes and 863,390,994 archive bytes.
+  CRC and every payload SHA-256 passed. It excludes caches, build binaries,
+  private test modules, model weights and source video/motion. Local DNA import
+  provenance was cleared from the staged copies without changing runtime DNA;
+  the public asset metadata audit found no private paths or local Subject ID.
+- Extracted the ZIP into a different path containing spaces. A normal UE 5.7.4
+  Editor loaded the map, compiled Animation Blueprints and 295 dependencies
+  without missing assets, junctions or a custom module. The extracted copy also
+  passed the real Simulate/live/reconnect checks after the documented actual
+  Subject configuration. Restoring the distributed default Subject None left
+  every payload hash unchanged. The English README and Epic asset notices are
+  included; sample assets are distributed separately from the source checkout.
+- Archive SHA-256:
+  `6d787818d4b13ab4d5bd49395ff29e1cf2f5fa4336585f410deed0652d1e11c1`.
+
+The sample uses one specific 52-bone reference and its MetaHuman setup. Other
+references need matching source assets; Native77 requires its own IK setup.
+Remote networking, other engine versions, packaged games, fresh-PC compiler
+installation, long sessions and arbitrary-character retarget quality remain
+outside these checks. Reconnection uses Unreal's stock source recreation; it
+does not promise transparent rebinding after the provider process restarts.
+
+## Live Link reference source FBX (2026-11-19)
+
+- Added **Export Reference FBX...** to the Unreal Stream target. It captures the
+  highlighted person's current ready take/reference, independently of the stream
+  checkbox or connection, and exports through a shared CPU worker and the
+  existing Blender 4.5 runtime. No AI inference or receiver tool/plugin is added.
+- Actual main GUI exports passed for saved FlowHMR 52-bone and GEM-X Native77
+  projects. Success preserved the same preview arrays, time, stream sender and
+  checkbox selection. Worker export times were about 0.77 / 0.80 s on this PC;
+  these exclude file-dialog interaction and are not universal timings.
+- Imported the actual GUI-produced FBX files in a separate UE 5.7.4 project via
+  both FbxFactory and Interchange. All 52 / 77 bones were active and preserved,
+  with the same named parent hierarchy and no added leaf/container bones.
+  Maximum local-reference position difference: 0.0000455 cm; rotation:
+  0.002955 degrees; scale difference from 1: below 8.4e-7.
+  Unreal's bone index ordering can differ; comparison matches names/parents.
+- Added failure/atomic-publication checks: invalid hierarchy/quaternions and
+  nonfinite data are rejected, writer failure retains an existing target, and
+  publication happens only after the final file is complete. An actual GUI
+  cancellation retained the previous target and cleared its request/staging.
+- Normal window closure revealed an omitted stream shutdown path. Added
+  stream timer/transport closure to shutdown_preview; repeated actual exports
+  then closed the app and its owned Unreal provider successfully.
+- Kept inference fingerprint worker.py unchanged. The only new worker routing
+  is the presentation dispatcher; reference export does not replace/reload the
+  current scene. No new MetaHuman retarget/cloth-quality claim is made here.
+- Source guide describes standard Unreal source/target IK Rig and Retarget Pose
+  From Mesh setup, different 52/77 chains, unit/facing conventions and limits.
+  No target meshes, proprietary character assets or test FBX payloads are shipped
+  in the source checkout; the separate sample Release has its own asset notices.
+
+## Unreal Live Link body streaming (2026-11-19)
+
+- Built the optional app-authored provider with the installed UE 5.7.4 and
+  Visual Studio 2022 tools. Setup now verifies token-authenticated local startup
+  before retaining its receipt and removes owned compiler intermediates.
+- A separate native receiver used Unreal's stock Message Bus Source. In a
+  90-second app-provider run with two 52-bone FlowHMR people, recorded 1,214
+  evaluations across motion/reference subjects, including paused poses, seeking
+  to frames 0/80/180, person deselection/return, no-motion gaps, and source
+  removal/recreation. Both people returned after their subjects were removed.
+- Compared received hierarchy, reference transforms, all bone lengths and
+  sampled motion against the previously verified pilot. Maximum parent-local
+  translation difference was 0.0000229 cm; normalized quaternion dot error was
+  below 1.5e-15. This establishes transport/conversion equivalence, not general
+  retarget quality on arbitrary rigs.
+- Ran five automated numerical/protocol checks: random rotation/parent-local
+  reconstruction, scene placement and leaf lengths, invalid rig/transform
+  rejection, schema cache release and bounded/finite JSON.
+- UI checks exercised actual Blender rig/pose packets, occupied-port rollback,
+  target-switch cleanup, checked people before Unreal connects, seeking,
+  unavailable motion removal and PEAR suspension. The actual main GUI loaded
+  a saved two-person project, checked both people, started the provider and
+  reaped it on target None/window shutdown.
+- Warm provider startup: 2.77 s; measured provider peak working RAM: 859 MiB.
+  Six-second steady CPU average: 0.77% of one core. Two-person conversion over
+  100 calls: median 0.64 ms, p95 0.93 ms. These exclude receiving editor/render
+  costs and are observations on this PC, not hardware minimums.
+- No new inference, export format or model/runtime dependency was introduced.
+  Additionally received 198 native evaluations while the same person switched
+  between GEM-X Native77 and a 52-bone FlowHMR rig, checking new hierarchy,
+  reference transforms and terminal lengths after each replacement.
+  Remote machines, packaged Unreal games,
+  other engine versions and clean-PC compiler installation remain unverified.
+- Astra submission was blocked by automatic approval review before execution;
+  this validation is based on direct code, numerical and native runtime checks.
+
 ## Unreal Live Link Face CSV export (2026-11-16)
 
 - Exported an FBX and a 199-frame facial CSV from the Windows app using a saved
@@ -1353,7 +1474,7 @@ dtype/device fallback is retained. In 360 parameter samples, batched results
 matched the preceding filter exactly, including face axis-angle conversions.
 Median CPU filter time fell from 0.243 to 0.104 ms (p95 0.114 ms). On real CUDA
 pose/face tensors, filtering plus transfers fell from 0.648 to 0.256 ms median
-(p95 0.851 to 0.399 ms); rebuilt joints and vertices were bit-identical. This is
+(p95 0.931 to 0.399 ms); rebuilt joints and vertices were bit-identical. This is
 filter/transfer overhead, not the whole model's inference time.
 
 Paired worker runs on one real video measured smoothed random-seek processing at

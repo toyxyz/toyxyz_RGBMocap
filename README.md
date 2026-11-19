@@ -31,6 +31,20 @@ https://github.com/user-attachments/assets/cc0e79bb-ecce-4752-ae14-3b6cea30c810
 
 [Download original sample](docs/samples/streaming-to-blender.mp4)
 
+## Unreal Live Link sample project
+
+[Download the UE 5.7 sample ZIP](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-sample-v1/RGBMoCap_Unreal_LiveLink_Sample_UE5.7_v1.zip) · [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-sample-v1/RGBMoCap_Unreal_LiveLink_Sample_UE5.7_v1.zip.sha256) · [Setup guide](docs/UNREAL_LIVE_LINK.md)
+
+Open the extracted `.uproject` to inspect the 52-bone source rig, standard Live Link
+Animation Blueprints, IK Rigs/Retargeter, and MetaHuman scene. Set your actual motion
+Subject in `ABP_RGBMoCap_LiveSource`; the sample default is **None**. Different rigs
+need their own matching reference, including GEM-X Native77.
+
+The receiver needs no custom plugin or C++ build. The app's optional sender requires
+**Setup_UnrealStream.cmd**, installed Unreal Engine and Visual Studio C++ tools.
+The ZIP is separate from the app source and excludes caches, videos and AI models.
+Tested with **Unreal Engine 5.7.4**; see the included English README and asset notices.
+
 ## Install and run
 
 1. Install [Git for Windows](https://git-scm.com/download/win). Open **Command Prompt**
@@ -152,6 +166,7 @@ do not put passwords or account tokens in the agent chat.
   or PMX character motion as VMD for MMD.
 - Export portable Blender projects with source animation, video and saved cameras; MAMMA can include animated body meshes and every camera.
 - Export the current take, all takes for checked people, or individual takes. The export dialog shows what to do for each unavailable take. [Export guide](docs/USER_GUIDE.md#fbx-and-blender)
+- Stream selected offline people's body bones to Unreal's built-in Live Link Message Bus, including their rest skeleton and bone lengths. Export a matching source-rig FBX for Unreal IK retargeting. Optional Unreal/Visual Studio setup; no new receiver plugin. [Setup and retarget guide](docs/UNREAL_LIVE_LINK.md)
 - Stream selected people's bones to Blender during playback or scrubbing, then bake their full recorded motion into Blender Actions. [Download the Blender add-on ZIP](blender_addon/rgbmocap_bone_stream.zip?raw=1) · [Installation and controls](docs/USER_GUIDE.md#stream-bones-to-blender)
 - Preview and correct GEM-X's native SOMA motion, retarget to humanoid characters, and export the Native77 skeleton as FBX or BVH. The Blender bundle includes the evaluated surface and input video.
 - Save side-by-side input video and the current 3D viewport as MP4 with **File > Export Preview...** (offline models).
