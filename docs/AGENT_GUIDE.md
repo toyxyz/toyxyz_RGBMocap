@@ -441,18 +441,6 @@ separately from skeleton matrices. Keep Unicode label/name limits consistent wit
 Unreal FString UTF-16 lengths; truncate labels without splitting a code point,
 and reject overlong bone identities rather than truncating them.
 
-Publish sample projects as separate Release assets, never as app source payloads.
-Use an explicit allowlist of Content, the required project/config files, English
-README, licenses, reference/schema, preview and sanitized validation records.
-Exclude Binaries/Source/Plugins, Saved, Intermediate, DerivedDataCache, sender
-builds, models, videos, private IDs/paths and editor-user state. Inspect embedded
-import metadata as well as loose files; preserve runtime geometry/DNA data and
-clean only public-copy reimport provenance with editor APIs. Keep Epic asset terms
-separate from the authored source license. Default the public sample Subject to
-None and explain choosing the user's actual motion Subject. Audit the recursive
-dependency tree, archive CRC/per-file hashes, and load a separately extracted
-content-only project without the experiment's Receiver module or junctions.
-
 ### Saved camera display and source export implementation
 
 `mocap/camera_tracks.py` adapts committed camera receipts without inference or

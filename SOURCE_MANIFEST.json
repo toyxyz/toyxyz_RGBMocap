@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "date": "2026-11-19",
+  "date": "2026-11-20",
   "purpose": "Public source distribution; excludes model weights and runtime binaries",
   "version": "git-source",
   "files": [
@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 16878,
-      "sha256": "3ac3cd6deff320f91c59a13fa11492b327efcfc9bc74d35bb9548c23c4f9edc6"
+      "bytes": 16099,
+      "sha256": "48d9b1c8bb8c6f15b808bdb48f004aa356baa87ff6c192a4e4fcccc202aae1bd"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -156,8 +156,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 88551,
-      "sha256": "71997f7dc314ff7489b60c0ad80bb1671f234e9747c1a04336a2ed993426b027"
+      "bytes": 87672,
+      "sha256": "7915e26189f85b9b141f4602245edb64f6e27a0f4ec3288bd92e3b5c31cea5b0"
     },
     {
       "path": "docs/BUILD.md",
@@ -186,13 +186,13 @@
     },
     {
       "path": "docs/UNREAL_LIVE_LINK.md",
-      "bytes": 14181,
-      "sha256": "3b977797c8a90d12dca877528c5cb870a79eb36a260e1c5b200330a1f68fa8bc"
+      "bytes": 12836,
+      "sha256": "e8c102380d8d2931928aa64a5957a18c7917eb431a32bc08e09a0ec8271d2a9c"
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 82801,
-      "sha256": "6dbfa66eb1321871b7bfecbde750b60725e08295a95e6b2b36584340194be008"
+      "bytes": 82274,
+      "sha256": "3da097cee1756e7d42e7a271a6bb20eeda9f050dbfc37f0e8c3b91575a7a0c03"
     },
     {
       "path": "docs/VALIDATION.md",

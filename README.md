@@ -31,19 +31,12 @@ https://github.com/user-attachments/assets/cc0e79bb-ecce-4752-ae14-3b6cea30c810
 
 [Download original sample](docs/samples/streaming-to-blender.mp4)
 
-## Unreal Live Link sample project
+## Unreal Live Link
 
-[Download the UE 5.7 sample ZIP](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-sample-v1/RGBMoCap_Unreal_LiveLink_Sample_UE5.7_v1.zip) · [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-sample-v1/RGBMoCap_Unreal_LiveLink_Sample_UE5.7_v1.zip.sha256) · [Setup guide](docs/UNREAL_LIVE_LINK.md)
-
-Open the extracted `.uproject` to inspect the 52-bone source rig, standard Live Link
-Animation Blueprints, IK Rigs/Retargeter, and MetaHuman scene. Set your actual motion
-Subject in `ABP_RGBMoCap_LiveSource`; the sample default is **None**. Different rigs
-need their own matching reference, including GEM-X Native77.
-
-The receiver needs no custom plugin or C++ build. The app's optional sender requires
-**Setup_UnrealStream.cmd**, installed Unreal Engine and Visual Studio C++ tools.
-The ZIP is separate from the app source and excludes caches, videos and AI models.
-Tested with **Unreal Engine 5.7.4**; see the included English README and asset notices.
+Stream prepared offline motion to Unreal's built-in Live Link Message Bus.
+See the [setup and retarget guide](docs/UNREAL_LIVE_LINK.md). The optional app
+sender requires **Setup_UnrealStream.cmd**, an installed Unreal Engine and
+Visual Studio C++ tools.
 
 ## Install and run
 

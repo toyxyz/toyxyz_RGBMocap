@@ -816,12 +816,6 @@ frame to create a matching source Skeletal Mesh for Unreal IK retargeting.
 The reference preserves the current 52-bone or SOMA Native77 rest skeleton.
 It uses the existing Blender runtime and does not include motion or the human mesh.
 
-A [downloadable UE 5.7 sample project](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-sample-v1/RGBMoCap_Unreal_LiveLink_Sample_UE5.7_v1.zip) provides the source-rig and
-MetaHuman retarget setup. Open its `.uproject`, then select your actual motion
-Subject in `ABP_RGBMoCap_LiveSource` (default **None**). Match the reference rig;
-the sample uses one SMPL 52-bone rig and does not automatically adapt to Native77.
-The sample's English README includes connection and asset-use instructions.
-
 ## FBX and Blender
 
 **File → Export...** opens the options for the selected source model.

@@ -5,24 +5,6 @@ through Unreal's built-in **Message Bus Source**. It follows playback and
 scrubbing; it does not run live video inference. The default Stream target
 remains **None**. Blender streaming keeps its existing port and add-on.
 
-## Download the sample project
-
-[Download the Unreal Live Link sample ZIP](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-sample-v1/RGBMoCap_Unreal_LiveLink_Sample_UE5.7_v1.zip)
-([SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-sample-v1/RGBMoCap_Unreal_LiveLink_Sample_UE5.7_v1.zip.sha256)). Extract into a short writable path and open
-`RGBMoCap_LiveLink_Sample.uproject` in UE **5.7.4**. The project contains its
-MetaHuman assembly, matching 52-bone source, stock Live Link Animation Blueprints,
-20-chain IK Rigs/Retargeter, and comparison map. No receiver plugin or C++ project
-module is required. The app sender still needs the separate setup below.
-
-In `Assets/ABP_RGBMoCap_LiveSource`, choose your running app's motion Subject and
-Compile/Save. The distributed default is **None**; do not select `_Reference`.
-The sample contains no recorded motion or video. Its rig is one specific SMPL
-52-bone reference: verify the rest/rig identity, not just the bone count. Export
-and configure a matching reference for other shapes/takes/models; Native77 needs
-its own setup. The ZIP includes an English README, validation records, per-file
-hash manifest and separate Epic asset notices. It omits engine binaries, build
-outputs, caches, model weights and local project/user state.
-
 ## Prepare once
 
 1. Install Unreal Engine **5.7 or later**, Visual Studio 2022 **Desktop
