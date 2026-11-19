@@ -16,8 +16,8 @@
     },
     {
       "path": "AGENTS.md",
-      "bytes": 2815,
-      "sha256": "554fe00539ac6b49ca84e2ec2761932eb1f1972c4c0bb143ca587e3b5e19f8f0"
+      "bytes": 2938,
+      "sha256": "e0aad5127a24120992e4b04348255d3b35bb2490dfa9e8cfc83d45ec9a7981a4"
     },
     {
       "path": "LICENSE",
@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 16597,
-      "sha256": "63a60565fe896d93b0b1f3dd6fbdbf10f586fb2320fbc605e6dc597746521493"
+      "bytes": 16673,
+      "sha256": "73ed196f6c8ecdea25f53396ae1f0f4f1286e84a75c08b823282566851827f23"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -156,8 +156,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 98405,
-      "sha256": "17ea423015dc532ff37682f8af0fa2cf375ae0932033f99b3004d422fb6d1fed"
+      "bytes": 99207,
+      "sha256": "6f0442df09c9abad51d180cb2d425c08b493bfc52582973062f486e4df6756ef"
     },
     {
       "path": "docs/BUILD.md",
@@ -186,18 +186,18 @@
     },
     {
       "path": "docs/UNREAL_LIVE_LINK.md",
-      "bytes": 21611,
-      "sha256": "ac43c5f6e51c4959d229ced4d4a2aba15abebe904842283e05d65fe50437d805"
+      "bytes": 21720,
+      "sha256": "01157b59c552ef0d3a10593406fad3e60603a28c5ce4bb9e4c58c752c0944165"
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 86874,
-      "sha256": "957b4e9fa801c7452d459406319c29684690b810f5b2ab148ba8e387a82c9e59"
+      "bytes": 87462,
+      "sha256": "0e6203a22321bfe4fa2a3db44830771860695b590ad06eeb378dff1b8e8c4864"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 171381,
-      "sha256": "bd273d9466921101543da63730519fcfb3d3826b9ec128063f1fdeb016a9c0cf"
+      "bytes": 172222,
+      "sha256": "94a4847590898c5c8f85c1ca8fe267e4a2a4419beedd955e937400f63f0a09d9"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",

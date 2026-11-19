@@ -5,6 +5,9 @@ through Unreal's built-in **Message Bus Source**. It follows playback and
 scrubbing; it does not run live video inference. The default Stream target
 remains **None**. Blender streaming keeps its existing port and add-on.
 
+For file-based animation on stock Manny or Quinn, see
+[UE5 Mannequin FBX](USER_GUIDE.md#ue5-mannequin-fbx).
+
 ## Recommended MetaHuman connection
 
 Use [MetaHuman Connect 0.4.0](../unreal_plugin/RGBMoCapMetaHuman/README.md)

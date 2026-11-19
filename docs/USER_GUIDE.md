@@ -866,36 +866,7 @@ GEM-X offers [Native77 FBX, BVH and Blender exports](#gem-x-soma-blender-bundles
 For FBX, enable **FBX Compatibility (Maya)** to use the included Blender
 runtime for the final export. The file retains the skeleton's rest pose and
 animation and can also be opened in Blender. This option defaults off.
-**UE5 Mannequin (Manny/Quinn)** exports animation for Unreal's stock Third
-Person mannequins. The app includes Manny and Quinn reference rigs and
-base skinned meshes. Export uses the included Blender runtime and works
-without an Unreal installation on the export PC. The bundled meshes retain
-their [Epic Games terms](../third_party/ue5_mannequin/NOTICE.md).
-
-1. In RGB MoCap, choose **File → Export → FBX → UE5 Mannequin (Manny/Quinn)**.
-   Select the target mannequin and take or takes. Enable **Include Mannequin
-   Mesh** to put the selected skinned mesh and motion into the same FBX.
-   The checkbox defaults off. With it enabled, the FBX includes geometry,
-   normals, UVs and skin weights. Assign materials in the destination project.
-2. For animation-only FBX, select the existing **SK_Mannequin** skeleton in
-   Unreal. Turn off **Import Mesh** and enable **Import Animations** in the
-   legacy dialog. With Interchange, use **Import Only Animations**.
-   For a mesh-bearing FBX in a fresh project, import the **Skeletal Mesh**
-   with **Import Animations** enabled and leave **Skeleton** empty. Unreal
-   creates a matching Skeleton and Animation Sequence along with the mesh.
-3. In the Animation Sequence, use the matching Manny or Quinn as the preview
-   mesh and **Asset Details → Animation → Retarget Source Asset**. This uses
-   the proportions the FBX was authored for, including Quinn's pelvis
-   height. The sequence is ready for Sequencer or an Animation Blueprint.
-   For gameplay root-motion extraction, turn on **Enable Root Motion**.
-
-**Root Motion** starts each take at the origin and stores planar travel on
-`root`, scaled to the target's leg length. **In Place** removes that planar
-travel. Vertical motion and heading stay in the pelvis in both modes.
-The file preserves take timing and the stock mannequin's rest hierarchy.
-It includes finger motion and baked leg reach using the target lengths.
-Project-specific corrective pose processing and mannequin materials come
-from the Unreal project.
+For the stock Unreal skeleton and optional skinned mesh, see [UE5 Mannequin FBX](#ue5-mannequin-fbx).
 
 For SMPL BVH, choose **Generic / Blender** (default) or **3ds Max Biped** in the
 **BVH profile** list.
@@ -1067,6 +1038,45 @@ or unsupported camera skew is rejected rather than silently exported incorrectly
 PC2 disk usage is about **120 KiB per frame per person** (10,475 vertices),
 in addition to videos, skeleton animation and the Blender file. Copies and
 mesh baking run outside the GUI with visible activity/progress and cancellation.
+
+## UE5 Mannequin FBX
+
+Use this source export profile with saved SMPL-based motion or GEM-X Native77
+motion. RGB MoCap retargets the take to the stock UE5 Manny or Quinn rig,
+including finger motion and leg reach calculated from the target lengths.
+The export uses the bundled Blender runtime and works on a PC without Unreal.
+It uses the stock mannequin rest pose and preserves the take's frame rate and
+frame count. The bundled Simple meshes are derived from the Unreal Engine
+5.7.4 Third Person template. [Epic asset notice](../third_party/ue5_mannequin/NOTICE.md)
+
+1. Open **File > Export...** and choose **FBX (.fbx)**. Set **FBX profile** to
+   **UE5 Mannequin (Manny/Quinn)** and choose Manny or Quinn under
+   **Target mannequin**. Select the take or takes to export.
+2. Under **Root movement**, keep **Root Motion** to put horizontal travel on
+   the root bone, scaled to the target's leg length from a local origin. Choose
+   **In Place** to remove that travel. Both modes keep vertical motion and heading
+   on the pelvis.
+3. Leave **Include Mannequin Mesh** off to export the rig and animation for an
+   existing Unreal mannequin. Enable it to include the selected skinned mesh in
+   the same FBX. The mesh includes geometry, normals, UVs and skin weights.
+   Assign materials in Unreal.
+
+| Unreal project | Import settings |
+| --- | --- |
+| Existing stock mannequin | In the legacy importer, turn off **Import Mesh**, turn on **Import Animations**, and select **SK_Mannequin**. In Interchange, use **Import Only Animations** and select the same skeleton. |
+| No mannequin assets | Export with **Include Mannequin Mesh**, then import as a **Skeletal Mesh** with **Import Animations** on and leave **Skeleton** empty. Unreal creates the mesh, skeleton and Animation Sequence together. |
+
+When reusing the stock **SK_Mannequin**, use the same Manny or Quinn mesh for the
+animation preview and **Asset Details > Animation > Retarget Source Asset**.
+That sets the source proportions for the chosen target, including Quinn's
+pelvis height. Use the Animation Sequence in Sequencer or an Animation
+Blueprint. For gameplay root-motion extraction, also turn on **Enable Root
+Motion** in the Animation Sequence. Project-specific corrective pose
+processing and materials come from the Unreal project.
+
+For a missing or invalid bundled reference or mesh error, close RGB MoCap and
+run the normal [installation verification or repair](#installation-verification-and-repair).
+For Unreal streaming setup, see [Unreal Live Link](UNREAL_LIVE_LINK.md).
 
 ## Saved cameras and Camera Preview
 

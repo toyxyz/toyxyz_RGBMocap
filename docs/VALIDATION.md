@@ -1,5 +1,19 @@
 # Source package validation
 
+## UE5 Mannequin FBX with optional mesh (2026-11-20)
+
+- The app export worker wrote with the bundled Blender 4.5 runtime. The export
+  passed with an invalid Unreal path and an empty Unreal data directory.
+- Reimport in Blender verified skinned vertices and mesh deformation. Unreal
+  Engine 5.7.4 Legacy and Interchange imported both mannequin FBXs in a clean
+  project and created a Skeletal Mesh, Skeleton and Animation Sequence each
+  time. Manny retained 1,018 samples with root travel. Quinn retained 294
+  samples in In Place mode with no planar root travel.
+- The maximum local bind-position and bind-rotation differences from the
+  stock reference were below 0.0011 cm and 0.0029 degrees. Evaluated bone
+  poses agreed with the corresponding animation-only imports at the sampled
+  frames. The automated suite passed all 19 tests.
+
 ## Reference export selection feedback (2026-11-19)
 
 - Reproduced a checked-but-not-current QListWidget row: export returned before

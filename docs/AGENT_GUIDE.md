@@ -564,14 +564,21 @@ selected reference. Older requests without the field use the legacy writer
 behavior. Validate the bind and keyed/fractional poses after reimport, including
 the Blender compatibility pass.
 
+### UE5 Mannequin FBX export implementation
+
 The `ue5_mannequin` FBX profile selects `ue5_target` (`manny` or `quinn`)
 and `ue5_in_place`. The default-off `ue5_include_mesh` sends the chosen
 stock skin to the Blender worker. The profile uses the same committed take
 and generation checks as Generic FBX and supports mapped SMPL and SOMA
 Native77 inputs. `mocap/ue5_reference.py` loads the bundled reference and skin
-under `third_party/ue5_mannequin`. Keep the Epic notice with the bundle and
-match the skin and reference to the same template build. See the bundle notice
-for provenance and regeneration commands. Export needs no Unreal process.
+under `third_party/ue5_mannequin`. Keep the Epic notice with the 5.7.4 Third
+Person template data. Match the skin and reference to the same template build
+and update their byte counts and hashes in `installer/source-resources.json`
+and `SOURCE_MANIFEST.json` after regeneration. Follow the
+[bundle notice](../third_party/ue5_mannequin/NOTICE.md) for provenance and build
+commands. Export needs the character Blender runtime. The Live Link sender
+and MetaHuman receiver are separate from this export path. See the
+[user workflow](USER_GUIDE.md#ue5-mannequin-fbx) for Unreal import settings.
 
 `mocap/ue5_retarget.py` uses source pose deltas, target lengths, a fixed-length
 leg solve and target-oriented IK helper tracks. The stock root carries planar
@@ -582,10 +589,15 @@ directions from source joint positions. Calibrate palm and finger axes from
 both rigs' geometry, including the source's registered terminal tip offsets.
 Test Manny and Quinn against Epic's existing `SK_Mannequin`. Compare the
 evaluated elbow plane, palm and all digit directions to the source alongside
-timing, scale and skeleton-asset preservation. With the skin enabled,
-also verify mesh deformation in Blender and import into a fresh Unreal
-project with no mannequin assets. Check that Unreal creates a Skeletal Mesh,
-Skeleton and Animation Sequence with the stock hierarchy.
+timing, scale and skeleton-asset preservation. With the skin enabled, verify
+mesh deformation in Blender and test Legacy and Interchange imports in a fresh
+Unreal project with no mannequin assets. Check that each importer creates a
+Skeletal Mesh, Skeleton and Animation Sequence with the stock hierarchy.
+Compare bind transforms and evaluated poses against the animation-only export.
+Verifying the bind matrices matters because Interchange can use frame 0 as the
+reference pose when it rejects the FBX bind pose. Check root travel with
+`ue5_in_place` both enabled and disabled. See the
+[recorded validation](VALIDATION.md#ue5-mannequin-fbx-with-optional-mesh-2026-11-20).
 
 ### Portable Blender export implementation
 

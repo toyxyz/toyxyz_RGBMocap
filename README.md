@@ -155,7 +155,7 @@ do not put passwords or account tokens in the agent chat.
 - Export source animation as FBX or BVH (Generic/Blender or 3ds Max Biped), with FBX A/T reference poses, an optional leading reference frame, per-person origin placement and symmetrical rest pose; export characters as FBX with or without meshes,
   or PMX character motion as VMD for MMD.
 - Export portable Blender projects with source animation, video and saved cameras; MAMMA can include animated body meshes and every camera.
-- Export animation directly to the stock UE5 Manny or Quinn skeleton. [UE5 mannequin FBX guide](docs/USER_GUIDE.md#fbx-and-blender)
+- Export animation for the stock UE5 Manny or Quinn skeleton. Include the bundled skinned mesh when the Unreal project has no mannequin assets. [UE5 mannequin FBX guide](docs/USER_GUIDE.md#ue5-mannequin-fbx)
 - Export the current take, all takes for checked people, or individual takes. The export dialog shows what to do for each unavailable take. [Export guide](docs/USER_GUIDE.md#fbx-and-blender)
 - Stream selected people's bones to Blender during playback or scrubbing, then bake their full recorded motion into Blender Actions. [Download the Blender add-on ZIP](blender_addon/rgbmocap_bone_stream.zip?raw=1) · [Installation and controls](docs/USER_GUIDE.md#stream-bones-to-blender)
 - Stream body motion and optional facial expressions to MetaHuman actors in Unreal Engine through Live Link. [Download the MetaHuman Connect plugin ZIP (UE 5.7.4 / Win64)](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-metahuman-connect-v0.4.0/RGBMoCapMetaHuman_UE5.7.4_Win64_v0.4.0.zip) · [Installation and controls](docs/UNREAL_LIVE_LINK.md)
