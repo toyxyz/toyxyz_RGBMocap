@@ -156,8 +156,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 88238,
-      "sha256": "a9489862fbf4cbdeb20438521c3542a0d9820c64de097068557e0a664d54f472"
+      "bytes": 88551,
+      "sha256": "71997f7dc314ff7489b60c0ad80bb1671f234e9747c1a04336a2ed993426b027"
     },
     {
       "path": "docs/BUILD.md",
@@ -186,8 +186,8 @@
     },
     {
       "path": "docs/UNREAL_LIVE_LINK.md",
-      "bytes": 13931,
-      "sha256": "9342a1cbe31c290c08af9bc5fd477cda42e4ae274707f7f3627baa63f831c058"
+      "bytes": 14181,
+      "sha256": "3b977797c8a90d12dca877528c5cb870a79eb36a260e1c5b200330a1f68fa8bc"
     },
     {
       "path": "docs/USER_GUIDE.md",
@@ -196,8 +196,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 170266,
-      "sha256": "5f9fbe92600f7ac90f7ab5a0b1536901c4f5df4b74ba013339ea20303e7d1d34"
+      "bytes": 171381,
+      "sha256": "bd273d9466921101543da63730519fcfb3d3826b9ec128063f1fdeb016a9c0cf"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -2336,8 +2336,8 @@
     },
     {
       "path": "mocap/stream_ui.py",
-      "bytes": 19502,
-      "sha256": "b4d0c8a592177581a659060094ab95e0d9354fa56f2f61c962766b4f62443651"
+      "bytes": 20316,
+      "sha256": "f069f748e9dcc36858ff617542fcc3863b370d34a6cd53cd13d32bdffd67db79"
     },
     {
       "path": "mocap/surface_landmarks.py",

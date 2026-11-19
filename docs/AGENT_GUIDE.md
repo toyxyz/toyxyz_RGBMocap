@@ -416,7 +416,11 @@ GUI selection/seek/scope changes. Receipt/build success alone does not verify
 MetaHuman retarget quality. Do not copy test MetaHuman assets into the repository.
 
 The Stream **Export Reference FBX...** button freezes the highlighted person's
-current stream rig, independently of its checkbox/connection. `stream_reference`
+current stream rig, independently of its checkbox/connection. With only one
+listed person, export selects that row if no row is current. Do not silently
+choose among multiple people. Report missing selection, unavailable playhead
+motion and export errors with a visible message box as well as status/log text;
+checkbox-only selection must not look like a dead Export button. `stream_reference`
 is dispatched by `worker_progress.py` in the shared CPU runtime; do not put this
 presentation-only operation in the inference fingerprint worker. The reference
 writer derives the same Unreal local rest transforms as `rig_schema`, attaches

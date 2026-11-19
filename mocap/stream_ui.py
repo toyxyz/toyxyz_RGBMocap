@@ -5,7 +5,7 @@ from queue import Empty
 
 from PySide6.QtCore import QSignalBlocker, QTimer, Qt
 from PySide6.QtWidgets import (QComboBox, QFileDialog, QHBoxLayout, QLabel, QListWidget, QListWidgetItem,
-                               QPushButton, QSpinBox, QVBoxLayout, QWidget)
+                               QMessageBox, QPushButton, QSpinBox, QVBoxLayout, QWidget)
 
 from .bone_stream import BoneStream, MAX_ACTORS, MAX_BAKE_FRAMES, PORT
 from .paths import ROOT
@@ -208,8 +208,17 @@ class StreamWorkspace:
                 if source is not None:
                     yield source
 
+    def stream_reference_problem(self, message):
+        self.status.setText(message)
+        self.log.append(message)
+        QMessageBox.warning(self, 'Export Live Link Reference Rig', message)
+
     def export_stream_reference(self):
-        if self._pear_active or self.busy:
+        if self._pear_active:
+            self.stream_reference_problem('Reference export requires prepared offline motion. Leave PEAR and select an offline model.')
+            return
+        if self.busy:
+            self.stream_reference_problem('Wait for the current job to finish before exporting a reference rig.')
             return
         from pathlib import Path
         from uuid import uuid4
@@ -217,14 +226,17 @@ class StreamWorkspace:
         from .storage import atomic_json
         from .blend_support import partial
         item = self.stream_people.currentItem()
+        if item is None and len(self._stream_rows or ()) == 1:
+            self.stream_people.setCurrentRow(0)
+            item = self.stream_people.currentItem()
         if item is None:
-            self.status.setText('Highlight a person in Stream before exporting the reference rig.')
+            self.stream_reference_problem('Select a person by clicking their name in the Stream list, then export the reference rig. Checking a box only enables streaming.')
             return
         ident = item.data(Qt.UserRole)
         row = next(((i, n) for i, n in self._stream_rows or () if i == ident), None)
         source = self.stream_source_at_playhead(*row) if row else None
         if source is None:
-            self.status.setText('No prepared motion for this person at the current frame. Seek inside a ready take.')
+            self.stream_reference_problem('No prepared motion for this person at the current frame. Select a ready take and seek inside its frame range. If correction is pending, apply it first.')
             return
         try:
             # Small metadata only; FBX writing runs in a separate CPU worker.
@@ -255,7 +267,7 @@ class StreamWorkspace:
             self._motion_export_targets = [str(target)]
             self.start_jobs([('stream_reference', ['--output', str(request)])])
         except (OSError, ValueError, KeyError) as error:
-            self.status.setText('Cannot export reference rig: ' + str(error))
+            self.stream_reference_problem('Cannot export reference rig: ' + str(error))
 
     def stream_bake_plan(self, ident, actor, key):
         fps = float(self.info['fps'])

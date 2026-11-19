@@ -1,5 +1,22 @@
 # Source package validation
 
+## Reference export selection feedback (2026-11-19)
+
+- Reproduced a checked-but-not-current QListWidget row: export returned before
+  opening the save dialog and only wrote a status-line hint. A sole listed
+  person is now selected automatically; multiple people still require an
+  explicit current row. Prerequisite/errors are reported in a message box and
+  status/log text, without depending on a connected provider.
+- An offscreen Qt check observed an actual non-native QFileDialog opening and
+  cancelling with a sole checked person and no current row. Selection/checkbox
+  state was retained and no job was enqueued. Modal feedback passed for an
+  unavailable frame, busy job, PEAR, ambiguous selection and invalid rig.
+- A saved Native77 project exported through the actual main-window handler,
+  CPU worker and Blender writer (about 0.99 s on this PC); preview arrays, time,
+  sender and checkboxes remained unchanged. The save-path choice was supplied
+  by the test; Windows shell/native-dialog automation was not part of this check.
+  Existing Blender/Unreal UI regressions and all 14 unit tests passed.
+
 ## Unreal streaming release review and portable sample (2026-11-19)
 
 - Two completed Astra reviews assessed the sender, reference export, lifecycle,

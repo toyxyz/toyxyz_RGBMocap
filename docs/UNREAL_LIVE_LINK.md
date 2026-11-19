@@ -90,6 +90,9 @@ project handles its own target character and retarget settings.
 1. Prepare motion, open **Stream**, choose **Unreal Live Link**, and highlight
    the desired person in the list. Seek inside the ready take you intend to use.
    The person does not have to be checked or connected to export its reference.
+   Clicking a checkbox enables streaming; click the person's name to choose the
+   reference export. If only one person is listed, export selects them automatically.
+   Missing selection or ready motion is explained in a popup before file selection.
 2. Click **Export Reference FBX...** and choose an output file outside the
    source project data. The app uses its already installed Blender runtime in a
    CPU worker. The Live Link provider itself is not required for this export.
