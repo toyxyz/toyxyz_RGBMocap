@@ -52,7 +52,7 @@ class StreamWorkspace:
         self.stream_unreal_controls = QWidget()
         unreal_controls = QVBoxLayout(self.stream_unreal_controls)
         unreal_controls.setContentsMargins(0, 0, 0, 0)
-        note = QLabel('Body bones · offline motion\nIn Unreal: Live Link > Add Source > Message Bus Source > RGB MoCap.')
+        note = QLabel('Body bones + optional face · offline motion\nIn Unreal: Live Link > Add Source > Message Bus Source > RGB MoCap.')
         note.setWordWrap(True)
         unreal_controls.addWidget(note)
         retry = QPushButton('Retry connection')
@@ -340,6 +340,40 @@ class StreamWorkspace:
             sender.bake_reply = connection, reply
             sender.changed.set()
 
+    def stream_face_at_playhead(self, ident):
+        """Read existing Track Face data only; never start capture from streaming."""
+        import numpy as np
+        from .face_data import manifest
+
+        root = self.face_project()
+        archive = self.face_playback_archive(root)
+        if archive is None:
+            return None
+        if archive is not getattr(self, '_stream_face_archive', None):
+            self._stream_face_archive = archive
+            self._stream_face_states = {}
+        project, frame = self.project, self.motion_view.index
+        if self.people_state:
+            current = self.scene_data.take_at(ident, self.motion_view.scene_time, self.project)
+            if current is None:
+                return None
+            take, frame = current
+            project = take.project
+        state_key = (project, (project / 'project.json').stat().st_mtime_ns)
+        if state_key not in self._stream_face_states:
+            if len(self._stream_face_states) >= 256:
+                self._stream_face_states.clear()
+            self._stream_face_states[state_key] = manifest(project)
+        slot, sample, source = archive.resolve(project, frame, person=ident,
+                                               state=self._stream_face_states[state_key])
+        if sample < 0:
+            return None
+        values = archive.values[slot, sample]
+        if not np.isfinite(values).all():
+            raise ValueError('Face tracking contains non-finite coefficients.')
+        return dict(values=values.tolist(), sample=sample, source_frame=source,
+                    tracked=bool(archive.valid[slot, source]))
+
     def update_stream(self):
         if self._pear_active:
             return
@@ -379,7 +413,19 @@ class StreamWorkspace:
             connected = sender.connected
             sources = tuple(self.stream_sources_at_playhead(rows)) if connected or unreal else ()
             checked = tuple(sorted(self._stream_checked)) if connected or unreal else None
-            key = (checked, tuple((ident, name, rig.key, id(frames), frame, id(transform))
+            face_stamp = None
+            if unreal:
+                root = self.face_project()
+                if root is not None:
+                    face_file = root / 'face_capture.npz'
+                    try:
+                        if face_file.is_file():
+                            stamp = face_file.stat()
+                            face_stamp = (root, stamp.st_size, stamp.st_mtime_ns,
+                                          (root / 'project.json').stat().st_mtime_ns)
+                    except OSError:
+                        face_stamp = None
+            key = (checked, face_stamp, tuple((ident, name, rig.key, id(frames), frame, id(transform))
                                   for ident, name, rig, frames, frame, transform in sources))
             if key != self._stream_frame:
                 selected = {
@@ -394,7 +440,21 @@ class StreamWorkspace:
                 except (OSError, ValueError, IndexError) as error:
                     self.log.append(f'Bone stream could not read motion: {error}')
                     actors = ()
-                sender.publish(actors, tuple(selected.values()) if checked is not None else None)
+                if unreal:
+                    faces = {}
+                    for ident, *_ in sources:
+                        try:
+                            face = self.stream_face_at_playhead(ident)
+                            if face is not None:
+                                faces[selected[ident]] = face
+                        except (OSError, ValueError, KeyError, IndexError, TypeError) as error:
+                            warning = str(error)
+                            if warning != getattr(self, '_stream_face_warning', None):
+                                self.log.append('Face stream unavailable: ' + warning)
+                                self._stream_face_warning = warning
+                    sender.publish(actors, faces=faces)
+                else:
+                    sender.publish(actors, tuple(selected.values()) if checked is not None else None)
                 self._stream_frame = key
             if unreal and not sender.ready:
                 status = 'Starting Unreal Live Link sender…'

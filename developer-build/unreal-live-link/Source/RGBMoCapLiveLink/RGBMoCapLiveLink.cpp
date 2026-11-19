@@ -21,7 +21,9 @@ class FRGBMoCapLiveLink : public IModuleInterface {
         TArray<FName> Names;
         TArray<int32> Parents;
         TArray<FTransform> Rest, Pose;
-        TArray<float> Lengths;
+        TArray<float> Lengths, Face;
+        bool FaceTracked=false;
+        int32 FaceSample=0,FaceSourceFrame=0;
         int32 Frame = 0;
     };
     TSharedPtr<ILiveLinkProvider> Provider;
@@ -73,7 +75,7 @@ class FRGBMoCapLiveLink : public IModuleInterface {
             if (!(*O)->TryGetStringField(TEXT("subject"), Subject) || !Subject.StartsWith(TEXT("RGBMoCap_")) || Subject.Len() > 90
                 || !(*O)->TryGetStringField(TEXT("rig"), Rig) || Rig.Len() != 64
                 || !(*O)->TryGetStringField(TEXT("label"), Label) || Label.Len() > 120
-                || !(*O)->TryGetNumberField(TEXT("frame"), Frame) || !FMath::IsFinite(Frame) || Frame < 0 || Frame > MAX_int32
+                || !(*O)->TryGetNumberField(TEXT("frame"), Frame) || !FMath::IsFinite(Frame) || Frame < 0 || Frame > MAX_int32 || Frame!=FMath::FloorToDouble(Frame)
                 || !(*O)->TryGetArrayField(TEXT("names"), Names) || Names->Num() < 1 || Names->Num() > 256
                 || !(*O)->TryGetArrayField(TEXT("parents"), Parents) || Parents->Num() != Names->Num()
                 || !(*O)->TryGetArrayField(TEXT("rest"), Rest)
@@ -88,12 +90,24 @@ class FRGBMoCapLiveLink : public IModuleInterface {
                 if (!(*Names)[I]->TryGetString(Name) || Name.IsEmpty() || Name.Len() > 120
                     || !Number((*Parents)[I], Parent) || Parent != FMath::FloorToDouble(Parent)
                     || (I == 0 ? Parent != -1 : Parent < 0 || Parent >= I)
-                    || !Number((*Lengths)[I], Length) || Length <= 0) return false;
+                    || !Number((*Lengths)[I], Length) || Length <= 0 || Length > MAX_flt) return false;
                 FName Bone(*Name);
                 if (A.Names.Contains(Bone)) return false;
                 A.Names.Add(Bone); A.Parents.Add((int32)Parent); A.Lengths.Add((float)Length);
             }
             if (!Transforms(*Rest, A.Rest, Names->Num()) || !Transforms(*Pose, A.Pose, Names->Num())) return false;
+            if ((*O)->HasField(TEXT("face"))) {
+                const TSharedPtr<FJsonObject>* Face=nullptr;const TArray<TSharedPtr<FJsonValue>>* Values=nullptr;
+                double Sample=0,SourceFrame=0;
+                if (!(*O)->TryGetObjectField(TEXT("face"),Face) || !Face || !Face->IsValid()
+                    || !(*Face)->TryGetArrayField(TEXT("values"),Values) || Values->Num()!=52
+                    || !(*Face)->TryGetBoolField(TEXT("tracked"),A.FaceTracked)
+                    || !(*Face)->TryGetNumberField(TEXT("sample"),Sample) || !FMath::IsFinite(Sample)
+                    || !(*Face)->TryGetNumberField(TEXT("source_frame"),SourceFrame) || !FMath::IsFinite(SourceFrame)
+                    || Sample<0 || Sample!=FMath::FloorToDouble(Sample) || SourceFrame<Sample || SourceFrame>MAX_int32 || SourceFrame!=FMath::FloorToDouble(SourceFrame)) return false;
+                for (const auto& V:*Values) {double NumberValue=0;if (!Number(V,NumberValue) || NumberValue<0. || NumberValue>1.) return false;A.Face.Add(NumberValue);}
+                A.FaceSample=Sample;A.FaceSourceFrame=SourceFrame;
+            }
             Next.Add(Key, MoveTemp(A));
         }
         // Commit only after the entire snapshot has been checked.
@@ -105,12 +119,15 @@ class FRGBMoCapLiveLink : public IModuleInterface {
                 Declare(Pair.Key, Pair.Value, false);
                 Declare(FName(*(Pair.Key.ToString()+TEXT("_Reference"))), Pair.Value, true);
             }
+            if (Pair.Value.Face.Num()==52 && (!Old || Old->Face.Num()!=52 || Old->Rig!=Pair.Value.Rig)) DeclareFace(Pair.Key);
+            if (Old && Old->Face.Num()==52 && Pair.Value.Face.Num()!=52) Provider->RemoveSubject(FName(*(Pair.Key.ToString()+TEXT("_Face"))));
         }
         Actors = MoveTemp(Next);
         return true;
     }
     void Remove(FName Name) {
         Provider->RemoveSubject(Name);
+        Provider->RemoveSubject(FName(*(Name.ToString()+TEXT("_Face"))));
         Provider->RemoveSubject(FName(*(Name.ToString()+TEXT("_Reference"))));
     }
     void Declare(FName Name, const FActor& A, bool Reference) {
@@ -131,8 +148,28 @@ class FRGBMoCapLiveLink : public IModuleInterface {
         D->MetaData.StringMetaData.Add(TEXT("SourceFrame"), Reference ? TEXT("-1") : FString::FromInt(A.Frame));
         D->MetaData.StringMetaData.Add(TEXT("RigId"), A.Rig);
         D->MetaData.StringMetaData.Add(TEXT("Person"), A.Label);
+        D->MetaData.StringMetaData.Add(TEXT("FaceAvailable"), A.Face.Num()==52?TEXT("1"):TEXT("0"));
         D->MetaData.StringMetaData.Add(TEXT("Units"), TEXT("centimetres"));
         Provider->UpdateSubjectFrameData(Name, MoveTemp(Data));
+    }
+    void DeclareFace(FName BodyName) {
+        FLiveLinkStaticDataStruct Data(FLiveLinkSkeletonStaticData::StaticStruct());auto* S=Data.Cast<FLiveLinkSkeletonStaticData>();
+        S->BoneNames.Add(TEXT("root"));S->BoneParents.Add(-1);
+        const TCHAR* Names[52]={TEXT("BrowDownLeft"),TEXT("BrowDownRight"),TEXT("BrowInnerUp"),TEXT("BrowOuterUpLeft"),TEXT("BrowOuterUpRight"),TEXT("CheekPuff"),TEXT("CheekSquintLeft"),TEXT("CheekSquintRight"),TEXT("EyeBlinkLeft"),TEXT("EyeBlinkRight"),TEXT("EyeLookDownLeft"),TEXT("EyeLookDownRight"),TEXT("EyeLookInLeft"),TEXT("EyeLookInRight"),TEXT("EyeLookOutLeft"),TEXT("EyeLookOutRight"),TEXT("EyeLookUpLeft"),TEXT("EyeLookUpRight"),TEXT("EyeSquintLeft"),TEXT("EyeSquintRight"),TEXT("EyeWideLeft"),TEXT("EyeWideRight"),TEXT("JawForward"),TEXT("JawLeft"),TEXT("JawOpen"),TEXT("JawRight"),TEXT("MouthClose"),TEXT("MouthDimpleLeft"),TEXT("MouthDimpleRight"),TEXT("MouthFrownLeft"),TEXT("MouthFrownRight"),TEXT("MouthFunnel"),TEXT("MouthLeft"),TEXT("MouthLowerDownLeft"),TEXT("MouthLowerDownRight"),TEXT("MouthPressLeft"),TEXT("MouthPressRight"),TEXT("MouthPucker"),TEXT("MouthRight"),TEXT("MouthRollLower"),TEXT("MouthRollUpper"),TEXT("MouthShrugLower"),TEXT("MouthShrugUpper"),TEXT("MouthSmileLeft"),TEXT("MouthSmileRight"),TEXT("MouthStretchLeft"),TEXT("MouthStretchRight"),TEXT("MouthUpperUpLeft"),TEXT("MouthUpperUpRight"),TEXT("NoseSneerLeft"),TEXT("NoseSneerRight"),TEXT("TongueOut")};
+        for (const auto* Name:Names) S->PropertyNames.Add(FName(Name));
+        Provider->UpdateSubjectStaticData(FName(*(BodyName.ToString()+TEXT("_Face"))),ULiveLinkAnimationRole::StaticClass(),MoveTemp(Data));
+    }
+    void SendFace(FName BodyName,const FActor& A) {
+        if (A.Face.Num()!=52) return;
+        FLiveLinkFrameDataStruct Data(FLiveLinkAnimationFrameData::StaticStruct());auto* D=Data.Cast<FLiveLinkAnimationFrameData>();
+        D->Transforms.Add(FTransform::Identity);D->PropertyValues=A.Face;
+        D->MetaData.StringMetaData.Add(TEXT("BodySubject"),BodyName.ToString());
+        D->MetaData.StringMetaData.Add(TEXT("RigId"),A.Rig);
+        D->MetaData.StringMetaData.Add(TEXT("MotionFrame"),FString::FromInt(A.Frame));
+        D->MetaData.StringMetaData.Add(TEXT("FaceTracked"),A.FaceTracked?TEXT("1"):TEXT("0"));
+        D->MetaData.StringMetaData.Add(TEXT("FaceSample"),FString::FromInt(A.FaceSample));
+        D->MetaData.StringMetaData.Add(TEXT("SourceFrame"),FString::FromInt(A.FaceSourceFrame));
+        Provider->UpdateSubjectFrameData(FName(*(BodyName.ToString()+TEXT("_Face"))),MoveTemp(Data));
     }
     bool Tick(float) {
         if (Quitting) return true;
@@ -165,7 +202,7 @@ class FRGBMoCapLiveLink : public IModuleInterface {
             Fail(TEXT("App connection ended")); return true;
         }
         if (Now-LastPose >= 1./30.) {
-            for (const auto& Pair : Actors) Send(Pair.Key, Pair.Value, false);
+            for (const auto& Pair : Actors) {Send(Pair.Key, Pair.Value, false);SendFace(Pair.Key,Pair.Value);}
             LastPose = Now;
         }
         if (Now-LastReference >= .1) {
@@ -186,9 +223,11 @@ class FRGBMoCapLiveLink : public IModuleInterface {
     }
 public:
     virtual void StartupModule() override {
-        int32 Port = 0; FString Token;
+        int32 Port = 0; FString Token=FPlatformMisc::GetEnvironmentVariable(TEXT("RGB_MOCAP_STREAM_TOKEN"));
+        FPlatformMisc::SetEnvironmentVar(TEXT("RGB_MOCAP_STREAM_TOKEN"),TEXT(""));
         if (!FParse::Value(FCommandLine::Get(), TEXT("RGBPort="), Port) || Port < 1 || Port > 65535
-            || !FParse::Value(FCommandLine::Get(), TEXT("RGBToken="), Token) || Token.Len() != 64) return;
+            || Token.Len() != 64) return;
+        for (TCHAR C:Token) if (!FChar::IsHexDigit(C)) return;
         auto* Subsystem = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
         Socket = Subsystem->CreateSocket(NAME_Stream, TEXT("RGBMoCap app IPC"), false);
         auto Address = Subsystem->CreateInternetAddr(); bool Valid=false;

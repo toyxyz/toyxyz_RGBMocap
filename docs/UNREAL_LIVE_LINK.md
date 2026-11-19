@@ -1,9 +1,20 @@
-# Stream body bones to Unreal Live Link
+# Stream motion to Unreal Live Link
 
 This optional Windows Git/CMD feature sends the selected offline people's bones
 through Unreal's built-in **Message Bus Source**. It follows playback and
 scrubbing; it does not run live video inference. The default Stream target
 remains **None**. Blender streaming keeps its existing port and add-on.
+
+## Recommended MetaHuman connection
+
+Use [MetaHuman Connect 0.4.0](../unreal_plugin/RGBMoCapMetaHuman/README.md)
+for the direct source-to-target panel. Download its ready-to-install ZIP, close
+Unreal and place the extracted RGBMoCapMetaHuman folder in your project's
+Plugins folder. Then complete sender setup below, reopen Unreal and use
+**Tools > RGB MoCap Connect**. Select a source row, select one MetaHuman actor
+and click Connect selected actor. Each row displays its targets and Face switch.
+The later reference-FBX/IK instructions describe the optional manual workflow.
+The old sample project is no longer distributed.
 
 ## Prepare once
 
@@ -24,7 +35,12 @@ remains **None**. Blender streaming keeps its existing port and add-on.
    Temporary compiler intermediates are removed after success; developers can
    retain them with `--keep-build-cache`.
 4. If the provider source or Unreal installation changes, rerun setup. A failed
-   build/startup does not leave a successful readiness receipt.
+   build/startup restores the previous receipt; changed source still needs a successful setup.
+
+The current app and plugin use source-qualified subject evaluation, matching
+rig/reference IDs and body/face frame revisions. Update them together and rerun
+Setup_UnrealStream.cmd after a source change. The local bridge build is frozen
+against source edits and verified before its receipt is accepted.
 
 This support is optional and separate from the inference runtimes.
 `install.cmd` and `update.cmd` do not compile it. Epic's terms apply to the
@@ -193,7 +209,7 @@ remain separate from successful packet reception.
 Blender. `mocap/unreal_stream.py` converts on a background thread and retains
 only the latest snapshot. A bounded, token-authenticated localhost TCP channel
 feeds an app-owned Unreal commandlet; the official `ILiveLinkProvider`
-publishes through the stock Message Bus protocol. There is no new receiver plugin.
+publishes through the stock Message Bus protocol. The optional MetaHuman Connect plugin provides direct targets; the stock manual workflow also remains available.
 Limits are 128 people, 256 bones per person and 4 MiB per local snapshot.
 Only people with a prepared stream rig are listed; PEAR is excluded.
 
@@ -208,3 +224,102 @@ not minimum requirements or a guarantee on other PCs.
 
 See [validation](VALIDATION.md#unreal-live-link-body-streaming-2026-11-19)
 and [Epic's Live Link provider documentation](https://dev.epicgames.com/documentation/en-us/unreal-engine/live-link-plugin-development-in-unreal-engine).
+
+## Optional MetaHuman face streaming
+
+The app also sends saved **Track Face** ARKit-style coefficients for each checked
+person as `<motion Subject>_Face`. This is an Animation-role curve Subject,
+separate from the body and `_Reference` Subjects. It follows the current take,
+source time, playback and seeking. Run Track Face first; selecting a stream target
+does not run face inference. The capture checkbox controls new capture, so an
+existing valid face archive can still stream when that checkbox is off.
+
+In the **RGB MoCap MetaHuman Connect 0.4.0** plugin, open **Tools > RGB MoCap
+Connect**, select a source and target actor, and enable **Face** on that source
+row. The checkbox is off by default and applies to the actors bound to that row.
+Each person can use a different MetaHuman and Face setting. `_Face` Subjects do
+not appear as extra people in this panel. This plugin is distributed as the separate ZIP linked above.
+
+The plugin maps the 52 coefficients using the MetaHuman's standard additive
+ARKit mapping pose asset and keeps its existing facial postprocess/RigLogic.
+Head and neck motion remain driven by the body. The mapping normally resolves
+`PA_MetaHuman_ARKit_Mapping` in the assembled MetaHuman content; older content
+can use `mh_arkit_mapping_pose`. If absent, the row explains the problem; set
+**Face Mapping Pose** on the actor's RGB MoCap component to the matching additive
+asset. MetaHuman assets are not included in the plugin ZIP.
+
+A missed face detection holds that person's last successful expression. Before
+the first detection, outside a valid face archive, or when face data are absent,
+body streaming continues without a facial sample. A missing/stale live stream
+holds the last received expression; an explicit no-face sample returns the
+plugin's expression controls to neutral. Disabling Face or disconnecting restores
+the previous face animation class. Existing Blueprint playback state is not
+preserved across reinitialization. Face Overlay visibility does not control
+streaming. MediaPipe does not measure `tongueOut`; it remains zero. This is saved
+timeline playback, not a live camera face-capture mode.
+
+After updating this sender, close/restart RGB MoCap and rerun
+**Setup_UnrealStream.cmd** if requested. Setup uses source-versioned bridge
+folders and verifies startup before replacing the receipt. A failed verification
+restores the previous receipt; a source mismatch still requires successful setup.
+Restart Unreal after replacing the receiver plugin. Body-only Live Link and the
+existing TXT/Live Link Face CSV exports keep their existing behavior.
+
+
+MetaHuman Connect preserves simultaneous body/face editor playback: the
+MetaHuman Face initialization callback can disable editor updates on Body and
+its followers. Reapply the connection's owned preview tick settings after face
+initialization/restoration; retain the original recovery baseline. Validate
+actual body transforms across seeks and continuous Face-enabled playback,
+plus facial deformation, rather than relying on Streaming status alone.
+Update both the app sender and receiver for release 0.4.0 and rerun
+Setup_UnrealStream.cmd. Close Unreal before replacing the project plugin folder.
+
+
+### Smoothed face playback
+
+Current app playback always sends One Euro-smoothed ARKit coefficients and
+displays smoothed face-overlay landmarks. Both use one asynchronous, verified
+archive cache, computed in source-frame/FPS order separately for each person.
+Pauses, loops, reverse seeks and playback-rate changes reuse the same results.
+Invalid detections hold the last valid filtered sample; a detection gap longer
+than 0.25 seconds resets the filter on reacquisition. The first detected sample
+seeds the filter directly. Preparation never sends raw samples as a fallback;
+body streaming continues while the face cache is being prepared.
+
+Capture archives are preserved. The Export dialog's Smooth Face checkbox still
+controls only exported TXT/CSV: on uses the same coefficient filter as streaming,
+off exports unsmoothed capture values. Saved neutral calibration applies in
+both modes. After updating the app, restart it to use the shared face cache.
+
+
+### Neutral face calibration
+
+In RGB MoCap, select a person in People, seek to a successfully tracked neutral
+frame and click **Set Neutral** beside Track Face. The corrected expression
+coefficients are sent automatically for that person; no Unreal/plugin setting
+or rebuild is needed. **Reset** removes that person's baseline. The setting is
+saved with the capture, survives reopening/Save Project As, and applies to its
+takes. Preview landmarks and TXT/CSV exports use the same saved reference.
+With playback smoothing enabled, calibration is derived from the selected
+smoothed frame so that frame sends exactly zero expression. Raw capture data
+are preserved. Choose an eyes-open, relaxed-mouth frame; held/missing detections
+are not eligible as neutral frames.
+
+
+## Security and publication
+
+Live Link UDP Messaging is intended for local/trusted networks. It does not
+provide application-level encryption or authentication against hostile network
+participants. Restrict UDP Messaging endpoints and firewall access to intended
+peers. The receiver's matching source/revision checks prevent accidental mixing;
+they are not a hostile-network authentication guarantee.
+
+App person checkboxes and Target None control outgoing data. When face capture
+exists, selected people include facial coefficients; the plugin Face switch
+controls applying them, not publication. Transmitted fields include person
+labels, short subject IDs, rest/pose bones, lengths and optional face values.
+Video, mesh vertices, source paths, capture archives and calibration files are
+not transmitted. The loopback launch nonce uses the owned child environment,
+not command-line arguments. Local logs/projects remain private data; inspect
+them before sharing. See [plugin security notes](../unreal_plugin/RGBMoCapMetaHuman/SECURITY.md).

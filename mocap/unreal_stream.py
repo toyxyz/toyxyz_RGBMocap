@@ -1,6 +1,7 @@
-"""Optional Unreal-hosted Live Link provider; no receiver plug-in or mesh transfer."""
+"""Optional Unreal-hosted Live Link provider with body and facial data; no mesh transfer."""
 from hashlib import sha256
 import json
+import os
 import re
 from pathlib import Path
 from queue import Empty, Full, Queue
@@ -26,10 +27,17 @@ BLENDER_TO_UE = YAW @ SOURCE_TO_UE @ Y_TO_Z.T
 
 
 def source_identity(root):
+    return source_tree_identity(Path(root) / SOURCE)
+
+
+def source_tree_identity(folder):
+    folder = Path(folder)
     digest = sha256()
-    for path in sorted((Path(root) / SOURCE).rglob('*')):
+    for path in sorted(folder.rglob('*')):
+        if path.relative_to(folder).parts[0] in ('Binaries', 'Intermediate', 'Saved', 'DerivedDataCache'):
+            continue
         if path.is_file() and path.suffix in ('.h', '.cpp', '.cs', '.uproject', '.ini'):
-            digest.update(path.relative_to(Path(root) / SOURCE).as_posix().encode())
+            digest.update(path.relative_to(folder).as_posix().encode())
             digest.update(path.read_bytes())
     return digest.hexdigest()
 
@@ -38,7 +46,11 @@ def configuration(root):
     root = Path(root)
     try:
         data = json.loads((root / 'runtime_unreal_stream/bridge.json').read_text(encoding='utf-8'))
-        project = root / 'runtime_unreal_stream/Bridge/RGBMoCapLiveLink.uproject'
+        runtime = (root / 'runtime_unreal_stream').resolve()
+        relative = Path(data.get('project', 'Bridge/RGBMoCapLiveLink.uproject'))
+        project = (runtime / relative).resolve()
+        if relative.is_absolute() or not project.is_relative_to(runtime):
+            raise ValueError('Invalid optional Unreal project path.')
         module = project.parent / 'Binaries/Win64/UnrealEditor-RGBMoCapLiveLink.dll'
         engine = Path(data['engine'])
         if (data['version'] != 1 or data['source'] != source_identity(root)
@@ -112,7 +124,7 @@ def subject_name(actor, name):
     return f'RGBMoCap_{label}_{actor[:8]}'
 
 
-def snapshot(actors, schemas):
+def snapshot(actors, schemas, faces=None):
     if len(actors) > MAX_ACTORS:
         raise ValueError('Too many streaming people.')
     result, used, subjects = [], set(), set()
@@ -130,6 +142,19 @@ def snapshot(actors, schemas):
         # Human-readable names retain a short, stable person identity.
         result.append(dict(schema, subject=subject, label=str(name).encode('utf-16-le')[:240].decode('utf-16-le','ignore'),
                            frame=int(frame), pose=local_transforms(matrices, schema['parents'])))
+        face = (faces or {}).get(actor)
+        if face is not None:
+            values = np.asarray(face['values'], dtype=float)
+            if values.shape != (52,) or not np.isfinite(values).all():
+                raise ValueError('Invalid streaming face coefficients.')
+            sample, source_frame = int(face['sample']), int(face['source_frame'])
+            if sample != face['sample'] or source_frame != face['source_frame']:
+                raise ValueError('Face sample timing must use integer frame indices.')
+            if not 0 <= sample <= source_frame <= 2147483647:
+                raise ValueError('Invalid streaming face sample timing.')
+            result[-1]['face'] = dict(values=np.clip(values, 0., 1.).tolist(),
+                                     sample=sample, source_frame=source_frame,
+                                     tracked=bool(face['tracked']))
     for key in list(schemas):
         if key not in used:
             del schemas[key]
@@ -153,7 +178,7 @@ class UnrealStream:
         self.connected = False
         self.ready = False
         self.errors = Queue(maxsize=1)
-        self.latest = ()
+        self.latest = ((), {})
         self.changed = Event()
         self.stopping = Event()
         self.listener = socket.socket()
@@ -170,11 +195,12 @@ class UnrealStream:
                    '-run=RGBMoCapLiveLink',
                    '-unattended', '-nullrhi', '-nosound', '-nosplash', '-NoLiveCoding',
                    '-Messaging', '-NoAssetRegistryCache', '-NoShaderCompile', '-NoAutoLoadPlugins',
-                   '-RGBPort='+str(self.port), '-RGBToken='+token,
+                   '-RGBPort='+str(self.port),
                    '-abslog='+str(self.log_path.with_suffix('.engine.log'))]
         try:
             self.process = subprocess.Popen(command, cwd=project.parent, stdin=subprocess.DEVNULL,
                                             stdout=self.log, stderr=subprocess.STDOUT,
+                                            env=dict(os.environ, RGB_MOCAP_STREAM_TOKEN=token),
                                             creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
         except OSError:
             self.listener.close()
@@ -184,8 +210,8 @@ class UnrealStream:
         self.thread = Thread(target=self._serve, args=(token,), name='Unreal Live Link', daemon=False)
         self.thread.start()
 
-    def publish(self, actors, selected=None):
-        self.latest = actors
+    def publish(self, actors, selected=None, faces=None):
+        self.latest = (actors, faces or {})
         self.changed.set()
 
     def error(self):
@@ -254,7 +280,7 @@ class UnrealStream:
             self.changed.clear()
             latest = self.latest
             if latest is not last:
-                encoded = encode(snapshot(latest, schemas))
+                encoded = encode(snapshot(latest[0], schemas, latest[1]))
                 last = latest
             now = time.monotonic()
             if encoded is not None and (now-sent > 1. or latest is not getattr(self, '_sent', None)):

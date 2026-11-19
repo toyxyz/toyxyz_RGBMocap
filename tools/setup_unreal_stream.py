@@ -11,7 +11,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from mocap.unreal_stream import source_identity, UnrealStream
+from mocap.unreal_stream import source_identity, source_tree_identity, UnrealStream
 
 
 def find_engine(explicit=None):
@@ -45,10 +45,12 @@ def main():
     runtime.mkdir(exist_ok=True)
     receipt = runtime / 'bridge.json'
     # Failed builds must never leave a previously verified receipt advertising new source.
-    receipt.unlink(missing_ok=True)
-    project_dir = runtime / 'Bridge'
+    frozen_source = source_identity(ROOT)
+    project_dir = runtime / ('Bridge-' + frozen_source[:12])
     shutil.copytree(ROOT / 'developer-build/unreal-live-link', project_dir, dirs_exist_ok=True)
     project = project_dir / 'RGBMoCapLiveLink.uproject'
+    if source_tree_identity(project_dir) != frozen_source or source_identity(ROOT) != frozen_source:
+        raise RuntimeError('Live Link source changed during setup. Retry when editing is finished.')
     print('Building optional Live Link sender using ' + str(engine), flush=True)
     print('Requires Visual Studio 2022 C++ tools and Windows SDK. No models are downloaded.', flush=True)
     # Call the native .NET host directly: no CMD reparsing of international paths.
@@ -58,9 +60,13 @@ def main():
     module = project_dir / 'Binaries/Win64/UnrealEditor-RGBMoCapLiveLink.dll'
     if not module.is_file():
         raise RuntimeError('Build finished without the Live Link sender module.')
-    data = dict(version=1, engine=str(engine), source=source_identity(ROOT),
+    if source_identity(ROOT) != frozen_source or source_tree_identity(project_dir) != frozen_source:
+        raise RuntimeError('Live Link source changed during the build. Run setup again.')
+    data = dict(version=1, engine=str(engine), source=frozen_source,
+                project=project.relative_to(runtime).as_posix(),
                 module=sha256(module.read_bytes()).hexdigest(),
                 engine_build=sha256((engine/'Engine/Build/Build.version').read_bytes()).hexdigest())
+    previous_receipt = receipt.read_bytes() if receipt.is_file() else None
     pending = receipt.with_suffix('.tmp')
     pending.write_text(json.dumps(data, indent=2), encoding='utf-8')
     pending.replace(receipt)
@@ -77,7 +83,11 @@ def main():
                 raise RuntimeError('The provider did not start within 120 seconds.')
             time.sleep(.1)
     except BaseException:
-        receipt.unlink(missing_ok=True)
+        if previous_receipt is None:
+            receipt.unlink(missing_ok=True)
+        else:
+            pending.write_bytes(previous_receipt)
+            pending.replace(receipt)
         raise
     finally:
         if sender is not None:

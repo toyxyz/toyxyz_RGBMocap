@@ -33,10 +33,17 @@ https://github.com/user-attachments/assets/cc0e79bb-ecce-4752-ae14-3b6cea30c810
 
 ## Unreal Live Link
 
-Stream prepared offline motion to Unreal's built-in Live Link Message Bus.
-See the [setup and retarget guide](docs/UNREAL_LIVE_LINK.md). The optional app
-sender requires **Setup_UnrealStream.cmd**, an installed Unreal Engine and
-Visual Studio C++ tools.
+Stream selected offline people to Unreal's built-in Live Link Message Bus.
+[Download MetaHuman Connect 0.4.0 (UE 5.7.4 / Win64)](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-metahuman-connect-v0.4.0/RGBMoCapMetaHuman_UE5.7.4_Win64_v0.4.0.zip)
+to connect MetaHuman actors directly, with proportion-aware body retargeting,
+estimated flat-floor reach and optional Face support. See the
+[plugin installation guide](unreal_plugin/RGBMoCapMetaHuman/README.md),
+[source](unreal_plugin) and [complete streaming guide](docs/UNREAL_LIVE_LINK.md).
+
+The optional app sender requires **Setup_UnrealStream.cmd**, an installed Unreal
+Engine and Visual Studio C++ tools. Face playback uses One Euro smoothing and
+saved per-person neutral calibration. The plugin ZIP contains authored source
+and native modules; engine, MetaHuman assets and private projects stay external.
 
 ## Install and run
 
@@ -112,7 +119,7 @@ See the [SAM 3.1 tracker guide](docs/models/SAM31.md#vram-use).
 **Track Face** adds CPU face tracking for saved video. The 3D viewport shows
 facial landmarks on SMPL-X, SMPL-H and SOMA surfaces. **Export Face** saves
 ARKit-style coefficients alongside the chosen motion as TXT or Unreal Live Link Face CSV.
-See [Face capture](docs/USER_GUIDE.md#face-capture).
+Face preview landmarks and Unreal-streamed expression coefficients use One Euro smoothing automatically. **Set Neutral** beside Track Face calibrates the selected person from the current frame, with saved per-person baselines and Reset. Saved face coefficients can also accompany Unreal Live Link body streaming; enable **Face** in the separately installed MetaHuman Connect plugin. See [Face capture](docs/USER_GUIDE.md#face-capture) and [face streaming](docs/UNREAL_LIVE_LINK.md#optional-metahuman-face-streaming).
 
 ### Install with an AI agent
 
@@ -159,7 +166,7 @@ do not put passwords or account tokens in the agent chat.
   or PMX character motion as VMD for MMD.
 - Export portable Blender projects with source animation, video and saved cameras; MAMMA can include animated body meshes and every camera.
 - Export the current take, all takes for checked people, or individual takes. The export dialog shows what to do for each unavailable take. [Export guide](docs/USER_GUIDE.md#fbx-and-blender)
-- Stream selected offline people's body bones to Unreal's built-in Live Link Message Bus, including their rest skeleton and bone lengths. Export a matching source-rig FBX for Unreal IK retargeting. Optional Unreal/Visual Studio setup; no new receiver plugin. [Setup and retarget guide](docs/UNREAL_LIVE_LINK.md)
+- Stream selected offline people's body bones to Unreal's built-in Live Link Message Bus, including their rest skeleton and bone lengths. Export a matching source-rig FBX for Unreal IK retargeting. Optional Unreal/Visual Studio setup; use MetaHuman Connect for direct targets or the manual IK workflow. [Setup and retarget guide](docs/UNREAL_LIVE_LINK.md)
 - Stream selected people's bones to Blender during playback or scrubbing, then bake their full recorded motion into Blender Actions. [Download the Blender add-on ZIP](blender_addon/rgbmocap_bone_stream.zip?raw=1) · [Installation and controls](docs/USER_GUIDE.md#stream-bones-to-blender)
 - Preview and correct GEM-X's native SOMA motion, retarget to humanoid characters, and export the Native77 skeleton as FBX or BVH. The Blender bundle includes the evaluated surface and input video.
 - Save side-by-side input video and the current 3D viewport as MP4 with **File > Export Preview...** (offline models).

@@ -8,6 +8,8 @@ from uuid import uuid4
 import numpy as np
 
 from .face_data import FaceArchive, manifest, root_for
+from .face_smoothing import smooth_face_values
+from .face_neutral import neutral_frames, expression_values
 from .people_store import load_people, safe_child
 
 
@@ -57,31 +59,6 @@ def plan(request, stage):
         rows=payload
         origin,leading=None,False
     return [(row,origin,leading) for row in rows if row.get('export_face')]
-
-
-def smooth_face_values(values, valid, fps, channels):
-    from .pear.temporal_filter import AdaptiveFilter
-
-    profiles = []
-    for name in channels:
-        if name.startswith(('eyeBlink', 'eyeLook')):
-            profiles.append((9., 3.2, 32.))
-        elif name.startswith('jaw') or (
-                name.startswith('mouth') and not name.startswith(('mouthSmile', 'mouthFrown', 'mouthDimple'))):
-            profiles.append((4.5, 1.8, 24.))
-        else:
-            profiles.append((2.4, .9, 16.))
-    minimum, beta, maximum = np.asarray(profiles).T
-    smoothing = AdaptiveFilter(min_cutoff=minimum, beta=beta, max_cutoff=maximum)
-    filtered = values.copy()
-    previous = None
-    # Skip invalid samples. A gap over 0.25 s resets the shared One Euro state,
-    # while held export frames still use the last valid filtered sample.
-    for index in np.flatnonzero(valid):
-        elapsed = 0. if previous is None else (index - previous) / fps
-        filtered[index] = smoothing.update(values[index], elapsed)
-        previous = index
-    return filtered
 
 
 def expression_frames(archive, project, state, filtered):
@@ -184,13 +161,14 @@ def publish(rows, emit):
             suffix='_face' if origin is None or len(rows)==1 else f'_face_{ordinal:02d}'
             extension = '.csv' if row.get('face_format') == 'livelink_csv' else '.txt'
             destination = target.with_name(target.stem + suffix + extension)
+            calibration = neutral_frames(archive)
             filtered = None
-            if row.get('smooth_face'):
-                key = root, person
+            smoothing = bool(row.get('smooth_face'))
+            if smoothing or person in calibration:
+                key = root, person, smoothing
                 if key not in smoothed:
-                    slot = archive.index[person]
-                    smoothed[key] = smooth_face_values(archive.values[slot], archive.valid[slot],
-                                                       float(archive.info['fps']), archive.channels)
+                    smoothed[key] = expression_values(archive, archive.index[person],
+                                                       smooth=smoothing, frames=calibration)
                 filtered = smoothed[key]
             written = write_sidecar(destination, archive, project, state, offset, leading,
                                     row.get('rig_name','Person '+str(person)), filtered=filtered)

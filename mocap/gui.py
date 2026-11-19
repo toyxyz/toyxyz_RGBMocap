@@ -477,7 +477,11 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.export_preview_action.setEnabled(self.preview_export_available())
         self.track_face.setVisible(not self._pear_active)
         self.face_overlay.setVisible(not self._pear_active)
+        for control in (self.set_neutral_face, self.reset_neutral_face, self.neutral_face_note):
+            control.setVisible(not self._pear_active)
         self.track_face.setEnabled(not self.busy and not self.contact_saving)
+        cache = getattr(self, '_face_playback', None)
+        self.update_neutral_face_controls(cache.archive if cache else None)
         if self._pear_active:
             if hasattr(self,'camera_tools'):self.camera_tools.sync()
             self.pear_sync_controls();return
@@ -1052,6 +1056,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.timer.start(max(1, math.ceil(remaining * 1000)))
 
     def shutdown_preview(self):
+        self.close_face_playback()
         self._stream_timer.stop()
         self.close_stream()
         if hasattr(self,'camera_tools'):self.camera_tools.close()

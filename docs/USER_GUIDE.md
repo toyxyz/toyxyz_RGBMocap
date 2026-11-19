@@ -180,8 +180,13 @@ saved actor motion and camera to locate each face in the primary camera.
 The landmarks follow the visible source mesh for each person, including
 SMPL-X, SMPL-H and SOMA.
 Use **Face Overlay** next to **Bone Overlay** in the 3D Viewport header to
-show or hide the landmarks. The overlay uses the latest valid expression
-through detection gaps. Before the first successful detection, the overlay
+show or hide the landmarks. The overlay displays One Euro-smoothed landmarks and holds the latest valid
+smoothed expression through detection gaps. Unreal face streaming automatically
+uses smoothed ARKit coefficients from the same prepared playback cache. Smoothing
+is calculated once in capture-time order on a background thread, so playback
+speed, pausing, reverse seeks and loops do not change a frame's result. Blink/gaze
+and lip landmarks respond faster than the quieter facial regions.
+Original capture data remain unchanged; existing projects need no new capture. Before the first successful detection, the overlay
 is empty. Distant, heavily turned
 or obscured faces can lead to longer held intervals.
 
@@ -191,7 +196,7 @@ export. **RGB MoCap Face (.txt)** is the default. This UTF-8, tab-separated
 file includes these fields. **Smooth Face** is on by default for both face
 formats. It applies channel-specific One Euro filtering to saved expression
 values. Blink, gaze and speech channels respond faster than brow and cheek
-channels. Uncheck it to export the captured values. You can compare both
+channels. Uncheck it to export unsmoothed values; saved neutral-face calibration still applies. You can compare both
 outputs from the same capture. The setting affects the exported expressions.
 
 | Field | Meaning |
@@ -223,6 +228,34 @@ expression when available. Frames with no available expression and reference
 frames use zeros. `tongueOut` and the nine standalone head/eye rotation fields
 are zero. The `eyeLook…` expression channels still carry tracked weights. Use
 the exported body animation for head motion.
+
+### Face streaming to MetaHuman
+
+Saved Track Face data can accompany each checked Unreal Live Link person. Enable **Face** on that source row in the separately installed RGB MoCap MetaHuman Connect 0.4.0 plugin. No capture is started by streaming. Missing detections hold the last expression; missing face data do not block body motion. See [face streaming setup and limitations](UNREAL_LIVE_LINK.md#optional-metahuman-face-streaming).
+
+
+### Set a neutral face
+
+Select a person in the **People** list, move the timeline to a frame where that
+person has open eyes and a relaxed mouth, then click **Set Neutral** beside
+**Track Face**. This corrects a persistent detected blink/open-mouth bias for
+that person. A fresh successful detection at the selected frame is required;
+a held expression or missing face cannot be used. No face inference is started.
+
+The selected frame becomes zero expression in preview, Unreal face streaming
+and both face export formats. Other frames use the change from that baseline.
+Landmark offsets are also recentered on the template's neutral face. The setting
+applies across the person's takes in that capture; the note displays its capture
+frame, which can differ from a trimmed take's frame number. Other people retain
+their own calibration. **Reset** clears only the selected person's neutral.
+
+Calibration is saved immediately in the project as face_neutral.json and is
+included in Save Project As. Original face_capture.npz data remain untouched;
+reopening the project restores calibration. Changing the source/tracking identity
+invalidates an old baseline. Existing smoothing remains enabled for playback,
+and the selected neutral frame stays exactly neutral after filtering. Smooth
+Face in Export controls smoothing independently; calibration applies with it
+on or off. Very poor/occluded detections still need a better capture or frame.
 
 ### Update the app
 
@@ -808,7 +841,7 @@ Run **Setup_UnrealStream.cmd** once first; it requires an installed Unreal Engin
 5.7+ and Visual Studio C++ tools. In Unreal enable the built-in Live Link and UDP
 Messaging plugins, then add **Message Bus Source > RGB MoCap**.
 The stream includes body/finger bones, reference poses and bone lengths;
-MetaHuman retarget setup remains in Unreal. Default **None**, Blender and PEAR
+Use [MetaHuman Connect](../unreal_plugin/RGBMoCapMetaHuman/README.md) for a direct source/target panel, or configure the manual retarget path in Unreal. Default **None**, Blender and PEAR
 behavior are preserved. See the [full setup, network and retarget guide](UNREAL_LIVE_LINK.md).
 
 Use **Export Reference FBX...** for the highlighted person at a ready timeline

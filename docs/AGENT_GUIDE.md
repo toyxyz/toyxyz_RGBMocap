@@ -1011,3 +1011,114 @@ Cyrillic, Korean, Chinese, combining accents and emoji paths on one Windows PC.
 Hostile parent encodings were simulated; different OS languages, clean installs
 and fresh CUDA compilation in every such path were not independently tested.
 See the [validation record](VALIDATION.md#international-windows-paths-and-output-2026-11-02).
+
+
+### Unreal face stream contract
+
+`StreamWorkspace.stream_face_at_playhead` reads only a verified FaceArchive.
+Resolve each person/take through FaceArchive.resolve and its source-time/FPS
+mapping; use held valid samples and send no face before the first success.
+Keep person IDs scoped to the body actor identity. Archive errors must not stop
+body streaming. Face Overlay and the new-capture Track Face toggle do not hide
+already recorded coefficients. Do not perform MediaPipe inference on this path.
+The optional face packet has 52 finite values, integer sample/source_frame and
+tracked metadata. The bridge publishes a separate Animation-role `_Face` Subject
+with the canonical capitalized ARKit names, BodySubject metadata and matching
+provider identity, and repeats paused expressions. Remove it when unavailable;
+body FaceAvailable metadata distinguishes no sample from a stale connection.
+Keep the default body-only packet and Blender protocol unchanged.
+
+The separate experimental MetaHuman Connect plugin has per-source Face switches.
+It applies the target's additive ARKit mapping curves to the native face preview,
+preserves postprocess/RigLogic and restores the prior face class. Do not toggle
+the MetaHuman actor's global UseLiveLink/UseARKit construction-script settings:
+those can replace Body animation. Validate jaw/blink deformation, person
+isolation, no-face/held samples, seeks, toggle/disconnect restoration and editor
+save/Undo/reconstruction. Enable and restore the face mesh editor-update/visibility tick flags as well as
+its animation class; receiving values or a Streaming status alone do not prove deformation.
+The optional sender runtime uses Bridge-<source hash> projects and validates
+receipt-relative paths. Keep older active modules intact during setup and roll
+back a previous receipt if startup verification fails.
+
+
+MetaHuman Connect 0.3.1 fixes simultaneous body/face editor playback: the
+MetaHuman Face initialization callback can disable editor updates on Body and
+its followers. Reapply the connection's owned preview tick settings after face
+initialization/restoration; retain the original recovery baseline. Validate
+actual body transforms across seeks and continuous Face-enabled playback,
+plus facial deformation, rather than relying on Streaming status alone.
+This receiver-only fix needs no app provider rebuild. Close Unreal before
+replacing its project plugin folder.
+
+
+### Shared face playback smoothing
+
+`face_smoothing.py` owns the channel profiles and causal valid-sample One Euro
+sequence computation; `face_export.py` re-exports smooth_face_values to retain
+its existing API and output numerics. Eye/gaze and lip landmark offsets use
+responsive profiles; per-point XY vectors share a cutoff to avoid axis skew.
+`face_playback.py` prepares a private FaceArchive copy on a single cancellable
+QThread with one latest pending request. Replace only its in-memory values and
+offsets, then expose read-only arrays. Never rewrite face_capture.npz or modify
+FaceArchive's raw-loading/export behavior. The overlay and stream use the same
+FaceWorkspace cache; when ready it repaints and invalidates the paused stream
+snapshot. Do not send raw values while preparation is pending.
+Archive/source manifests identify each cache generation; discard stale replies
+after project/file changes. GUI shutdown cancels and waits for this worker.
+Resolve smoothed samples through the original held/valid arrays and source-time
+mapping. Compute once from capture start so seek order cannot alter smoothing.
+Keep export smoothing optional, avoid double filtering, and test raw preservation,
+export equality, detection gaps, multiple people, reverse seeks, background
+cancellation and actual Unreal-received coefficients.
+
+
+### Neutral face calibration
+
+`face_neutral.py` stores person IDs and valid capture-frame indices in a separate
+versioned face_neutral.json, scoped to FaceArchive.identity. Do not add this file
+to the capture fingerprint or mutate captured arrays/files. Save Project As
+already copies project-local files with timestamps; no model/runtimes are needed.
+Reject held/missing frames, map a selected take through FaceArchive.resolve, and
+apply only to the currently selected People row (not every checked person or a
+selected imported character). Reset preserves other people's entries.
+
+Calibrate AFTER smoothing so the chosen smoothed frame is exactly neutral:
+coefficients = clamp((value - baseline) / max(1 - baseline, 0.1), 0, 1).
+The gain cap avoids amplifying near-saturated neutral channels without bound;
+decreases below baseline do not invent an inverse ARKit expression. Subtract
+the same-frame filtered landmark offsets from the filtered landmark sequence.
+For unsmoothed export, derive the baseline from the raw sequence at that same
+saved frame instead. Use expression_values on raw FaceArchive inputs only;
+do not calibrate an already prepared playback archive twice.
+
+FacePlayback.archive_key includes the neutral sidecar. Set/Reset invalidates
+the shared preview/stream cache, and the existing ready callback repaints and
+resends a paused frame. Keep preparing off the GUI thread. Do not change body
+motion, Live Link subject identity, frame/timecode or the receiver plugin for
+neutral calibration. Verify per-person isolation, exact zero at the chosen
+frame, raw preservation, valid/held rejection, offset take timing, reset/reload,
+and TXT/Live Link Face CSV with Smooth Face both on and off.
+
+
+### Public Unreal receiver package
+
+Authored receiver source is in unreal_plugin/RGBMoCapMetaHuman. The release ZIP
+is built by tools/package_unreal_plugin.py from that source and matching locally
+compiled modules. Require the exact supported UE build ID, source-byte identity,
+an explicit allowlist, archive CRC/SHA-256 and a clean extracted-package load.
+No engine/MetaHuman assets, private diagnostic modules, PDBs, screenshots of
+private projects, personal paths, capture arrays or local logs belong in the
+source or package. Logical #line filenames keep authored assertion diagnostics
+portable without embedding the build directory. Scan both ASCII and UTF-16 DLL
+strings and the full new Git diff before publishing.
+
+The bridge now takes its per-launch nonce from RGB_MOCAP_STREAM_TOKEN in the
+owned child environment, clears it there and authenticates only the loopback
+application hop. Never claim stock UDP Message Bus is authenticated/encrypted.
+The receiver evaluates exact source-qualified subjects and requires matching
+body/reference RigId plus body/face RigId/MotionFrame metadata. A Face checkbox
+is a receiver application setting, not an outgoing privacy control. Target None
+and app person checkboxes stop publication. Keep the network boundary explicit.
+On source changes rerun Setup_UnrealStream.cmd; it freezes and rechecks source
+identity excluding generated build outputs and rolls back a previous receipt if
+startup verification fails. Do not publish local receipts or process logs.
