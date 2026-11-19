@@ -31,27 +31,9 @@ https://github.com/user-attachments/assets/cc0e79bb-ecce-4752-ae14-3b6cea30c810
 
 [Download original sample](docs/samples/streaming-to-blender.mp4)
 
-## Unreal Live Link
+### Unreal Engine MetaHuman live streaming
 
-Stream selected offline people to Unreal's built-in Live Link Message Bus.
-[Download MetaHuman Connect 0.4.0 (UE 5.7.4 / Win64)](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-metahuman-connect-v0.4.0/RGBMoCapMetaHuman_UE5.7.4_Win64_v0.4.0.zip)
-to connect MetaHuman actors directly, with proportion-aware body retargeting,
-estimated flat-floor reach and optional Face support. See the
-[plugin installation guide](unreal_plugin/RGBMoCapMetaHuman/README.md),
-[source](unreal_plugin) and [complete streaming guide](docs/UNREAL_LIVE_LINK.md).
-
-The optional app sender requires **Setup_UnrealStream.cmd**, an installed Unreal
-Engine and Visual Studio C++ tools. Face playback uses One Euro smoothing and
-saved per-person neutral calibration. The plugin ZIP contains authored source
-and native modules; engine, MetaHuman assets and private projects stay external.
-
-After the normal `install.cmd` setup, install Unreal Engine (tested: **5.7.4**),
-Visual Studio 2022 **Desktop development with C++** and a Windows SDK. Close RGB
-MoCap, open its app folder and double-click **Setup_UnrealStream.cmd**, or run
-`.\Setup_UnrealStream.cmd` from PowerShell in that folder. Reopen RGB MoCap after
-setup reports success. `install.cmd` and `update.cmd` do not build this optional
-sender. For custom engine paths, success checks and recovery, follow
-[Prepare once](docs/UNREAL_LIVE_LINK.md#prepare-once).
+https://github.com/user-attachments/assets/3353f5ca-6393-40af-822f-210a77f51003
 
 ## Install and run
 
@@ -174,8 +156,8 @@ do not put passwords or account tokens in the agent chat.
   or PMX character motion as VMD for MMD.
 - Export portable Blender projects with source animation, video and saved cameras; MAMMA can include animated body meshes and every camera.
 - Export the current take, all takes for checked people, or individual takes. The export dialog shows what to do for each unavailable take. [Export guide](docs/USER_GUIDE.md#fbx-and-blender)
-- Stream selected offline people's body bones to Unreal's built-in Live Link Message Bus, including their rest skeleton and bone lengths. Export a matching source-rig FBX for Unreal IK retargeting. Optional Unreal/Visual Studio setup; use MetaHuman Connect for direct targets or the manual IK workflow. [Setup and retarget guide](docs/UNREAL_LIVE_LINK.md)
 - Stream selected people's bones to Blender during playback or scrubbing, then bake their full recorded motion into Blender Actions. [Download the Blender add-on ZIP](blender_addon/rgbmocap_bone_stream.zip?raw=1) · [Installation and controls](docs/USER_GUIDE.md#stream-bones-to-blender)
+- Stream body motion and optional facial expressions to MetaHuman actors in Unreal Engine through Live Link. [Download the MetaHuman Connect plugin ZIP (UE 5.7.4 / Win64)](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-metahuman-connect-v0.4.0/RGBMoCapMetaHuman_UE5.7.4_Win64_v0.4.0.zip) · [Installation and controls](docs/UNREAL_LIVE_LINK.md)
 - Preview and correct GEM-X's native SOMA motion, retarget to humanoid characters, and export the Native77 skeleton as FBX or BVH. The Blender bundle includes the evaluated surface and input video.
 - Save side-by-side input video and the current 3D viewport as MP4 with **File > Export Preview...** (offline models).
 - Inspect source-video/bone alignment in Camera Preview and display saved cameras in 3D, with optional background rotation refinement for FlowHMR/ExMR.
