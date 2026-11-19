@@ -56,6 +56,8 @@ Camera and smoothing changes take effect on **Reconstruct 3D**, not on
 1. Select ExMR and use **File > Open Video**. Trim the **Video** track as needed.
 2. For explicit identity selection or several people, run **Find person** and
    check who to process. The selected row controls preview and contact editing.
+   Choose **Default** or use [SAM 3.1](SAM31.md) on Windows for text prompts
+   and click selection.
 3. Prepare models, choose camera settings and run **Reconstruct 3D**.
 4. Review the original and corrected motion. Edit foot/palm support intervals
    and **Apply Correction** when needed. This reuses inference results.

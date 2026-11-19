@@ -33,10 +33,17 @@ def hard_link(source: Path, target: Path) -> None:
     Linux's NTFS driver stamps the file's mtime on link(); receipts, stage identities
     and project keys compare mtimes, so the original value is restored exactly.
     """
+    if os.name == 'nt':
+        os.link(source, target)
+        return
     before = os.stat(source)
     os.link(source, target)
-    if os.stat(source).st_mtime_ns != before.st_mtime_ns:
-        os.utime(source, ns=(before.st_atime_ns, before.st_mtime_ns))
+    try:
+        if os.stat(target).st_mtime_ns != before.st_mtime_ns:
+            os.utime(target, ns=(before.st_atime_ns, before.st_mtime_ns))
+    except OSError:
+        target.unlink(missing_ok=True)
+        raise
 
 
 def sha256(path: Path) -> str:
@@ -45,6 +52,50 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: stream.read(8 * 1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def windows_long_paths_enabled():
+    import winreg
+    try:
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SYSTEM\CurrentControlSet\Control\FileSystem') as key:
+            value, kind = winreg.QueryValueEx(key, 'LongPathsEnabled')
+            return bool(value) if kind == winreg.REG_DWORD else None
+    except FileNotFoundError:
+        return False
+    except OSError:
+        return None
+
+
+def path_error_message(error):
+    """Return a displayable error, with context when Windows may hit MAX_PATH."""
+    message = str(error).encode('utf-8', errors='backslashreplace').decode('utf-8')
+    if os.name != 'nt' or not isinstance(error, OSError):
+        return message
+    winerror = getattr(error, 'winerror', None)
+    hint = ' Use a shorter installation or project folder, or shorten the filename.'
+    if winerror == 206:
+        return 'Windows rejected a path as too long.' + hint + ' ' + message
+    if winerror not in (2, 3, 123):
+        return message
+
+    def windows_units(value):
+        return len(value.encode('utf-16-le', errors='surrogatepass')) // 2
+
+    for name in (error.filename, error.filename2):
+        if not isinstance(name, str) or name.startswith(('\\\\?\\', '\\\\.\\')):
+            continue
+        try:
+            path = Path(os.path.abspath(name))
+        except (OSError, ValueError):
+            continue
+        if winerror == 123:
+            if any(windows_units(part) > 255 for part in path.parts[1:]):
+                return 'A filename or folder name exceeds 255 UTF-16 characters.' + hint + ' ' + message
+            continue
+        length = windows_units(str(path))
+        if length >= 260 and windows_long_paths_enabled() is False:
+            return f'Windows long paths are disabled and this path has {length} UTF-16 characters.' + hint + ' ' + message
+    return message
 
 
 def project_key(source: Path, start: float, end: float) -> str:

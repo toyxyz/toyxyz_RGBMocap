@@ -12,6 +12,7 @@ from .character_data import CharacterLoader
 class CharacterWorkspace:
     def init_characters(self):
         self.character_root=None;self.characters=[];self.character_assets={};self.character_process=None
+        self._character_index_unreadable=False
         self.character_refresh_queue=[];self.character_refresh_total=0
         self.character_session=HOME/'character_scenes'/uuid.uuid4().hex
         self.character_loader=CharacterLoader(self)
@@ -36,18 +37,25 @@ class CharacterWorkspace:
             self.people_list.blockSignals(blocked)
             self.character_loader.reset();self.character_assets.clear();self.motion_view.clear_characters()
             self.character_root=root;self.characters=[]
+            self._character_index_unreadable=False
             p=root/'characters/index.json'
-            if p.is_file():
-                try:
-                    data=json.loads(p.read_text(encoding='utf8'))
-                    if len(data)>8:raise ValueError('Too many imported characters (maximum 8).')
-                    for c in data:
-                        self.character_path(c['asset'])
-                        if c.get('animation'):
-                            self.character_path(c['animation'])
-                            for take in c.get('takes',[]):self.character_path(c['animation']+'/'+take['folder'])
-                    self.characters=data
-                except (ValueError,OSError,KeyError) as exc:self.status.setText('Cannot load characters: '+str(exc))
+            try:
+                data=json.loads(p.read_text(encoding='utf8'))
+                if not isinstance(data,list):raise ValueError('Invalid character list.')
+                if len(data)>8:raise ValueError('Too many imported characters (maximum 8).')
+                for c in data:
+                    if not isinstance(c,dict) or not all(isinstance(c.get(k),str) for k in ('id','name','kind','asset')):
+                        raise ValueError('Invalid character list entry.')
+                    self.character_path(c['asset'])
+                    if c.get('animation'):
+                        self.character_path(c['animation'])
+                        for take in c.get('takes',[]):self.character_path(c['animation']+'/'+take['folder'])
+                self.characters=data
+            except FileNotFoundError:
+                pass
+            except (ValueError,OSError,KeyError,TypeError) as exc:
+                self._character_index_unreadable=True
+                self.status.setText('Cannot load characters: '+str(exc))
             for c in self.characters:self.request_character(c)
             if pending and len(pending)+len(self.characters)>8:
                 self.status.setText('Imported session characters were kept separately: the project would exceed 8 characters.')
@@ -64,7 +72,30 @@ class CharacterWorkspace:
         if not p.is_relative_to(base):raise ValueError('Invalid character project path')
         return p
 
-    def save_characters(self):atomic_json(self.character_root/'characters/index.json',self.characters)
+    def save_characters(self, characters):
+        path=self.character_root/'characters/index.json'
+        try:
+            if self._character_index_unreadable:
+                backup=path.with_name(f'index.unreadable-{uuid.uuid4().hex}.json')
+                created=False
+                try:
+                    with path.open('rb') as source, backup.open('xb') as output:
+                        created=True
+                        shutil.copyfileobj(source,output)
+                        output.flush()
+                        os.fsync(output.fileno())
+                except OSError:
+                    if created:backup.unlink(missing_ok=True)
+                    raise
+                self.log.append('Unreadable character index backed up to '+str(backup))
+            atomic_json(path,characters)
+        except OSError as exc:
+            message='Cannot save characters: '+str(exc)
+            self.status.setText(message);self.log.append(message)
+            return False
+        self._character_index_unreadable=False
+        self.characters=characters
+        return True
 
     def selected_character(self):
         item=self.people_list.currentItem()
@@ -115,9 +146,11 @@ class CharacterWorkspace:
     def character_checked(self,item):
         key=item.data(Qt.UserRole)
         if not isinstance(key,str) or not key.startswith('character:'):return False
-        for c in self.characters:
-            if c['id']==key.split(':',1)[1]:c['visible']=item.checkState()==Qt.Checked
-        self.save_characters();self.motion_view.update();return True
+        ident=key.split(':',1)[1]
+        characters=[dict(c,visible=item.checkState()==Qt.Checked) if c['id']==ident else c
+                    for c in self.characters]
+        if not self.save_characters(characters):self.append_character_rows()
+        self.motion_view.update();return True
 
     def choose_character(self):
         if self.busy:return
@@ -131,6 +164,7 @@ class CharacterWorkspace:
 
     def character_sources(self):
         from .motion_tools import result_is_current
+        from .gemx_result import RECEIPT, is_project
         from .people_store import safe_child
         if self.people_state:
             people=self.people_state['people']
@@ -141,7 +175,7 @@ class CharacterWorkspace:
             takes=[]
             for t in p.get('takes',[]):
                 path=safe_child(self.people_root,t['project']) if self.people_state else Path(t['project'])
-                metadata=path/(self.active_result+'_mixamo.json')
+                metadata=path/(RECEIPT if is_project(path) else self.active_result+'_mixamo.json')
                 if not metadata.is_file() or not result_is_current(path,self.active_result):continue
                 manifest=json.loads((path/'project.json').read_text(encoding='utf8'))
                 start=float(manifest.get('start',0.))
@@ -177,10 +211,7 @@ class CharacterWorkspace:
         remaining=[c for c in self.characters if c['id']!=ident]
         if len(remaining)==len(self.characters):return
         # Commit before changing the UI; a failed save must leave the row usable.
-        try:atomic_json(self.character_root/'characters/index.json',remaining)
-        except OSError as exc:
-            self.status.setText('Cannot remove character: '+str(exc));return
-        self.characters=remaining
+        if not self.save_characters(remaining):return
         blocked=self.people_list.blockSignals(True)
         try:
             key='character:'+ident
@@ -218,9 +249,10 @@ class CharacterWorkspace:
         self.character_refresh_queue=correction_refreshes(self.characters,jobs,self.project)
         self.character_refresh_total=len(self.character_refresh_queue)
         ids={p['id'] for p in self.character_refresh_queue}
-        for c in self.characters:
-            if c['id'] in ids:c['needs_retarget']=True
-        if ids:self.save_characters();self.append_character_rows()
+        if ids:
+            characters=[dict(c,needs_retarget=True) if c['id'] in ids else c for c in self.characters]
+            if not self.save_characters(characters):raise OSError(self.status.text())
+            self.append_character_rows()
 
     def next_character_refresh(self):
         if not self.character_refresh_queue:return
@@ -239,7 +271,10 @@ class CharacterWorkspace:
             if job['mode']!='adopt':blender()
             path=self.character_root/'characters'/('job-'+uuid.uuid4().hex+'.json');atomic_json(path,job)
             args=['--request',str(path)]
-            if job['mode']=='retarget':args+=['--project',job['takes'][0]['project']]
+            if job['mode']=='retarget':
+                from .gemx_result import is_project
+                if not is_project(job['takes'][0]['project']):
+                    args+=['--project',job['takes'][0]['project']]
             cmd=command(ROOT,'character',args,frozen=getattr(sys,'frozen',False))
         except Exception as exc:
             self.character_refresh_queue=[]
@@ -279,22 +314,30 @@ class CharacterWorkspace:
         job=self.character_job;complete=Path(job['output'])/'complete.json'
         if code==0 and complete.is_file() and not self.character_cancelled:
             result=json.loads(complete.read_text(encoding='utf8'))
-            if job['mode']=='adopt':
-                self.characters.extend(result['characters'])
-                self.save_characters()
-                for c in result['characters']:self.request_character(c)
-                self.append_character_rows()
-            elif job['mode']=='import':
-                c=dict(id=job['id'],name=Path(job['file']).stem,kind=result['kind'],asset=job['id']+'/asset',visible=True)
-                self.characters.append(c)
-            elif job['mode']=='retarget':
-                c=next(c for c in self.characters if c['id']==job['id'])
-                c.pop('_starts',None)
-                c.pop('needs_retarget',None)
-                c.update(animation=job['animation'],takes=result['takes'],source_name=result['source_name'],result=result['result'])
-            if job['mode'] in {'import','retarget'}:
-                self.save_characters();self.request_character(c);self.append_character_rows()
-            self.status.setText(f'Character ready · {result["seconds"]:.1f}s');self.progress.setRange(0,100);self.progress.setValue(100)
+            mode=job['mode']
+            saved=True
+            if mode in {'adopt','import','retarget'}:
+                if mode=='adopt':
+                    changed=result['characters']
+                    characters=[*self.characters,*changed]
+                elif mode=='import':
+                    c=dict(id=job['id'],name=Path(job['file']).stem,kind=result['kind'],asset=job['id']+'/asset',visible=True)
+                    changed=[c]
+                    characters=[*self.characters,c]
+                else:
+                    old=next(c for c in self.characters if c['id']==job['id'])
+                    c=dict(old,animation=job['animation'],takes=result['takes'],source_name=result['source_name'],result=result['result'])
+                    c.pop('_starts',None)
+                    c.pop('needs_retarget',None)
+                    changed=[c]
+                    characters=[c if row is old else row for row in self.characters]
+                saved=self.save_characters(characters)
+                if saved:
+                    for c in changed:self.request_character(c)
+                    self.append_character_rows()
+            self.progress.setRange(0,100);self.progress.setValue(100 if saved else 0)
+            if saved:self.status.setText(f'Character ready · {result["seconds"]:.1f}s')
+            else:self.character_refresh_queue=[]
         else:
             self.character_refresh_queue=[]
             self.status.setText('Character job cancelled.' if self.character_cancelled else 'Character processing failed. See Console.')

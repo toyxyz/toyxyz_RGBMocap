@@ -22,6 +22,7 @@ POLICY_ONLY = {
 # UTF-8 log streams change no SAM features. Complete-byte matching means
 # any subsequent numerical edit still invalidates the affected cache.
 LOGGING_ONLY = {
+    "17aa8fe0702554071c70b348eb3caea421c16dfd2051de52e30ade4be14138cf": "883d9dde808cf27c86611cb85f0e28ffcb3541639d417d2f68c4c7e1b2d00855",
     "db6fd57ca78c6dfab27142b9e99db207fcc1021933f1c4cfeb599c5fdad321ed": "c1abd10ec3143cfa7d7b97283a461fa858b73f55338cde7d7842cf030eff0b95",
     "141809da55236c2cbbf3f26f9e925362bcac6197d3883406347fa6b3ac7b7174": "319f211033a21d0fa1a83dd01a45676844df93cf95680e0d9fb7242883e3ba42"
 }
@@ -39,6 +40,7 @@ DOWNLOAD_PROGRESS_ONLY = {
 # suffixes) changes no inference inputs; Windows retains its exact behavior.
 # Complete-byte matching: any later numerical edit still invalidates caches.
 PLATFORM_ONLY = {
+    "a9cf373bf1bc25e665d1458234c01ad591050bf5d07f535c197ccc25f39218b6": "883d9dde808cf27c86611cb85f0e28ffcb3541639d417d2f68c4c7e1b2d00855",  # worker.py in current main
     "eef97f92a58fd40432159bd19a201f0f9c6f1579959b18f776e55c2af754b175": "883d9dde808cf27c86611cb85f0e28ffcb3541639d417d2f68c4c7e1b2d00855",  # worker.py
     "b6d91ac3bedd245c6be83ac821a6cf87d06e34fd16ed0cd27f6c67a2c4d6ba97": "74512a9b2fb87f4fafb9f0bc963f5b5887e4069ffc59c24f656f984b9c8066fd",  # engines.py
     "18b52409527dea9e7513850f7936d8662f09c93f00d64d8452b449881b2af1b8": "7b25e1eb57ed810bdf995a918d7b7633e7e558c25f982ba273f7d64783105ec3",  # correction.py
@@ -59,6 +61,7 @@ PLATFORM_ONLY = {
 # Model locations (in-place import flag, registry body-model paths) change no
 # inference or correction inputs. Complete-byte matching, as above.
 MODEL_LOCATION_ONLY = {
+    "1e143a56ad86cd2a01e5563e557899afa6600e14bc6b55c4cdb1fd60c3a77207": "883d9dde808cf27c86611cb85f0e28ffcb3541639d417d2f68c4c7e1b2d00855",  # worker.py on the integrated branch
     "7b84aed4c283cf9524d6f5fd8358ae2dfeb393e02ddbf7517d30c664be3933f1": "883d9dde808cf27c86611cb85f0e28ffcb3541639d417d2f68c4c7e1b2d00855",  # worker.py
     "33f771e4b754efe6903aa7f46f8c358cb62d9faba2cfff029523229710def62e": "87642b11a7a50515c634968b60f35ceebf2ba929c538a287086120869338f2a4"  # scene_floor.py
 }

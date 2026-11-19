@@ -12,8 +12,6 @@ import shutil
 import subprocess
 import sys
 from functools import lru_cache
-import urllib.parse
-import urllib.request
 import zipfile
 import posixpath
 import stat
@@ -24,6 +22,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 from installer import engine
 from installer.mamma_adapters import adapt_engine,adapt_sdf
+from tools.pinned_download import download as download_package
 from tools.session_lock import app_lock
 from tools.support_components import download,extract
 from mocap.storage import atomic_json
@@ -72,23 +71,10 @@ def compiler():
 
 
 def fetch_package(row,cache):
-    url=urllib.parse.urlsplit(row['url'])
-    if url.scheme!='https' or url.hostname not in {'files.pythonhosted.org','download.pytorch.org','download-r2.pytorch.org'}:
-        raise ValueError('Unsupported MAMMA package host.')
-    if Path(row['filename']).name!=row['filename']:raise ValueError('Invalid package filename.')
-    folder=cache/row['sha256'];folder.mkdir(exist_ok=True)
-    path=folder/row['filename']
-    if path.is_file() and path.stat().st_size==row['bytes'] and engine.sha(path)==row['sha256']:return path
-    partial=path.with_name(path.name+'.partial')
-    print('Downloading '+row['name']+' '+row['version'],flush=True)
-    try:
-        with urllib.request.urlopen(row['url'],timeout=120) as response,partial.open('wb') as output:
-            shutil.copyfileobj(response,output,1024**2)
-        if partial.stat().st_size!=row['bytes'] or engine.sha(partial)!=row['sha256']:
-            raise ValueError('Package SHA-256/size mismatch: '+row['name'])
-        os.replace(partial,path)
-    finally:partial.unlink(missing_ok=True)
-    return path
+    hosts = {'files.pythonhosted.org','download.pytorch.org','download-r2.pytorch.org'}
+    return download_package(cache/row['sha256'],row['name'],row,filename=row['filename'],
+                            allowed_hosts=hosts,max_seconds=24*60*60)
+
 
 
 def quoted(value):

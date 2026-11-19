@@ -1053,7 +1053,7 @@ def legs(old, body, seed, geo, saved):
     initial = residual(np.zeros(n * 7))
     result = least_squares(residual, np.zeros(n * 7), bounds=(lo.ravel(), hi.ravel()), jac_sparsity=sparsity, max_nfev=120, ftol=2e-05, xtol=2e-06, gtol=1e-05, tr_options={'maxiter': 150})
     output = predict(result.x, True)
-    return (output, dict(seconds=time.perf_counter() - start, success=bool(result.success), evaluations=result.nfev, cost_before=float(initial @ initial / 2), cost_after=float(result.cost), root_extra_max_mm=float(np.linalg.norm(output['root'] - root0, axis=1).max() * 1000), leg_ankle_target_max_mm=float(np.linalg.norm(output['points'][:, [7, 8]] - goals, axis=-1)[active].max() * 1000)))
+    return (output, dict(seconds=time.perf_counter() - start, success=bool(result.success), evaluations=result.nfev, cost_before=float(initial @ initial / 2), cost_after=float(result.cost), root_extra_max_mm=float(np.linalg.norm(output['root'] - root0, axis=1).max() * 1000), leg_ankle_target_max_mm=float(np.linalg.norm(output['points'][:, [7, 8]] - goals, axis=-1)[active].max(initial=0) * 1000)))
 
 def feet_only_body(kind, old, source, native, saved, geo):
     start = time.perf_counter()

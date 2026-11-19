@@ -87,12 +87,16 @@ def main(argv, emit):
         return 0
     except Exception as error:
         details=traceback.format_exc();print(details,file=sys.stderr,flush=True)
+        from .storage import path_error_message
+        message = path_error_message(error)
         if active is not None:
-            state=json.loads((active/'project.json').read_text(encoding='utf-8'))
-            state.setdefault('stages',{})[PHASES[args.stage][phase]]=dict(status='failed',error=str(error))
-            atomic_json(active/'project.json',state)
-            (active/(args.stage+'_error.log')).write_text(details,encoding='utf-8')
-        message=str(error)
+            try:
+                state=json.loads((active/'project.json').read_text(encoding='utf-8'))
+                state.setdefault('stages',{})[PHASES[args.stage][phase]]=dict(status='failed',error=message)
+                atomic_json(active/'project.json',state)
+                (active/(args.stage+'_error.log')).write_text(details,encoding='utf-8',errors='backslashreplace')
+            except Exception as log_error:
+                print('Cannot save the batch error: '+path_error_message(log_error),file=sys.stderr,flush=True)
         if isinstance(error,MemoryError) or 'out of memory' in message.lower():
             from .memory_mode import GUIDANCE
             message+=' '+GUIDANCE

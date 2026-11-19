@@ -7,7 +7,7 @@ from mocap.motion_tools import base_result
 def correction_refreshes(characters, jobs, project):
     changed = {}
     for stage, args in jobs:
-        if stage != 'correct':
+        if stage not in ('correct', 'gemx_correct'):
             continue
         args = args or []
         path = args[args.index('--project') + 1] if '--project' in args else project

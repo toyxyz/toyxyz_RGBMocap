@@ -1,6 +1,6 @@
 """Git installer: independent support repair and transaction-safe base promotion."""
 from pathlib import Path
-import argparse,hashlib,importlib.util,json,os,shutil,stat,sys,urllib.request,uuid,zipfile
+import argparse,hashlib,importlib.util,json,os,shutil,stat,subprocess,sys,urllib.request,uuid,zipfile
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 sys.path.insert(0,str(ROOT/'tools'))
@@ -29,6 +29,8 @@ def atomic(path,value):
 def setup():
     parser=argparse.ArgumentParser();parser.add_argument('--assets-root',type=Path,default=None)
     parser.add_argument('--verify-all',action='store_true',help='Recheck all installed runtime RECORD hashes and imports, ignoring recent verification metadata.')
+    if os.name != 'nt':
+        parser.add_argument('--with-blender', action='store_true', help='Install the pinned Linux Blender for exports and retargeting.')
     args=parser.parse_args();folder=ROOT/'.setup';resources=folder/'bootstrap-git';resources.mkdir(parents=True,exist_ok=True)
     cache_dependency_files(ROOT)
     from stage_assets import stage as stage_assets
@@ -111,5 +113,11 @@ def setup():
             print('Recent verification metadata could not be saved; the next install will fully verify: '+str(exc),flush=True)
         from tools.optional_support import prepare as prepare_support
         prepare_support(ROOT)
+        if getattr(args, 'with_blender', False):
+            from linux_blender import prepare as prepare_blender
+            try:
+                prepare_blender(ROOT)
+            except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+                raise RuntimeError('Base installation completed. Optional Blender setup failed: ' + str(error)) from error
 
 if __name__=='__main__':setup()

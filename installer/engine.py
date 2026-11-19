@@ -8,9 +8,13 @@ import argparse, hashlib, importlib.metadata, importlib.util, json, os
 from pathlib import Path
 import re, shutil, signal, stat, subprocess, sys, time, urllib.error, urllib.parse, urllib.request, zipfile
 
+REGISTRY_PATH = Path(__file__).with_name('runtime_registry.py')
+if not REGISTRY_PATH.is_file():
+    # Direct developer and optional installers import the engine from the checkout.
+    REGISTRY_PATH = Path(__file__).resolve().parents[1]/'mocap/runtime_registry.py'
+
 def _registry():
-    # Shipped beside this engine: one runtime layout shared with the application.
-    spec=importlib.util.spec_from_file_location('runtime_registry',Path(__file__).with_name('runtime_registry.py'))
+    spec=importlib.util.spec_from_file_location('runtime_registry', REGISTRY_PATH)
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
 REGISTRY=_registry()
 WINDOWS=os.name=='nt'
@@ -145,7 +149,7 @@ def verify_group(stage,group,root,cancel,logs):
     report=logs/(group['key']+'-verify.log')
     scripts=Path(__file__).resolve().parent
     request=logs/(group['key']+'-verify-input.json');atomic_json(request,group)
-    run([py,'-I','-X','utf8',scripts/'verify_runtime.py',stage,request,scripts/'runtime_registry.py',root],root,cancel,report)
+    run([py,'-I','-X','utf8',scripts/'verify_runtime.py',stage,request,REGISTRY_PATH,root],root,cancel,report)
     lines=report.read_text(encoding='utf8').strip().splitlines();return json.loads(lines[-1])
 
 

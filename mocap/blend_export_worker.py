@@ -9,6 +9,9 @@ def main(emit):
     if stage=='save_blend_scene':from .blend_multicam_export import run
     elif stage=='save_blend':from .blend_export import run
     else:raise ValueError('Unknown Blender export stage')
+    from .face_export import plan, publish
+    sidecars=plan(args.output,stage)
     count=run(args.output,emit)
+    publish(sidecars,emit)
     emit('complete',stage=stage,files=count,elapsed=time.monotonic()-started)
     return 0

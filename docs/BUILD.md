@@ -29,6 +29,23 @@ DroidCalib/LieTorch over that same environment and verifies actual CUDA operatio
 MAMMA/SDF is not required. Read [its setup/developer notes](models/PROMPTHMR.md)
 before changing its lock, adapters, native modules or model paths.
 
+Optional GEM-X uses `Setup_GEMX.cmd`, the ExMR CPython base, and its own pinned
+Windows wheel set. The installer validates CUDA and the native SOMA imports
+before publishing the environment. Only allowlisted identical CUDA DLLs are
+shared. See the [GEM-X guide](models/GEMX.md#setup) before changing the locks
+or working on its native preview, retarget and Blender paths.
+
+## Optional Unreal Live Link sender
+
+The Windows source build supports **Setup_UnrealStream.cmd** with an installed
+UE 5.7+ and Visual Studio 2022 C++ tools/Windows SDK. See
+[setup and implementation](UNREAL_LIVE_LINK.md). It compiles only the app-owned
+commandlet module, verifies startup and removes compiler intermediates by default.
+Use `--engine "D:/Epic Games/UE_5.7"` for a custom engine path and
+`--keep-build-cache` for repeated development builds. Epic engine binaries are
+not packaged with RGB MoCap. Keep this optional support separate from base AI
+runtime setup and the licensed test-project assets.
+
 ## Environments
 
 Run `python tools/setup_dev.py --plan` to review groups. Then run the same command
@@ -160,6 +177,16 @@ Git attributes preserve exact source bytes for the source manifest, hash-pinned
 runtime registry and unpacked wheel contents. Avoid automatic line-ending rewrites
 of those files. When intentionally changing the registry, review and refresh the
 lock's registry hash; the development bootstrap rejects an unreviewed mismatch.
+
+## Optional SAM 3.1 tracker
+
+On Windows, `Setup_SAM31.cmd` installs a separate `runtime_sam31/` overlay
+on the pinned ExMR environment. Follow the [setup guide](models/SAM31.md).
+Keep the optional dependencies in `tools/setup_sam31.py` and the worker route
+through `sam31_worker_boot.py`. Model Manager verifies the checkpoint separately.
+Keep the overlay, weights and experiment outputs out of the source package.
+Verify text-only discovery, marking inside the trim, the last source frame on a
+high-FPS clip, and Default discovery after switching back.
 
 ## Optional MAMMA runtime
 

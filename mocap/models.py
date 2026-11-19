@@ -32,6 +32,11 @@ class Model:
 
 
 MODELS_LIST = [
+    Model("sam31_people", "SAM 3.1 Person Tracking (Optional)", "sam31/sam3.1_multiplex_fp16.safetensors",
+          "https://huggingface.co/Comfy-Org/sam3.1/blob/5febd4769e8802cdfdb75e1f733abd8c68434a85/checkpoints/sam3.1_multiplex_fp16.safetensors",
+          minimum_bytes=1745546848,
+          download_url="https://huggingface.co/Comfy-Org/sam3.1/resolve/5febd4769e8802cdfdb75e1f733abd8c68434a85/checkpoints/sam3.1_multiplex_fp16.safetensors",
+          expected_sha256="9ba99c92703c2e8b4f47de2d34a539bb8e18923049e238b780d70dbe6368eb03"),
     Model("person_reid", "Person Identity / OSNet", "reid/osnet_x0_25_msmt17.pth",
           "https://kaiyangzhou.github.io/deep-person-reid/MODEL_ZOO", "1Kkx2zW89jq_NETu4u42CFZTMVD5Hwm6e", 1_000_000,
           expected_sha256='cf55163d78fc44c62c82f85ab62d39f10438679b5abe8c698ae08cfa84aa6e18'),
@@ -108,8 +113,10 @@ from .mamma_models import ASSETS as MAMMA_ASSETS, KEYS as MAMMA_KEYS, INSTRUCTIO
 MODELS_LIST.extend(Model(**entry) for entry in MAMMA_ASSETS)
 from .prompthmr_models import ASSETS as PHMR_ASSETS,KEYS as PHMR_KEYS,CAMERA_KEYS as PHMR_CAMERA_KEYS,INSTRUCTIONS as PHMR_INSTRUCTIONS
 from .pear_models import ASSETS as PEAR_ASSETS,KEYS as PEAR_KEYS,INSTRUCTIONS as PEAR_INSTRUCTIONS
+from .gemx_models import ASSETS as GEMX_ASSETS,KEYS as GEMX_KEYS,INSTRUCTIONS as GEMX_INSTRUCTIONS
 MODELS_LIST.extend(Model(**entry) for entry in PEAR_ASSETS)
 MODELS_LIST.extend(Model(**entry) for entry in PHMR_ASSETS)
+MODELS_LIST.extend(Model(**entry) for entry in GEMX_ASSETS)
 BY_KEY = {model.key: model for model in MODELS_LIST}
 if len(BY_KEY)!=len(MODELS_LIST):raise ValueError('Duplicate model identifiers in the model registry.')
 MANUAL_INSTRUCTIONS = {
@@ -129,6 +136,7 @@ MANUAL_INSTRUCTIONS = {
 MANUAL_INSTRUCTIONS.update(MAMMA_INSTRUCTIONS)
 MANUAL_INSTRUCTIONS.update(PHMR_INSTRUCTIONS)
 MANUAL_INSTRUCTIONS.update(PEAR_INSTRUCTIONS)
+MANUAL_INSTRUCTIONS.update(GEMX_INSTRUCTIONS)
 
 for _key in ('mano_right','smplh'):
     MANUAL_INSTRUCTIONS[_key] += ('\nIf the MANO website shows 502 Bad Gateway, use the Recommended download link below '
@@ -235,10 +243,13 @@ def manual_instructions_html(key: str) -> str:
 
 
 STAGE_REQUIREMENTS = {
+    'gemx_assets': GEMX_KEYS,
+    'gemx_reconstruct': GEMX_KEYS,
     'prompthmr_camera_assets': PHMR_CAMERA_KEYS,
     'pear_assets': ('pear','pear_geometry','pear_yolo'),
     'pear_align': ('flow_vggt','pear_geocalib'),
     "people": ("yolo", "person_reid"),
+    "sam31_people": ("sam31_people",),
     "track": ("yolo",), "pva": ("pva",),
     "features": ("hmr2", "vitpose"),
     "gvhmr": ("hmr2", "vitpose", "gvhmr", "smplx"),
@@ -268,7 +279,7 @@ def ready(model: Model) -> bool:
         from .pear_models import geometry_ready
         return geometry_ready()
     valid=model.path.is_file() and model.path.stat().st_size >= model.minimum_bytes
-    if valid and (model.key.startswith(('flow','hand','exmr','mamma','phmr','pear')) or model.key in ('smplh','mano_right')):
+    if valid and (model.key.startswith(('flow','hand','exmr','mamma','phmr','pear','gemx','sam31')) or model.key in ('smplh','mano_right')):
         import json
         try:
             receipt=json.loads(model.receipt.read_text(encoding='utf-8'))
@@ -284,6 +295,9 @@ def missing(stage: str,tool=None) -> list[Model]:
 
 
 def download(key: str, progress=None) -> Path:
+    if key in GEMX_KEYS:
+        from .gemx_models import download_model
+        return download_model(key, progress)
     import gdown
     if key == 'flowhmr':
         # Hugging Face checkpoint metadata uses the same pinned revision. It is
@@ -294,6 +308,8 @@ def download(key: str, progress=None) -> Path:
         raise ValueError("Obtain this model from its official website, then import it.")
     if ready(model):
         return model.path
+    if key in MODEL_FILES:
+        raise RuntimeError(model.name + ' is registered in place. Import a replacement, or use Import > Copy to store it in the models folder.')
     model.path.parent.mkdir(parents=True, exist_ok=True)
     part = model.path.with_suffix(model.path.suffix + ".part")
     source = model.url

@@ -7,7 +7,7 @@ import shutil
 import stat
 import time
 import uuid
-from .storage import atomic_json
+from .storage import atomic_json, path_error_message
 from .project_storage import manifest, storage_root, source_video
 
 
@@ -101,6 +101,23 @@ def save_project(request, emit=lambda *a, **k: None, cancelled=lambda: False):
             raise SaveCancelled('Project save cancelled. The current project was kept.')
     def signature(s):
         return s.st_size, s.st_mtime_ns
+    def source_version(s):
+        return s.st_dev, s.st_ino, stat.S_IFMT(s.st_mode), *signature(s)
+
+    def link_group(path, stamp):
+        # Manifests are rewritten in the saved workspace and need their own copy.
+        if stamp.st_ino and stamp.st_nlink > 1 and path.name.casefold() not in ('project.json', 'workspace_state.json'):
+            return source_version(stamp)
+        return None
+
+    def check_source(path, before):
+        if source_version(path.lstat()) != source_version(before):
+            raise ValueError('Project files changed while saving. Try again when processing is idle.')
+
+    def check_space(remaining):
+        if shutil.disk_usage(target.parent).free < remaining + 64 * 1024**2:
+            raise OSError('Not enough free space to save this project.')
+
     last = 0.
     done = 0
     def copy_file(path, dest, before):
@@ -108,6 +125,8 @@ def save_project(request, emit=lambda *a, **k: None, cancelled=lambda: False):
         check()
         dest.parent.mkdir(parents=True, exist_ok=True)
         with path.open('rb') as src, dest.open('xb') as dst:
+            if source_version(os.fstat(src.fileno())) != source_version(before):
+                raise ValueError('Project files changed while saving. Try again when processing is idle.')
             while True:
                 check()
                 block = src.read(4 * 1024**2)
@@ -118,28 +137,57 @@ def save_project(request, emit=lambda *a, **k: None, cancelled=lambda: False):
                 if time.monotonic() - last > .15:
                     emit('progress', phase='copy', current=done, total=total, message='Copying project files')
                     last = time.monotonic()
-        if signature(before) != signature(path.stat()):
-            raise ValueError('Project files changed while saving. Try again when processing is idle.')
+        check_source(path, before)
         shutil.copystat(path, dest)
         if signature(dest.stat()) != signature(before):
             raise ValueError('The destination cannot preserve project file timestamps. Choose another drive.')
     try:
         emit('progress', phase='scan', current=0, total=0, message='Checking project files and free space')
         total = 0
+        links = {}
         if source:
             for path, stamp in files(source):
                 check()
+                group = link_group(path, stamp)
+                if group is not None:
+                    links[group] = links.get(group, 0) + 1
+                    if links[group] > 1:
+                        continue
                 total += stamp.st_size
         if not media_internal:
             total += media.stat().st_size
         total+=sum(path.stat().st_size for path,_ in camera_copies)
-        if shutil.disk_usage(target.parent).free < total + 64 * 1024**2:
-            raise OSError('Not enough free space to save this project.')
+        check_space(total)
         check()
         staging.mkdir()
         if source:
+            copies = {}
             for path, stamp in files(source):
-                copy_file(path, staging / path.relative_to(source), stamp)
+                check()
+                destination = staging / path.relative_to(source)
+                group = link_group(path, stamp)
+                if group is not None:
+                    if not links.get(group):
+                        raise ValueError('Project files changed while saving. Try again when processing is idle.')
+                    links[group] -= 1
+                    existing = copies.get(group)
+                    if existing is not None:
+                        check_source(path, stamp)
+                        destination.parent.mkdir(parents=True, exist_ok=True)
+                        try:
+                            os.link(existing, destination)
+                        except OSError:
+                            # FAT/exFAT and some network destinations cannot create hardlinks.
+                            total += stamp.st_size
+                            check_space(total - done)
+                        else:
+                            check_source(path, stamp)
+                            continue
+                    else:
+                        copies[group] = destination
+                copy_file(path, destination, stamp)
+            if any(links.values()):
+                raise ValueError('Project files changed while saving. Try again when processing is idle.')
         if not media_internal:
             copy_file(media, staging / relative_media, media.stat())
         for camera_path,relative in camera_copies:
@@ -218,7 +266,8 @@ def save_project(request, emit=lambda *a, **k: None, cancelled=lambda: False):
             if view_trim:
                 view_trim=[round(view_trim[0]*scale),min(prepared['frames'],round(view_trim[1]*scale))]
         atomic_json(staging / 'workspace_state.json', dict(version=1, name=target.name,
-            active=active_relative.as_posix(), frame=view_frame, trim=view_trim))
+            active=active_relative.as_posix(), frame=view_frame, trim=view_trim,
+            track_face=(request.get('workspace_view') or {}).get('track_face',False)))
         check()
         if target.exists():
             raise ValueError('The destination appeared during saving. Choose another folder name.')
@@ -243,5 +292,5 @@ def main(emit):
     except SaveCancelled as error:
         emit('save_cancelled', message=str(error))
     except Exception as error:
-        emit('failed', message=str(error))
+        emit('failed', message=path_error_message(error))
         raise SystemExit(1)

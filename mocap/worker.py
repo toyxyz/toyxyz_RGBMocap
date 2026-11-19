@@ -395,14 +395,18 @@ def main() -> int:
     except Exception as error:
         details = traceback.format_exc()
         print(details, file=sys.stderr, flush=True)
+        from .storage import path_error_message
+        message = path_error_message(error)
         if args.project and not isinstance(error,UnsupportedMotionTool):
-            (args.project / f"{args.stage}_error.log").write_text(details, encoding="utf-8")
-            state_path = args.project / "project.json"
-            if state_path.exists():
-                state = json.loads(state_path.read_text(encoding="utf-8"))
-                state.setdefault("stages", {})[args.stage] = {"status": "failed", "error": str(error)}
-                atomic_json(state_path, state)
-        message=str(error)
+            try:
+                (args.project / f"{args.stage}_error.log").write_text(details, encoding="utf-8", errors="backslashreplace")
+                state_path = args.project / "project.json"
+                if state_path.exists():
+                    state = json.loads(state_path.read_text(encoding="utf-8"))
+                    state.setdefault("stages", {})[args.stage] = {"status": "failed", "error": message}
+                    atomic_json(state_path, state)
+            except Exception as log_error:
+                print('Cannot save the processing error: '+path_error_message(log_error), file=sys.stderr, flush=True)
         if isinstance(error,MemoryError) or 'out of memory' in message.lower():
             from .memory_mode import GUIDANCE
             message='Processing ran out of memory and stopped safely. '+GUIDANCE+' Completed stages can be reused.'
@@ -411,6 +415,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'):
+            stream.reconfigure(encoding='utf-8', errors='backslashreplace')
     raise SystemExit(main())

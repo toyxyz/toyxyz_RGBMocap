@@ -1,58 +1,80 @@
 # Linux (experimental)
 
-The application is Python 3.10 + PySide6 (Qt 6) + OpenGL 4.3 with separate pinned
-worker runtimes. On Linux the same runtime groups, package versions, hash-checked
-downloads and staged promotion are used as on Windows; only the wheel files differ.
-
-Scope of this port: the GUI and the single-video **ExMR / FlowHMR / GVHMR** paths,
-including FlowHMR's optional HaMeR finger refinement (which runs in the ExMR runtime),
-contact correction and FBX/BVH source export. Not yet ported: PEAR live preview
-(Windows shared-memory camera streams), MAMMA and PromptHMR optional setups, and a
-pinned Blender download for character retargeting and `.blend` bundles.
-
-Tested on Kali Linux (glibc 2.43, NVIDIA RTX A6000, NTFS checkout): installation, launch,
-Model Manager, and a FlowHMR + HaMeR reconstruction (Static Camera) through contact
-correction and BVH preparation. ExMR and GVHMR reconstruction, Find person, File → Export,
-Save Project As and preview-video export are ported but were not run on Linux.
-
-Platform plumbing is aliased in `mocap/resource_cache.py` (`PLATFORM_ONLY`) and
-`mocap/cache_compat.py`, so existing Windows inference and correction receipts stay valid.
+The Linux installer uses the same pinned runtime profiles as Windows with
+separate hash-checked Linux wheels. Both platforms keep their own Python
+runtimes, models, projects and caches. Install from the `linux_support` branch
+in a dedicated checkout on the Linux filesystem. The Linux paths cover single-video ExMR,
+FlowHMR and GVHMR, native motion correction, source export and optional Track
+Face. The optional PEAR, MAMMA, PromptHMR, GEM-X, SAM 3.1 and Unreal Live Link
+sender setups use Windows tooling.
 
 ## Requirements
 
-- x86_64 Linux with glibc 2.28 or newer, an NVIDIA driver supporting CUDA 12.8 and OpenGL 4.3.
-- `curl`, `tar`, `cmake` (3.24+), a C++17 compiler and `git` (CMake fetches the pinned
-  pybind11 v2.11.1 and Eigen 3.4.0 to build native motion correction).
-- `ffmpeg` and `ffprobe` on `PATH` (the system FFmpeg is used instead of the Windows 7.1.1 build).
-- Optional, for character import/retarget and Blender bundles: a Blender 4.5 LTS
-  executable, selected with `RGBMOCAP_BLENDER=/path/to/blender`.
+Use x86-64 Linux with a compatible NVIDIA driver for CUDA 12.8, OpenGL 4.3 or
+newer, FFmpeg and FFprobe, and a C++17 compiler with CMake 3.24 or newer. On
+Ubuntu 24.04, including WSL 2 with WSLg, install the system libraries first:
 
-## Install, launch, update
+```sh
+sudo apt update
+sudo apt install git curl ca-certificates build-essential cmake ffmpeg mesa-utils \
+  libgl1 libegl1 libglu1-mesa libxkbcommon-x11-0 libxcb-cursor0 \
+  libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 \
+  libxcb-randr0 libxcb-shape0 libxcb-xfixes0 libxcb-xinerama0
+```
 
-```bash
+Track Face additionally uses PortAudio (`libportaudio2` on Ubuntu). For
+Blender bundles, compatibility FBX and character retargeting, install the
+pinned Blender 4.5.0 build with `./install.sh --with-blender`. You can also use
+Blender 4.5 LTS from `PATH` or set `RGBMOCAP_BLENDER=/path/to/blender` to override it.
+Install `libsm6` and `libice6` on Ubuntu 24.04 for the standalone Blender build.
+The optional installer verifies the official archive and stages the build
+before publishing it under `runtime_character/blender-linux`. If a later release
+changes the pin, keep the current directory as a backup before requesting the
+new managed Blender.
+
+On WSL 2, use a checkout on the Linux filesystem, for example in your home
+directory, and use the NVIDIA Windows host driver. WSL exposes CUDA to Ubuntu.
+The launcher defaults to Qt's XCB backend when X11 or XWayland provides
+`DISPLAY`. An explicit `QT_QPA_PLATFORM` takes precedence. If the Qt viewport
+uses software rendering on an NVIDIA WSLg system, check
+`glxinfo -B` and try the following per-launch settings:
+
+```sh
+QT_QPA_PLATFORM=xcb GALLIUM_DRIVER=d3d12 MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA ./RGBMoCap.sh
+```
+
+## Install, launch and update
+
+```sh
+git clone --branch linux_support --single-branch https://github.com/toyxyz/toyxyz_RGBMocap.git
+cd toyxyz_RGBMocap
 ./install.sh
 ./RGBMoCap.sh
 ./update.sh
 ```
 
-`install.sh` runs `tools/git_bootstrap.sh`: it downloads the pinned uv binary
-(SHA-256 checked), installs private CPython 3.10.22/3.12.10 under `.setup/python/`,
-then runs the same `tools/git_managed_install.py` as Windows with
-`installer/runtime-lock-linux.json` and `installer/git-support-lock-linux.json`.
-Runtimes use the POSIX prefix layout (`runtime/bin/python3.10`,
-`runtime/lib/python3.10/site-packages`); `mocap/runtime_registry.py` is the single
-place that maps profiles to interpreters on both platforms.
+Use Model Manager to check or download models for the selected pipeline.
+`update.sh` fast-forwards a clean local `linux_support` branch tracking its
+remote counterpart and verifies the installed runtimes. To upgrade from an older
+Linux build whose updater still asks for `main`, run `git pull --ff-only` on
+`linux_support` and then `./install.sh` once. Use `./install.sh --verify-all`
+for a full runtime check. Installation and runtime repair preserve models and
+projects.
 
-Wheels are extracted to `.setup/tmp` before being copied into a runtime, so a group
-briefly needs twice its file count on the install volume (about 55k files for ExMR).
-On a nearly full NTFS volume that can exhaust the Master File Table (`Failed to extend
-mft data allocation` in the kernel log, reported as "No space left on device" despite
-free space). Point extraction elsewhere with an existing absolute directory:
+The installer verifies the pinned uv executable, installs private Python 3.10
+and 3.12 under `.setup/python/`, and compiles the native motion correction
+module. Linux runtime paths use the POSIX prefix layout, defined alongside
+Windows paths in `mocap/runtime_registry.py`.
 
-```bash
-mkdir -p /tmp/rgbmocap-setup && RGB_MOCAP_SETUP_TEMP=/tmp/rgbmocap-setup ./install.sh
+On a filesystem with limited metadata space, wheel extraction can fail even
+when byte capacity remains. To place the installer's scratch files elsewhere,
+create an absolute directory and set `RGB_MOCAP_SETUP_TEMP`:
+
+```sh
+mkdir -p /tmp/rgbmocap-setup
+RGB_MOCAP_SETUP_TEMP=/tmp/rgbmocap-setup ./install.sh
 ```
 
-The Linux lock is derived from the Windows lock by `tools/linux_lock.py` (same names
-and versions; Linux-only requirements such as torch's `nvidia-*` and `triton` are added
-at their exact pins). Regenerate it after changing the Windows lock or the registry.
+Review both platform locks after changing the runtime registry or package
+pins. `tools/linux_lock.py` derives the Linux runtime lock from the Windows
+pins and adds exact versions for Linux-only requirements.

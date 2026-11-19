@@ -5,7 +5,7 @@ from runtime_support import cache_dependency_files
 
 ROOT=Path(__file__).resolve().parents[1]
 SKIP={'.git','__pycache__','.bootstrap','.runtime','.cache','.setup','.venv','.venv-flow','.venv-hand','.venv-htd','.venv-exmr','build','dist','releases','models','projects','cache','character_scenes','.build-inputs','runtime','runtime_gui','runtime_flow','runtime_hand','runtime_htd','runtime_exmr','runtime_character','runtime_mamma'}
-SKIP.update(('runtime_prompthmr','runtime_pear'))
+SKIP.update(('runtime_prompthmr','runtime_pear','runtime_gemx','runtime_sam31'))
 FORBIDDEN={'.exe','.dll','.pyd','.pyc','.whl','.pt','.pth','.ckpt','.safetensors','.onnx','.npz','.npy','.pkl','.fbx','.bvh','.blend','.mp4','.vrm','.pmx','.vmd','.pmd','.vpd','.pmm','.avi','.mov','.mkv','.webm','.zip','.7z'}
 
 def main():
@@ -44,11 +44,17 @@ def main():
             except (SyntaxError,UnicodeError) as exc:errors.append(str(exc))
     for name in ['README.md','LICENSE','THIRD_PARTY_NOTICES.md','docs/USER_GUIDE.md','docs/BUILD.md','installer/runtime-lock.json','installer/external-assets.json']:
         if not (ROOT/name).is_file():errors.append('Missing '+name)
-    lock=json.loads((ROOT/'installer/runtime-lock.json').read_text(encoding='utf-8'))
     registry=ROOT/'mocap/runtime_registry.py'
-    if not registry.is_file() or hashlib.sha256(registry.read_bytes()).hexdigest()!=lock.get('registry_sha256'):
-        errors.append('Runtime registry differs from installer/runtime-lock.json. Review the registry change and update its locked hash before distributing.')
-    if {g['key'] for g in lock['groups']}!={'shared','gui','flow','hand','htd','exmr'}:errors.append('Runtime profile set changed')
+    registry_hash=hashlib.sha256(registry.read_bytes()).hexdigest() if registry.is_file() else None
+    for name in ('installer/runtime-lock.json','installer/runtime-lock-linux.json'):
+        try:
+            lock=json.loads((ROOT/name).read_text(encoding='utf-8'))
+            if registry_hash is None or registry_hash!=lock.get('registry_sha256'):
+                errors.append('Runtime registry differs from '+name+'. Review and update the locked hash.')
+            if {g['key'] for g in lock['groups']}!={'shared','gui','flow','hand','htd','exmr'}:
+                errors.append('Runtime profile set changed in '+name)
+        except (OSError, ValueError, TypeError, KeyError) as error:
+            errors.append('Invalid runtime lock '+name+': '+str(error))
     print(json.dumps(dict(files=count,errors=errors),indent=2))
     return bool(errors)
 

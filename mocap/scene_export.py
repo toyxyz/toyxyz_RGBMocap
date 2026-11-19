@@ -7,6 +7,27 @@ from .people_store import root_for,load_people,safe_child,media_receipt
 from .result_artifacts import file_stat
 
 
+def scene_take_rows(people, person_ids, take_paths=None):
+    """Resolve exact saved take IDs, preserving the scene's person/take order."""
+    if (not isinstance(person_ids,list) or not 1<=len(person_ids)<=8
+            or any(type(ident) is not int for ident in person_ids) or len(set(person_ids))!=len(person_ids)):
+        raise ValueError('Select at least one person for the scene export.')
+    selected=[person for person in people['people'] if person['id'] in person_ids]
+    if len(selected)!=len(person_ids) or any(not person['takes'] for person in selected):
+        raise ValueError('The selected people or their saved takes changed.')
+    rows=[(person,take) for person in selected for take in person['takes']]
+    if take_paths is None:
+        return rows
+    if (not isinstance(take_paths,list) or not 1<=len(take_paths)<=4096
+            or any(not isinstance(path,str) for path in take_paths)):
+        raise ValueError('Choose at least one saved take for the scene export.')
+    requested=set(take_paths)
+    matched=[(person,take) for person,take in rows if take['project'] in requested]
+    if len(matched)!=len(take_paths) or {p['id'] for p,_ in matched}!=set(person_ids):
+        raise ValueError('The selected takes changed. Open Export and choose them again.')
+    return matched
+
+
 def context(root,project):
     root,project=Path(root).resolve(),Path(project).resolve()
     state=load_people(root)

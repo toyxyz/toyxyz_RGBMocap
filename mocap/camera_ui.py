@@ -131,13 +131,15 @@ class CameraTools:
         self.sync()
     def sync(self):
         w=self.w;view=w.motion_view;pear=getattr(w,'_pear_active',False)
+        native_soma=w.model_choice.currentData()=='gemx'
         self.scale.setVisible(bool(self.data and not pear and view.show_cameras and not self.preview() and any(c['displacement'] is not None for c in self.data['cameras'])))
         item=w.view_choice.model().item(w.view_choice.findText('Camera Preview'))
-        if item is not None:item.setEnabled(not pear)
-        if pear and self.preview():
+        if item is not None:item.setEnabled(not pear and not native_soma)
+        w.viewport_checks['show_cameras'].setVisible(not native_soma and not pear)
+        if (pear or native_soma) and self.preview():
             w.view_choice.setCurrentText(view.view_name)
         left=w.video_view.show_observations and w.project is not None and w.preview_data is not None
-        wanted=(view.show_cameras or self.preview() or left) and not pear
+        wanted=(view.show_cameras or self.preview() or left) and not pear and not native_soma
         background=self.background_options().get(w.model_choice.currentData(),False)
         key=(str(w.project),str(w.people_root),id(w.preview_data),bool(w.busy),pear,wanted,background)
         if key==self.key:

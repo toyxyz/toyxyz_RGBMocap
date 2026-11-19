@@ -13,10 +13,20 @@ import urllib.parse
 import urllib.request
 
 
+def verify_url(url, allowed_hosts):
+    parts = urllib.parse.urlsplit(url)
+    if parts.scheme != 'https':
+        raise ValueError('Pinned download requires HTTPS')
+    if allowed_hosts is not None and parts.hostname not in allowed_hosts:
+        raise ValueError('Unrecognized pinned download host: ' + str(parts.hostname))
+
+
 class HTTPSOnly(urllib.request.HTTPRedirectHandler):
+    def __init__(self, allowed_hosts=None):
+        self.allowed_hosts = allowed_hosts
+
     def redirect_request(self, req, fp, code, msg, headers, newurl):
-        if urllib.parse.urlsplit(newurl).scheme != 'https':
-            raise ValueError('Support download redirected outside HTTPS')
+        verify_url(newurl, self.allowed_hosts)
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
@@ -44,18 +54,20 @@ def transient(exc):
                             socket.timeout, socket.gaierror, http.client.IncompleteRead, http.client.RemoteDisconnected))
 
 
-def download(cache, name, spec, *, open_url=None, clock=time.monotonic, sleep=time.sleep, cancel=None):
-    if Path(name).name != name or name in ('', '.', '..') or ':' in name or '\\' in name:
-        raise ValueError('Invalid support download name')
+def download(cache, name, spec, *, filename=None, allowed_hosts=None, max_seconds=None,
+             open_url=None, clock=time.monotonic, sleep=time.sleep, cancel=None):
+    filename = name + '.zip' if filename is None else filename
+    for value in (name, filename):
+        if Path(value).name != value or value in ('', '.', '..') or ':' in value or '\\' in value:
+            raise ValueError('Invalid pinned download name')
     url = spec['url']
-    if urllib.parse.urlsplit(url).scheme != 'https':
-        raise ValueError('Support download must use HTTPS')
+    verify_url(url, allowed_hosts)
     size, expected = spec['bytes'], spec['sha256']
     if not isinstance(size, int) or size <= 0 or not re.fullmatch(r'[0-9a-f]{64}', expected):
         raise ValueError('Invalid support download pin')
     cache = Path(cache)
     cache.mkdir(parents=True, exist_ok=True)
-    path = cache / (name + '.zip')
+    path = cache / filename
     partial = path.with_name(path.name + '.partial')
     metadata = partial.with_name(partial.name + '.json')
     pin = dict(url=url, bytes=size, sha256=expected)
@@ -72,11 +84,11 @@ def download(cache, name, spec, *, open_url=None, clock=time.monotonic, sleep=ti
     except (OSError, ValueError, TypeError):
         reset()
     metadata.write_text(json.dumps(pin), encoding='utf8')
-    open_url = open_url or urllib.request.build_opener(HTTPSOnly()).open
+    open_url = open_url or urllib.request.build_opener(HTTPSOnly(allowed_hosts)).open
     began = clock()
     # Large Blender archives get a size-aware total budget, independent of the
     # finite socket timeout. All retries share this budget.
-    budget = max(180., min(7200., 120. + size / (128 * 1024)))
+    budget = max(180., min(7200., 120. + size / (128 * 1024))) if max_seconds is None else max_seconds
 
     def check():
         if cancel:
@@ -104,8 +116,7 @@ def download(cache, name, spec, *, open_url=None, clock=time.monotonic, sleep=ti
             request = urllib.request.Request(url, headers=headers)
             check()
             with open_url(request, timeout=min(30., max(1., budget - (clock() - began)))) as response:
-                if urllib.parse.urlsplit(response.geturl()).scheme != 'https':
-                    raise ValueError('Support response is not HTTPS')
+                verify_url(response.geturl(), allowed_hosts)
                 status = response.status
                 resume = status == 206
                 if resume:
@@ -140,7 +151,7 @@ def download(cache, name, spec, *, open_url=None, clock=time.monotonic, sleep=ti
             check()
             if not valid(partial, spec):
                 reset()
-                raise ValueError(name + ' archive hash or size mismatch')
+                raise ValueError(name + ' download hash or size mismatch')
             os.replace(partial, path)
             metadata.unlink(missing_ok=True)
             return path

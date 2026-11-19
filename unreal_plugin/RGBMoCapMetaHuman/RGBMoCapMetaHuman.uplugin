@@ -1,0 +1,30 @@
+{
+  "FileVersion": 3,
+  "Version": 8,
+  "VersionName": "0.4.0",
+  "FriendlyName": "RGB MoCap MetaHuman Connect",
+  "Description": "Proportion-aware Live Link body retargeting, estimated flat-floor reach and optional facial expressions for MetaHumans.",
+  "Category": "Animation",
+  "CreatedBy": "Toyxyz",
+  "CanContainContent": false,
+  "Modules": [
+    {
+      "Name": "RGBMoCapMetaHuman",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    },
+    {
+      "Name": "RGBMoCapMetaHumanEditor",
+      "Type": "Editor",
+      "LoadingPhase": "PostEngineInit"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "LiveLink",
+      "Enabled": true
+    }
+  ],
+  "EngineVersion": "5.7.0",
+  "IsExperimental": true
+}

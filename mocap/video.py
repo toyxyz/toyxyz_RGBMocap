@@ -19,7 +19,7 @@ def executable(name: str) -> str:
     return found
 
 
-def probe(path: Path) -> dict:
+def probe(path: Path, *, include_seek_offset: bool = False) -> dict:
     if not path.is_file():
         raise FileNotFoundError(f"Video not found: {path}")
     proc = subprocess.run([executable("ffprobe"), "-v", "error", "-show_streams", "-show_format", "-of", "json", str(path)],
@@ -30,9 +30,14 @@ def probe(path: Path) -> dict:
         raise ValueError("The selected file has no video track.")
     rate = float(Fraction(stream["avg_frame_rate"]))
     duration = float(stream.get("duration", raw["format"].get("duration", 0)))
-    return {"path": str(path.resolve()), "width": int(stream["width"]), "height": int(stream["height"]),
+    info = {"path": str(path.resolve()), "width": int(stream["width"]), "height": int(stream["height"]),
             "fps": rate, "duration": duration, "frames": int(stream.get("nb_frames", round(duration * rate))),
             "codec": stream["codec_name"], "bytes": path.stat().st_size}
+    if include_seek_offset:
+        container_start = raw["format"].get("start_time")
+        video_start = stream.get("start_time")
+        info["seek_offset"] = float(video_start) - float(container_start) if video_start is not None and container_start is not None else 0.
+    return info
 
 
 def select_preview(project: Path) -> Path:

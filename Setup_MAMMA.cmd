@@ -10,6 +10,7 @@ echo https://github.com/cuevhv/pytorch_sdf/blob/main/LICENSE before proceeding.
 echo Restricted components are downloaded from upstream for your permitted local use.
 choice /c YN /n /m "I reviewed these licenses and agree to the permitted use. Continue? [Y/N] "
 if errorlevel 2 exit /b 1
+if not errorlevel 1 exit /b 1
 if not exist "runtime\python.exe" (
   echo Run install.cmd first.
   pause

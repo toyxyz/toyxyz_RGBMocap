@@ -11,7 +11,16 @@ def git(*args):
 def main():
     with app_lock(ROOT):
         if git('status','--porcelain','--untracked-files=no'):raise RuntimeError('Tracked source files have local changes. Commit or back up changes before updating.')
-        if git('branch','--show-current')!='main':raise RuntimeError('Switch to the intended main branch before updating.')
+        expected = 'main' if os.name == 'nt' else 'linux_support'
+        if git('branch','--show-current') != expected:
+            raise RuntimeError(f'Switch to the intended {expected} branch before updating.')
+        if os.name != 'nt':
+            try:
+                upstream = git('rev-parse', '--symbolic-full-name', '@{upstream}')
+            except subprocess.CalledProcessError:
+                upstream = ''
+            if not upstream.startswith('refs/remotes/') or not upstream.endswith('/linux_support'):
+                raise RuntimeError('Set this branch to track the remote linux_support branch before updating.')
         before=git('rev-parse','HEAD');pending=ROOT/'.setup/git-sync.pending'
         pending.parent.mkdir(parents=True,exist_ok=True)
         previous_pending=pending.read_bytes() if pending.exists() else None

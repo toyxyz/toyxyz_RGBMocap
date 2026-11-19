@@ -2,14 +2,15 @@
 from __future__ import annotations
 from .tooltips import tooltip_text
 from .ui_refresh import batch_readiness
+from .validation_snapshot import read_only_checks
 import json
 from collections import OrderedDict
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QSize, QRect, Signal, QPersistentModelIndex, QEvent
 from PySide6.QtGui import QColor, QIcon, QPixmap, QPainter, QPen
-from PySide6.QtWidgets import (QWidget,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,
-    QListWidget,QListWidgetItem,QColorDialog,QComboBox,QFileDialog,
+from PySide6.QtWidgets import (QWidget,QFrame,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,
+    QListWidget,QListWidgetItem,QColorDialog,QComboBox,QFileDialog,QTabWidget,
     QStyledItemDelegate,QStyleOptionViewItem,QToolTip,QStyle,QMenu,QInputDialog,QMessageBox)
 
 from .people_store import load_people,save_people,root_for,safe_child,DEFAULT_COLOR
@@ -22,7 +23,7 @@ PEOPLE_HELP = (
     'edit their contact timings. Selecting a row does not change its checkbox.\n\n'
     'Right-click a row to rename it. Click its color square to change the display color. '
     'Names are used for FBX files and rigs; colors affect the preview only.\n\n'
-    'If a person has separate visible sections, use the take list to switch between them.\n\n'
+    'Use the take list to switch between saved frame ranges and see which results are ready.\n\n'
     'Automatic single-person tracking may switch people when they cross or overlap. '
     'Use Find person when keeping a specific identity matters.'
 )
@@ -200,16 +201,19 @@ class PeopleWorkspace:
         """Rebuild all available actor/take corrections against one plane."""
         from .motion_tools import RESULTS,result_sources,base_result,result_is_current
         jobs=[]
+        skipped=[]
+        bases=result_sources(base_result(kind))
         for person in self.people_state['people']:
-            for take in person.get('takes',[]):
+            for number,take in enumerate(person.get('takes',[]),1):
                 project=safe_child(self.people_root,take['project'])
-                bases=result_sources(base_result(kind))
                 available=all((project/RESULTS[base][0]).is_file() and result_is_current(project,base) for base in bases)
                 if not available:
                     if person.get('checked'):
-                        self.status.setText(f"{person['name']}: selected base motion is unavailable. Reconstruct it first.");return
+                        skipped.append(f"{person['name']}, Take {number}")
                     continue
                 jobs.extend((stage,['--project',str(project),'--result',kind]) for stage in ('correct','export'))
+        for name in skipped:
+            self.log.append(f'{name}: Apply Correction skipped this take because its base motion is unavailable. Reconstruct it first.')
         if not jobs:
             self.status.setText('Reconstruct a person before applying the shared scene floor.');return
         self._people_batch=True
@@ -240,10 +244,19 @@ class PeopleWorkspace:
         body = QWidget()
         layout = QHBoxLayout(body)
         layout.setContentsMargins(0,0,0,0);layout.setSpacing(2)
-        self.people_panel = QWidget()
+        self.people_panel = QFrame()
         self.people_panel.setObjectName('editor')
         self.people_panel.setMinimumWidth(158);self.people_panel.setMaximumWidth(240)
-        column = QVBoxLayout(self.people_panel)
+        tabs_layout = QVBoxLayout(self.people_panel)
+        tabs_layout.setContentsMargins(0,0,0,0)
+        self.people_tabs = QTabWidget()
+        self.people_tabs.setObjectName('peopleTabs')
+        tabs_layout.addWidget(self.people_tabs)
+        people_page = QWidget()
+        self.people_tabs.addTab(people_page, 'People')
+        self.people_tabs.addTab(self.build_stream_page(), 'Stream')
+        self.people_tabs.currentChanged.connect(self.stream_tab_changed)
+        column = QVBoxLayout(people_page)
         column.setContentsMargins(6,6,6,6);column.setSpacing(5)
         header=QHBoxLayout()
         header.addWidget(QLabel('People'));header.addStretch()
@@ -292,13 +305,24 @@ class PeopleWorkspace:
         self.find_person_button = QPushButton('Find person')
         self.find_person_button.setToolTip(tooltip_text('Find people in the video so you can choose who to reconstruct. Useful for multiple people or a specific person.'))
         self.find_person_button.clicked.connect(self.find_people)
-        bar.addWidget(self.find_person_button);bar.addStretch()
+        self.people_tracker = QComboBox()
+        self.people_tracker.setAccessibleName('Person tracking model')
+        self.people_tracker.addItem('Default', 'default')
+        self.people_tracker.addItem('SAM 3.1', 'sam31')
+        self.people_tracker.setToolTip('Choose the person tracker used by Find person.')
+        self._sam31_prompt = 'person'
+        bar.addWidget(self.find_person_button)
+        bar.addWidget(self.people_tracker)
+        bar.addStretch()
         movie_layout.addWidget(footer)
         layout.addWidget(movie,1)
         return body
 
     def update_people_readiness(self):
         enabled = not self.busy and not self.contact_saving
+        from .sam31_runtime import SUPPORTED
+        self.people_tracker.setVisible(self.model_choice.currentData() in SUPPORTED)
+        self.people_tracker.setEnabled(enabled)
         self.find_person_button.setEnabled(enabled and self.video_readable)
         self.people_list.setEnabled(enabled)
         self.person_takes.setEnabled(enabled)
@@ -322,7 +346,15 @@ class PeopleWorkspace:
         state = load_people(root)
         if state is None:
             self.reset_people()
-            if (Path(project)/'tracking.npz').is_file():self.begin_single_tracking(project,loading=True)
+            if manifest.get('pipeline',{}).get('model')=='gemx':
+                from .gemx_result import current
+                if current(project,manifest):
+                    from .single_actor import preferences
+                    self._single_actor=preferences(project)
+                    self._single_actor.update(frames=manifest['frames'], observations=manifest['frames'])
+                    self._single_actor_project=Path(project)
+                    self.update_single_actor_row('1 primary person reconstructed')
+            elif (Path(project)/'tracking.npz').is_file():self.begin_single_tracking(project,loading=True)
             return
         self._single_actor = self._single_actor_project = None
         self.motion_view.single_actor_visible=True
@@ -392,7 +424,8 @@ class PeopleWorkspace:
             thumbnail=person.get('thumbnail')
             item.setIcon(QIcon(QPixmap.fromImage(thumbnail)) if thumbnail is not None else QIcon())
             count=person.get('observations',0)
-            item.setToolTip(tooltip_text(f"{person['name']} | Automatic single-person target | {count} observed frames\n"
+            item.setToolTip(tooltip_text(f"{person['name']} | GEM-X primary person\nCheck to show in the viewport." if self.model_choice.currentData()=='gemx' else
+                f"{person['name']} | Automatic single-person target | {count} observed frames\n"
                 'Check to extract and show; select to edit. Use Find person for identity-aware selection.\n'
                 'This tracker may switch people when they cross or overlap.'))
             self.people_list.setCurrentItem(item)
@@ -453,10 +486,12 @@ class PeopleWorkspace:
         try:
             self.person_takes.clear()
             takes=person.get('takes',[]) if person else []
-            for index,take in enumerate(takes):
-                path=safe_child(self.people_root,take['project'])
-                self.person_takes.addItem(f"Take {index+1} | frames {take['first']+1}-{take['end']}",take['project'])
-                if path==self.project:self.person_takes.setCurrentIndex(index)
+            for choice in self.take_choices([person] if person else []):
+                index=self.person_takes.count()
+                self.person_takes.addItem(f'{choice.frames} · {choice.status}',
+                                          choice.project.relative_to(self.people_root.resolve()).as_posix())
+                self.person_takes.setItemData(index, choice.label, Qt.ToolTipRole)
+                if choice.project==self.project:self.person_takes.setCurrentIndex(index)
             self.person_takes.setVisible(len(takes)>1)
         finally:self.person_takes.blockSignals(False)
 
@@ -597,6 +632,9 @@ class PeopleWorkspace:
 
     def find_people(self):
         if self.busy:return
+        from .sam31_runtime import SUPPORTED
+        if self.people_tracker.currentData() == 'sam31' and self.model_choice.currentData() in SUPPORTED:
+            return self.find_people_sam31()
         from .models import missing
         unavailable=missing('people')
         if unavailable:
@@ -613,6 +651,47 @@ class PeopleWorkspace:
                 self.start_jobs([('people',['--project',str(self.people_root)])])
                 return
         self.input_jobs(['people'])
+
+    def find_people_sam31(self):
+        from .models import missing
+        from .sam31_prompt_ui import PromptDialog
+        from .sam31_runtime import location
+
+        if self.video_view.frame is None or self.contact_saving:
+            return
+        if missing('sam31_people'):
+            self.status.setText('Prepare SAM 3.1 in Model Manager.')
+            self.open_model_manager()
+            return
+        try:
+            location()
+        except RuntimeError as error:
+            self.status.setText(str(error))
+            QMessageBox.information(self, 'SAM 3.1 Runtime', str(error))
+            return
+        self.stop_playback()
+        fps = self.info['fps']
+        first, end = self.processing_range()
+        mark_time = self.source_offset + self.video_view.index / fps
+        dialog = PromptDialog(self, self.video_view.frame, self._sam31_prompt)
+        if not dialog.exec():
+            return
+        prompt = dialog.prompt.text().strip() or 'person'
+        points = dialog.frame.points
+        if points and not first <= mark_time < end:
+            self.status.setText('Seek to a frame inside the trim before marking people.')
+            return
+        self._sam31_prompt = prompt
+        options = ['--sam31-options', json.dumps(dict(prompt=prompt, time=mark_time, points=points),
+                                                 ensure_ascii=True)]
+        if self.people_root is not None:
+            manifest = json.loads((self.people_root/'project.json').read_text(encoding='utf-8'))
+            root_start = float(manifest['start'])
+            root_end = min(float(manifest['end']), root_start + manifest['frames'] / manifest['fps'])
+            if abs(first-root_start) < 1e-6 and abs(end-root_end) < 1e-6:
+                self.start_jobs([('sam31_people', ['--project', str(self.people_root), *options])])
+                return
+        self.input_jobs(['sam31_people'], people_options=options)
 
     def input_person_jobs(self,stages,result):
         if self.people_state is None:return False
@@ -688,32 +767,87 @@ class PeopleWorkspace:
             path=self._people_return_project;self._people_return_project=None
             self.activate_person(ident,path)
 
-    def export_checked_people(self):
-        """Multiple selected people/takes export separately, without fabricated gaps."""
-        if not self.people_state:return False
-        people=self.checked_people()
-        if len(people)<2 and not (people and len(people[0].get('takes',[]))>1):return False
-        from .motion_tools import selected_export,result_is_current
-        files=[]
+    @read_only_checks
+    def take_choices(self, people=None, paths=None, validate_scene=False):
+        from .motion_tools import base_result, selected_export
+        from .take_selection import TakeChoice, TakeIssue, diagnose_take
+
+        if not self.people_state or self.people_root is None:
+            return []
+        people=self.people_state['people'] if people is None else people
+        choices=[]
+        kind=self.active_result
+        edits=self.contact_tracks.get(base_result(kind),{})
         for person in people:
             takes=person.get('takes',[])
-            if not takes:
-                self.status.setText(f"No motion for {person['name']}. Run Reconstruct 3D first.");return True
             for number,take in enumerate(takes,1):
                 project=safe_child(self.people_root,take['project'])
-                source=selected_export(project,self.active_result) if result_is_current(project,self.active_result) else None
-                if source is None:
-                    self.status.setText(f"{person['name']}, take {number}: displayed result unavailable or correction pending.");return True
-                from .person_names import export_stem
-                stem=export_stem(person['name'])+(f'_take_{number:02d}' if len(takes)>1 else '')
-                files.append((source,stem))
-        folder=QFileDialog.getExistingDirectory(self,'Export Checked People')
+                if paths is not None and project not in paths:
+                    continue
+                active=project==self.project
+                pending=active and kind.startswith('corrected_') and (self.contact_saving or edits.get('unsaved'))
+                try:
+                    source=self.current_export() if active else selected_export(project,kind)
+                    issue=diagnose_take(project,kind,pending) if source is None else None
+                except (OSError,ValueError,KeyError,TypeError) as error:
+                    from .storage import path_error_message
+                    source=None
+                    issue=TakeIssue('Prepare Preview', 'Saved take data could not be verified. '+path_error_message(error),
+                                    'Select the take and click Prepare Preview.')
+                if source is not None and validate_scene:
+                    from .scene_export import context
+                    try:
+                        context(self.people_root,project)
+                    except (OSError,ValueError,KeyError) as error:
+                        from .storage import path_error_message
+                        issue=TakeIssue('Prepare Preview', path_error_message(error),
+                                        'Select the take and click Prepare Preview to rebuild the shared scene.')
+                        source=None
+                choices.append(TakeChoice(person['id'],person['name'],number,len(takes),
+                                          take['first'],take['end'],project,source,issue))
+        return choices
+
+    def checked_take_exports(self, paths=None):
+        problems=[]
+        if paths is None:
+            people=self.checked_people() if self.people_state is not None else []
+            if not people:
+                raise ValueError('Check a person in the People list to export their takes.')
+            for person in people:
+                if not person.get('takes'):
+                    problems.append(f"{person['name']}\nReason: This person has no saved takes.\nWhat to do: Run Reconstruct 3D.")
+            choices=self.take_choices(people,validate_scene=True)
+        else:
+            paths=set(paths)
+            if not paths:
+                raise ValueError('Choose at least one take to export.')
+            choices=self.take_choices(paths=paths,validate_scene=True)
+            if {choice.project for choice in choices}!=paths:
+                raise ValueError('The selected takes changed. Open Choose takes and update the selection.')
+        problems.extend(choice.issue.report(choice.label) for choice in choices if choice.issue is not None)
+        if problems:
+            raise ValueError('\n\n'.join(problems))
+        return choices
+
+    def export_checked_people(self, files):
+        options = self._source_export_options
+        fmt = options['format']
+        if len(files)==1:
+            choice=files[0]
+            self.export_source_take(choice.project,choice.source,choice.stem)
+            return
+        if fmt == 'blend' and options.get('blend_layout') == 'combined':
+            from .blend_export_ui import choose_combined
+            target = choose_combined(self)
+            if target is not None:
+                self.submit_fbx_exports([(choice.project,self.active_result,choice.source,target) for choice in files])
+            return
+        folder=QFileDialog.getExistingDirectory(self,'Export Checked Takes')
         if folder:
             copies=[]
             from .person_names import export_path
             used={p.name.casefold() for p in Path(folder).iterdir()}
-            for source,name in files:
-                target=export_path(folder,name,used,suffix='.'+getattr(self,'_source_export_options',{}).get('format','fbx'))
-                copies.append((source.parent,self.active_result,source,target))
+            for choice in files:
+                target=export_path(folder,choice.stem,used,suffix='.'+fmt)
+                copies.append((choice.project,self.active_result,choice.source,target))
             self.submit_fbx_exports(copies)
-        return True

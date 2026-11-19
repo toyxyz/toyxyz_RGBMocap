@@ -21,8 +21,10 @@ __pycache__/
 *.exp
 *.pdb
 *.zip
+!/blender_addon/rgbmocap_bone_stream.zip
 *.7z
 *.tar*
+!/developer-build/unreal-live-link/Source/RGBMoCapLiveLinkEditor.Target.cs
 *.log
 *.partial
 *.part
@@ -51,6 +53,7 @@ __pycache__/
 !/docs/samples/motion-capture.mp4
 !/docs/samples/character-retargeting.mp4
 !/docs/samples/multi-cam-mocap.mp4
+!/docs/samples/streaming-to-blender.mp4
 *.avi
 *.mov
 *.mkv

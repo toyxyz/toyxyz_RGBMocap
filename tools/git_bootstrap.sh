@@ -2,6 +2,8 @@
 # POSIX counterpart of git_bootstrap.ps1: verified uv, private CPython, then the shared Git installer.
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+. "$root/tools/posix_install_guard.sh"
+rgbmocap_require_posix_install "$root"
 setup="$root/.setup"
 resources="$setup/bootstrap-git"
 lock="$root/installer/runtime-lock-linux.json"

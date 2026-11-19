@@ -187,6 +187,11 @@ every clip fits memory; the full 60-second limit has not been validated.
    existing 52-bone source-export convention. Use **File > Save Project As** to
    keep a named copy; reopen its `project.json` with **File > Open Project**.
 
+Existing results can restore camera thumbnails and switching from the videos
+prepared for the saved take. If you move or lose the original files, you can
+still review the saved range for each available view. A camera with no video
+available is disabled. Restore the original camera files before reconstructing.
+
 Resource monitoring remains active. Fitting can take several minutes even for
 a short clip; an animated progress indicator is used when the stage cannot
 report a meaningful percentage. The app uses SAM 2.1 and FP32 fitting; SAM 3.1

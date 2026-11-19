@@ -42,21 +42,46 @@ def main(args):
             folder=Path(job['animation'])/take['folder']
             options=dict(format=job.get('format','fbx'),include_mesh=job.get('include_mesh',True))
             invoke('export',out,folder,target,json.dumps(take.get('transform')),job['source_name'],json.dumps(options))
+        if job.get('export_face'):
+            from ..face_export import publish
+            rows=[(dict(project=take['source'],target=target,rig_name=job['source_name'],
+                        face_format=job.get('face_format','txt'),smooth_face=job.get('smooth_face',False)),None,False)
+                  for take,target in zip(job['takes'],job['files']) if take.get('source')]
+            publish(rows,lambda _event,message:report(message))
         result=dict(files=job['files'])
     else:
         from .source import prepare,stamp
-        from .pipeline import run
+        from mocap import gemx_result
         asset=Path(job['asset']);kind=json.loads((asset/'import.json').read_text(encoding='utf-8'))['kind'];takes=[]
         for i,take in enumerate(job['takes']):
             folder=out/f'take-{i}';folder.mkdir()
             report(f'Take {i+1}/{len(job["takes"])}: preparing selected source')
             for name in [f'{kind}-rest.blend',f'{kind}-rig.json',f'{kind}-canonical.npz',f'{kind}-contact-geometry.npz','import.json']:
                 shutil.copy2(asset/name,folder/name)
-            receipt=prepare(Path(take['project']),job['result'],folder)
-            report(f'Take {i+1}/{len(job["takes"])}: solving contact retargeting')
-            diagnostic=run(folder,kind)
-            report(f'Take {i+1}/{len(job["takes"])}: baking body bones')
-            invoke('bake',folder,kind)
+            project=Path(take['project'])
+            if gemx_result.is_project(project):
+                from mocap.motion_tools import result_is_current
+                from mocap.gemx_correct import selected
+                if not result_is_current(project, job['result']):
+                    raise ValueError('The selected native SOMA result is unavailable.')
+                state=gemx_result.manifest(project)
+                files=('project.json',gemx_result.RECEIPT,*gemx_result.FILES)
+                folder_source = project if job['result']=='initial' else selected(project)[0]
+                files = [project/name for name in files]
+                if folder_source != project:
+                    from mocap.gemx_correct import RECORD
+                    files += [project/RECORD, folder_source/gemx_result.POSE, folder_source/gemx_result.MESH]
+                receipt=dict(frames=state['frames'],fps=state['fps'],source_stats=stamp(files))
+                diagnostic=dict(source='SOMA Native77',method='rest-relative')
+                report(f'Take {i+1}/{len(job["takes"])}: baking native SOMA motion')
+                invoke('bake_soma',folder,kind,project,folder_source)
+            else:
+                from .pipeline import run
+                receipt=prepare(project,job['result'],folder)
+                report(f'Take {i+1}/{len(job["takes"])}: solving contact retargeting')
+                diagnostic=run(folder,kind)
+                report(f'Take {i+1}/{len(job["takes"])}: baking body bones')
+                invoke('bake',folder,kind)
             if stamp(map(Path,receipt['source_stats']))!=receipt['source_stats']:
                 raise RuntimeError('Source changed during retargeting. Apply your changes and retarget again.')
             atomic_json(folder/'receipt.json',dict(receipt,diagnostic=diagnostic))

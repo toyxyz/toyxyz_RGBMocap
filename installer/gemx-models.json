@@ -1,0 +1,90 @@
+{
+  "models": [
+    {
+      "key": "gemx_pose",
+      "name": "GEM-X Body Pose",
+      "relative": "gemx/body_s240000.ckpt",
+      "url": "https://huggingface.co/nvidia/GEM-X",
+      "download_url": "https://huggingface.co/nvidia/GEM-X/resolve/b111f2dcf3ebcf57965fd53499cb645dfa5ba25c/body_s240000.ckpt?download=true",
+      "minimum_bytes": 3538753341,
+      "expected_sha256": "e244d27f2834eb6382c5f6b9cbf2a38681b685514a1b2e86f8f3d2592d614959"
+    },
+    {
+      "key": "gemx_observations",
+      "name": "GEM-X Native77 2D Keypoints",
+      "relative": "gemx/vitpose.pth",
+      "url": "https://huggingface.co/nvidia/GEM-X",
+      "download_url": "https://huggingface.co/nvidia/GEM-X/resolve/b111f2dcf3ebcf57965fd53499cb645dfa5ba25c/vitpose.pth?download=true",
+      "minimum_bytes": 3388483384,
+      "expected_sha256": "8e3eec71dbd6bb745eba8c6debe3e4b97bcfd1d01f300099f2eedf50b9a80c8e"
+    },
+    {
+      "key": "gemx_motion",
+      "name": "GEM-X Native77 Body Motion",
+      "relative": "gemx/motion_native77_e774_s292175.ckpt",
+      "url": "https://huggingface.co/nvidia/GEM-X",
+      "download_url": "https://huggingface.co/nvidia/GEM-X/resolve/b111f2dcf3ebcf57965fd53499cb645dfa5ba25c/motion_native77_e774_s292175.ckpt?download=true",
+      "minimum_bytes": 187134331,
+      "expected_sha256": "c7790f4587e518bcea40cb8281c9be2233d37f6caa668835462542760dcf82aa"
+    },
+    {
+      "key": "gemx_stats",
+      "name": "GEM-X Body Motion Statistics",
+      "relative": "gemx/motion_stats_raw.npz",
+      "url": "https://huggingface.co/nvidia/GEM-X",
+      "download_url": "https://huggingface.co/nvidia/GEM-X/resolve/b111f2dcf3ebcf57965fd53499cb645dfa5ba25c/motion_stats_raw.npz?download=true",
+      "minimum_bytes": 21320,
+      "expected_sha256": "b7719b634e0fc1f001005605d117d77448c8d4a110923149df58529c68112ed6"
+    },
+    {
+      "key": "gemx_soma_neutral",
+      "name": "SOMA-X Neutral Shape",
+      "relative": "gemx/SOMA_neutral.npz",
+      "url": "https://huggingface.co/nvidia/SOMA-X",
+      "download_url": "https://huggingface.co/nvidia/SOMA-X/resolve/d281db2d01553f7230c56e764cec00fe27ef23f7/SOMA_neutral.npz?download=true",
+      "minimum_bytes": 26608121,
+      "expected_sha256": "5829af4a5333abdba5ad449360b868faacee99d395971e62f35c0e7169432b63"
+    },
+    {
+      "key": "gemx_soma_rig",
+      "name": "SOMA-X Template Rig",
+      "relative": "gemx/SOMA_template_rig.usda",
+      "url": "https://huggingface.co/nvidia/SOMA-X",
+      "download_url": "https://huggingface.co/nvidia/SOMA-X/resolve/d281db2d01553f7230c56e764cec00fe27ef23f7/SOMA_template_rig.usda?download=true",
+      "minimum_bytes": 28306038,
+      "expected_sha256": "a952cb7bdf4ccd801e355d53122d395b985b69d0d9181439edad5081bb171856"
+    },
+    {
+      "key": "gemx_soma_transforms",
+      "name": "SOMA-X Procedural Transforms",
+      "relative": "gemx/SOMA_procedural_transforms.json",
+      "url": "https://huggingface.co/nvidia/SOMA-X",
+      "download_url": "https://huggingface.co/nvidia/SOMA-X/resolve/d281db2d01553f7230c56e764cec00fe27ef23f7/SOMA_procedural_transforms.json?download=true",
+      "minimum_bytes": 20045,
+      "expected_sha256": "9853e19ab51625ffaa7d9e7ccf0e443272c2740837604e6bacd66604e8edf509"
+    },
+    {
+      "key": "gemx_soma_correctives",
+      "name": "SOMA-X Geometry Correctives",
+      "relative": "gemx/correctives_model.pt",
+      "url": "https://huggingface.co/nvidia/SOMA-X",
+      "download_url": "https://huggingface.co/nvidia/SOMA-X/resolve/d281db2d01553f7230c56e764cec00fe27ef23f7/correctives_model.pt?download=true",
+      "minimum_bytes": 70549157,
+      "expected_sha256": "411d061a651051a7a4ec941543495d35eac21e5a7a69c8ce042b89cd12772a43"
+    },
+    {
+      "key": "gemx_detector",
+      "name": "GEM-X Person Detector / YOLOX",
+      "relative": "gemx/yolox_humanart.onnx",
+      "url": "https://github.com/open-mmlab/mmpose/tree/main/projects/rtmpose",
+      "download_url": "https://download.openmmlab.com/mmpose/v1/projects/rtmposev1/onnx_sdk/yolox_x_8xb8-300e_humanart-a39d44ed.zip",
+      "minimum_bytes": 396283264,
+      "expected_sha256": "8e9ea96a176bd48501eaaa77216e49ee30794d2f8ba80c7b9862beca4ea972da"
+    }
+  ],
+  "detector_archive": {
+    "url": "https://download.openmmlab.com/mmpose/v1/projects/rtmposev1/onnx_sdk/yolox_x_8xb8-300e_humanart-a39d44ed.zip",
+    "bytes": 368200375,
+    "sha256": "1c6fccc5cd450eb563b1fe4eba13c9bdf9ea8263b6ae1cb3ada765aa4ebea2c7"
+  }
+}

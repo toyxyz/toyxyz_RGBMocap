@@ -6,6 +6,23 @@ These references do not change the separate licenses or permissions for code,
 model weights, body data or input footage. Supporting models retain their own
 upstream acknowledgements; see [third-party notices](../THIRD_PARTY_NOTICES.md).
 
+## GEM-X and SOMA-X
+
+[GEM-X model card](https://huggingface.co/nvidia/GEM-X) · [Referenced GENMO paper](https://arxiv.org/abs/2505.01425)
+
+```bibtex
+@article{li2025genmo,
+  title={GENMO: A GENeralist Model for Human MOtion},
+  author={Li, Jiefeng and Cao, Jinkun and Zhang, Haotian and Rempe, Davis and Kautz, Jan and Iqbal, Umar and Yuan, Ye},
+  journal={arXiv preprint arXiv:2505.01425},
+  year={2025}
+}
+```
+
+Credit [SOMA: Unifying Parametric Human Body Models](https://github.com/NVlabs/SOMA-X)
+for the native skeleton and geometry. RGB MoCap uses GEM-X's fixed-camera
+Body Motion workflow with native SOMA.
+
 ## PEAR
 
 [Paper](https://doi.org/10.1145/3799902.3811096) · [Official citation](https://github.com/Pixel-Talk/PEAR/blob/8e915f8c3dfae4063d66763e6296b2b0b02eb303/README.md#-citation)
