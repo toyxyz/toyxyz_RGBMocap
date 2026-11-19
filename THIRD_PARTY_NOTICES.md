@@ -21,8 +21,15 @@ Character import, baking and portable scene export use a separate, unmodified Bl
 FBX sampler in `mocap/retarget/selective_fbx.py` retains Blender's GPL terms.
 The VRM add-on, mmd_tools and OpenCC retain their own notices under
 `third_party/character_import` (VRM_LICENSE.txt, VRM_MIT.txt, VRM_NOTICE.txt,
-MMD_LICENSE.txt, OPENCC_LICENSE.txt). Imported character files and textures remain the user's assets;
-they are not bundled with the application.
+MMD_LICENSE.txt, OPENCC_LICENSE.txt). User-imported character files and textures stay in the user's workspace.
+
+The UE5 Mannequin FBX profile includes Manny and Quinn mesh and reference rig
+data derived from Epic Games' installed Unreal Engine 5.7.4 Third Person
+template. The [Epic asset notice](third_party/ue5_mannequin/NOTICE.md) records
+their source, conversion and applicable Unreal Engine EULA. RGB MoCap uses
+Unreal® Engine template assets. Unreal® is a trademark or registered trademark
+of Epic Games, Inc. in the United States of America and elsewhere.
+Unreal® Engine, Copyright 1998 – 2026, Epic Games, Inc. All rights reserved.
 
 | Component | License / essential conditions |
 | --- | --- |

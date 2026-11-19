@@ -11,7 +11,7 @@ from .tooltips import tooltip_text
 
 class SourceExportDialog(QDialog):
     def __init__(self,parent=None,*,show_take_scope=False,default_all_takes=False,validate=None,take_choices=None):
-        super().__init__(parent);self.setWindowTitle('Export');self.setFixedSize(660,485)
+        super().__init__(parent);self.setWindowTitle('Export');self.setFixedSize(660,520)
         self.show_take_scope=show_take_scope
         self.validate=validate
         self.checked_exports=None
@@ -48,6 +48,25 @@ class SourceExportDialog(QDialog):
         if self.model!='gemx':self.profile.addItem('3ds Max Biped','biped')
         self.profile.setToolTip('Generic / Blender keeps anatomical names and original rotation orders. 3ds Max Biped uses Character Studio names and uniform ZXY rotations. Both keep metre units and Y up.')
         self.profile_label=QLabel('BVH profile');form.addRow(self.profile_label,self.profile)
+        self.fbx_profile = QComboBox()
+        self.fbx_profile.addItem('Generic / Blender', 'generic')
+        self.fbx_profile.addItem('UE5 Mannequin (Manny/Quinn)', 'ue5_mannequin')
+        self.fbx_profile_label = QLabel('FBX profile')
+        form.addRow(self.fbx_profile_label, self.fbx_profile)
+        self.ue5_target = QComboBox()
+        self.ue5_target.addItem('Manny', 'manny')
+        self.ue5_target.addItem('Quinn', 'quinn')
+        self.ue5_target_label = QLabel('Target mannequin')
+        form.addRow(self.ue5_target_label, self.ue5_target)
+        self.ue5_root = QComboBox()
+        self.ue5_root.addItem('Root Motion', False)
+        self.ue5_root.addItem('In Place', True)
+        self.ue5_root.setToolTip('Root Motion keeps planar travel on the root bone. In Place removes that travel.')
+        self.ue5_root_label = QLabel('Root movement')
+        form.addRow(self.ue5_root_label, self.ue5_root)
+        self.ue5_mesh = QCheckBox('Include Mannequin Mesh')
+        self.ue5_mesh.setToolTip('Include the selected mannequin’s skinned mesh for projects without SK_Mannequin.')
+        layout.addWidget(self.ue5_mesh)
         self.fbx_rest_pose = QComboBox()
         self.fbx_rest_pose.addItem('T-pose', 't')
         self.fbx_rest_pose.addItem('A-pose', 'a')
@@ -90,7 +109,7 @@ class SourceExportDialog(QDialog):
         layout.addStretch(1)
         buttons=QDialogButtonBox(QDialogButtonBox.Save|QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Save).setText('Continue...');buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);layout.addWidget(buttons)
-        for signal in (self.format.currentIndexChanged,self.fbx_rest_pose.currentIndexChanged,self.blend_layout.currentIndexChanged,self.whole_scene.toggled,self.animate_camera.toggled):signal.connect(self.update_format)
+        for signal in (self.format.currentIndexChanged,self.fbx_profile.currentIndexChanged,self.fbx_rest_pose.currentIndexChanged,self.blend_layout.currentIndexChanged,self.whole_scene.toggled,self.animate_camera.toggled):signal.connect(self.update_format)
         self.update_format()
     def update_format(self):
         fmt=self.format.currentData();blend=fmt=='blend';whole=blend and self.model=='mamma' and self.whole_scene.isChecked()
@@ -99,20 +118,32 @@ class SourceExportDialog(QDialog):
         self.choose_takes_button.setVisible(self.take_scope.currentData()=='selected')
         self.validation_error.hide()
         self.profile_label.setVisible(fmt=='bvh');self.profile.setVisible(fmt=='bvh')
-        self.fbx_compatibility.setVisible(fmt=='fbx')
+        mannequin = fmt == 'fbx' and self.fbx_profile.currentData() == 'ue5_mannequin'
+        for control in (self.fbx_profile_label, self.fbx_profile):
+            control.setVisible(fmt == 'fbx')
+        for control in (self.ue5_target_label, self.ue5_target, self.ue5_root_label, self.ue5_root):
+            control.setVisible(mannequin)
+        self.ue5_mesh.setVisible(mannequin)
+        self.fbx_compatibility.setVisible(fmt == 'fbx' and not mannequin)
         self.blend_layout_label.setVisible(blend and not whole)
         self.blend_layout.setVisible(blend and not whole)
-        self.fbx_rest_label.setVisible(fmt == 'fbx')
-        self.fbx_rest_pose.setVisible(fmt == 'fbx')
+        self.fbx_rest_label.setVisible(fmt == 'fbx' and not mannequin)
+        self.fbx_rest_pose.setVisible(fmt == 'fbx' and not mannequin)
         leading = self.fbx_rest_pose.currentText() if fmt == 'fbx' else 'T-pose'
         self.tpose.setText(f'Add {leading} before motion')
         self.tpose.setToolTip(f'Insert the {leading} at the first motion frame root position. The original motion starts one frame later.')
-        self.whole_scene.setVisible(blend and self.model=='mamma');self.tpose.setEnabled(not whole);self.tpose.setVisible(not whole)
-        for control in (self.place_at_origin,self.symmetric_rest):control.setVisible(not blend);control.setEnabled(not blend)
+        self.whole_scene.setVisible(blend and self.model=='mamma')
+        self.tpose.setVisible(not whole and not mannequin)
+        for control in (self.place_at_origin, self.symmetric_rest):
+            control.setVisible(not blend and not mannequin)
         self.animate_camera.setVisible(blend and not whole)
         camera=blend and not whole and self.model in ('flowhmr','exmr')
         self.background_refine.setVisible(camera);self.background_refine.setEnabled(self.animate_camera.isChecked())
         self.scale_label.setVisible(camera);self.translation_scale.setVisible(camera);self.translation_scale.setEnabled(self.animate_camera.isChecked())
+        if mannequin:
+            self.note.setText('Exports animation for SK_Mannequin. Include the mesh to import into a project without that skeleton.')
+            self.layout().activate()
+            return
         if self.model=='gemx':
             self.symmetric_rest.hide();self.symmetric_rest.setEnabled(False)
             if blend:self.tpose.hide();self.animate_camera.hide()
@@ -169,6 +200,12 @@ class SourceExportDialog(QDialog):
                         **selection)
         value=dict(format='blend_scene' if whole else fmt,bvh_profile=self.profile.currentData() if fmt=='bvh' else 'generic',prepend_tpose=self.tpose.isChecked() and not whole,**selection)
         if fmt == 'fbx':
+            value['fbx_profile'] = self.fbx_profile.currentData()
+            if value['fbx_profile'] == 'ue5_mannequin':
+                return dict(value, ue5_target=self.ue5_target.currentData(),
+                            ue5_in_place=self.ue5_root.currentData(), ue5_include_mesh=self.ue5_mesh.isChecked(),
+                            prepend_tpose=False,
+                            place_at_origin=False, symmetric_rest=False)
             value['fbx_compatibility'] = self.fbx_compatibility.isChecked()
             value['fbx_rest_pose'] = self.fbx_rest_pose.currentData()
         value.update(place_at_origin=self.place_at_origin.isChecked() and fmt in ('fbx','bvh'),symmetric_rest=self.model!='gemx' and self.symmetric_rest.isChecked() and fmt in ('fbx','bvh'))

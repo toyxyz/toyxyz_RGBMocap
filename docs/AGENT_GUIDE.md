@@ -564,6 +564,29 @@ selected reference. Older requests without the field use the legacy writer
 behavior. Validate the bind and keyed/fractional poses after reimport, including
 the Blender compatibility pass.
 
+The `ue5_mannequin` FBX profile selects `ue5_target` (`manny` or `quinn`)
+and `ue5_in_place`. The default-off `ue5_include_mesh` sends the chosen
+stock skin to the Blender worker. The profile uses the same committed take
+and generation checks as Generic FBX and supports mapped SMPL and SOMA
+Native77 inputs. `mocap/ue5_reference.py` loads the bundled reference and skin
+under `third_party/ue5_mannequin`. Keep the Epic notice with the bundle and
+match the skin and reference to the same template build. See the bundle notice
+for provenance and regeneration commands. Export needs no Unreal process.
+
+`mocap/ue5_retarget.py` uses source pose deltas, target lengths, a fixed-length
+leg solve and target-oriented IK helper tracks. The stock root carries planar
+translation only. `mocap/ue5_fbx_scene.py` writes the optional skin and
+animation with Blender in the normal owned export staging directory. Preserve a
+unit-scale root and centimetre bone offsets. Match the elbow and wrist
+directions from source joint positions. Calibrate palm and finger axes from
+both rigs' geometry, including the source's registered terminal tip offsets.
+Test Manny and Quinn against Epic's existing `SK_Mannequin`. Compare the
+evaluated elbow plane, palm and all digit directions to the source alongside
+timing, scale and skeleton-asset preservation. With the skin enabled,
+also verify mesh deformation in Blender and import into a fresh Unreal
+project with no mannequin assets. Check that Unreal creates a Skeletal Mesh,
+Skeleton and Animation Sequence with the stock hierarchy.
+
 ### Portable Blender export implementation
 
 Source FBX/BVH requests accept default-off `place_at_origin` and `symmetric_rest`.

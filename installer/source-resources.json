@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "purpose": "Hash-verified importer assets, prebuilt correction module, README samples, and the Blender stream add-on package",
+  "purpose": "Hash-verified importer assets, UE5 mannequin data, prebuilt correction module, README samples, and the Blender stream add-on package",
   "files": [
     {
       "path": "third_party/character_import/io_scene_vrm/common/mtoon0.blend",
@@ -106,6 +106,26 @@
       "path": "blender_addon/rgbmocap_bone_stream.zip",
       "bytes": 9439,
       "sha256": "3e51960b75797f08a7e209ff50e8868c2ff0172a16582f3b6a853b59b5f04e72"
+    },
+    {
+      "path": "third_party/ue5_mannequin/NOTICE.md",
+      "bytes": 2333,
+      "sha256": "d892a2351b674d57d78a9c70f838e04ffe4eedd9d4222eb22bc05d06235acbda"
+    },
+    {
+      "path": "third_party/ue5_mannequin/manny.npz",
+      "bytes": 2947617,
+      "sha256": "0b74c554a3d59daf4b6999b6b13a25674f0d0af9e763508af727b63ffd542139"
+    },
+    {
+      "path": "third_party/ue5_mannequin/quinn.npz",
+      "bytes": 2708284,
+      "sha256": "6ba9cc87276c7c02644fb038af6d8daf3de66fd1ab9d77ededa2e3930cd1244c"
+    },
+    {
+      "path": "third_party/ue5_mannequin/reference.json",
+      "bytes": 35878,
+      "sha256": "4e133ce1a5540c1b064c632173976d471b003e2b0cc6bbebef3f08bb25443a27"
     }
   ]
 }

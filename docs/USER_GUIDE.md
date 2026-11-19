@@ -866,6 +866,37 @@ GEM-X offers [Native77 FBX, BVH and Blender exports](#gem-x-soma-blender-bundles
 For FBX, enable **FBX Compatibility (Maya)** to use the included Blender
 runtime for the final export. The file retains the skeleton's rest pose and
 animation and can also be opened in Blender. This option defaults off.
+**UE5 Mannequin (Manny/Quinn)** exports animation for Unreal's stock Third
+Person mannequins. The app includes Manny and Quinn reference rigs and
+base skinned meshes. Export uses the included Blender runtime and works
+without an Unreal installation on the export PC. The bundled meshes retain
+their [Epic Games terms](../third_party/ue5_mannequin/NOTICE.md).
+
+1. In RGB MoCap, choose **File → Export → FBX → UE5 Mannequin (Manny/Quinn)**.
+   Select the target mannequin and take or takes. Enable **Include Mannequin
+   Mesh** to put the selected skinned mesh and motion into the same FBX.
+   The checkbox defaults off. With it enabled, the FBX includes geometry,
+   normals, UVs and skin weights. Assign materials in the destination project.
+2. For animation-only FBX, select the existing **SK_Mannequin** skeleton in
+   Unreal. Turn off **Import Mesh** and enable **Import Animations** in the
+   legacy dialog. With Interchange, use **Import Only Animations**.
+   For a mesh-bearing FBX in a fresh project, import the **Skeletal Mesh**
+   with **Import Animations** enabled and leave **Skeleton** empty. Unreal
+   creates a matching Skeleton and Animation Sequence along with the mesh.
+3. In the Animation Sequence, use the matching Manny or Quinn as the preview
+   mesh and **Asset Details → Animation → Retarget Source Asset**. This uses
+   the proportions the FBX was authored for, including Quinn's pelvis
+   height. The sequence is ready for Sequencer or an Animation Blueprint.
+   For gameplay root-motion extraction, turn on **Enable Root Motion**.
+
+**Root Motion** starts each take at the origin and stores planar travel on
+`root`, scaled to the target's leg length. **In Place** removes that planar
+travel. Vertical motion and heading stay in the pelvis in both modes.
+The file preserves take timing and the stock mannequin's rest hierarchy.
+It includes finger motion and baked leg reach using the target lengths.
+Project-specific corrective pose processing and mannequin materials come
+from the Unreal project.
+
 For SMPL BVH, choose **Generic / Blender** (default) or **3ds Max Biped** in the
 **BVH profile** list.
 When there are multiple takes to choose from, **Export scope** offers three choices.
