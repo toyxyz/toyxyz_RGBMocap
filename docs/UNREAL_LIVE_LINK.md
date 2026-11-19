@@ -18,15 +18,33 @@ The old sample project is no longer distributed.
 
 ## Prepare once
 
-1. Install Unreal Engine **5.7 or later**, Visual Studio 2022 **Desktop
-   development with C++**, and a Windows SDK. The tested engine is **5.7.4**;
-   later versions are not independently verified.
-2. Close RGB MoCap and run **Setup_UnrealStream.cmd** in the app folder.
-   For a custom Unreal installation, run:
+1. Complete the normal RGB MoCap `install.cmd` setup first; this creates
+   `runtime\python.exe`. Install Unreal Engine **5.7 or later** and, in Visual
+   Studio Installer, add Visual Studio 2022 **Desktop development with C++**,
+   including the MSVC C++ toolchain and a Windows SDK. An Unreal installation
+   alone does not establish that these compiler components are installed.
+   The tested engine and prebuilt receiver are **5.7.4**; later versions are not
+   independently verified and other engine builds may need a receiver rebuild.
+2. Close RGB MoCap. In File Explorer, open its app folder containing
+   `RGBMoCap.cmd`, `install.cmd` and `Setup_UnrealStream.cmd`, then double-click
+   **Setup_UnrealStream.cmd**. Keep the command window open until setup finishes.
+   Alternatively, open PowerShell in that folder and run:
 
-   ```cmd
-   Setup_UnrealStream.cmd --engine "D:\Epic Games\UE_5.7"
+   ```powershell
+   .\Setup_UnrealStream.cmd
    ```
+
+   Automatic discovery checks `Program Files\Epic Games\UE_5.*`. For a custom
+   installation or several installed engines, explicitly select the engine used
+   by the receiving project:
+
+   ```powershell
+   .\Setup_UnrealStream.cmd --engine "D:\Epic Games\UE_5.7"
+   ```
+
+   Pass the Unreal installation root containing the `Engine` folder, not an
+   editor executable or the receiving project's folder. In Command Prompt, use
+   the same command without the leading `.\`.
 
 3. Setup builds RGB MoCap's small provider module against that installation,
    starts it to verify the app/provider handshake, and records a source/module/
@@ -34,8 +52,19 @@ The old sample project is no longer distributed.
    Unreal binaries. The installed Unreal Engine must remain available.
    Temporary compiler intermediates are removed after success; developers can
    retain them with `--keep-build-cache`.
-4. If the provider source or Unreal installation changes, rerun setup. A failed
-   build/startup restores the previous receipt; changed source still needs a successful setup.
+4. Successful setup ends with **Live Link support built. In Stream choose
+   Unreal Live Link, then check people.** Reopen RGB MoCap and choose
+   **Stream > Target > Unreal Live Link**. This setup builds the app sender;
+   installing the MetaHuman Connect ZIP in the receiving project is separate.
+5. If setup reports **Live Link setup failed**, do not treat the final
+   press-any-key prompt as success. Read the preceding error: run `install.cmd`
+   if the Python runtime is missing, select `--engine` if discovery failed, or
+   repair the Visual Studio C++ workload/Windows SDK if compilation failed.
+   Retry after correcting the cause. Inspect/redact logs before sharing them;
+   preserve projects, models and existing setup receipts.
+6. If the provider source or Unreal installation changes, rerun setup. A failed
+   build/startup restores the previous receipt; changed source still needs a
+   successful setup. Ordinary motion playback does not require rebuilding.
 
 The current app and plugin use source-qualified subject evaluation, matching
 rig/reference IDs and body/face frame revisions. Update them together and rerun

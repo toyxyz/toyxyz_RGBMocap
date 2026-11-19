@@ -398,6 +398,26 @@ See [the optional setup and retarget guide](UNREAL_LIVE_LINK.md). Stream target
 verify commandlet startup before keeping a receipt in `runtime_unreal_stream`.
 They do not modify the shared inference registry or distribute engine binaries.
 
+Before running it, verify the normal `install.cmd` runtime exists, close RGB
+MoCap and check Unreal plus Visual Studio 2022 **Desktop development with C++**
+(MSVC toolchain and Windows SDK). Do not infer compiler readiness merely from
+an installed Unreal editor. The prebuilt MetaHuman Connect receiver targets
+stock UE 5.7.4; use the receiving project's matching engine for sender setup.
+From the app root, run `.\Setup_UnrealStream.cmd` in PowerShell (or
+`Setup_UnrealStream.cmd` in CMD). For a custom/multiple-engine installation use
+`.\Setup_UnrealStream.cmd --engine "D:\Epic Games\UE_5.7"`; the argument is the
+installation root containing `Engine`, not the project or executable. Automatic
+discovery only checks the standard `Program Files\Epic Games\UE_5.*` location.
+
+Read the exit status and the **Live Link support built** completion line; the
+wrapper's final pause is not proof of success. Setup verifies the actual local
+provider handshake before accepting its receipt. On failure, resolve the stated
+runtime/compiler/engine error and retry; preserve user projects and previous
+receipts, and redact logs before sharing. Reopen the app after success. Rebuild
+after provider source or engine changes; this is not a per-session step.
+`install.cmd`/`update.cmd` do not run this optional setup, and installing the
+receiver ZIP does not replace it. See [Prepare once](UNREAL_LIVE_LINK.md#prepare-once).
+
 `mocap/unreal_stream.py` shares the prepared StreamRig/playhead source contract,
 converts off the GUI thread, and retains a bounded latest snapshot. The bridge
 uses official ILiveLinkProvider and stock Message Bus reception. Do not replace

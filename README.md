@@ -45,6 +45,14 @@ Engine and Visual Studio C++ tools. Face playback uses One Euro smoothing and
 saved per-person neutral calibration. The plugin ZIP contains authored source
 and native modules; engine, MetaHuman assets and private projects stay external.
 
+After the normal `install.cmd` setup, install Unreal Engine (tested: **5.7.4**),
+Visual Studio 2022 **Desktop development with C++** and a Windows SDK. Close RGB
+MoCap, open its app folder and double-click **Setup_UnrealStream.cmd**, or run
+`.\Setup_UnrealStream.cmd` from PowerShell in that folder. Reopen RGB MoCap after
+setup reports success. `install.cmd` and `update.cmd` do not build this optional
+sender. For custom engine paths, success checks and recovery, follow
+[Prepare once](docs/UNREAL_LIVE_LINK.md#prepare-once).
+
 ## Install and run
 
 1. Install [Git for Windows](https://git-scm.com/download/win). Open **Command Prompt**

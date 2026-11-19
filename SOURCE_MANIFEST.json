@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 17231,
-      "sha256": "8f6b3c941566b7177d757774cf5a6fd75801660d148f0971d008869f33efec2b"
+      "bytes": 17760,
+      "sha256": "4e905532334ea6655aa747071c4e2971ae09052c83ddcd2c7abbc2def70bf2ea"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -156,8 +156,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 94640,
-      "sha256": "d70c051673b877fdb1600400fd5a4831633387e211308e611dc1f53966fd2a7d"
+      "bytes": 96051,
+      "sha256": "5eb4801353387d21a23881a4a4b5b315eab5742893334c440fd25ae8a55ebc72"
     },
     {
       "path": "docs/BUILD.md",
@@ -186,8 +186,8 @@
     },
     {
       "path": "docs/UNREAL_LIVE_LINK.md",
-      "bytes": 19844,
-      "sha256": "d876e054f5f2228b2ad7a9935a34d104d5f7c1c1417fd8c8cc088d7f3414df90"
+      "bytes": 21611,
+      "sha256": "ac43c5f6e51c4959d229ced4d4a2aba15abebe904842283e05d65fe50437d805"
     },
     {
       "path": "docs/USER_GUIDE.md",
