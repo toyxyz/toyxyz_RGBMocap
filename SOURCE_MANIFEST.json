@@ -171,8 +171,8 @@
     },
     {
       "path": "docs/MAMMA.md",
-      "bytes": 27478,
-      "sha256": "d944c829870df59e1f8b70f40cbf903f4a53f4d1903a55dccc8ef69ab3dff4f9"
+      "bytes": 27795,
+      "sha256": "ee416093b3d96bd0a034eef11bff38d39726828df485c9f607477849f4b5cfa4"
     },
     {
       "path": "docs/MAMMA_AGENT_SETUP.md",
@@ -1741,8 +1741,8 @@
     },
     {
       "path": "mocap/mamma_ui.py",
-      "bytes": 29971,
-      "sha256": "70493202fccd258015802631c679eae879b0c7d433c62326b81fd1c04fbe916c"
+      "bytes": 33614,
+      "sha256": "8ab8873e5f69547ea79ecc99c839bb42ece087e9249da0adf6b6e413f2fcfa4c"
     },
     {
       "path": "mocap/memory_mode.py",

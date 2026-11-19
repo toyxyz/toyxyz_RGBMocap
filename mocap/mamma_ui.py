@@ -11,6 +11,22 @@ from .mamma_inputs import video_paths, common_media, read_calibration, match_cal
 from .ui_refresh import batch_readiness
 
 
+def saved_camera_preview(root, project, state, entry):
+    """Resolve a take's display clip and offset without changing its source input."""
+    saved = next((row for row in state.get('mamma_preview_videos', [])
+                  if row['id'] == entry['id']), None)
+    if saved is not None:
+        path = (project / saved['path']).resolve()
+        if root is None or not path.is_relative_to(root.resolve()) or path == root.resolve():
+            raise ValueError('Invalid saved MAMMA preview camera path.')
+        if path.is_file():
+            return path, saved['first']
+    path = Path(entry['path'])
+    if path.is_file():
+        return path, state['start'] * state['fps']
+    return None, 0
+
+
 class CameraThumbnail(QToolButton):
     def minimumSizeHint(self):return QSize(48,88)
     def sizeHint(self):return QSize(100,88)
@@ -82,6 +98,8 @@ class MammaWorkspace:
         self.mamma_inspector=None;self.mamma_tokens={};self.mamma_pending=False
         self._mamma_restore=None;self._mamma_switching=False;self._mamma_resume=False
         self._mamma_primary_opening=False
+        self._mamma_thumbnail_paths=()
+        self._mamma_missing_sources=()
 
     def build_mamma_thumbnails(self,parent_layout):
         self.mamma_thumbnails=QScrollArea()
@@ -144,6 +162,8 @@ class MammaWorkspace:
         self.mamma_inputs=[];self.mamma_active_camera=0;self.mamma_pending=False;self._mamma_restore=None
         self._mamma_switching=False;self._mamma_resume=False
         self._mamma_primary_opening=False
+        self._mamma_thumbnail_paths=()
+        self._mamma_missing_sources=()
         if self.mamma_inspector:
             with self.mamma_inspector.condition:
                 for kind in ('videos','calibration'):
@@ -177,11 +197,24 @@ class MammaWorkspace:
             return
         self.mamma_pending=False
         if self.model_choice.currentData()!='mamma':self.update_readiness();return
-        entries=[e for e,image in result];info=common_media(entries)
         restore=self._mamma_restore;self._mamma_restore=None
-        if restore:
-            for entry,saved in zip(entries,restore.get('entries',[])):
-                if saved.get('media'):entry['media']=saved['media']
+        if restore and 'thumbnail_paths' in restore:
+            # Decoder metadata for prepared clips describe only the result range.
+            # Keep the original camera entries for reconstruction and project saving.
+            entries=restore['entries']
+            thumbnail_paths=restore['thumbnail_paths']
+            images=iter(image for _,image in result)
+            thumbnails=[next(images) if path is not None else None for path in thumbnail_paths]
+        else:
+            entries=[entry for entry,_ in result]
+            thumbnails=[image for _,image in result]
+            thumbnail_paths=tuple(Path(entry['path']) for entry in entries)
+            if restore:
+                for entry,saved in zip(entries,restore.get('entries',[])):
+                    if saved.get('media'):entry['media']=saved['media']
+        self._mamma_thumbnail_paths=thumbnail_paths
+        self._mamma_missing_sources=tuple(entry['id'] for entry in entries
+                                          if not Path(entry['path']).is_file())
         if not restore:
             if self.workspace_root is not None:self.remember_workspace_model()
             self.workspace_root=None;self._workspace_video_reference=False;self._workspace_camera=None
@@ -194,24 +227,29 @@ class MammaWorkspace:
             self.restore_correction_options({});self.active_result=self.selected_result()
             self.mamma_calibration=None;self.mamma_camera_mode.blockSignals(True)
             self.mamma_camera_mode.setCurrentIndex(0);self.mamma_camera_mode.blockSignals(False)
-        self.mamma_inputs=entries;self.info=info;self.source_offset=0.;self.source_end=info['duration']
-        if restore and restore.get('result_project'):
-            import json
-            state=json.loads((Path(restore['result_project'])/'project.json').read_text(encoding='utf-8'))
+        self.mamma_inputs=entries
+        if restore and 'result_state' in restore:
+            state=restore['result_state']
             info=dict(fps=state['fps'],frames=state['frames'],duration=state['frames']/state['fps'])
-            self.info=info;self.source_offset=state['start'];self.source_end=state['end']
+            self.source_offset,self.source_end=state['start'],state['end']
+        else:
+            info=common_media(entries)
+            self.source_offset,self.source_end=0.,info['duration']
+        self.info=info
         self.slider.set_media(info['fps']);self.slider.setRange(0,info['frames']-1);self.slider.reset_trim()
         self.slider.video_track_label=f'{len(entries)} cameras · common trim';self.slider._cache_key=None
         while self.mamma_thumbnail_grid.count():
             widget=self.mamma_thumbnail_grid.takeAt(0).widget()
             if widget:widget.deleteLater()
         self.mamma_thumbnail_buttons=[]
-        for i,(entry,image) in enumerate(result):
+        for i,(entry,path,image) in enumerate(zip(entries,thumbnail_paths,thumbnails)):
             button=CameraThumbnail();button.setCheckable(True);button.setAutoExclusive(True)
-            button.setToolButtonStyle(Qt.ToolButtonTextUnderIcon);button.setIcon(QIcon(QPixmap.fromImage(image)))
+            button.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+            if image is not None:button.setIcon(QIcon(QPixmap.fromImage(image)))
             button.setIconSize(QSize(100,48));button.setText(str(i+1));button.setMinimumWidth(0)
             button.setFixedHeight(88);button.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Fixed)
-            button.setToolTip(entry['id']+'\n'+entry['path']);button.setAccessibleName('Preview camera '+entry['id'])
+            detail=str(path) if path is not None else 'Camera video unavailable'
+            button.setToolTip(entry['id']+'\n'+detail);button.setAccessibleName('Preview camera '+entry['id'])
             button.setStyleSheet('QToolButton{background:#303030;border:1px solid #555;padding:3px;color:#ddd}QToolButton:checked{border:2px solid #8ac1ff;background:#385571}')
             button.clicked.connect(lambda checked=False,i=i:self.select_mamma_camera(i))
             self.mamma_thumbnail_grid.addWidget(button,i//4,i%4);self.mamma_thumbnail_buttons.append(button)
@@ -220,10 +258,17 @@ class MammaWorkspace:
         if restore:
             self.restore_mamma_options(restore.get('options',{}))
             self.restore_workspace_view(restore.get('view',{}))
+        active=min(int((restore or {}).get('active_camera',0)),len(entries)-1)
+        if thumbnail_paths[active] is None:
+            active=next(index for index,path in enumerate(thumbnail_paths) if path is not None)
         self.mamma_active_camera=-1
-        self.select_mamma_camera(min(int((restore or {}).get('active_camera',0)),len(entries)-1))
+        self.select_mamma_camera(active)
         self.clip_changed(self.slider.clip_in,self.slider.clip_out)
-        self.status.setText(f'{len(entries)} camera videos loaded. Common trim applies to every camera; video starts must already be synchronized. Use synchronized views of the same performance, then Reconstruct 3D.')
+        if self._mamma_missing_sources:
+            count=sum(path is not None for path in thumbnail_paths)
+            self.status.setText(f'{count} camera previews available for the saved take. Restore the original videos to reconstruct.')
+        else:
+            self.status.setText(f'{len(entries)} camera videos loaded. Common trim applies to every camera; video starts must already be synchronized. Use synchronized views of the same performance, then Reconstruct 3D.')
         self.mamma_settings_changed()
 
     def mamma_input_failed(self,kind,token,error):
@@ -235,20 +280,21 @@ class MammaWorkspace:
     @batch_readiness
     def select_mamma_camera(self,index,*,refresh=False):
         if not 0<=index<len(self.mamma_inputs) or (index==self.mamma_active_camera and not refresh):return
-        self._mamma_resume=self.timer.isActive();self.stop_playback();self.mamma_active_camera=index
-        self.mamma_thumbnail_buttons[index].setChecked(True)
-        self._mamma_switching=True;self.video_readable=False
         entry=self.mamma_inputs[index]
         path=Path(entry['path']);first=0
         if self.project is not None:
-            import json
-            state=json.loads((self.project/'project.json').read_text(encoding='utf-8'))
+            from .project_storage import manifest
+            state=manifest(self.project)
             if state.get('pipeline',{}).get('model')=='mamma':
-                saved=next((v for v in state.get('mamma_preview_videos',[]) if v['id']==entry['id']),None)
-                if saved:
-                    path=(self.project/saved['path']).resolve();first=saved['first']
-                    if self.workspace_root is None or not path.is_relative_to(self.workspace_root.resolve()):
-                        raise ValueError('Invalid saved MAMMA preview camera path.')
+                path,first=saved_camera_preview(self.workspace_root,self.project,state,entry)
+        if path is None or not path.is_file():
+            self.status.setText('Camera video unavailable: '+entry['id'])
+            if self.mamma_active_camera >= 0:
+                self.mamma_thumbnail_buttons[self.mamma_active_camera].setChecked(True)
+            return
+        self._mamma_resume=self.timer.isActive();self.stop_playback();self.mamma_active_camera=index
+        self.mamma_thumbnail_buttons[index].setChecked(True)
+        self._mamma_switching=True;self.video_readable=False
         opened=self.video_view.open(path,timeline_fps=self.info['fps'],timeline_start=first,reuse=True)
         self.filename.setText(f"{len(self.mamma_inputs)} camera videos · {entry['id']} · common range {self.info['duration']:.2f} s")
         if not opened:self.mamma_video_ready(dict(fps=self.video_view.native_fps))
@@ -274,22 +320,35 @@ class MammaWorkspace:
         saved=json.loads((root/'project.json').read_text(encoding='utf-8'))
         entries=resolved_entries(root,saved.get('mamma_inputs',[]))
         if not entries:return
-        active=min(saved.get('mamma_active_camera',0),len(entries)-1)
         options=state.get('mamma_options',{})
         import copy
         self._mamma_committed_options=copy.deepcopy(options)
-        if [(e['id'],str(Path(e['path']).resolve())) for e in self.mamma_inputs]==[(e['id'],e['path']) for e in entries] and self.mamma_thumbnail_buttons:
+        thumbnail_paths=tuple(saved_camera_preview(root,project,state,entry)[0] for entry in entries)
+        if not any(thumbnail_paths):
+            from .video import select_preview
+            self.clear_mamma_inputs()
+            self.restore_mamma_options(options)
+            self.video_view.open(select_preview(project),(state['width'],state['height']))
+            self.status.setText('Camera videos are unavailable. Restore the original files to switch views.')
+            return
+        if (self.mamma_inputs==entries and self._mamma_thumbnail_paths==thumbnail_paths
+                and self.mamma_thumbnail_buttons):
+            self._mamma_missing_sources=tuple(entry['id'] for entry in entries
+                                              if not Path(entry['path']).is_file())
             self.restore_mamma_options(options)
             # The selected camera is independent of the selected person.
-            self.select_mamma_camera(min(self.mamma_active_camera,len(entries)-1),refresh=True)
+            self.select_mamma_camera(self.mamma_active_camera,refresh=True)
         else:
             # Loading an actor resets the viewport before thumbnails arrive.
             # That temporary default is not the user's saved scene camera.
             view=saved.get('models',{}).get('mamma',{}).get('view') or {}
             if not view:
                 view=dict(source_time=state['start'],trim_time=[state['start'],state['end']])
-            self.load_mamma_videos([e['path'] for e in entries],restore=dict(options=options,
-                active_camera=active,view=view,entries=entries,result_project=str(project)))
+            same_cameras=[entry['id'] for entry in self.mamma_inputs]==[entry['id'] for entry in entries]
+            active=self.mamma_active_camera if same_cameras else saved.get('mamma_active_camera',0)
+            self.load_mamma_videos([path for path in thumbnail_paths if path is not None],
+                restore=dict(options=options,active_camera=active,view=view,entries=entries,
+                             result_state=state,thumbnail_paths=thumbnail_paths))
 
     def mamma_mode_changed(self,previous,model):
         if previous=='mamma' and model!='mamma' and self.mamma_inputs and self.project is None:
@@ -364,6 +423,9 @@ class MammaWorkspace:
         try:
             if len(self.mamma_inputs)<2:
                 raise ValueError('Use at least two synchronized fixed-camera videos for MAMMA reconstruction.')
+            missing_sources=[entry['id'] for entry in self.mamma_inputs if not Path(entry['path']).is_file()]
+            if missing_sources:
+                raise ValueError('Restore the original camera videos to reconstruct: '+', '.join(missing_sources))
             configuration()
             options=self.mamma_options()
             if options['camera_mode']=='manual':match_calibration(options['calibration'],self.mamma_inputs)
@@ -400,11 +462,15 @@ class MammaWorkspace:
             'Right-click to rename; click the color square to change its preview color. Source motion is preserved.' if mamma else PEOPLE_HELP)
         self.mamma_thumbnails.setVisible(mamma and len(self.mamma_inputs)>1)
         if mamma:
-            self.run_button.setEnabled(not self.busy and self.video_readable and len(self.mamma_inputs)>=2)
+            self.run_button.setEnabled(not self.busy and self.video_readable and len(self.mamma_inputs)>=2
+                                       and not self._mamma_missing_sources)
             self.find_person_button.setEnabled(False)
             self.models_button.setEnabled(not self.busy)
             self.run_button.setToolTip('Reconstruct the same performance from two or more synchronized fixed-camera videos. No fixed camera-count maximum; available RAM and VRAM determine practical capacity. Uses SAM 2.1 masks, MAMMA FP32 landmarks, VGGT or supplied cameras and the full MAMMA body fit. No automatic video synchronization is performed.')
             try:
+                if self._mamma_missing_sources:
+                    names=', '.join(self._mamma_missing_sources)
+                    raise ValueError('Restore original camera videos to reconstruct: '+names)
                 from .mamma_runtime import configuration
                 configuration()
                 message=''
@@ -423,7 +489,8 @@ class MammaWorkspace:
         if self.mamma_pending:
             self.save_project_action.setEnabled(False);self.slider.trim_enabled=False;self.play_button.setEnabled(False)
             self.run_button.setEnabled(False);self.find_person_button.setEnabled(False)
-        for button in self.mamma_thumbnail_buttons:button.setEnabled(not self.busy and not self.mamma_pending)
+        for button,path in zip(self.mamma_thumbnail_buttons,self._mamma_thumbnail_paths):
+            button.setEnabled(not self.busy and not self.mamma_pending and path is not None)
 
     def restore_mamma_project_inputs(self,state,root,view):
         entries=resolved_entries(root,state.get('mamma_inputs',[]))
