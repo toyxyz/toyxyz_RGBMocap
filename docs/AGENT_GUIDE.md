@@ -391,8 +391,16 @@ See the [installation steps and controls](USER_GUIDE.md#stream-bones-to-blender)
 
 ### Unreal Live Link body streaming
 
-See [the optional setup and retarget guide](UNREAL_LIVE_LINK.md). Stream target
-2 is Unreal Live Link; 0 remains None and 1 remains Blender. Keep PEAR excluded.
+Direct MetaHuman connections use MetaHuman Connect 0.4.0. The main README's
+[Features](../README.md#features) section links to the plugin ZIP and the
+[Unreal installation and controls guide](UNREAL_LIVE_LINK.md). The inline
+[MetaHuman streaming demo](../README.md#unreal-engine-metahuman-live-streaming)
+lives under Sample videos. Use the [plugin guide](../unreal_plugin/RGBMoCapMetaHuman/README.md)
+for receiver installation and connection. The Unreal guide also covers the
+manual reference FBX and IK Retargeter workflow.
+
+Stream target 2 is Unreal Live Link. Target 0 is None and target 1 is Blender.
+Keep PEAR excluded.
 `Setup_UnrealStream.cmd` / `tools/setup_unreal_stream.py` build the source in
 `developer-build/unreal-live-link` against the user's installed UE 5.7+ and
 verify commandlet startup before keeping a receipt in `runtime_unreal_stream`.
@@ -635,7 +643,8 @@ recheck the space budget before falling back to copying. Keep project manifests
 independent so staging can rewrite location metadata. Character index writes
 preserve unreadable input files before committing a replacement.
 
-- Default projects live under `<installation>/projects/`; **Save Project As** creates and switches to a copy at a user-selected location. Open the saved `project.json` using **File > Open Project**. A project contains model-specific `exmr`, `flowhmr`, `gvhmr`, `mamma` or `prompthmr` result folders; model switching loads existing results when available. MAMMA saves all input camera videos. People, takes, contact edits and imported characters are project data.
+- Default projects live under `<installation>/projects/`; **Save Project As** creates and switches to a copy at a user-selected location. Open the saved `project.json` using **File > Open Project**. A project contains model-specific `exmr`, `flowhmr`, `gvhmr`, `mamma` or `prompthmr` result folders; model switching loads existing results when available. For MAMMA, **Save Project As** copies the original camera inputs into the saved project. People, takes, contact edits and imported characters are project data.
+- A saved MAMMA take restores camera thumbnails and switching from the prepared clips in the project, including when originals are missing. Keep camera order and the saved take offset. Disable a view when both its prepared clip and original are unavailable. Keep original input paths and metadata for reconstruction. See [MAMMA playback](MAMMA.md#reconstruct-and-export).
 - `models/`, `projects/`, `cache/`, `character_scenes/`, `runtime*/` and `.setup/` are local data, not source artifacts. User project folders can also be outside the checkout. Never assume `.gitignore` protects a path that was already tracked or will be force-added. Check `git status` and tracked files before committing; do not upload model weights, video, personal data, credentials, generated motion or caches. Explicitly approved README sample assets are exceptions.
 - Preserve source videos, registered weights and project data. Do not delete project subfolders, results or receipts to fix a problem: they can be referenced by saved metadata. Cache cleanup and setup-download cleanup are distinct from deleting saved work; see [storage and cleanup](USER_GUIDE.md#storage-and-cleanup). Obtain authorization for destructive cleanup.
 - `mocap/paths.py` defines `ROOT`, `RGB_MOCAP_DATA`, models and projects; normal portable startup sets its own data location. When diagnosing an actual run inspect the effective environment rather than assuming a path.
@@ -1048,7 +1057,7 @@ provider identity, and repeats paused expressions. Remove it when unavailable;
 body FaceAvailable metadata distinguishes no sample from a stale connection.
 Keep the default body-only packet and Blender protocol unchanged.
 
-The separate experimental MetaHuman Connect plugin has per-source Face switches.
+The MetaHuman Connect plugin has per-source Face switches.
 It applies the target's additive ARKit mapping curves to the native face preview,
 preserves postprocess/RigLogic and restores the prior face class. Do not toggle
 the MetaHuman actor's global UseLiveLink/UseARKit construction-script settings:
@@ -1061,14 +1070,14 @@ receipt-relative paths. Keep older active modules intact during setup and roll
 back a previous receipt if startup verification fails.
 
 
-MetaHuman Connect 0.3.1 fixes simultaneous body/face editor playback: the
-MetaHuman Face initialization callback can disable editor updates on Body and
-its followers. Reapply the connection's owned preview tick settings after face
-initialization/restoration; retain the original recovery baseline. Validate
-actual body transforms across seeks and continuous Face-enabled playback,
-plus facial deformation, rather than relying on Streaming status alone.
-This receiver-only fix needs no app provider rebuild. Close Unreal before
-replacing its project plugin folder.
+The MetaHuman Face initialization callback can disable editor updates on Body
+and its followers. Reapply the connection's owned preview tick settings after
+face initialization or restoration, and retain the original recovery baseline.
+Validate body transforms and facial deformation across seeks and continuous
+Face-enabled playback.
+
+When upgrading to 0.4.0, update both the app sender and receiver and rerun
+Setup_UnrealStream.cmd. Close Unreal before replacing the project plugin folder.
 
 
 ### Shared face playback smoothing
