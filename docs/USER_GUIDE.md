@@ -612,7 +612,26 @@ video does not always use more VRAM or take proportionally longer.
 
 ## Prepare models
 
-**Model Manager** lists files for the selected tool and its add-ons.
+**Model Manager** opens one window for all workflows. The current workflow's
+tab opens first. **Used by** lists the workflows that depend on each file.
+**Dedicated** identifies a model used by one workflow. **Shared** lists every
+workflow that uses the model, including optional features. The main workspace
+shows the required files for the current reconstruction settings.
+
+Open **Installed Models** to sort by file name, workflow or size. Filter by a
+workflow and enable **Dedicated only** to see files that can be removed without
+affecting other workflows. On any workflow tab or **Installed Models**, select
+one or more installed models and click **Delete Selected**. The confirmation
+shows the selected models, affected workflows and estimated reclaimed space.
+Open **Show Details** for exact file paths. **Cancel** is the default. Deleting
+a shared model removes it for every listed workflow.
+Use the workflow tab to download or import it again. Some saved projects need
+their body model for export.
+
+The estimate counts known hardlinks once and accounts for links that remain.
+Protected paths, independent runtime copies and older PEAR geometry generations
+can remain on disk. The active PEAR geometry is removed as a bundle. Imports
+keep their original source file.
 
 | Action | Meaning |
 | --- | --- |

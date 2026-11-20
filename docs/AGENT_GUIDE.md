@@ -53,6 +53,17 @@ not a guarantee of better results for every video.
 
 ## Models and model files
 
+The unified Model Manager builds its workflow tabs and **Used by** labels from
+the stage requirements plus shared discovery and optional features.
+**Installed Models > Dedicated only** filters to assets used by one workflow.
+Every workflow tab and **Installed Models** open the same confirmation for
+**Delete Selected**. **Cancel** is the default.
+Removal identifies exact catalog paths and confirmed runtime hardlinks or
+symbolic links. It stages the files on the same volume and records the work for
+recovery when the manager next opens. Keep projects, external source files and
+unverified runtime copies out of removal. For troubleshooting, check the
+affected workflows and planned paths shown in the confirmation first.
+
 ExMR's integrated v0.1.5 uses public `pipeline.hand_boxes`, `model_inputs` and
 `ExMR.from_pretrained` with direct model forward. Keep stage-scoped model reuse
 and the existing Low Memory/prefetch paths. Its upstream toe IK limits target

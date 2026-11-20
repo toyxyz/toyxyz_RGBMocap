@@ -1,5 +1,26 @@
 # Source package validation
 
+## Unified Model Manager (2026-11-20)
+
+- In an isolated Windows app, verified every workflow tab and the Installed
+  Models filters. Confirmed shared deletion from both FlowHMR and ExMR,
+  including the affected workflows, estimated space and exact file paths.
+  Enter on the default Cancel button, Escape and closing the prompt all
+  preserved the selected files.
+- The Windows GUI and its normal workers downloaded and re-downloaded pinned
+  FlowHMR files. Download All also downloaded OSNet from Google Drive.
+  Deleting a shared SAM configuration changed both workflows to Missing.
+  Importing the correct file restored Ready. Invalid replacement files
+  were rejected.
+- Re-imported the official SMPL-H file after deletion, recreated the two
+  runtime hardlinks and read the model through a recreated link. Verified
+  export model preflight and preservation of the external source and an
+  unrelated installed file.
+- The Windows regression suite passed 27 tests. Its symbolic-link test
+  required privileges unavailable on that Windows run and passed in WSL,
+  together with the other seven model management tests. The WSL tests covered
+  interrupted removal, active PEAR bundle cleanup and external file protection.
+
 ## RGB MoCap Connect 0.5.0
 
 See the [Unreal receiver validation](../unreal_plugin/RGBMoCapMetaHuman/VALIDATION.md#050-mannequin-and-mixed-targets)

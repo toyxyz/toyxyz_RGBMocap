@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 16990,
-      "sha256": "c8b3dd5baf1e9653963ff19dbe4b48caea6eb708818121a24fa7bac2642031c8"
+      "bytes": 17232,
+      "sha256": "33aeccb51216d4f4a01b48082ebb68722e0871d18a083f5588e7d16fb80c7afc"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -156,8 +156,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 100553,
-      "sha256": "c75bc01a22062b8dae97ce52f12fab64529f435e5a3eedbe26b09e43fe266a90"
+      "bytes": 101278,
+      "sha256": "fcaed62ebebb7dd649033983213d447dd68dc128fd9f77747af5105a40ceb137"
     },
     {
       "path": "docs/BUILD.md",
@@ -191,13 +191,13 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 88179,
-      "sha256": "efe673f5963796e7d1c9f4dfe5f43d1e8ba0e5440698e6ad499443db490e6e58"
+      "bytes": 89403,
+      "sha256": "141eaf5ae922893a04e58656029719b982ce77e2e6d00c3bf7a1e09ede171169"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 173090,
-      "sha256": "96d5cb6bb6b6c25ffcabb1ee6f8f1ae49bfc259c76a4e715a02e927ebea06417"
+      "bytes": 174314,
+      "sha256": "460b7be772a2378856ae29ffd68c8e7d350a3a2f9671cde90381ffd972b4b354"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -1636,8 +1636,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 120956,
-      "sha256": "7c9dfcffa12adb66c99b67d56e4d00b34d2cae98c0501f6d08f071c9350119b4"
+      "bytes": 129918,
+      "sha256": "1ab61926d59d526c8f37d45b95a88cccb576264e60d1ee46a356d730f550c29c"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -1778,6 +1778,11 @@
       "path": "mocap/model_guide.py",
       "bytes": 14885,
       "sha256": "f435c4efda823c39b48650727ef3484f2924d8523e1ac78d2378d7dd41374d90"
+    },
+    {
+      "path": "mocap/model_manager.py",
+      "bytes": 10627,
+      "sha256": "6e20fbaf2b987b2bd0009ad235fcd9655896891b1f17b6bdb46701e759f164a1"
     },
     {
       "path": "mocap/model_session.py",
@@ -2376,8 +2381,8 @@
     },
     {
       "path": "mocap/theme.py",
-      "bytes": 5302,
-      "sha256": "04ae999c15c4bea448ded2a0afe0f5568668c49842c5fe2a6a4d699ecb35a0d9"
+      "bytes": 5420,
+      "sha256": "638d5e0b449367639d3cb826aa2875ebcdeca81a175ab56b951fdcda40772210"
     },
     {
       "path": "mocap/timeline.py",
@@ -2603,6 +2608,11 @@
       "path": "scene_boot.py",
       "bytes": 303,
       "sha256": "c0b07c153f2f6a0bf762c2c88f38ac8d1f5a1d10f5e8028a7cfa11db3664d03e"
+    },
+    {
+      "path": "tests/test_model_manager.py",
+      "bytes": 7337,
+      "sha256": "99d699788d0fbf37189676b1892ef128448bb9bb4cb7800f3f2bbc3c2a779ae4"
     },
     {
       "path": "tests/test_retarget_empty_foot_contacts.py",

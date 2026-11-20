@@ -13,9 +13,9 @@ QLabel#taskInfo { color:#b9d9ff; padding:3px 6px; }
 QFrame#editor { background:#303030; border:1px solid #191919; }
 QWidget#editorHeader { background:#292929; border-bottom:1px solid #191919; }
 QTabWidget#peopleTabs::pane { background:#303030; border:0; }
-QTabWidget#peopleTabs QTabBar::tab { background:#292929; border:1px solid #191919; padding:5px 11px; }
-QTabWidget#peopleTabs QTabBar::tab:!selected:hover { background:#454545; }
-QTabWidget#peopleTabs QTabBar::tab:selected { background:#477bb7; border-color:#37689d; color:white; }
+QTabWidget#peopleTabs QTabBar::tab, QTabBar#modelManagerTabs::tab { background:#292929; border:1px solid #191919; padding:5px 11px; }
+QTabWidget#peopleTabs QTabBar::tab:!selected:hover, QTabBar#modelManagerTabs::tab:!selected:hover { background:#454545; }
+QTabWidget#peopleTabs QTabBar::tab:selected, QTabBar#modelManagerTabs::tab:selected { background:#477bb7; border-color:#37689d; color:white; }
 QGroupBox { border:1px solid #202020; border-radius:2px; margin-top:17px; padding:9px 7px 7px; font-weight:600; }
 QGroupBox::title { subcontrol-origin:margin; left:8px; padding:0 3px; color:#c5c5c5; }
 QPushButton { background:#454545; border:1px solid #242424; border-radius:3px; padding:5px 9px; }
