@@ -779,6 +779,17 @@ Changes to camera, smoothing or feature settings take effect on **Reconstruct 3D
 GVHMR refinement checkboxes also select saved preview/export results. If the
 selected result is missing, reconstruct it; the app reports it as unavailable.
 
+**File → Save Settings as Default** makes new videos, and the next start of the app,
+begin with the current model settings instead of the built-in ones: FlowHMR Fast SAM
+switches, HaMeR and **Camera / Sampling**, ExMR **Camera** and **Smooth Motion**, PromptHMR
+camera and **Interaction Prompt**, **Correction Mode**, **Lock Preset**, **Foot**, **Hand**
+and **Track Face**. Values that belong to one video are not saved: trim, floor height,
+pelvis offset, people counts and MAMMA cameras. A project keeps the settings it saved
+for each model. A model the project has no settings for yet, such as FlowHMR after an
+ExMR reconstruction, also starts from the defaults. **File → Reset Default Settings**
+returns new work to the
+built-in settings. Both are saved locally with Resource Safety and report in the Console.
+
 | Setting | Function and when to use it |
 | --- | --- |
 | **FlowHMR / ExMR → Refine Camera Rotation** | Optional background refinement of the saved moving-camera display track. Default off. Validates small rotation corrections; unreliable samples retain the original. No motion re-inference. |

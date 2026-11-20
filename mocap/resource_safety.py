@@ -41,7 +41,9 @@ def update(values, root=None):
     # Shared by every local preference; an unreadable file is kept, not replaced.
     from .storage import atomic_json
     target = path(root);settings = read_settings(target)
-    settings.update(values)
+    for key, value in values.items():
+        if value is None:settings.pop(key, None)  # None removes a preference
+        else:settings[key] = value
     if len(json.dumps(settings, ensure_ascii=False, indent=2).encode('utf-8')) > MAX_BYTES:
         raise ValueError('Local settings exceed the size limit.')
     atomic_json(target, settings)

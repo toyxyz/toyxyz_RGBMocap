@@ -7,6 +7,15 @@ from .project_storage import manifest
 from .storage import atomic_json
 from .video import select_preview
 
+DEFAULTS = 'default_settings'
+# Ways of working a new video may start from, checked per value: a combo box name, allowed strings, or bool. Values of one
+# video stay out (trim, floor height, pelvis offset, people, MAMMA cameras), and so does the result selection.
+DEFAULT_SETTINGS = {'flow_options': {'camera_interval': 'flow_sampling', 'fast_sam': bool, 'sam_batch4': bool,
+                                     'sam_gpu_crop': bool, 'sam_hand_stride4': bool, 'hamer': bool},
+                    'exmr_options': {'static_camera': 'exmr_camera', 'smoothing': ('global', 'none')},
+                    'prompthmr_options': {'camera': 'prompthmr_camera', 'interaction': bool},
+                    'correction': {'mode': 'correction_mode', 'preset': 'correction_preset', 'foot_lock': bool, 'hand_lock': bool}}
+
 
 class ModelWorkspace:
     def selected_flow_options(self):
@@ -43,6 +52,59 @@ class ModelWorkspace:
         self.active_result=self.selected_result()
         self.restore_mamma_options(settings.get('mamma_options',{}))
         self.restore_prompthmr_options(settings.get('prompthmr_options',{}))
+
+    def save_default_settings(self):
+        from .resource_safety import update
+        settings=self.workspace_settings()
+        value={group:{key:settings[group][key] for key in keys if key in settings[group]} for group,keys in DEFAULT_SETTINGS.items()}
+        value['track_face']=self.workspace_view()['track_face']
+        try:update({DEFAULTS:value})
+        except (OSError,ValueError) as error:self.log.append('Cannot save default settings: '+str(error));return
+        self.log.append('Default settings saved. New videos, the next start and models a project has no settings for use them.')
+
+    def reset_default_settings(self):
+        from .resource_safety import update
+        try:update({DEFAULTS:None})
+        except (OSError,ValueError) as error:self.log.append('Cannot reset default settings: '+str(error));return
+        self.log.append('Default settings reset. New videos and the next start use the built-in settings.')
+
+    def default_groups(self):
+        """Saved defaults by group, only values that pass their check, plus Track Face; None when nothing is saved."""
+        from .local_choices import offered,saved
+        start=saved(DEFAULTS)
+        if not isinstance(start,dict):return None
+        def usable(check,value):
+            if check is bool:return type(value) is bool
+            if isinstance(check,tuple):return type(value) is str and value in check
+            return offered(getattr(self,check),value)>=0
+        groups={}
+        for group,keys in DEFAULT_SETTINGS.items():
+            values=start.get(group) if isinstance(start.get(group),dict) else {}
+            groups[group]={key:values[key] for key,check in keys.items() if key in values and usable(check,values[key])}
+        return dict(groups,track_face=start.get('track_face') is True)
+
+    def with_default_groups(self,settings):
+        # A project's model takes the defaults only for groups it saved nothing for; saved groups stay exactly as saved.
+        defaults=self.default_groups()
+        if defaults is None:return settings
+        return {**settings,**{group:defaults[group] for group in DEFAULT_SETTINGS if not isinstance(settings.get(group),dict)}}
+
+    def saved_track_face(self,view):
+        # A new project's view is empty until the app first saves it.
+        if 'track_face' in view:return view['track_face']
+        defaults=self.default_groups()
+        return defaults is not None and defaults['track_face']
+
+    def apply_default_settings(self):
+        # New work. A missing or unusable value keeps restore_workspace_settings' built-in value for that setting.
+        defaults=self.default_groups()
+        if defaults is None:return
+        settings=self.workspace_settings()
+        for group,keys in DEFAULT_SETTINGS.items():
+            settings[group]={**{key:value for key,value in settings[group].items() if key not in keys},**defaults[group]}
+        try:self.restore_workspace_settings(settings)
+        except (OSError,ValueError,KeyError,TypeError) as error:self.log.append('Default settings not applied: '+str(error))
+        self.restore_track_face(defaults['track_face'])
 
     def workspace_view(self):
         fps=self.info['fps'] if self.info else 30.
@@ -111,7 +173,7 @@ class ModelWorkspace:
             self._workspace_camera=None
             if not self.switch_workspace_model(state['active_model'],opening=True):
                 return False
-            self.restore_track_face(state.get('view',{}).get('track_face',False))
+            self.restore_track_face(self.saved_track_face(state.get('view',{})))
             return True
         except (OSError,ValueError,KeyError) as error:
             self.status.setText('Cannot open project: '+str(error));return False
@@ -138,7 +200,7 @@ class ModelWorkspace:
                     self.model_choice.setCurrentIndex(self.model_choice.findData(model))
                     self.model_choice.blockSignals(False)
                     self.select_model()
-                    self.restore_workspace_settings(state.get('models',{}).get(model,{}).get('settings',{}))
+                    self.restore_workspace_settings(self.with_default_groups(state.get('models',{}).get(model,{}).get('settings',{})))
                     if opening or (model=='mamma' and state.get('mamma_inputs') and not self.mamma_inputs):self.open_workspace_video(state)
                     self.status.setText('MAMMA inputs loaded. Prepare its runtime and models in Model Manager, then Reconstruct 3D.' if model=='mamma' else
                         f'{self.model_choice.currentText()} has no saved motion in this project. Use Reconstruct 3D.')
