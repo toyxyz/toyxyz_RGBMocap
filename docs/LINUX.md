@@ -2,7 +2,7 @@
 
 The Linux installer uses the same pinned runtime profiles as Windows with
 separate hash-checked Linux wheels. Both platforms keep their own Python
-runtimes, models, projects and caches. Install from the `linux_support` branch
+runtimes, models, projects and caches. Try the AppImage below or install from the `linux_support` branch
 in a dedicated checkout on the Linux filesystem. The Linux paths cover single-video ExMR,
 FlowHMR and GVHMR, native motion correction, source export and optional Track
 Face. The optional PEAR, MAMMA, PromptHMR, GEM-X, SAM 3.1 and Unreal Live Link
@@ -42,6 +42,37 @@ uses software rendering on an NVIDIA WSLg system, check
 ```sh
 QT_QPA_PLATFORM=xcb GALLIUM_DRIVER=d3d12 MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA ./RGBMoCap.sh
 ```
+
+## Test the AppImage on Linux Mint
+
+Download the [x86-64 AppImage and its SHA-256 checksum][appimage-release].
+This experimental build was tested with CUDA on Ubuntu 24.04 under WSL 2.
+Native Linux Mint testing is welcome. Install the host dependencies listed
+above and run the AppImage from a terminal to see setup progress.
+
+```sh
+sha256sum -c RGBMoCap-Linux-73bdd37b-x86_64.AppImage.sha256
+chmod +x RGBMoCap-Linux-73bdd37b-x86_64.AppImage
+./RGBMoCap-Linux-73bdd37b-x86_64.AppImage
+```
+
+The AppImage is about 21 MiB. On first launch it installs the pinned Python
+runtimes and builds native motion correction. Allow 32.3 GiB of free space for
+setup and about 8.1 GiB of runtime downloads. The WSL test installation occupied
+24.3 GiB including the installer cache. Use Model Manager to obtain the models
+for your pipeline, which need additional storage.
+
+By default the AppImage keeps its installation, projects, and setup log under
+`~/.local/share/rgbmocap/appimage/<source-revision>/`. It uses
+`$XDG_DATA_HOME/rgbmocap/appimage/<source-revision>/` when an absolute
+`XDG_DATA_HOME` is set. Later launches of the same build reuse its installed
+runtimes. The setup log is `appimage-setup.log` inside that folder.
+
+If FUSE cannot mount the AppImage, run it with `--appimage-extract-and-run`.
+For runtime repair without opening the app, use `--setup-only --verify-all`.
+For the optional Blender installation, use `--setup-only --with-blender`.
+
+[appimage-release]: https://github.com/toyxyz/toyxyz_RGBMocap/releases/tag/linux-appimage-73bdd37b
 
 ## Install, launch and update
 
