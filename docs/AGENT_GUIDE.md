@@ -11,7 +11,7 @@ This guide is for agents helping users operate or modify RGB MoCap. It describes
 - Close the app before `update.cmd`. The updater requires a clean tracked worktree and the `main` branch, uses `git pull --ff-only`, then verifies/repairs runtime configuration. It refuses tracked local edits. A plain `git pull` does not perform runtime repair; use `install.cmd` after dependency changes when needed. Do not discard local edits or force an update.
 - `update.cmd` buffers its final command block before Git can replace it. Reporting/pause belongs to `tools/git_update.py`; failures preserve the subprocess status (ordinary exceptions use 1, Python-intercepted cancellation uses 130). Keep delayed expansion off for paths/arguments. The final `CALL` expands only a numeric exit status after clearing an environment shadow; never reparse paths or arguments with `CALL`. Already-running older launchers remain vulnerable during their first transition. From an open CMD in the app folder, `runtime\python.exe -I -X utf8 -B tools\git_update.py` bypasses the old wrapper. A stray command error after reported installation completion calls for rerunning the updated launcher, not deleting setup markers or models. See [update recovery](USER_GUIDE.md#installation-verification-and-repair) and the preceding transition note. Forced console termination/deletion of the running launcher is outside this guarantee.
 - For setup failure, read the message, check connectivity and free space, then retry `install.cmd`. Preserve models, projects and `.setup` state. Do not repeatedly reinstall or redownload models without evidence.
-- Base completion and optional PEAR/camera-alignment readiness are separate. A post-commit support failure reports completion with warnings; it must not recreate the global base pending marker. Inspect `.setup/git-components.json` and the actual capability configuration. Retry with `install.cmd`; camera-alignment preparation is independent of PEAR and also serves MAMMA automatic gravity. Mandatory base failures and unresolved promotion journals remain blocking. Never delete a pending marker blindly.
+- Base completion and optional PEAR/camera-alignment readiness are separate. A post-commit support failure reports completion with warnings; it must not recreate the global base pending marker. Inspect `.setup/git-components.json` and the actual capability configuration. Both support checks require CUDA. For GPU warnings, check driver detection with `nvidia-smi` and verify CUDA in **Help > Check System** before retrying `install.cmd`. Camera-alignment preparation is independent of PEAR and also serves MAMMA automatic gravity. Mandatory base failures and unresolved promotion journals remain blocking. Never delete a pending marker blindly.
 - Recent full runtime checks are reused for up to seven days with matching group/verifier identities and an unchanged bounded file inventory, including additions/removals. Reuse does not refresh the full-check date. `install.cmd --verify-all` or `update.cmd --verify-all` forces the existing RECORD hashes/import checks. Missing/expired metadata, dependency changes and detected file changes trigger full checks for affected groups/dependents. Metadata is a change-detection heuristic, not an authenticity guarantee. Do not mark a runtime verified without an actual successful check.
 - `tools/pinned_download.py` supplies bounded HTTPS retries/resume for support archives. Keep certificate verification, HTTPS redirects, exact size and SHA-256, validated Content-Range, cancellation propagation and finite attempt/time limits. Ordinary base wheel downloads and optional package fetching retain their own paths; do not claim this replaces every network call. Source contracts are frozen/rechecked during base installation. A failed Git pull must preserve any pre-existing incomplete-install marker.
 - Base installation currently estimates at least 32.4 GiB free before models; ExMR/FlowHMR/GVHMR and add-ons were previously measured around 29 GiB of weights. Optional MAMMA, PromptHMR and GEM-X add separate runtimes and model files. With GEM-X CUDA sharing, the six offline model/runtime sets total about **72.46 GiB (77.8 GB)** before optional PromptHMR moving-camera support, excluding caches, projects, downloads and compiler tools, counting shared files once. Camera support adds about **1.57 GiB** (18.6 MiB modules and 1.55 GiB weights). See the [installed-size table](USER_GUIDE.md#installed-size); installed size and temporary setup headroom are different. Measurements are not guarantees.
@@ -391,13 +391,23 @@ See the [installation steps and controls](USER_GUIDE.md#stream-bones-to-blender)
 
 ### Unreal Live Link body streaming
 
-Direct MetaHuman connections use MetaHuman Connect 0.4.0. The main README's
-[Features](../README.md#features) section links to the plugin ZIP and the
-[Unreal installation and controls guide](UNREAL_LIVE_LINK.md). The inline
+RGB MoCap Connect 0.5.0 supports MetaHuman and UE5 mannequin targets. The
+[Unreal installation and controls guide](UNREAL_LIVE_LINK.md) covers both
+connection types. The main README links to the 0.5.0 Win64 receiver ZIP.
+The inline
 [MetaHuman streaming demo](../README.md#unreal-engine-metahuman-live-streaming)
 lives under Sample videos. Use the [plugin guide](../unreal_plugin/RGBMoCapMetaHuman/README.md)
 for receiver installation and connection. The Unreal guide also covers the
 manual reference FBX and IK Retargeter workflow.
+
+The selected editor target type applies to the next connection. Each
+URGBMoCapConnectComponent persists its own type and defaults to MetaHuman
+for older maps and Blueprint callers. Resolve the primary Character mesh or
+one compatible mannequin mesh. Share validation between the editor and runtime.
+Keep source-qualified body and reference sampling unchanged. For mannequins,
+read the target rest skeleton, use a shared horizontal ankle offset and drive
+the stock hand and foot IK guides. Verify editor save and disconnect restore
+the target's original animation and preview tick settings.
 
 Stream target 2 is Unreal Live Link. Target 0 is None and target 1 is Blender.
 Keep PEAR excluded.
@@ -582,9 +592,12 @@ and MetaHuman receiver are separate from this export path. See the
 
 `mocap/ue5_retarget.py` uses source pose deltas, target lengths, a fixed-length
 leg solve and target-oriented IK helper tracks. The stock root carries planar
-translation only. `mocap/ue5_fbx_scene.py` writes the optional skin and
-animation with Blender in the normal owned export staging directory. Preserve a
-unit-scale root and centimetre bone offsets. Match the elbow and wrist
+translation only. Keep one horizontal offset for both ankle targets so the
+source stance width scales with the target leg length.
+`mocap/ue5_fbx_scene.py` writes the optional skin and animation with Blender in
+the owned export staging directory. The rig-only path emits an explicit FBX
+`BindPose` record. Preserve the stock rest transforms in both output modes,
+including a unit-scale root and centimetre bone offsets. Match the elbow and wrist
 directions from source joint positions. Calibrate palm and finger axes from
 both rigs' geometry, including the source's registered terminal tip offsets.
 Test Manny and Quinn against Epic's existing `SK_Mannequin`. Compare the
@@ -593,11 +606,13 @@ timing, scale and skeleton-asset preservation. With the skin enabled, verify
 mesh deformation in Blender and test Legacy and Interchange imports in a fresh
 Unreal project with no mannequin assets. Check that each importer creates a
 Skeletal Mesh, Skeleton and Animation Sequence with the stock hierarchy.
-Compare bind transforms and evaluated poses against the animation-only export.
-Verifying the bind matrices matters because Interchange can use frame 0 as the
-reference pose when it rejects the FBX bind pose. Check root travel with
-`ue5_in_place` both enabled and disabled. See the
-[recorded validation](VALIDATION.md#ue5-mannequin-fbx-with-optional-mesh-2026-11-20).
+Compare bind transforms and evaluated poses against the rig-only export.
+Use a take whose first motion frame differs from the stock pose. An importer
+can use frame 0 as the reference when it rejects the FBX bind pose. Check a
+take with varied ankle spacing and verify root travel with `ue5_in_place`
+both enabled and disabled. See the
+[bind pose and foot spacing checks](VALIDATION.md#ue5-mannequin-bind-pose-and-foot-spacing-2026-11-20)
+and [original mesh export checks](VALIDATION.md#ue5-mannequin-fbx-with-optional-mesh-2026-11-20).
 
 ### Portable Blender export implementation
 
@@ -1092,8 +1107,10 @@ provider identity, and repeats paused expressions. Remove it when unavailable;
 body FaceAvailable metadata distinguishes no sample from a stale connection.
 Keep the default body-only packet and Blender protocol unchanged.
 
-The MetaHuman Connect plugin has per-source Face switches.
-It applies the target's additive ARKit mapping curves to the native face preview,
+RGB MoCap Connect has per-source Face switches for MetaHuman targets. Scope
+the switch to MetaHuman connections even when the same source drives a mannequin.
+Skip face sampling and mapping entirely for mannequins. For MetaHumans, the
+plugin applies the target's additive ARKit mapping curves to the native face preview,
 preserves postprocess/RigLogic and restores the prior face class. Do not toggle
 the MetaHuman actor's global UseLiveLink/UseARKit construction-script settings:
 those can replace Body animation. Validate jaw/blink deformation, person
@@ -1111,8 +1128,9 @@ face initialization or restoration, and retain the original recovery baseline.
 Validate body transforms and facial deformation across seeks and continuous
 Face-enabled playback.
 
-When upgrading to 0.4.0, update both the app sender and receiver and rerun
-Setup_UnrealStream.cmd. Close Unreal before replacing the project plugin folder.
+Receiver 0.5.0 uses the 0.4.0 sender protocol. When upgrading from an older
+sender, update the app and rerun `Setup_UnrealStream.cmd`. Close Unreal before
+replacing the project plugin folder.
 
 
 ### Shared face playback smoothing

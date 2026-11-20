@@ -316,9 +316,12 @@ are unchanged; no new runtime manager or separate PEAR setup command is required
 The base runtime transaction completes before PEAR and camera-alignment support
 are attempted independently. If only those support steps fail, setup reports
 **Installation complete with warnings** and the base app remains available.
-PEAR needs its own support; automatic MAMMA gravity needs camera-alignment
-support. Those capabilities remain unavailable until their preparation succeeds.
-Rerun `install.cmd`; the component summary is `.setup/git-components.json`.
+PEAR uses its own support, and automatic MAMMA gravity uses Camera Alignment.
+Both support checks require a CUDA-capable NVIDIA GPU and a compatible driver.
+If setup reports **Compatible NVIDIA GPU required** or CUDA is unavailable,
+run `nvidia-smi` to check driver detection and use **Help > Check System** in
+RGB MoCap to check the runtime. After resolving the reported error, rerun
+`install.cmd`. The component summary is `.setup/git-components.json`.
 Failed mandatory base installation or an unresolved update still blocks launch.
 Do not manually remove `.setup/git-sync.pending` to bypass that protection.
 
@@ -840,9 +843,11 @@ In **Stream > Target**, choose **Unreal Live Link** and check prepared offline p
 Run **Setup_UnrealStream.cmd** once first; it requires an installed Unreal Engine
 5.7+ and Visual Studio C++ tools. In Unreal enable the built-in Live Link and UDP
 Messaging plugins, then add **Message Bus Source > RGB MoCap**.
-The stream includes body/finger bones, reference poses and bone lengths;
-Use [MetaHuman Connect](../unreal_plugin/RGBMoCapMetaHuman/README.md) for a direct source/target panel, or configure the manual retarget path in Unreal. Default **None**, Blender and PEAR
-behavior are preserved. See the [full setup, network and retarget guide](UNREAL_LIVE_LINK.md).
+The stream includes body and finger bones, reference poses and bone lengths.
+Use [RGB MoCap Connect](../unreal_plugin/RGBMoCapMetaHuman/README.md) to connect
+MetaHumans or UE5 Manny and Quinn. Select **Target type** for each new
+connection. Face applies to MetaHumans. The mannequin uses body motion.
+See the [full setup, network and retarget guide](UNREAL_LIVE_LINK.md).
 
 Use **Export Reference FBX...** for the highlighted person at a ready timeline
 frame to create a matching source Skeletal Mesh for Unreal IK retargeting.
@@ -854,17 +859,19 @@ It uses the existing Blender runtime and does not include motion or the human me
 **File → Export...** opens the options for the selected source model.
 For SMPL-based motion, choose **FBX (.fbx)**, **BVH (.bvh)** or
 **Blender project + video (.blend)**. The optional leading reference frame defaults off.
-For source FBX, choose **Rest pose → T-pose** (default) or **A-pose**.
+For **FBX profile → Generic / Blender**, choose **Rest pose → T-pose**
+(default) or **A-pose**.
 T-pose sets horizontal upper arms. A-pose sets the upper arms 54° below
 horizontal, based on the mean of the two upper-arm angles measured in
 [Epic's MetaHuman body reference rigs](https://github.com/EpicGames/MetaHuman-DNA-Calibration/tree/main/data/body).
 The rest pose selection works with Maya compatibility, per-person origin
 placement and, where offered, symmetrical rest. It preserves the recorded
-poses and length of each bone. The optional leading FBX frame uses the
-selected A- or T-pose.
+poses and length of each bone. To insert the selected reference at the start
+of the motion, enable **Add T-pose before motion** or **Add A-pose before
+motion**, depending on the selection.
 GEM-X offers [Native77 FBX, BVH and Blender exports](#gem-x-soma-blender-bundles).
-For FBX, enable **FBX Compatibility (Maya)** to use the included Blender
-runtime for the final export. The file retains the skeleton's rest pose and
+For **Generic / Blender** FBX, enable **FBX Compatibility (Maya)** to use the
+included Blender runtime for the final export. The file retains the skeleton's rest pose and
 animation and can also be opened in Blender. This option defaults off.
 For the stock Unreal skeleton and optional skinned mesh, see [UE5 Mannequin FBX](#ue5-mannequin-fbx).
 
@@ -1044,10 +1051,18 @@ mesh baking run outside the GUI with visible activity/progress and cancellation.
 Use this source export profile with saved SMPL-based motion or GEM-X Native77
 motion. RGB MoCap retargets the take to the stock UE5 Manny or Quinn rig,
 including finger motion and leg reach calculated from the target lengths.
-The export uses the bundled Blender runtime and works on a PC without Unreal.
-It uses the stock mannequin rest pose and preserves the take's frame rate and
-frame count. The bundled Simple meshes are derived from the Unreal Engine
-5.7.4 Third Person template. [Epic asset notice](../third_party/ue5_mannequin/NOTICE.md)
+Horizontal ankle spacing scales with the target's leg length, within each
+leg's reach. The export uses the bundled Blender runtime and works on a PC
+without Unreal.
+
+Both rig-only and skinned FBXs store the stock mannequin bind pose and keep
+the take's frame rate and frame count. The A/T rest pose and leading frame
+controls are available under **Generic / Blender**. Re-export any older
+Manny or Quinn FBX that imported with an animation frame as its rest pose
+or with incorrect foot spacing.
+
+The bundled Simple meshes are derived from the Unreal Engine 5.7.4 Third Person
+template. [Epic asset notice](../third_party/ue5_mannequin/NOTICE.md)
 
 1. Open **File > Export...** and choose **FBX (.fbx)**. Set **FBX profile** to
    **UE5 Mannequin (Manny/Quinn)** and choose Manny or Quinn under

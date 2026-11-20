@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 16673,
-      "sha256": "73ed196f6c8ecdea25f53396ae1f0f4f1286e84a75c08b823282566851827f23"
+      "bytes": 16990,
+      "sha256": "c8b3dd5baf1e9653963ff19dbe4b48caea6eb708818121a24fa7bac2642031c8"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -156,8 +156,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 99207,
-      "sha256": "6f0442df09c9abad51d180cb2d425c08b493bfc52582973062f486e4df6756ef"
+      "bytes": 100553,
+      "sha256": "c75bc01a22062b8dae97ce52f12fab64529f435e5a3eedbe26b09e43fe266a90"
     },
     {
       "path": "docs/BUILD.md",
@@ -186,18 +186,18 @@
     },
     {
       "path": "docs/UNREAL_LIVE_LINK.md",
-      "bytes": 21720,
-      "sha256": "01157b59c552ef0d3a10593406fad3e60603a28c5ce4bb9e4c58c752c0944165"
+      "bytes": 23229,
+      "sha256": "78b94d48bd4ebdffcf389b8b13a4233217d4b7ddd8cb9bfa5a261e5236677c25"
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 87462,
-      "sha256": "0e6203a22321bfe4fa2a3db44830771860695b590ad06eeb378dff1b8e8c4864"
+      "bytes": 88179,
+      "sha256": "efe673f5963796e7d1c9f4dfe5f43d1e8ba0e5440698e6ad499443db490e6e58"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 172222,
-      "sha256": "94a4847590898c5c8f85c1ca8fe267e4a2a4419beedd955e937400f63f0a09d9"
+      "bytes": 173090,
+      "sha256": "96d5cb6bb6b6c25ffcabb1ee6f8f1ae49bfc259c76a4e715a02e927ebea06417"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -13341,8 +13341,8 @@
     },
     {
       "path": "unreal_plugin/README.md",
-      "bytes": 364,
-      "sha256": "42c68c329e549a60709062f6745d976bc6f45429eace8153d6cf73a44010a80c"
+      "bytes": 369,
+      "sha256": "c37667320a6f79ace4d3a942425d48136759ddd0343a2fa2de066f4f78f522fa"
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/LICENSE.txt",
@@ -13351,13 +13351,13 @@
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/README.md",
-      "bytes": 5934,
-      "sha256": "4993110616cf040ab3d98360778fa4b0484728659f508b404d6a729d5401e1b9"
+      "bytes": 6474,
+      "sha256": "9a000a3dd1293ac6e5bd1c4b5fff9d0f631b662837687fd8e9dadeec7db08237"
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/RGBMoCapMetaHuman.uplugin",
-      "bytes": 741,
-      "sha256": "1dd7a50eab9f5aa89fc925a189bc5138c353b5bf4aa852a59d4c5c1dc3ee1289"
+      "bytes": 721,
+      "sha256": "2991a18e6bcac9d4b60639ca4d3570642fc7c1f431791e16dd00cb72ef6ef8ce"
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/SECURITY.md",
@@ -13376,13 +13376,13 @@
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/Source/RGBMoCapMetaHuman/Private/RGBMoCapConnectComponent.cpp",
-      "bytes": 16954,
-      "sha256": "b3587fb57e33e4be890322b4e4f1a39c012ae703ca7218f9ca2ab5e8d0cdc4e3"
+      "bytes": 20921,
+      "sha256": "ea8ba15cee1b28533df4a06237325a77982ce84b6707a979495f817afd8ede17"
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/Source/RGBMoCapMetaHuman/Private/RGBMoCapFace.cpp",
-      "bytes": 11358,
-      "sha256": "d2e3f1aa3a1d9eb084aa934a8cf1316a72311df1669893e68158572e82688cd8"
+      "bytes": 11620,
+      "sha256": "2d5772ebb613e9005aa3231cab222a1c50756194d474486b473272b33b26b4de"
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/Source/RGBMoCapMetaHuman/Private/RGBMoCapFaceAnimInstance.cpp",
@@ -13391,8 +13391,8 @@
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/Source/RGBMoCapMetaHuman/Private/RGBMoCapSolver.cpp",
-      "bytes": 18185,
-      "sha256": "2221379c2d1a543a2bd8f670a7887a9a3565aa167a1ac8f70f30fc9cd15f80b2"
+      "bytes": 19507,
+      "sha256": "ee4a4b1d9c2a2388568edce3eb7b44262679358d25c04984dcf9566da9c5876d"
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/Source/RGBMoCapMetaHuman/Public/RGBMoCapAnimInstance.h",
@@ -13401,8 +13401,8 @@
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/Source/RGBMoCapMetaHuman/Public/RGBMoCapConnectComponent.h",
-      "bytes": 5491,
-      "sha256": "080973ba8a887119c0ab42d327fbcda8ab3d9b3aee71aba390de8ef6a3a4ee07"
+      "bytes": 6619,
+      "sha256": "f7b9aa96e1e045e2d51590832611f033960ae8f8c982634c9779508212f6c16e"
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/Source/RGBMoCapMetaHuman/Public/RGBMoCapFaceAnimInstance.h",
@@ -13411,8 +13411,8 @@
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/Source/RGBMoCapMetaHuman/Public/RGBMoCapSolver.h",
-      "bytes": 1434,
-      "sha256": "f11e12a72860d68ede5b6a084f1be94c0ec468d93aaa07232698c51fd9c49408"
+      "bytes": 1583,
+      "sha256": "aabd13f07a266acf160dca25045faddfedf000894a4851e2447c52a277704153"
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/Source/RGBMoCapMetaHuman/RGBMoCapMetaHuman.Build.cs",
@@ -13421,18 +13421,18 @@
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/Source/RGBMoCapMetaHumanEditor/Private/Module.cpp",
-      "bytes": 3268,
-      "sha256": "c3f6d7da9ae4b62650f315bc5aab44355f921521b6b85ea28d3cdd0867f7b516"
+      "bytes": 3276,
+      "sha256": "0066ed3de0e23f298544708a69b56637459d9d36130caf831fae8dbc61b5176f"
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/Source/RGBMoCapMetaHumanEditor/Private/RGBMoCapConnections.cpp",
-      "bytes": 19248,
-      "sha256": "7324cbbe73ba6712029477c1c2af142f3844c1a44c69adca44f5ed03b9f1d67a"
+      "bytes": 20743,
+      "sha256": "f04fd936033851b7d00c6cc9880e89959efa42cf52a4e5902dae78b0b712bc86"
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/Source/RGBMoCapMetaHumanEditor/Private/RGBMoCapConnections.h",
-      "bytes": 1592,
-      "sha256": "a840b2d46920314e773b115162b0f5eb20fbc25f224c1b0b0c43d4ecb69f2fa9"
+      "bytes": 1753,
+      "sha256": "ffa2cbe28d0e188f1efa1bb45a7fe6cfb456f408ca9aa34ab4ba5fdecf9c838c"
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/Source/RGBMoCapMetaHumanEditor/RGBMoCapMetaHumanEditor.Build.cs",
@@ -13441,8 +13441,8 @@
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/VALIDATION.md",
-      "bytes": 2421,
-      "sha256": "190209ded516995de084abe8b7913910bd211d2186838d49d0ac5f66eabc634c"
+      "bytes": 3858,
+      "sha256": "89fa9d55fd999982453113a51cf366a03fbb0ca1dd961f13570cd098f37597f4"
     },
     {
       "path": "update.cmd",

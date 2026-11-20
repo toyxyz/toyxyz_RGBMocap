@@ -3,7 +3,6 @@
 #include "RGBMoCapConnectComponent.h"
 #include "Editor.h"
 #include "Engine/Selection.h"
-#include "Engine/SkeletalMesh.h"
 #include "EngineUtils.h"
 #include "Features/IModularFeatures.h"
 #include "ILiveLinkClient.h"
@@ -12,6 +11,7 @@
 #include "ScopedTransaction.h"
 #include "Styling/AppStyle.h"
 #include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SComboBox.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SSeparator.h"
@@ -27,24 +27,21 @@ FString SourceLabel(FName Subject) {
     Label.ReplaceInline(TEXT("_"),TEXT(" "));
     return Label.Len()>48?Label.Left(35)+TEXT(" ... ")+Label.Right(8):Label;
 }
-AActor* SelectedActor(FString& Reason) {
+const TCHAR* TargetTypeLabel(ERGBMoCapTargetType Type) {
+    return Type==ERGBMoCapTargetType::MetaHuman?TEXT("MetaHuman"):TEXT("SK Mannequin");
+}
+AActor* SelectedActor(ERGBMoCapTargetType Type,FString& Reason) {
     if (!GEditor || GEditor->PlayWorld) {Reason=TEXT("Stop Play/Simulate to edit connections.");return nullptr;}
     AActor* Result=nullptr;int32 Count=0;
     for (FSelectionIterator It(*GEditor->GetSelectedActors());It;++It) if (auto* A=Cast<AActor>(*It)) {
         if (IsValid(A) && A->GetWorld()==EditorWorld()) {Result=A;++Count;}
     }
-    if (Count!=1) {Reason=Count?TEXT("Select only one MetaHuman actor in the level."):TEXT("Select a MetaHuman actor in the level.");return nullptr;}
-    USkeletalMeshComponent* Body=nullptr;
-    TArray<USkeletalMeshComponent*> Meshes;Result->GetComponents(Meshes);
-    for (auto* M:Meshes) if (M->GetFName()==TEXT("Body")) Body=M;
-    if (!Body || !Body->GetSkeletalMeshAsset()) {Reason=TEXT("Selected actor needs a MetaHuman Body skeletal mesh.");return nullptr;}
-    const auto& Ref=Body->GetSkeletalMeshAsset()->GetRefSkeleton();
-    for (const TCHAR* Name:{TEXT("pelvis"),TEXT("thigh_l"),TEXT("calf_l"),TEXT("foot_l"),TEXT("ball_l"),TEXT("thigh_r"),TEXT("calf_r"),TEXT("foot_r"),TEXT("ball_r")})
-        if (Ref.FindBoneIndex(Name)<0) {Reason=FString::Printf(TEXT("Selected Body is missing %s."),Name);return nullptr;}
-    if (Body->GetAnimationMode()!=EAnimationMode::AnimationBlueprint) {Reason=TEXT("Selected Body must use Animation Blueprint mode.");return nullptr;}
-    auto Scale=Body->GetComponentScale();
-    if (Scale.X<=0. || !Scale.AllComponentsEqual(1.e-4)) {Reason=TEXT("Selected Body needs positive uniform scale.");return nullptr;}
-    Reason=Result->GetActorLabel();return Result;
+    if (Count!=1) {
+        Reason=Count?TEXT("Select only one target actor in the level."):
+            FString::Printf(TEXT("Select a %s actor in the level."),TargetTypeLabel(Type));
+        return nullptr;
+    }
+    return URGBMoCapConnectComponent::FindTargetMesh(Result,Type,Reason)?Result:nullptr;
 }
 ILiveLinkClient* Client() {
     auto& F=IModularFeatures::Get();
@@ -77,16 +74,17 @@ void StreamState(ILiveLinkClient* C,FRGBMoCapSourceRow& Row,const TArray<FLiveLi
 }
 class SRGBMoCapSourceTableRow : public SMultiColumnTableRow<TSharedPtr<FRGBMoCapSourceRow>> {
 public:
-    SLATE_BEGIN_ARGS(SRGBMoCapSourceTableRow) {} SLATE_ARGUMENT(TSharedPtr<FRGBMoCapSourceRow>, Item) SLATE_EVENT(FOnClicked, OnSelectTargets) SLATE_EVENT(FOnClicked, OnSelectSource) SLATE_EVENT(FOnCheckStateChanged, OnFace) SLATE_END_ARGS()
+    SLATE_BEGIN_ARGS(SRGBMoCapSourceTableRow) {} SLATE_ARGUMENT(TSharedPtr<FRGBMoCapSourceRow>, Item) SLATE_EVENT(FOnClicked, OnSelectTargets) SLATE_EVENT(FOnClicked, OnSelectSource) SLATE_EVENT(FOnCheckStateChanged, OnFace) SLATE_ATTRIBUTE(bool, FaceAvailable) SLATE_END_ARGS()
     void Construct(const FArguments& Args,const TSharedRef<STableViewBase>& Owner) {
-        Item=Args._Item;OnSelectTargets=Args._OnSelectTargets;OnSelectSource=Args._OnSelectSource;OnFace=Args._OnFace;
+        Item=Args._Item;OnSelectTargets=Args._OnSelectTargets;OnSelectSource=Args._OnSelectSource;OnFace=Args._OnFace;FaceAvailable=Args._FaceAvailable;
         SMultiColumnTableRow::Construct(FSuperRowType::FArguments().SignalSelectionMode(ETableRowSignalSelectionMode::Instantaneous).Padding(FMargin(4,7)).Tag(Item->Subject),Owner);
     }
     TSharedRef<SWidget> GenerateWidgetForColumn(const FName& Column) override {
         if (Column==TEXT("Face")) return SNew(SCheckBox).Tag(FName(*(TEXT("Face_")+Item->Subject.ToString())))
-            .IsChecked_Lambda([R=Item](){return R->FaceState();}).OnCheckStateChanged(OnFace)
-            .IsEnabled_Lambda([](){return GEditor && !GEditor->PlayWorld;})
-            .ToolTipText(FText::FromString(TEXT("Enable tracked ARKit facial expressions for the actors on this source. Waits safely when no Track Face data is available.")));
+            .IsChecked_Lambda([this](){return FaceAvailable.Get()?Item->FaceState():ECheckBoxState::Unchecked;})
+            .OnCheckStateChanged(OnFace)
+            .IsEnabled_Lambda([this](){return FaceAvailable.Get() && GEditor && !GEditor->PlayWorld;})
+            .ToolTipText(FText::FromString(TEXT("Apply tracked ARKit expressions to MetaHumans on this source. SK Mannequin uses body motion only.")));
         if (Column==TEXT("Source")) return SNew(SButton).ButtonStyle(FAppStyle::Get(),"SimpleButton").ContentPadding(0).HAlign(HAlign_Left)
             .Tag(FName(*(TEXT("Source_")+Item->Subject.ToString()))).ToolTipText(FText::FromName(Item->Subject)).OnClicked(OnSelectSource)
             [SNew(STextBlock).Text_Lambda([R=Item](){return FText::FromString(R->Label);})];
@@ -104,17 +102,18 @@ public:
     }
 private:
     TSharedPtr<FRGBMoCapSourceRow> Item;FOnClicked OnSelectTargets,OnSelectSource;FOnCheckStateChanged OnFace;
+    TAttribute<bool> FaceAvailable;
 };
 }
 FString FRGBMoCapSourceRow::TargetLabels() const {
     TArray<FString> Labels;
-    for (const auto& W:Connections) if (auto* C=W.Get()) if (IsValid(C->GetOwner())) Labels.Add(C->GetOwner()->GetActorLabel());
+    for (const auto& W:Connections) if (auto* C=W.Get()) if (IsValid(C->GetOwner())) Labels.Add(FString::Printf(TEXT("%s (%s)"),*C->GetOwner()->GetActorLabel(),TargetTypeLabel(C->TargetType)));
     return Labels.IsEmpty()?TEXT("Not connected"):FString::Join(Labels,TEXT(", "));
 }
 FString FRGBMoCapSourceRow::TargetDetails() const {
     TArray<FString> Lines;
-    for (const auto& W:Connections) if (auto* C=W.Get()) if (auto* A=C->GetOwner()) Lines.Add(A->GetActorLabel()+TEXT("\n")+A->GetPathName()+TEXT("\n")+C->Status);
-    return Lines.IsEmpty()?TEXT("Select this source and a MetaHuman actor, then Connect selected actor."):FString::Join(Lines,TEXT("\n\n"))+TEXT("\n\nClick to select connected actors in the level.");
+    for (const auto& W:Connections) if (auto* C=W.Get()) if (auto* A=C->GetOwner()) Lines.Add(A->GetActorLabel()+TEXT(" (")+TargetTypeLabel(C->TargetType)+TEXT(")\n")+A->GetPathName()+TEXT("\n")+C->Status);
+    return Lines.IsEmpty()?TEXT("Select this source and a level actor of the chosen target type, then Connect selected actor."):FString::Join(Lines,TEXT("\n\n"))+TEXT("\n\nClick to select connected actors in the level.");
 }
 FString FRGBMoCapSourceRow::ConnectionState() const {
     TArray<FString> States;
@@ -123,30 +122,37 @@ FString FRGBMoCapSourceRow::ConnectionState() const {
         if (ConnectionStatus.StartsWith(TEXT("Streaming - direct body"))) ConnectionStatus=TEXT("Streaming");
         else if (ConnectionStatus.StartsWith(TEXT("Streaming - foot reach"))) ConnectionStatus=TEXT("Streaming - foot reach limited");
         else if (ConnectionStatus.StartsWith(TEXT("Connected. Waiting"))) ConnectionStatus=TEXT("Waiting for motion");
-        if (C->FaceEnabled) ConnectionStatus+=TEXT("; Face: ")+C->FaceStatus;
+        if (C->SupportsFace() && C->FaceEnabled) ConnectionStatus+=TEXT("; Face: ")+C->FaceStatus;
         States.AddUnique(ConnectionStatus);
     }
     return FString::Join(States,TEXT("; "));
 }
+bool FRGBMoCapSourceRow::HasMetaHuman() const {
+    return Connections.ContainsByPredicate([](const auto& W) {
+        auto* C=W.Get();return C && C->SupportsFace();
+    });
+}
 ECheckBoxState FRGBMoCapSourceRow::FaceState() const {
     int32 Enabled=0,Total=0;
-    for (const auto& W:Connections) if (auto* C=W.Get()) {++Total;if (C->FaceEnabled) ++Enabled;}
+    for (const auto& W:Connections) if (auto* C=W.Get(); C && C->SupportsFace()) {++Total;if (C->FaceEnabled) ++Enabled;}
     if (!Total) return FacePreference?ECheckBoxState::Checked:ECheckBoxState::Unchecked;
     return Enabled==Total?ECheckBoxState::Checked:(Enabled?ECheckBoxState::Undetermined:ECheckBoxState::Unchecked);
 }
 void SRGBMoCapConnections::SetFace(ECheckBoxState State,TSharedPtr<FRGBMoCapSourceRow> Row) {
-    if (!GEditor || GEditor->PlayWorld) return;
+    if (!GEditor || GEditor->PlayWorld || (TargetType==ERGBMoCapTargetType::Mannequin && !Row->HasMetaHuman())) return;
     bool Enable=State==ECheckBoxState::Checked;Row->FacePreference=Enable;
     FScopedTransaction Transaction(FText::FromString(TEXT("Change RGB MoCap face streaming")));
-    for (const auto& W:Row->Connections) if (auto* C=W.Get()) {C->GetOwner()->Modify();C->SetFaceEnabled(Enable);}
+    for (const auto& W:Row->Connections) if (auto* C=W.Get(); C && C->SupportsFace()) {C->GetOwner()->Modify();C->SetFaceEnabled(Enable);}
 }
 void SRGBMoCapConnections::Construct(const FArguments&) {
     URGBMoCapConnectComponent::FindAppSource();UpdateSources();
+    TargetTypes={MakeShared<ERGBMoCapTargetType>(ERGBMoCapTargetType::MetaHuman),
+                 MakeShared<ERGBMoCapTargetType>(ERGBMoCapTargetType::Mannequin)};
     ChildSlot[SNew(SBox).MinDesiredWidth(720).MinDesiredHeight(350).Padding(12)
     [SNew(SVerticalBox)
         +SVerticalBox::Slot().AutoHeight().Padding(0,0,0,8)
         [SNew(SHorizontalBox)
-            +SHorizontalBox::Slot().FillWidth(1).VAlign(VAlign_Center)[SNew(STextBlock).Text(FText::FromString(TEXT("Live Link sources and MetaHuman connections")))]
+            +SHorizontalBox::Slot().FillWidth(1).VAlign(VAlign_Center)[SNew(STextBlock).Text(FText::FromString(TEXT("Live Link sources and targets")))]
             +SHorizontalBox::Slot().AutoWidth().Padding(4,0)[SNew(SButton).Text(FText::FromString(TEXT("Refresh"))).OnClicked(this,&SRGBMoCapConnections::Refresh)]
             +SHorizontalBox::Slot().AutoWidth()[SNew(SButton).Text(FText::FromString(TEXT("Reconnect Live Link"))).OnClicked(this,&SRGBMoCapConnections::Reconnect)]]
         +SVerticalBox::Slot().FillHeight(1)
@@ -157,7 +163,7 @@ void SRGBMoCapConnections::Construct(const FArguments&) {
                 .HeaderRow(SNew(SHeaderRow)
                     +SHeaderRow::Column(TEXT("Source")).DefaultLabel(FText::FromString(TEXT("Source"))).FillWidth(.35f)
                     +SHeaderRow::Column(TEXT("State")).DefaultLabel(FText::FromString(TEXT("Stream"))).FixedWidth(85)
-                    +SHeaderRow::Column(TEXT("Targets")).DefaultLabel(FText::FromString(TEXT("Connected MetaHuman"))).FillWidth(.65f)
+                    +SHeaderRow::Column(TEXT("Targets")).DefaultLabel(FText::FromString(TEXT("Connected targets"))).FillWidth(.65f)
                     +SHeaderRow::Column(TEXT("Face")).DefaultLabel(FText::FromString(TEXT("Face"))).FixedWidth(45))]
             +SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
             [SNew(STextBlock).Text(FText::FromString(TEXT("No RGB MoCap sources. Start streaming in the app."))).Visibility_Lambda([this](){return Rows.IsEmpty()?EVisibility::HitTestInvisible:EVisibility::Collapsed;})]]
@@ -165,7 +171,23 @@ void SRGBMoCapConnections::Construct(const FArguments&) {
         +SVerticalBox::Slot().AutoHeight().Padding(0,0,0,5)
         [SNew(STextBlock).Text_Lambda([this](){return FText::FromString(TEXT("Selected source: ")+(Selected?Selected->Label:TEXT("Select a row above")));})]
         +SVerticalBox::Slot().AutoHeight().Padding(0,0,0,8)
-        [SNew(STextBlock).Tag(TEXT("RGBMoCapTargetSelection")).Text_Lambda([this](){return FText::FromString(SelectionHint());}).AutoWrapText(true)]
+        [SNew(SHorizontalBox)
+            +SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0,0,6,0)
+            [SNew(STextBlock).Text(FText::FromString(TEXT("Target type")))]
+            +SHorizontalBox::Slot().AutoWidth().Padding(0,0,12,0)
+            [SNew(SComboBox<TSharedPtr<ERGBMoCapTargetType>>).Tag(TEXT("RGBMoCapTargetType"))
+                .OptionsSource(&TargetTypes).InitiallySelectedItem(TargetTypes[0])
+                .IsEnabled_Lambda([](){return GEditor && !GEditor->PlayWorld;})
+                .OnGenerateWidget_Lambda([](TSharedPtr<ERGBMoCapTargetType> Item){
+                    const TCHAR* Label=*Item==ERGBMoCapTargetType::MetaHuman?TEXT("MetaHuman"):TEXT("SK Mannequin (Manny/Quinn)");
+                    return SNew(STextBlock).Text(FText::FromString(Label));
+                })
+                .OnSelectionChanged_Lambda([this](TSharedPtr<ERGBMoCapTargetType> Item,ESelectInfo::Type){
+                    if (Item) {TargetType=*Item;Message.Reset();}
+                })
+                [SNew(STextBlock).Text_Lambda([this](){return FText::FromString(TargetTypeLabel(TargetType));})]]
+            +SHorizontalBox::Slot().FillWidth(1).VAlign(VAlign_Center)
+            [SNew(STextBlock).Tag(TEXT("RGBMoCapTargetSelection")).Text_Lambda([this](){return FText::FromString(SelectionHint());}).AutoWrapText(true)]]
         +SVerticalBox::Slot().AutoHeight()
         [SNew(SHorizontalBox)
             +SHorizontalBox::Slot().AutoWidth().Padding(0,0,8,0)[SNew(SButton).Tag(TEXT("RGBMoCapConnectActor")).Text(FText::FromString(TEXT("Connect selected actor"))).IsEnabled(this,&SRGBMoCapConnections::CanConnect).OnClicked(this,&SRGBMoCapConnections::Connect)]
@@ -203,22 +225,23 @@ void SRGBMoCapConnections::UpdateSources() {
     if (List && Changed) List->RequestListRefresh();
 }
 TSharedRef<ITableRow> SRGBMoCapConnections::MakeRow(TSharedPtr<FRGBMoCapSourceRow> Row,const TSharedRef<STableViewBase>& Owner) {
-    return SNew(SRGBMoCapSourceTableRow,Owner).Tag(Row->Subject).Item(Row).OnFace(FOnCheckStateChanged::CreateSP(this,&SRGBMoCapConnections::SetFace,Row)).OnSelectSource(FOnClicked::CreateSP(this,&SRGBMoCapConnections::SelectSource,Row)).OnSelectTargets(FOnClicked::CreateSP(this,&SRGBMoCapConnections::SelectTargets,Row));
+    return SNew(SRGBMoCapSourceTableRow,Owner).Tag(Row->Subject).Item(Row)
+        .FaceAvailable_Lambda([this,Row](){return TargetType==ERGBMoCapTargetType::MetaHuman || Row->HasMetaHuman();}).OnFace(FOnCheckStateChanged::CreateSP(this,&SRGBMoCapConnections::SetFace,Row)).OnSelectSource(FOnClicked::CreateSP(this,&SRGBMoCapConnections::SelectSource,Row)).OnSelectTargets(FOnClicked::CreateSP(this,&SRGBMoCapConnections::SelectTargets,Row));
 }
-bool SRGBMoCapConnections::CanConnect() const {FString Why;return Selected && Selected->Ready && SelectedActor(Why);}
+bool SRGBMoCapConnections::CanConnect() const {FString Why;return Selected && Selected->Ready && SelectedActor(TargetType,Why);}
 bool SRGBMoCapConnections::CanDisconnect() const {return Selected && !Selected->Connections.IsEmpty() && GEditor && !GEditor->PlayWorld;}
 FString SRGBMoCapConnections::SelectionHint() const {
-    FString Why;auto* A=SelectedActor(Why);
+    FString Why;auto* A=SelectedActor(TargetType,Why);
     return A?TEXT("Selected level actor: ")+A->GetActorLabel():Why;
 }
 FReply SRGBMoCapConnections::Refresh() {URGBMoCapConnectComponent::FindAppSource();UpdateSources();return FReply::Handled();}
 FReply SRGBMoCapConnections::Reconnect() {URGBMoCapConnectComponent::ReconnectAppSource();UpdateSources();Message=TEXT("Requested Live Link reconnection.");return FReply::Handled();}
 FReply SRGBMoCapConnections::Connect() {
-    UpdateSources();FString Why;auto* A=SelectedActor(Why);
+    UpdateSources();FString Why;auto* A=SelectedActor(TargetType,Why);
     if (!Selected || !Selected->Ready || !A) {Message=A?TEXT("Select a live source with a matching reference."):Why;return FReply::Handled();}
-    FScopedTransaction Transaction(FText::FromString(TEXT("Connect RGB MoCap MetaHuman")));
-    bool EnableFace=Selected->FaceState()==ECheckBoxState::Checked;
-    auto* Component=URGBMoCapConnectComponent::ConnectActor(A,Selected->Subject);
+    FScopedTransaction Transaction(FText::FromString(TEXT("Connect RGB MoCap target")));
+    const bool EnableFace=TargetType==ERGBMoCapTargetType::MetaHuman && Selected->FaceState()==ECheckBoxState::Checked;
+    auto* Component=URGBMoCapConnectComponent::ConnectActorForTarget(A,Selected->Subject,TargetType);
     if (Component) Component->SetFaceEnabled(EnableFace);
     Message=Component && Component->Enabled?TEXT("Connected ")+Selected->Label+TEXT(" to ")+A->GetActorLabel()+TEXT("."):(Component?Component->Status:TEXT("Could not connect the selected actor."));
     UpdateSources();GEditor->RedrawLevelEditingViewports();return FReply::Handled();

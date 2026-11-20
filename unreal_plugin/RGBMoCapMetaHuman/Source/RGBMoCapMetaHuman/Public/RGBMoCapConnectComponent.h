@@ -8,6 +8,12 @@
 
 class UPoseAsset;
 
+UENUM(BlueprintType)
+enum class ERGBMoCapTargetType : uint8 {
+    MetaHuman,
+    Mannequin UMETA(DisplayName="SK Mannequin (Manny/Quinn)")
+};
+
 USTRUCT()
 struct FRGBMoCapFollowerState {
     GENERATED_BODY()
@@ -17,7 +23,7 @@ struct FRGBMoCapFollowerState {
     UPROPERTY() EVisibilityBasedAnimTickOption VisibilityTick=EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
 };
 
-UCLASS(ClassGroup=(Animation), meta=(BlueprintSpawnableComponent,DisplayName="RGB MoCap MetaHuman Connect"))
+UCLASS(ClassGroup=(Animation), meta=(BlueprintSpawnableComponent,DisplayName="RGB MoCap Connect"))
 class RGBMOCAPMETAHUMAN_API URGBMoCapConnectComponent : public UActorComponent {
     GENERATED_BODY()
 public:
@@ -27,19 +33,29 @@ public:
     FName Subject;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RGB MoCap")
     bool Enabled = false;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="RGB MoCap", meta=(EditCondition="!Enabled"))
+    ERGBMoCapTargetType TargetType = ERGBMoCapTargetType::MetaHuman;
+    bool SupportsFace() const { return TargetType == ERGBMoCapTargetType::MetaHuman; }
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RGB MoCap")
     bool GroundContact = true;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RGB MoCap",meta=(Units="cm"))
     float FloorOffset = 0.f;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RGB MoCap",AdvancedDisplay)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="RGB MoCap", AdvancedDisplay,
+        meta=(EditCondition="TargetType == ERGBMoCapTargetType::MetaHuman", EditConditionHides))
     FName BodyComponentName = TEXT("Body");
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="RGB MoCap")
     FString Status;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category="RGB MoCap")
     float TravelScale = 1.f;
-    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="RGB MoCap|Face") bool FaceEnabled=false;
-    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Transient,Category="RGB MoCap|Face") FString FaceStatus=TEXT("Disabled");
-    UPROPERTY(EditAnywhere,Category="RGB MoCap|Face",AdvancedDisplay) TSoftObjectPtr<UPoseAsset> FaceMappingPose;
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="RGB MoCap|Face",
+        meta=(EditCondition="TargetType == ERGBMoCapTargetType::MetaHuman", EditConditionHides))
+    bool FaceEnabled=false;
+    UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Transient,Category="RGB MoCap|Face",
+        meta=(EditCondition="TargetType == ERGBMoCapTargetType::MetaHuman", EditConditionHides))
+    FString FaceStatus=TEXT("Disabled");
+    UPROPERTY(EditAnywhere,Category="RGB MoCap|Face",AdvancedDisplay,
+        meta=(EditCondition="TargetType == ERGBMoCapTargetType::MetaHuman", EditConditionHides))
+    TSoftObjectPtr<UPoseAsset> FaceMappingPose;
     UFUNCTION(BlueprintCallable,Category="RGB MoCap|Face") void SetFaceEnabled(bool EnabledFace);
     bool SampleFace(USkeletalMeshComponent* Mesh,TArray<FName>& Names,TArray<float>& Values);
     UFUNCTION(BlueprintCallable,CallInEditor,Category="RGB MoCap") void Connect();
@@ -51,6 +67,9 @@ public:
     void ResumeAfterSave();
     UFUNCTION(BlueprintCallable,Category="RGB MoCap")
     static URGBMoCapConnectComponent* ConnectActor(AActor* Actor,FName MotionSubject);
+    static URGBMoCapConnectComponent* ConnectActorForTarget(AActor* Actor,FName MotionSubject,
+        ERGBMoCapTargetType Type);
+    static USkeletalMeshComponent* FindTargetMesh(const AActor* Actor,ERGBMoCapTargetType Type,FString& Reason);
     bool SamplePose(USkeletalMeshComponent* Mesh, TArray<FTransform>& Pose);
     virtual void TickComponent(float DeltaTime,ELevelTick TickType,FActorComponentTickFunction* Tick) override;
     virtual void OnUnregister() override;
@@ -69,6 +88,7 @@ private:
     UPROPERTY(NonTransactional) EVisibilityBasedAnimTickOption SavedVisibilityTick = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
     UPROPERTY(NonTransactional) TArray<FRGBMoCapFollowerState> Followers;
     UPROPERTY(Transient,DuplicateTransient,NonTransactional) TObjectPtr<USkeletalMeshComponent> ActiveBody;
+    ERGBMoCapTargetType ActiveTargetType=ERGBMoCapTargetType::MetaHuman;
     TUniquePtr<RGBMoCap::FSolver> Solver;
     RGBMoCap::FSkeleton CachedSource;
     TWeakObjectPtr<USkeletalMesh> CachedMesh;

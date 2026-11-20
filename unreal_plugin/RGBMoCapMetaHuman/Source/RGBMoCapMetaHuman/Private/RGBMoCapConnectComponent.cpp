@@ -9,6 +9,7 @@
 #include "Roles/LiveLinkAnimationTypes.h"
 #include "Engine/SkeletalMesh.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/Character.h"
 #include "HAL/PlatformTime.h"
 
 namespace {
@@ -29,6 +30,29 @@ bool Same(const RGBMoCap::FSkeleton& A,const RGBMoCap::FSkeleton& B) {
     for (int32 I=0;I<A.Local.Num();++I) if (!A.Local[I].Equals(B.Local[I],1.e-5)) return false;
     return true;
 }
+USkeletalMeshComponent* NamedMesh(const AActor* Actor,FName Name) {
+    if (!Actor || Name.IsNone()) return nullptr;
+    TArray<USkeletalMeshComponent*> Meshes;
+    Actor->GetComponents(Meshes);
+    for (auto* Mesh:Meshes) if (IsValid(Mesh) && Mesh->GetFName()==Name) return Mesh;
+    return nullptr;
+}
+bool SupportedBody(const FReferenceSkeleton& Ref) {
+    for (const TCHAR* Name:{TEXT("pelvis"),TEXT("thigh_l"),TEXT("calf_l"),TEXT("foot_l"),TEXT("ball_l"),
+        TEXT("thigh_r"),TEXT("calf_r"),TEXT("foot_r"),TEXT("ball_r")})
+        if (Ref.FindBoneIndex(Name)==INDEX_NONE) return false;
+    return true;
+}
+bool IsMannequinMesh(const USkeletalMeshComponent* Mesh) {
+    const USkeletalMesh* Asset=IsValid(Mesh)?Mesh->GetSkeletalMeshAsset():nullptr;
+    if (!Asset) return false;
+    const FReferenceSkeleton& Ref=Asset->GetRefSkeleton();
+    if (Ref.FindBoneIndex(TEXT("root"))!=0 || !SupportedBody(Ref)) return false;
+    for (const TCHAR* Name:{TEXT("spine_05"),TEXT("head"),TEXT("hand_l"),TEXT("hand_r"),TEXT("ik_foot_root"),
+        TEXT("ik_foot_l"),TEXT("ik_foot_r"),TEXT("ik_hand_root"),TEXT("ik_hand_gun"),TEXT("ik_hand_l"),TEXT("ik_hand_r")})
+        if (Ref.FindBoneIndex(Name)==INDEX_NONE) return false;
+    return true;
+}
 }
 URGBMoCapConnectComponent::URGBMoCapConnectComponent() {
     PrimaryComponentTick.bCanEverTick=true;
@@ -37,10 +61,49 @@ URGBMoCapConnectComponent::URGBMoCapConnectComponent() {
 }
 URGBMoCapConnectComponent::~URGBMoCapConnectComponent() = default;
 USkeletalMeshComponent* URGBMoCapConnectComponent::FindBody() const {
-    if (!GetOwner()) return nullptr;
-    TArray<USkeletalMeshComponent*> Meshes;GetOwner()->GetComponents(Meshes);
-    for (auto* Mesh:Meshes) if (Mesh->GetFName()==BodyComponentName) return Mesh;
-    return nullptr;
+    return NamedMesh(GetOwner(),TargetType==ERGBMoCapTargetType::Mannequin?BackedUpBodyName:BodyComponentName);
+}
+USkeletalMeshComponent* URGBMoCapConnectComponent::FindTargetMesh(const AActor* Actor,ERGBMoCapTargetType Type,FString& Reason) {
+    Reason.Reset();
+    if (!IsValid(Actor) || Actor->IsTemplate()) {Reason=TEXT("Select a target actor in the level.");return nullptr;}
+    const auto* Con=Actor->FindComponentByClass<URGBMoCapConnectComponent>();
+    auto* Face=NamedMesh(Actor,TEXT("Face"));
+    const bool HasFace=Face && Face->GetSkeletalMeshAsset();
+    USkeletalMeshComponent* Mesh=nullptr;
+    if (Type==ERGBMoCapTargetType::MetaHuman) {
+        Mesh=NamedMesh(Actor,Con?Con->BodyComponentName:FName(TEXT("Body")));
+        if (!Mesh || !Mesh->GetSkeletalMeshAsset() || (!HasFace && IsMannequinMesh(Mesh))) {
+            Reason=TEXT("Select a MetaHuman actor with a Body skeletal mesh.");return nullptr;
+        }
+        if (!SupportedBody(Mesh->GetSkeletalMeshAsset()->GetRefSkeleton())) {
+            Reason=TEXT("The MetaHuman Body is missing required pelvis or leg bones.");return nullptr;
+        }
+    } else if (Type==ERGBMoCapTargetType::Mannequin) {
+        if (HasFace && NamedMesh(Actor,TEXT("Body"))) {
+            Reason=TEXT("Select MetaHuman for an actor with Body and Face meshes.");return nullptr;
+        }
+        if (const auto* Character=Cast<ACharacter>(Actor); Character && IsMannequinMesh(Character->GetMesh()))
+            Mesh=Character->GetMesh();
+        if (!Mesh) {
+            TArray<USkeletalMeshComponent*> Meshes;
+            Actor->GetComponents(Meshes);
+            for (auto* Candidate:Meshes) if (IsMannequinMesh(Candidate)) {
+                if (Mesh) {Reason=TEXT("The actor has multiple mannequin meshes. Select an actor with one target mesh.");return nullptr;}
+                Mesh=Candidate;
+            }
+        }
+        if (!Mesh) {Reason=TEXT("Select an actor with a UE5 Manny or Quinn skeletal mesh.");return nullptr;}
+    } else {
+        Reason=TEXT("Select a supported target type.");return nullptr;
+    }
+    const FVector Scale=Mesh->GetComponentScale();
+    if (!Scale.AllComponentsEqual(1.e-4) || Scale.X<=0.) {
+        Reason=TEXT("The target mesh needs positive uniform scale.");return nullptr;
+    }
+    if (Mesh->GetAnimationMode()!=EAnimationMode::AnimationBlueprint) {
+        Reason=TEXT("Set the target mesh to Use Animation Blueprint mode.");return nullptr;
+    }
+    return Mesh;
 }
 TArray<FString> URGBMoCapConnectComponent::GetSubjects() const {
     TArray<FString> Result;
@@ -51,14 +114,27 @@ TArray<FString> URGBMoCapConnectComponent::GetSubjects() const {
     Result.Sort();return Result;
 }
 URGBMoCapConnectComponent* URGBMoCapConnectComponent::ConnectActor(AActor* Actor,FName MotionSubject) {
-    if (!Actor || Actor->IsTemplate()) return nullptr;
-    Actor->Modify(false);
+    return ConnectActorForTarget(Actor,MotionSubject,ERGBMoCapTargetType::MetaHuman);
+}
+URGBMoCapConnectComponent* URGBMoCapConnectComponent::ConnectActorForTarget(AActor* Actor,FName MotionSubject,ERGBMoCapTargetType Type) {
+    FString Reason;
+    auto* Mesh=FindTargetMesh(Actor,Type,Reason);
+    if (!Mesh || MotionSubject.IsNone() || MotionSubject.ToString().EndsWith(TEXT("_Reference"))
+        || MotionSubject.ToString().EndsWith(TEXT("_Face"))) return nullptr;
     auto* Component=Actor->FindComponentByClass<URGBMoCapConnectComponent>();
+    if (Mesh->GetAnimClass()==URGBMoCapAnimInstance::StaticClass() &&
+        (!Component || !Component->HasBackup || Component->BackedUpBody!=Mesh)) return nullptr;
+    Actor->Modify(false);
     if (!Component) {
         Component=NewObject<URGBMoCapConnectComponent>(Actor,NAME_None,RF_Transactional);
         Actor->AddInstanceComponent(Component);Component->RegisterComponent();
     }
-    Component->Modify(false);Component->Subject=MotionSubject;Component->Connect();return Component;
+    Component->Modify(false);
+    if (Component->TargetType!=Type) Component->Restore();
+    Component->TargetType=Type;
+    Component->Subject=MotionSubject;
+    Component->Connect();
+    return Component;
 }
 void URGBMoCapConnectComponent::FindAppSource() {
     auto* C=Client();if (!C) return;
@@ -77,20 +153,17 @@ void URGBMoCapConnectComponent::Connect() {
     if (Applying || Saving || IsTemplate()) return;
     if (GetOwner() && GetOwner()->FindComponentByClass<URGBMoCapConnectComponent>()!=this) {Status=TEXT("Use the existing RGB MoCap connection on this actor.");return;}
     TGuardValue<bool> Guard(Applying,true);
-    auto* Body=FindBody();
-    if (!Body || !Body->GetSkeletalMeshAsset()) { Status=TEXT("Select a MetaHuman actor with a Body skeletal mesh.");return; }
-    if (Subject.IsNone() || Subject.ToString().EndsWith(TEXT("_Reference"))) { Status=TEXT("Choose the motion Subject without _Reference.");return; }
-    const auto& Ref=Body->GetSkeletalMeshAsset()->GetRefSkeleton();
-    for (const TCHAR* Name:{TEXT("pelvis"),TEXT("thigh_l"),TEXT("calf_l"),TEXT("foot_l"),TEXT("ball_l"),TEXT("thigh_r"),TEXT("calf_r"),TEXT("foot_r"),TEXT("ball_r")}) {
-        if (Ref.FindBoneIndex(Name)==INDEX_NONE) { Status=FString::Printf(TEXT("Body is missing required MetaHuman bone: %s"),Name);return; }
+    auto* Body=FindTargetMesh(GetOwner(),TargetType,Status);
+    if (!Body) return;
+    if (Subject.IsNone() || Subject.ToString().EndsWith(TEXT("_Reference")) || Subject.ToString().EndsWith(TEXT("_Face"))) {
+        Status=TEXT("Choose the body motion Subject.");return;
     }
-    if (Body->GetAnimationMode()!=EAnimationMode::AnimationBlueprint) { Status=TEXT("MetaHuman Body must use Animation Blueprint mode before connecting.");return; }
-    FVector Scale=Body->GetComponentScale();
-    if (!Scale.AllComponentsEqual(1.e-4) || Scale.X<=0.) { Status=TEXT("Use positive uniform scale on the MetaHuman Body.");return; }
     if (HasBackup && BackedUpBody!=Body) Restore();
     if (Body->GetAnimClass()==URGBMoCapAnimInstance::StaticClass() && !(HasBackup && BackedUpBody==Body)) { Status=TEXT("Another connection owns this Body. Disconnect it first.");return; }
     if (ActiveBody && ActiveBody!=Body) Restore();
     ActiveBody=Body;
+    ActiveTargetType=TargetType;
+    if (!SupportsFace()) SetFaceEnabled(false);
     if (Body->GetAnimClass()!=URGBMoCapAnimInstance::StaticClass()) {
         Body->Modify(false);Followers.Reset();
         BackedUpBody=Body;BackedUpBodyName=Body->GetFName();SavedAnimClass=Body->GetAnimClass();SavedMode=Body->GetAnimationMode();HasBackup=true;
@@ -200,6 +273,7 @@ void URGBMoCapConnectComponent::PostEditUndo() {
 #endif
 void URGBMoCapConnectComponent::TickComponent(float DeltaTime,ELevelTick TickType,FActorComponentTickFunction* Tick) {
     Super::TickComponent(DeltaTime,TickType,Tick);
+    if (ActiveBody && ActiveTargetType!=TargetType) Restore();
     UpdateFace();
     bool Replaced=RepairReconstructedReferences();
     if (Replaced && Enabled && IsValid(BackedUpBody) && BackedUpBody->GetAnimClass()==URGBMoCapAnimInstance::StaticClass()) HasBackup=true;
@@ -217,10 +291,13 @@ void URGBMoCapConnectComponent::TickComponent(float DeltaTime,ELevelTick TickTyp
     MaintainPreviewTicks();
 }
 bool URGBMoCapConnectComponent::SamplePose(USkeletalMeshComponent* Mesh,TArray<FTransform>& Pose) {
-    if (!Enabled || Mesh!=ActiveBody) return false;
+    if (!Enabled || Mesh!=ActiveBody || ActiveTargetType!=TargetType) return false;
     auto* Asset=Mesh->GetSkeletalMeshAsset();
     FVector Scale=Mesh->GetComponentScale();
     if (!Asset || !Scale.AllComponentsEqual(1.e-4) || Scale.X<=0.) { Status=TEXT("Unsupported Body mesh or nonuniform scale.");LastPose.Reset();return false; }
+    if (TargetType==ERGBMoCapTargetType::Mannequin && CachedMesh!=Asset && !IsMannequinMesh(Mesh)) {
+        Status=TEXT("The target mesh no longer has the UE5 mannequin rig.");LastPose.Reset();return false;
+    }
     const auto& TargetRest=Asset->GetRefSkeleton().GetRefBonePose();
     bool TargetChanged=CachedTargetRest.Num()!=TargetRest.Num();
     for (int32 I=0;!TargetChanged && I<TargetRest.Num();++I) TargetChanged=!CachedTargetRest[I].Equals(TargetRest[I],1.e-5);
@@ -261,7 +338,7 @@ bool URGBMoCapConnectComponent::SamplePose(USkeletalMeshComponent* Mesh,TArray<F
         T.Local=Ref.GetRefBonePose();
         for (int32 I=0;I<Ref.GetNum();++I) { T.Names.Add(Ref.GetBoneName(I));T.Parents.Add(Ref.GetParentIndex(I)); }
         auto NewSolver=MakeUnique<RGBMoCap::FSolver>();
-        if (!NewSolver->Initialize(S,T,Status)) return false;
+        if (!NewSolver->Initialize(S,T,Status,TargetType==ERGBMoCapTargetType::Mannequin)) return false;
         Solver=MoveTemp(NewSolver);CachedSource=MoveTemp(S);CachedMesh=Asset;CachedSubject=Subject;
         CachedSourceId=MotionSource;CachedTargetRest=TargetRest;CachedScale=Scale;
     }

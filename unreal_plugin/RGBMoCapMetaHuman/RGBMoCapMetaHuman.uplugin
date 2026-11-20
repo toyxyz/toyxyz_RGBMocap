@@ -1,9 +1,9 @@
 {
   "FileVersion": 3,
-  "Version": 8,
-  "VersionName": "0.4.0",
-  "FriendlyName": "RGB MoCap MetaHuman Connect",
-  "Description": "Proportion-aware Live Link body retargeting, estimated flat-floor reach and optional facial expressions for MetaHumans.",
+  "Version": 9,
+  "VersionName": "0.5.0",
+  "FriendlyName": "RGB MoCap Connect",
+  "Description": "Live Link body retargeting for MetaHumans and UE5 Manny or Quinn, with optional MetaHuman facial expressions.",
   "Category": "Animation",
   "CreatedBy": "Toyxyz",
   "CanContainContent": false,
