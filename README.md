@@ -37,6 +37,10 @@ https://github.com/user-attachments/assets/3353f5ca-6393-40af-822f-210a77f51003
 
 ## Install and run
 
+The steps below cover Windows. For the experimental x86-64 Linux AppImage and
+source installation, see the [Linux guide](https://github.com/toyxyz/toyxyz_RGBMocap/blob/linux_support/docs/LINUX.md#test-the-appimage-on-linux-mint).
+The AppImage was tested on WSL 2. Native Linux Mint testing is welcome.
+
 1. Install [Git for Windows](https://git-scm.com/download/win). Open **Command Prompt**
    in a writable folder where you want to install RGB MoCap, then clone the repository:
 
@@ -153,6 +157,7 @@ do not put passwords or account tokens in the agent chat.
 
 ## Features
 
+- Manage model files across workflows in one window. See which workflows share each file, filter to dedicated models, and remove installed files after reviewing the affected workflows. [Model Manager guide](docs/USER_GUIDE.md#prepare-models)
 - Reconstruct one or several people and preview the body mesh and animation bones.
 - Reduce sliding with foot/palm contact correction and editable contact timings.
 - Retarget motion to Mixamo FBX, VRM and PMX humanoid characters.
@@ -162,7 +167,7 @@ do not put passwords or account tokens in the agent chat.
 - Export animation for the stock UE5 Manny or Quinn skeleton. Include the bundled skinned mesh when the Unreal project has no mannequin assets. [UE5 mannequin FBX guide](docs/USER_GUIDE.md#ue5-mannequin-fbx)
 - Export the current take, all takes for checked people, or individual takes. The export dialog shows what to do for each unavailable take. [Export guide](docs/USER_GUIDE.md#fbx-and-blender)
 - Stream selected people's bones to Blender during playback or scrubbing, then bake their full recorded motion into Blender Actions. [Download the Blender add-on ZIP](blender_addon/rgbmocap_bone_stream.zip?raw=1) · [Installation and controls](docs/USER_GUIDE.md#stream-bones-to-blender)
-- Stream body motion and optional facial expressions to MetaHuman actors in Unreal Engine through Live Link. [Download the MetaHuman Connect plugin ZIP (UE 5.7.4 / Win64)](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-metahuman-connect-v0.4.0/RGBMoCapMetaHuman_UE5.7.4_Win64_v0.4.0.zip) · [Installation and controls](docs/UNREAL_LIVE_LINK.md)
+- Stream motion to UE5 Manny and Quinn or to MetaHuman actors through Unreal Live Link. MetaHumans also support tracked expressions. [RGB MoCap Connect 0.5.0 plugin ZIP (UE 5.7.4 / Win64)](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-rgbmocap-connect-v0.5.0/RGBMoCapConnect_UE5.7.4_Win64_v0.5.0.zip) · [Installation and controls](docs/UNREAL_LIVE_LINK.md)
 - Preview and correct GEM-X's native SOMA motion, retarget to humanoid characters, and export the Native77 skeleton as FBX or BVH. The Blender bundle includes the evaluated surface and input video.
 - Save side-by-side input video and the current 3D viewport as MP4 with **File > Export Preview...** (offline models).
 - Inspect source-video/bone alignment in Camera Preview and display saved cameras in 3D, with optional background rotation refinement for FlowHMR/ExMR.

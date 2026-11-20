@@ -40,11 +40,13 @@ bool FSkeleton::World(TArray<FTransform>& Result,FString& Error) const {
     }
     Compose(*this,Local,Result);return true;
 }
-bool FSolver::Initialize(const FSkeleton& InSource,const FSkeleton& InTarget,FString& Error) {
+bool FSolver::Initialize(const FSkeleton& InSource,const FSkeleton& InTarget,FString& Error,bool Mannequin) {
     Source=InSource;Target=InTarget;
+    UseMannequinGoals=Mannequin;
+    IKGuides.Reset();
     if (!Source.World(SR,Error) || !Target.World(TR,Error)) return false;
     SP=Source.Find(TEXT("Hips"));TP=Target.Find(TEXT("pelvis"));
-    if (SP<0 || TP<0) { Error=TEXT("Expected RGBMoCap Hips and MetaHuman pelvis bones.");return false; }
+    if (SP<0 || TP<0) { Error=TEXT("Expected RGBMoCap Hips and target pelvis bones.");return false; }
     bool Native=Source.Find(TEXT("LeftShin"))>=0;
     for (int32 Side=0;Side<2;++Side) {
         FString Prefix=Side==0?TEXT("Left"):TEXT("Right"),Suffix=Side==0?TEXT("_l"):TEXT("_r");
@@ -52,7 +54,7 @@ bool FSolver::Initialize(const FSkeleton& InSource,const FSkeleton& InTarget,FSt
         const TCHAR* TargetParts[4]={TEXT("thigh"),TEXT("calf"),TEXT("foot"),TEXT("ball")};
         for (int32 J=0;J<4;++J) {
             SL[Side][J]=Source.Find(*(Prefix+SourceParts[J]));TL[Side][J]=Target.Find(*(FString(TargetParts[J])+Suffix));
-            if (SL[Side][J]<0 || TL[Side][J]<0) { Error=TEXT("Missing supported source/MetaHuman leg bones.");return false; }
+            if (SL[Side][J]<0 || TL[Side][J]<0) { Error=TEXT("Missing supported source or target leg bones.");return false; }
         }
         for (int32 J=0;J<2;++J) {
             Lengths[Side][J]=FVector::Distance(TR[TL[Side][J+1]].GetTranslation(),TR[TL[Side][J]].GetTranslation());
@@ -74,6 +76,20 @@ bool FSolver::Initialize(const FSkeleton& InSource,const FSkeleton& InTarget,FSt
     TargetSpan+=FVector::Distance(TR[TL[0][0]].GetTranslation(),TR[TL[1][0]].GetTranslation());
     if (SourceSpan<1. || TargetSpan<1.) { Error=TEXT("Invalid rest leg span.");return false; }
     Gain=TargetSpan/SourceSpan;
+    if (UseMannequinGoals) {
+        // A shared offset preserves the captured stance width at target scale.
+        AnkleOffset=FVector::ZeroVector;
+        for (int32 Side=0;Side<2;++Side)
+            AnkleOffset+=.5*(TR[TL[Side][2]].GetTranslation()-Gain*Alignment.RotateVector(SR[SL[Side][2]].GetTranslation()));
+        const TPair<const TCHAR*,const TCHAR*> Pairs[]={
+            {TEXT("ik_foot_l"),TEXT("foot_l")},{TEXT("ik_foot_r"),TEXT("foot_r")},
+            {TEXT("ik_hand_gun"),TEXT("hand_r")},{TEXT("ik_hand_l"),TEXT("hand_l")},{TEXT("ik_hand_r"),TEXT("hand_r")}};
+        for (const auto& Pair:Pairs) {
+            const int32 Guide=Target.Find(Pair.Key),Bone=Target.Find(Pair.Value);
+            if (Guide>0 && Bone>0) IKGuides.Emplace(Guide,Bone);
+        }
+        IKGuides.Sort([](const auto& A,const auto& B) {return A.Key<B.Key;});
+    }
     Mapping.Init(INDEX_NONE,TR.Num());AimSource.Init(INDEX_NONE,TR.Num());AimTarget.Init(INDEX_NONE,TR.Num());
     BlendSource.Init(INDEX_NONE,TR.Num());BlendWeight.Init(0.,TR.Num());
     auto Map=[&](FString T,FString S,FString TC=TEXT(""),FString SC=TEXT("")) {
@@ -208,6 +224,10 @@ bool FSolver::Evaluate(const TArray<FTransform>& SourceLocal,const FSettings& Se
     for (int32 Side=0;Side<2;++Side) {
         int32 SA=SL[Side][2],TA=TL[Side][2];
         Goals[Side]=TR[TA].GetTranslation()+Gain*Alignment.RotateVector(SW[SA].GetTranslation()-SR[SA].GetTranslation());
+        if (UseMannequinGoals) {
+            const FVector Planar=AnkleOffset+Gain*Alignment.RotateVector(SW[SA].GetTranslation());
+            Goals[Side].X=Planar.X;Goals[Side].Y=Planar.Y;
+        }
         FootRotations[Side]=W[TA].GetRotation();
         if (Settings.Ground) {
             double Low=DBL_MAX;
@@ -255,6 +275,10 @@ bool FSolver::Evaluate(const TArray<FTransform>& SourceLocal,const FSettings& Se
         D.ReachError=FMath::Max(D.ReachError,FVector::Distance(W[A].GetTranslation(),Goals[Side]));
         D.MinimumSole=FMath::Min(D.MinimumSole,W[A].TransformPosition(Markers[Side][0]).Z-Floor);
         D.MinimumSole=FMath::Min(D.MinimumSole,W[TL[Side][3]].TransformPosition(Markers[Side][1]).Z-Floor);
+    }
+    for (const auto& Guide:IKGuides) {
+        Output[Guide.Key]=W[Guide.Value].GetRelativeTransform(W[Target.Parents[Guide.Key]]);
+        Compose(Target,Output,W);
     }
     for (const auto& T:Output) if (!Finite(T)) { Error=TEXT("Retarget produced an invalid transform.");return false; }
     return true;

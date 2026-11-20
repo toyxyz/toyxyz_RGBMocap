@@ -1,20 +1,21 @@
-# RGB MoCap MetaHuman Connect
+# RGB MoCap Connect
 
-Directly connect selected RGB MoCap offline motion streams to assembled
-MetaHuman actors. Each source row shows its connected targets and optional Face
-switch. No source-mesh import, reference FBX or IK Retargeter is required for
-this plugin workflow. The app's existing manual Live Link workflow remains
-available separately.
+Connect RGB MoCap motion streams to assembled MetaHumans or UE5 Manny and Quinn
+actors. Each source row shows its connected actors and target types. MetaHumans
+can also receive tracked expressions. The plugin retargets motion using the
+receiving project's existing character meshes. The [manual Live Link
+workflow](../../docs/UNREAL_LIVE_LINK.md) remains available.
 
 ## Install
 
-1. [Download the UE 5.7.4 / Win64 plugin ZIP](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-metahuman-connect-v0.4.0/RGBMoCapMetaHuman_UE5.7.4_Win64_v0.4.0.zip)
-   and [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-metahuman-connect-v0.4.0/RGBMoCapMetaHuman_UE5.7.4_Win64_v0.4.0.zip.sha256).
+1. [Download RGB MoCap Connect 0.5.0 for UE 5.7.4 / Win64](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-rgbmocap-connect-v0.5.0/RGBMoCapConnect_UE5.7.4_Win64_v0.5.0.zip)
+   and its [SHA-256 checksum](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-rgbmocap-connect-v0.5.0/RGBMoCapConnect_UE5.7.4_Win64_v0.5.0.zip.sha256).
+   For another Unreal build, see [Build and verification](#build-and-verification).
 2. Close Unreal. Extract the `RGBMoCapMetaHuman` folder into your project's
-   `Plugins` folder. Create `Plugins` if needed. Replace an older plugin folder
-   as a complete folder; keep your project assets separately.
-3. Open the project and enable **RGB MoCap MetaHuman Connect**, **Live Link** and
-   **UDP Messaging** if necessary; restart when requested.
+   `Plugins` folder. Create `Plugins` if needed. Replace the entire existing
+   `RGBMoCapMetaHuman` folder when upgrading.
+3. Open the project and enable **RGB MoCap Connect**, **Live Link** and
+   **UDP Messaging** if necessary. Restart when requested.
 
 The prebuilt modules were compiled with stock Unreal Engine **5.7.4**, Win64,
 BuildId **47537391**. Other engine builds may need compilation from source.
@@ -26,20 +27,24 @@ authored DLLs, not Unreal Engine, characters, Epic content or a sample project.
 Install Unreal Engine 5.7.4 and Visual Studio 2022 Desktop development with C++
 plus a Windows SDK. Close RGB MoCap and run `Setup_UnrealStream.cmd` in its app
 folder. This compiles and verifies the optional sender against your local
-engine; install.cmd/update.cmd do not build it. Rerun setup after sender source
-or engine changes. The current sender and receiver must be updated together for
-the face revision checks. No model is downloaded by sender setup.
+engine. Sender setup is separate from `install.cmd` and `update.cmd`.
+Rerun it after sender source or engine changes. Receiver 0.5.0 uses the same
+sender protocol as 0.4.0. If upgrading from a sender older than 0.4.0, update
+RGB MoCap and rerun sender setup for the current face revision checks.
 
 ## Connect
 
-1. Place your assembled MetaHuman Blueprint actors in the level.
+1. Place the MetaHuman Blueprints, mannequin Skeletal Mesh Actors or
+   mannequin Character Blueprints in the level.
 2. In RGB MoCap, load prepared offline motion, choose **Stream > Unreal Live
-   Link** and check the people to send. None remains the default target.
-3. Open **Tools > RGB MoCap Connect** in Unreal. It adds/reuses the app's stock
-   Message Bus source automatically. Select a source row, then select exactly
-   one MetaHuman actor in the level and click **Connect selected actor**.
-4. Repeat for another person/actor. **Connected MetaHuman** displays each target
-   beside its source. Click a target cell to select its actors in the level.
+   Link** and check the people to send. None is the default target.
+3. Open **Tools > RGB MoCap Connect** in Unreal. It adds or reuses the app's
+   Message Bus source. Set **Target type** to **MetaHuman** or **SK Mannequin
+   (Manny/Quinn)**, select a source row and one actor in the level, and click
+   **Connect selected actor**.
+4. Repeat to connect another actor. **Connected targets** displays each actor
+   and its type beside the source. Click the target cell to select its actors.
+   Changing **Target type** applies to the next connection.
 5. Use a Realtime editor viewport or Play/Simulate and play/scrub the app.
    Connection editing is disabled during Play/Simulate.
 
@@ -53,8 +58,9 @@ with this default provider-name workflow.
 
 ## Face
 
-Enable **Face** on a source row to apply that person's saved Track Face data.
-Face is off by default; it can be set before connecting. The receiver maps the
+Enable **Face** on a source row to apply that person's saved Track Face data
+to the connected MetaHumans. The switch is off by default and can be set before
+connecting a MetaHuman. Manny and Quinn receive body motion only. The receiver maps the
 ARKit-style coefficients using the target's additive MetaHuman ARKit mapping
 pose asset, preserving its facial postprocess/RigLogic. Body drives head/neck.
 Do not enable the MetaHuman actor's global UseLiveLink switch for this workflow.
@@ -77,10 +83,12 @@ state-machine playback state.
 ## Body and ground contact
 
 Supported source skeletons are RGB MoCap SMPL-based 52-bone and SOMA Native77.
-The target needs standard MetaHuman Body pelvis/thigh/calf/foot/ball names,
-Animation Blueprint mode and positive uniform scale. The solver measures actual
-target rest lengths. It transfers rest-relative rotations and anatomical limb
-directions, scales travel by body proportions and uses analytic leg reach.
+The selected mesh needs **Use Animation Blueprint** mode and positive uniform
+scale. A standalone mannequin mesh may leave **Anim Class** empty. Manny and
+Quinn use the UE5 mannequin skeleton and its standard IK guides. The solver
+measures actual target rest lengths, transfers rest-relative rotations and limb
+directions, scales travel and calculates leg reach. On mannequins it preserves
+scaled ankle spacing and updates the hand and foot IK guides.
 Ground Contact and Floor Offset on the connection component control an estimated
 flat floor in component-space centimetres. This does not trace world geometry,
 solve uneven terrain, add temporal sticky foot locks or remove existing source
@@ -88,7 +96,7 @@ slip. Clothing/face postprocess relationships are preserved.
 
 ## Build and verification
 
-For another engine build, copy this source plugin into a C++ project's Plugins
+To build from source, copy this plugin into a C++ project's Plugins
 folder and build that project's Editor target using its matching Unreal/Visual
 Studio toolchain. Do not ship a stale prebuilt DLL under a different BuildId.
 See [VALIDATION.md](VALIDATION.md) and [SECURITY.md](SECURITY.md).

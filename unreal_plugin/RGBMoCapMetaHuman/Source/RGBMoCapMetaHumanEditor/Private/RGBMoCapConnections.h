@@ -3,8 +3,7 @@
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/Views/SListView.h"
 #include "Widgets/Input/SCheckBox.h"
-
-class URGBMoCapConnectComponent;
+#include "RGBMoCapConnectComponent.h"
 struct FRGBMoCapSourceRow {
     FName Subject;
     FString Label,State,Detail;
@@ -13,6 +12,7 @@ struct FRGBMoCapSourceRow {
     FString TargetLabels() const;
     FString TargetDetails() const;
     FString ConnectionState() const;
+    bool HasMetaHuman() const;
     ECheckBoxState FaceState() const;
 };
 
@@ -26,6 +26,8 @@ private:
     TSharedPtr<SListView<TSharedPtr<FRGBMoCapSourceRow>>> List;
     TSharedPtr<FRGBMoCapSourceRow> Selected;
     FString Message;
+    ERGBMoCapTargetType TargetType=ERGBMoCapTargetType::MetaHuman;
+    TArray<TSharedPtr<ERGBMoCapTargetType>> TargetTypes;
     EActiveTimerReturnType Poll(double Time,float Delta);
     void UpdateSources();
     TSharedRef<ITableRow> MakeRow(TSharedPtr<FRGBMoCapSourceRow> Row,const TSharedRef<STableViewBase>& Owner);

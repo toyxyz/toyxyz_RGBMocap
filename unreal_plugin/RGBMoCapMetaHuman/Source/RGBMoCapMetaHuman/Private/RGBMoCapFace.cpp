@@ -26,8 +26,10 @@ bool FreshFace(const FLiveLinkSubjectFrameData& Frame) {
 }
 }
 void URGBMoCapConnectComponent::SetFaceEnabled(bool Value) {
-    Modify();FaceEnabled=Value;
-    if (!Value) {RestoreFace();FaceStatus=TEXT("Disabled");}
+    const bool Enable=SupportsFace() && Value;
+    if (FaceEnabled!=Enable) {Modify();FaceEnabled=Enable;}
+    if (!Enable && (SupportsFace() || FaceHasBackup)) RestoreFace();
+    if (!Enable) FaceStatus=SupportsFace()?TEXT("Disabled"):TEXT("Not available for SK Mannequin");
 }
 void URGBMoCapConnectComponent::RestoreFace() {
     auto* Face=FaceMesh(GetOwner());
@@ -109,6 +111,7 @@ bool URGBMoCapConnectComponent::ReadFace() {
     FaceStatus=Tracked && *Tracked==TEXT("0")?TEXT("Streaming - holding last tracked expression"):TEXT("Streaming");return true;
 }
 void URGBMoCapConnectComponent::UpdateFace() {
+    if (!SupportsFace()) {SetFaceEnabled(false);return;}
     auto* Face=FaceMesh(GetOwner());
     // Undo may restore the native preview class after RestoreFace released it.
     // Retain the original baseline rather than capturing that preview as original.
@@ -145,7 +148,7 @@ void URGBMoCapConnectComponent::UpdateFace() {
     MaintainPreviewTicks();
 }
 bool URGBMoCapConnectComponent::SampleFace(USkeletalMeshComponent* Mesh,TArray<FName>& Names,TArray<float>& Values) {
-    if (!Enabled || !FaceEnabled || !FaceHasBackup || Mesh!=FaceMesh(GetOwner()) || !PrepareFaceMapping()) return false;
+    if (!Enabled || !SupportsFace() || !FaceEnabled || !FaceHasBackup || Mesh!=FaceMesh(GetOwner()) || !PrepareFaceMapping()) return false;
     Names=FaceCurveNames;Values.Init(0.f,Names.Num());
     if (FaceCurves.Num()==52) for (int32 C=0;C<52;++C) for (int32 I=0;I<Names.Num();++I) Values[I]+=FaceCurves[C]*FaceMatrix[C*Names.Num()+I];
     // Body handles head/neck motion; facial ARKit input never adds head IK.

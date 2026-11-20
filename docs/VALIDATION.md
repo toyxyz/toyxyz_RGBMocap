@@ -1,5 +1,42 @@
 # Source package validation
 
+## Unified Model Manager (2026-11-20)
+
+- In an isolated Windows app, verified every workflow tab and the Installed
+  Models filters. Confirmed shared deletion from both FlowHMR and ExMR,
+  including the affected workflows, estimated space and exact file paths.
+  Enter on the default Cancel button, Escape and closing the prompt all
+  preserved the selected files.
+- The Windows GUI and its normal workers downloaded and re-downloaded pinned
+  FlowHMR files. Download All also downloaded OSNet from Google Drive.
+  Deleting a shared SAM configuration changed both workflows to Missing.
+  Importing the correct file restored Ready. Invalid replacement files
+  were rejected.
+- Re-imported the official SMPL-H file after deletion, recreated the two
+  runtime hardlinks and read the model through a recreated link. Verified
+  export model preflight and preservation of the external source and an
+  unrelated installed file.
+- The Windows regression suite passed 27 tests. Its symbolic-link test
+  required privileges unavailable on that Windows run and passed in WSL,
+  together with the other seven model management tests. The WSL tests covered
+  interrupted removal, active PEAR bundle cleanup and external file protection.
+
+## RGB MoCap Connect 0.5.0
+
+See the [Unreal receiver validation](../unreal_plugin/RGBMoCapMetaHuman/VALIDATION.md#050-mannequin-and-mixed-targets)
+for Manny and Quinn, mixed MetaHuman face streaming and the UE 5.7.4 Win64 ZIP.
+
+## UE5 Mannequin bind pose and foot spacing (2026-11-20)
+
+- Reimported rig-only and skinned FBXs for a 120-frame sample in Blender.
+  The bind transforms of all 88 bones and the evaluated poses across the
+  clip matched between both exports.
+- The Unreal Engine 5.7 Legacy importer loaded the animation on the stock
+  `SK_Mannequin`. Sampled bone positions matched between the rig-only and skinned
+  exports.
+- Added a regression test for scaled horizontal ankle spacing. All 20 tests
+  in the source regression suite passed.
+
 ## UE5 Mannequin FBX with optional mesh (2026-11-20)
 
 - The app export worker wrote with the bundled Blender 4.5 runtime. The export
@@ -33,6 +70,9 @@
 
 ## Unreal streaming release review and portable sample (2026-11-19)
 
+The sample project ZIP has been retired. For the current receiver download
+and setup, see [MetaHuman Connect](UNREAL_LIVE_LINK.md#recommended-metahuman-connection).
+
 - Two completed Astra reviews assessed the sender, reference export, lifecycle,
   protocol and release evidence (37,030 total API tokens). The final review
   accepted the source fixes with no demonstrated remaining release blocker,
@@ -62,9 +102,9 @@
   head alignment, changing motion and sender restart followed by stock-source
   recreation passed. No forced skeletal updates or custom receiver module was
   used. Concurrent local providers were isolated only in the test transport.
-- The separate sample ZIP contains 315 payload files plus its hash manifest
+- The separate sample ZIP contained 315 payload files plus its hash manifest
   (316 entries), 965,438,961 uncompressed bytes and 863,390,994 archive bytes.
-  CRC and every payload SHA-256 passed. It excludes caches, build binaries,
+  CRC and every payload SHA-256 passed. It excluded caches, build binaries,
   private test modules, model weights and source video/motion. Local DNA import
   provenance was cleared from the staged copies without changing runtime DNA;
   the public asset metadata audit found no private paths or local Subject ID.
@@ -73,8 +113,8 @@
   without missing assets, junctions or a custom module. The extracted copy also
   passed the real Simulate/live/reconnect checks after the documented actual
   Subject configuration. Restoring the distributed default Subject None left
-  every payload hash unchanged. The English README and Epic asset notices are
-  included; sample assets are distributed separately from the source checkout.
+  every payload hash unchanged. The released ZIP included the English README
+  and Epic asset notices.
 - Archive SHA-256:
   `6d787818d4b13ab4d5bd49395ff29e1cf2f5fa4336585f410deed0652d1e11c1`.
 

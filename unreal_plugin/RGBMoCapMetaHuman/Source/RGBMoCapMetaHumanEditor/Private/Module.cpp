@@ -44,7 +44,7 @@ public:
         MenuStartupHandle=UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateLambda([this](){
             FToolMenuOwnerScoped Owner(this);
             UToolMenus::Get()->ExtendMenu(TEXT("LevelEditor.MainMenu.Tools"))->FindOrAddSection(TEXT("RGBMoCap"))
-                .AddMenuEntry(TEXT("RGBMoCapConnect"),FText::FromString(TEXT("RGB MoCap Connect")),FText::FromString(TEXT("Connect a MetaHuman directly to RGB MoCap Live Link.")),FSlateIcon(),FUIAction(FExecuteAction::CreateLambda([](){FGlobalTabmanager::Get()->TryInvokeTab(FName(TEXT("RGBMoCapConnect")));})));
+                .AddMenuEntry(TEXT("RGBMoCapConnect"),FText::FromString(TEXT("RGB MoCap Connect")),FText::FromString(TEXT("Connect a MetaHuman or UE5 mannequin to RGB MoCap Live Link.")),FSlateIcon(),FUIAction(FExecuteAction::CreateLambda([](){FGlobalTabmanager::Get()->TryInvokeTab(FName(TEXT("RGBMoCapConnect")));})));
         }));
     }
     virtual void ShutdownModule() override {

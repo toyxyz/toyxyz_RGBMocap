@@ -22,7 +22,7 @@ struct RGBMOCAPMETAHUMAN_API FDiagnostics {
 /** Independent geometric implementation; no Blender/Python code dependency. */
 class RGBMOCAPMETAHUMAN_API FSolver {
 public:
-    bool Initialize(const FSkeleton& Source, const FSkeleton& Target, FString& Error);
+    bool Initialize(const FSkeleton& Source, const FSkeleton& Target, FString& Error, bool Mannequin=false);
     bool Evaluate(const TArray<FTransform>& SourceLocal, const FSettings& Settings,
                   TArray<FTransform>& Output, FDiagnostics& Diagnostics, FString& Error) const;
 private:
@@ -37,5 +37,8 @@ private:
     int32 SL[2][4]{}, TL[2][4]{};
     double Lengths[2][2]{};
     FVector Markers[2][2];
+    bool UseMannequinGoals = false;
+    FVector AnkleOffset = FVector::ZeroVector;
+    TArray<TPair<int32,int32>> IKGuides;
 };
 }

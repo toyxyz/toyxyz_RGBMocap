@@ -1,5 +1,32 @@
 # Verification scope
 
+## 0.5.0 mannequin and mixed targets
+
+Tested in Unreal Engine 5.7.4 / Win64 with the live app sender and saved
+motion for two people. The real Slate panel connected a stock Manny
+Skeletal Mesh Actor and a stock Quinn Character Blueprint. It rejected
+wrong target types and displayed each actor's type beside its source.
+
+A timeline seek changed both mannequins' hand and finger poses. The hand
+and foot IK guides matched their driven joints in component space. Manny
+shared a source with an assembled MetaHuman receiving tracked-face test
+coefficients. The MetaHuman used the face animation class while Manny
+and Quinn stayed body-only. Disconnect restored the original animation
+on the mixed row while Quinn kept streaming on the other row. Undo
+restored the mannequin connection and its target type.
+
+The native solver check used 51 samples from a 52-bone recording and 22
+Native77 samples on each stock mannequin mesh and two leg-length variants.
+Leg lengths stayed fixed. The IK guides followed their driven joints.
+Reachable samples preserved the horizontal ankle spacing at target scale.
+Reverse-order evaluation reproduced the forward poses.
+
+Saving an active connection restored the original animation class in the
+saved level and resumed live preview in the editor. A separate load verified
+that both mannequin target types and their enabled state were serialized.
+
+## 0.4.0 MetaHuman release checks
+
 Release 0.4.0 targets stock Unreal Engine 5.7.4 / Win64, BuildId 47537391.
 Checks use authored diagnostics and separately installed MetaHuman content;
 diagnostics, character assets, recorded motion and private results are excluded

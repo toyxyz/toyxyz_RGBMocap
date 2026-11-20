@@ -74,6 +74,32 @@ For the optional Blender installation, use `--setup-only --with-blender`.
 
 [appimage-release]: https://github.com/toyxyz/toyxyz_RGBMocap/releases/tag/linux-appimage-73bdd37b
 
+### AppImage setup cannot find CMake
+
+The published AppImage builds the native motion correction module on first
+launch. This requires host CMake 3.24 or newer and a C++17 compiler. It does
+not install system build tools for you.
+
+If setup stops at **Building native motion correction from source** with an
+error asking for CMake, check whether the launching shell can find it. On
+Ubuntu 24.04-based Linux Mint, the documented setup is:
+
+```sh
+sudo apt update
+sudo apt install cmake build-essential
+cmake --version
+g++ --version
+./RGBMoCap-Linux-73bdd37b-x86_64.AppImage
+```
+
+Run the last command from the folder containing the downloaded AppImage. If
+the error suggests running `./install.sh`, that command is for a source
+checkout. Retry the same AppImage and consult `appimage-setup.log` if it still
+fails. See [the Linux Mint report](https://github.com/toyxyz/toyxyz_RGBMocap/issues/56#issuecomment-7033302555).
+
+The AppImage linked above contains source revision `73bdd37`. Follow the source
+installation steps below to use changes made to `linux_support` after that build.
+
 ## Install, launch and update
 
 ```sh

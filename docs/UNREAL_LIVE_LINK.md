@@ -10,14 +10,36 @@ For file-based animation on stock Manny or Quinn, see
 
 ## Recommended MetaHuman connection
 
-Use [MetaHuman Connect 0.4.0](../unreal_plugin/RGBMoCapMetaHuman/README.md)
-for the direct source-to-target panel. Download its ready-to-install ZIP, close
-Unreal and place the extracted RGBMoCapMetaHuman folder in your project's
-Plugins folder. Then complete sender setup below, reopen Unreal and use
-**Tools > RGB MoCap Connect**. Select a source row, select one MetaHuman actor
-and click Connect selected actor. Each row displays its targets and Face switch.
+Use [RGB MoCap Connect](../unreal_plugin/RGBMoCapMetaHuman/README.md)
+for the direct source-to-target panel. [Download 0.5.0 for UE 5.7.4 / Win64](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-rgbmocap-connect-v0.5.0/RGBMoCapConnect_UE5.7.4_Win64_v0.5.0.zip).
+Close Unreal and place the extracted `RGBMoCapMetaHuman` folder in your
+project's `Plugins` folder. Replace the entire existing plugin folder when upgrading. Then complete sender setup below, reopen Unreal and use
+**Tools > RGB MoCap Connect**. Set **Target type** to **MetaHuman** in 0.5.0
+or later, select a source row and one MetaHuman actor, then click **Connect
+selected actor**. Each row displays its targets and Face switch.
 The later reference-FBX/IK instructions describe the optional manual workflow.
 The old sample project is no longer distributed.
+
+## Connect a UE5 Manny or Quinn mannequin
+
+1. Install an RGB MoCap Connect **0.5.0 or newer** build matching your Unreal
+   version. Set up the app sender as described below.
+2. Place a UE5 Manny or Quinn Skeletal Mesh Actor or Character Blueprint in
+   your level. Its mannequin mesh must use **Use Animation Blueprint** mode
+   and positive uniform scale. A standalone mesh can leave **Anim Class** empty.
+3. In **Tools > RGB MoCap Connect**, set **Target type** to **SK Mannequin
+   (Manny/Quinn)**. Select a live person row and the actor, then click
+   **Connect selected actor**.
+4. Repeat for other actors. **Connected targets** shows each actor and its type.
+   Changing **Target type** sets the type for the next connection. **Disconnect
+   source** restores the original animation for the actors on that row.
+
+The plugin reads the selected mesh's rest pose and bone lengths. It drives
+body, fingers and the mannequin's hand and foot IK guides directly. **Ground
+Contact** uses an estimated flat floor in component space. The mannequin
+receives body motion only. On a shared source row, **Face** applies to the
+connected MetaHumans. The receive-side setting does not change which Live Link
+subjects the app publishes.
 
 ## Prepare once
 
@@ -266,9 +288,10 @@ source time, playback and seeking. Run Track Face first; selecting a stream targ
 does not run face inference. The capture checkbox controls new capture, so an
 existing valid face archive can still stream when that checkbox is off.
 
-In the **RGB MoCap MetaHuman Connect 0.4.0** plugin, open **Tools > RGB MoCap
-Connect**, select a source and target actor, and enable **Face** on that source
-row. The checkbox is off by default and applies to the actors bound to that row.
+In **RGB MoCap Connect**, open **Tools > RGB MoCap
+Connect**, select a source and MetaHuman actor, and enable **Face** on that
+source row. The checkbox is off by default and applies to the MetaHumans bound
+to that row.
 Each person can use a different MetaHuman and Face setting. `_Face` Subjects do
 not appear as extra people in this panel. This plugin is distributed as the separate ZIP linked above.
 
@@ -304,8 +327,9 @@ its followers. Reapply the connection's owned preview tick settings after face
 initialization/restoration; retain the original recovery baseline. Validate
 actual body transforms across seeks and continuous Face-enabled playback,
 plus facial deformation, rather than relying on Streaming status alone.
-Update both the app sender and receiver for release 0.4.0 and rerun
-Setup_UnrealStream.cmd. Close Unreal before replacing the project plugin folder.
+Receiver 0.5.0 uses the same sender protocol as 0.4.0. If upgrading from
+an older sender, update RGB MoCap and rerun `Setup_UnrealStream.cmd`.
+Close Unreal before replacing the project plugin folder.
 
 
 ### Smoothed face playback
