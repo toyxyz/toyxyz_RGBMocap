@@ -51,9 +51,9 @@ Native Linux Mint testing is welcome. Install the host dependencies listed
 above and run the AppImage from a terminal to see setup progress.
 
 ```sh
-sha256sum -c RGBMoCap-Linux-73bdd37b-x86_64.AppImage.sha256
-chmod +x RGBMoCap-Linux-73bdd37b-x86_64.AppImage
-./RGBMoCap-Linux-73bdd37b-x86_64.AppImage
+sha256sum -c RGBMoCap-Linux-0dc69476-x86_64.AppImage.sha256
+chmod +x RGBMoCap-Linux-0dc69476-x86_64.AppImage
+./RGBMoCap-Linux-0dc69476-x86_64.AppImage
 ```
 
 The AppImage is about 21 MiB. On first launch it installs the pinned Python
@@ -67,12 +67,14 @@ By default the AppImage keeps its installation, projects, and setup log under
 `$XDG_DATA_HOME/rgbmocap/appimage/<source-revision>/` when an absolute
 `XDG_DATA_HOME` is set. Later launches of the same build reuse its installed
 runtimes. The setup log is `appimage-setup.log` inside that folder.
+Each new source revision uses a separate folder. To open an existing project,
+use File > Open Project and browse to the previous build's projects folder.
 
 If FUSE cannot mount the AppImage, run it with `--appimage-extract-and-run`.
 For runtime repair without opening the app, use `--setup-only --verify-all`.
 For the optional Blender installation, use `--setup-only --with-blender`.
 
-[appimage-release]: https://github.com/toyxyz/toyxyz_RGBMocap/releases/tag/linux-appimage-73bdd37b
+[appimage-release]: https://github.com/toyxyz/toyxyz_RGBMocap/releases/tag/linux-appimage-0dc69476
 
 ### AppImage setup cannot find CMake
 
@@ -89,7 +91,7 @@ sudo apt update
 sudo apt install cmake build-essential
 cmake --version
 g++ --version
-./RGBMoCap-Linux-73bdd37b-x86_64.AppImage
+./RGBMoCap-Linux-0dc69476-x86_64.AppImage
 ```
 
 Run the last command from the folder containing the downloaded AppImage. If
@@ -97,7 +99,7 @@ the error suggests running `./install.sh`, that command is for a source
 checkout. Retry the same AppImage and consult `appimage-setup.log` if it still
 fails. See [the Linux Mint report](https://github.com/toyxyz/toyxyz_RGBMocap/issues/56#issuecomment-7033302555).
 
-The AppImage linked above contains source revision `73bdd37`. Follow the source
+The AppImage linked above contains source revision `0dc69476`. Follow the source
 installation steps below to use changes made to `linux_support` after that build.
 
 ## Install, launch and update
