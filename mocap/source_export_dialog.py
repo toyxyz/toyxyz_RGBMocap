@@ -6,7 +6,10 @@ from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, Q
 
 from .export_options import FBX_A_POSE_DEGREES
 from .face_export_ui import FaceExportControls
+from .local_choices import remember, restore
 from .tooltips import tooltip_text
+
+CHOICES = 'source_export'
 
 
 class SourceExportDialog(QDialog):
@@ -109,6 +112,7 @@ class SourceExportDialog(QDialog):
         layout.addStretch(1)
         buttons=QDialogButtonBox(QDialogButtonBox.Save|QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Save).setText('Continue...');buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);layout.addWidget(buttons)
+        self.kept_choices=restore(self.remembered_controls(),CHOICES)
         for signal in (self.format.currentIndexChanged,self.fbx_profile.currentIndexChanged,self.fbx_rest_pose.currentIndexChanged,self.blend_layout.currentIndexChanged,self.whole_scene.toggled,self.animate_camera.toggled):signal.connect(self.update_format)
         self.update_format()
     def update_format(self):
@@ -187,7 +191,19 @@ class SourceExportDialog(QDialog):
                 self.validation_error.setPlainText(path_error_message(error))
                 self.validation_error.show()
                 return
+        try:remember(self.remembered_controls(),CHOICES,self.kept_choices)
+        except (OSError,ValueError) as error:
+            log=getattr(self.parent(),'log',None)
+            if log is not None:log.append('Cannot save export options: '+str(error))
         super().accept()
+
+    def remembered_controls(self):
+        # Take scope and chosen takes belong to the open project; they are not remembered.
+        return dict(format=self.format,bvh_profile=self.profile,fbx_profile=self.fbx_profile,
+                    ue5_target=self.ue5_target,ue5_in_place=self.ue5_root,ue5_include_mesh=self.ue5_mesh,
+                    fbx_rest_pose=self.fbx_rest_pose,fbx_compatibility=self.fbx_compatibility,
+                    prepend_tpose=self.tpose,place_at_origin=self.place_at_origin,symmetric_rest=self.symmetric_rest,
+                    **self.face_export.controls())
 
     def options(self):
         fmt=self.format.currentData();whole=fmt=='blend' and self.model=='mamma' and self.whole_scene.isChecked()

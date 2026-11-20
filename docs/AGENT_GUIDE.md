@@ -356,7 +356,7 @@ change is needed. Paired 7/14.2-second mask tests cut time 17–21%, changed RAM
 
 ### Capture, correction and export
 
-1. Select an AI Motion Model and prepare its models, then **File > Open Video** and optionally trim the Video track. Select MAMMA before opening multiple videos. New work defaults to ExMR.
+1. Select an AI Motion Model and prepare its models, then **File > Open Video** and optionally trim the Video track. Select MAMMA before opening multiple videos. New sessions start on the last offline model picked in the selector, otherwise ExMR.
 2. For ExMR, FlowHMR and GVHMR with multiple people, use **Find person** and check the desired rows; without it, automatic tracking selects one person and can switch identity on overlap. PromptHMR tracks people jointly during reconstruction; its People setting is a maximum count and Interaction Prompt is optional. MAMMA instead detects and matches people during reconstruction; Find person is hidden and its People setting controls the count. A checked row controls visibility and ExMR/FlowHMR/GVHMR processing targets; the selected row controls the current timeline and contact edits.
 3. Choose camera and processing settings, then **Reconstruct 3D**. Processing runs on a 30 fps working clip, without changing the original video. Progress and cancellation are in the app. **Prepare Preview** rebuilds previews from existing motion without rerunning inference.
 4. Review motion and contacts. **Enable Correction** selects corrected output; Foot defaults on and Hand off for new work. Flat Ground uses a common floor; Multi Level retains inferred contact heights and does not reconstruct terrain. Inspect automatic contacts; hand contacts represent support, not hanging/object tracking.
@@ -734,6 +734,17 @@ PEAR workers inherit the same preference. Never remove actual OOM handling or
 change model equations/precision when extending this control. Model result
 identity must not include this local checkbox value.
 
+`mocap/local_choices.py` keeps window conveniences in the same file through
+`resource_safety.update`. `source_export` and `character_export` hold the last
+choices confirmed in each export window, under the request option names; take
+scope, chosen takes and Blender project settings are excluded. `motion_model`
+holds the last offline model picked in the selector. Only user picks are saved,
+PEAR is never saved, and opening a project restores its own model without
+writing the file. Missing, malformed or unoffered values fall back to the window
+defaults; a saved MAMMA, PromptHMR or GEM-X model without a configured runtime
+starts ExMR. These are not project data or inference identities, and they do not
+change what an export writes for given options.
+
 Use **Resource Mode > Automatic** by default. It keeps the fast path when the current GPU budget is sufficient and selects supported Low Memory paths per operation when needed. A supported fast operation that raises CUDA OOM is released and retried once in Low Memory. ExMR Low Memory uses CPU-first body/hand loading and converts Sapiens' existing FP16 layers before GPU transfer; ExMR body/hand batches stay 8. FlowHMR offloads SAM/VGGT blocks; MAMMA offloads VGGT camera blocks while retaining its pinned masks/landmark/fitting settings. GVHMR/add-ons retain adaptive image batches and full-context attention. The saved Automatic selection is not changed. Resource decisions and memory advice appear in the app Console and CMD. Model precision, frame count, resolution and iterations are not reduced. CPU loading/offloading can be slower and use more RAM; it is not a promise every clip will fit. Estimates select a path, never reject a job. With Resource Safety enabled, the desktop checks actual RAM and Windows allocation headroom every 0.5 seconds and stops workers when these become low. Preserve completed stages, genuine model limits and original motion. Do not rerun inference for operations that can use existing results.
 
 PromptHMR retains the same one-image batch/full temporal context in Automatic
@@ -856,7 +867,7 @@ The app uses separate runtime profiles to maintain compatibility, with bounded b
 
 ## Code map and verification
 
-- GUI, people, controls and logging: `mocap/gui.py`, `workspace_ui.py`, `people_ui.py`, `character_ui.py`, `console_log.py`, `tooltips.py`.
+- GUI, people, controls and logging: `mocap/gui.py`, `workspace_ui.py`, `people_ui.py`, `character_ui.py`, `console_log.py`, `tooltips.py`; remembered window choices: `local_choices.py`.
 - Model selection and loading: `mocap/motion_tools.py`, `models.py`, `model_guide.py`; worker routing and runtimes: `worker.py`, `worker_progress.py`, `runtime_registry.py`, `compute_policy.py`.
 - MAMMA inputs/UI: `mocap/mamma_inputs.py`, `mamma_ui.py`; processing: `mamma_pipeline.py`, `mamma_camera.py`, `mamma_publish.py`, `mamma_body.py`; runtime/assets: `mamma_runtime.py`, `mamma_manager.py`, `mamma_models.py`, `installer/mamma-runtime-lock.json`, `tools/setup_mamma.py`. Follow [the native-build runbook](MAMMA_AGENT_SETUP.md) instead of guessing module build commands.
 - PromptHMR UI/pipeline: `mocap/prompthmr_ui.py`, `prompthmr_pipeline.py`, `prompthmr_cache.py`, `prompthmr_publish.py`, `prompthmr_scene.py`; runtime/assets: `prompthmr_runtime.py`, `prompthmr_manager.py`, `prompthmr_models.py`, `prompthmr_worker_boot.py`, `installer/prompthmr-runtime-lock.json`, `installer/prompthmr_adapters.py`, `installer/verify_prompthmr.py`, `tools/setup_prompthmr.py`. Follow the separate setup/verification steps above.

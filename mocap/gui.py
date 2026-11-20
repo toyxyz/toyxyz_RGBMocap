@@ -1500,6 +1500,14 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         os.environ[ENV]='1' if value else '0'
         self.log.append(message(value))
 
+    def remember_model_pick(self,index):
+        # Code changes the selector with signals blocked, so this is a user pick; skip it if select_model refused it.
+        model=self.model_choice.itemData(index)
+        if model!=self.model_choice.currentData():return
+        from .local_choices import remember_model
+        try:remember_model(model)
+        except (OSError,ValueError) as error:self.log.append('Cannot save the AI Motion Model choice: '+str(error))
+
     def start_jobs(self, jobs, refresh_characters=False):
         if self.busy:
             return
