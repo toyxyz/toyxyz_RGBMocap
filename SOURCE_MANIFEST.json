@@ -2401,8 +2401,8 @@
     },
     {
       "path": "mocap/ue5_fbx_scene.py",
-      "bytes": 8571,
-      "sha256": "591400964a85b93d08b8c74067d817cfd33a2daf73573b57d37d9cf817bfca36"
+      "bytes": 10297,
+      "sha256": "b47684c292e9c27d48deb4b9f23e933a824c5b6569c803b480690b6407a15be5"
     },
     {
       "path": "mocap/ue5_reference.py",
@@ -2411,8 +2411,8 @@
     },
     {
       "path": "mocap/ue5_retarget.py",
-      "bytes": 17905,
-      "sha256": "a12bbcc40ede4142e06a43aa6344918289dfe7351340df1e76c802f69c914127"
+      "bytes": 18228,
+      "sha256": "f7b8a9e8c99626a0aa13d1b459a68f20d3379f5d3021babd054e20babff236ba"
     },
     {
       "path": "mocap/ui_refresh.py",
@@ -2616,8 +2616,8 @@
     },
     {
       "path": "tests/test_ue5_arm_retarget.py",
-      "bytes": 3773,
-      "sha256": "93b0659a4e4c396e1f909cf5013b8940b7b06dca73bd806c22059fba5f15a1ea"
+      "bytes": 7142,
+      "sha256": "f79bb2240d3a6bf88d8ff7bd29f34e06b3a5615237be516d8e0fadf966be6486"
     },
     {
       "path": "tests/test_unreal_stream.py",

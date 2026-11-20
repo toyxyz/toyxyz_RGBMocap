@@ -303,10 +303,14 @@ def retarget(source_names, rest_positions, rest_rotations, positions, rotations,
     lower = np.full(len(src_p),-15.)
     upper = np.full(len(src_p),15.)
     foot_rotations = []
+    # Use one horizontal anchor for both feet. Separate rest offsets would
+    # change the captured stance width by a constant on every frame.
+    horizontal_offset = np.mean(
+        [ref_p[dst[2], :2] - ratio * src_rest[src[2], :2] for src, dst in legs], axis=0)
     for (src,dst),lengths in zip(legs,leg_lengths):
         source_ankle,target_ankle = src[2],dst[2]
         goal = ref_p[target_ankle]+ratio*(src_p[:,source_ankle]-src_rest[source_ankle])
-        goal[:,:2] -= center
+        goal[:, :2] = ratio * src_p[:, source_ankle, :2] + horizontal_offset - center
         if in_place:
             goal[:,:2] -= planar
         goals.append(goal)

@@ -115,7 +115,40 @@ def set_matrix(element, matrix):
 
 
 @contextmanager
-def rigid_bind_pose():
+def skeleton_bind_pose():
+    # Blender emits BindPose records for skinned meshes. Animation-only FBX
+    # needs the same record, otherwise Blender can use its animated first pose
+    # as the rest pose. Reuse the exporter's world-space bone transforms and IDs.
+    from io_scene_fbx import export_fbx_bin
+
+    scene_data = export_fbx_bin.fbx_data_from_scene
+    armature_elements = export_fbx_bin.fbx_data_armature_elements
+
+    def scene_with_bind(scene, depsgraph, settings):
+        data = scene_data(scene, depsgraph, settings)
+        if b'BindPose' in data.templates:
+            return data
+        data.templates[b'BindPose'] = export_fbx_bin.fbx_template_def_pose(scene, settings, nbr_users=1)
+        return data._replace(templates_users=data.templates_users + 1)
+
+    def write_armature(root, armature, data):
+        armature_elements(root, armature, data)
+        if not any(element.id == b'Pose' and element.props[2] == b'BindPose' for element in root.elems):
+            bones = tuple(bone for bone in armature.bones if bone in data.objects)
+            export_fbx_bin.fbx_data_bindpose_element(
+                root, armature, armature.bdata.data, data, bones=bones)
+
+    export_fbx_bin.fbx_data_from_scene = scene_with_bind
+    export_fbx_bin.fbx_data_armature_elements = write_armature
+    try:
+        yield
+    finally:
+        export_fbx_bin.fbx_data_from_scene = scene_data
+        export_fbx_bin.fbx_data_armature_elements = armature_elements
+
+
+@contextmanager
+def rigid_bind_pose(with_skin):
     # Blender builds the bind from float32 matrices. FBX SDK decomposes them
     # on load, and small scale errors near right angles can invalidate the
     # entire bind. Keep all bind/cluster matrices consistently rigid.
@@ -125,7 +158,9 @@ def rigid_bind_pose():
     def write_with_rigid_bind(filename, root, version):
         objects = element_child(root, b'Objects')
         pose = element_child(objects, b'Pose')
-        mesh, = (node for node in objects.elems if node.id == b'Model' and node.props[2][4:] == b'Mesh')
+        mesh = None
+        if with_skin:
+            mesh, = (node for node in objects.elems if node.id == b'Model' and node.props[2][4:] == b'Mesh')
         mesh_bind = None
         for node in pose.elems:
             if node.id != b'PoseNode':
@@ -133,8 +168,10 @@ def rigid_bind_pose():
             entry = element_child(node, b'Matrix')
             matrix = rigid_matrix(entry)
             set_matrix(entry, matrix)
-            if element_child(node, b'Node').props == mesh.props[:1]:
+            if mesh is not None and element_child(node, b'Node').props == mesh.props[:1]:
                 mesh_bind = matrix
+        if mesh is None:
+            return original_write(filename, root, version)
         if mesh_bind is None:
             raise ValueError('Missing mannequin FBX mesh bind matrix.')
         for node in objects.elems:
@@ -180,7 +217,8 @@ def export(work):
     animate(arm, names, locations, rotations)
     scene.frame_set(scene.frame_start)
     progress(1, 'Writing UE5 Mannequin FBX')
-    with rigid_bind_pose() if skin_label else nullcontext():
+    bind_context = nullcontext() if skin_label else skeleton_bind_pose()
+    with bind_context, rigid_bind_pose(with_skin=bool(skin_label)):
         result = bpy.ops.export_scene.fbx(
             filepath=str(work / 'mannequin.fbx'), use_selection=True, object_types={'ARMATURE', 'MESH'} if skin_label else {'ARMATURE'},
             axis_forward='-Y', axis_up='Z', apply_unit_scale=True, apply_scale_options='FBX_SCALE_NONE',
