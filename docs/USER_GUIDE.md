@@ -95,6 +95,9 @@ Blender retains its GPL license and bundled notices; see [Third-party notices](.
 not a minimum specification. Other GPUs, drivers and clean Windows installations
 have not yet been verified; compatibility reports are welcome.
 
+On Windows 11 with Smart App Control set to **On**, see
+[Smart App Control troubleshooting](#smart-app-control-on-windows-11) before running setup.
+
 1. Install [Git for Windows](https://git-scm.com/download/win). Open **Command
    Prompt** in a writable folder, then run:
 
@@ -291,6 +294,23 @@ runtime\python.exe -I -X utf8 -B tools\git_update.py
 Read actual Git/download/installation errors before retrying; an incomplete
 installation remains incomplete until verification succeeds. Force-closing the
 console or deleting the running launcher is not a supported update path.
+
+### Smart App Control on Windows 11
+
+Smart App Control may block the unsigned private `python.exe` that
+`install.cmd` starts from `.setup/python/`. It can also block the private
+Python used by `RGBMoCap.cmd` after installation. Setup uses an app-local
+runtime even when Python is already installed on the system. An installation
+and launch path with Smart App Control set to **On** has yet to be verified.
+See [reported issue #68](https://github.com/toyxyz/toyxyz_RGBMocap/issues/68)
+and [Microsoft's Smart App Control overview](https://learn.microsoft.com/en-us/windows/apps/develop/smart-app-control/overview).
+
+If Windows reports a block, open **Event Viewer > Applications and Services
+Logs > Microsoft > Windows > CodeIntegrity > Operational**. Event **3077**
+records the policy block. A related **3089** entry with
+`TotalSignatureCount: 0` shows that the blocked file is unsigned. Match the
+events by their activity ID and check the blocked filename. See
+[Microsoft's App Control event reference](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/operations/event-id-explanations).
 
 ### Installation verification and repair
 

@@ -41,6 +41,11 @@ The steps below cover Windows. For the experimental x86-64 Linux AppImage and
 source installation, see the [Linux guide](https://github.com/toyxyz/toyxyz_RGBMocap/blob/linux_support/docs/LINUX.md#test-the-appimage-on-linux-mint).
 The AppImage was tested on WSL 2. Native Linux Mint testing is welcome.
 
+> [!IMPORTANT]
+> On Windows 11, Smart App Control in **On** mode may block the unsigned private
+> Python runtime used by RGB MoCap. This can stop installation or launch.
+> See [Smart App Control troubleshooting](docs/USER_GUIDE.md#smart-app-control-on-windows-11).
+
 1. Install [Git for Windows](https://git-scm.com/download/win). Open **Command Prompt**
    in a writable folder where you want to install RGB MoCap, then clone the repository:
 
