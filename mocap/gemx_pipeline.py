@@ -104,7 +104,9 @@ def reconstruct(request, cfg):
         workspace = read(root)
         if workspace.get('media') and media_path(root, workspace).resolve() == video:
             offset = float(workspace.get('time_offset', 0.))
+    from .rife_video import RECIPE, recipe, convert
     local_start = start - offset
+    interpolation = recipe(job.get('interpolation') == RECIPE, source['fps'])
     length = round((end-start)*FPS)
     if (job.get('version') != 1 or not math.isfinite(start) or not math.isfinite(end)
             or not math.isfinite(offset) or not 0 <= local_start < end-offset <= source['duration'] + .002 or not 4 <= length <= 1800
@@ -139,9 +141,12 @@ def reconstruct(request, cfg):
                    '-map', '0:v:0', '-vf', 'fps=30:start_time=0,pad=ceil(iw/2)*2:ceil(ih/2)*2',
                    '-frames:v', str(length), '-c:v', 'libx264', '-crf', '18', '-pix_fmt', 'yuv420p',
                    '-threads', '2', '-an', '-movflags', '+faststart', str(clip)]
-        child = subprocess.run(command, capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
-        if child.returncode:
-            raise ValueError('Cannot prepare working video: ' + child.stderr[-1000:].decode('utf-8', 'replace'))
+        if interpolation:
+            convert(video, clip, local_start, length, layout='pad', emit=emit)
+        else:
+            child = subprocess.run(command, capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
+            if child.returncode:
+                raise ValueError('Cannot prepare working video: ' + child.stderr[-1000:].decode('utf-8', 'replace'))
         media = probe(clip)
         frames = media['frames']
         if abs(media['fps'] - FPS) > .001 or not max(4, length - 1) <= frames <= length:
@@ -223,6 +228,8 @@ def reconstruct(request, cfg):
                      width=media['width'], height=media['height'], camera='static', stages={},
                      timeline=dict(start=start, step=1/FPS, frames=length),
                      pipeline=dict(model='gemx', result='initial'), workspace_root='../../..')
+        if interpolation:
+            state['interpolation'] = interpolation
         atomic_json(project / 'project.json', state)
         atomic_json(project / RECEIPT, dict(version=1, frames=length, fps=FPS,
                     skeleton='soma-native77', virtual_root='omitted',

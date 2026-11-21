@@ -547,6 +547,26 @@ Automatic can overlap bounded CPU image preparation with GPU work when CPU/RAM
 headroom permits; Low Memory disables that prefetch. For measured worker-startup
 and feature-stage gains, see [resource modes and optimizations](PERFORMANCE.md).
 
+### RIFE frame interpolation
+
+**RIFE Frame Interpolation** is below the Movie Clip preview, next to **Find
+person** when that button is available. It starts off for new videos. Enable it
+to create a 30 fps working clip from a video below 30 fps before finding people
+or reconstructing. Inputs at 30 fps or higher still use the standard converter.
+The original video and audio are preserved.
+
+In **Model Manager**, open an offline model tab and use **Auto Download** on
+**RIFE 4.9 / Frame Interpolation (Optional)**. One approximately 21 MB model is
+shared by all offline workflows and verified with SHA-256. It requires the
+existing NVIDIA CUDA runtime and is excluded from **Download All**. You can
+also download the pinned model manually and use **Import...** on the same row.
+
+For ExMR, FlowHMR and GVHMR, run **Find person** again after changing the
+option if people were already detected. The new working clip has its own person
+detection and motion cache. In MAMMA, RIFE runs only on cameras below 30 fps
+and places them on the common trim's 30 fps grid. PEAR's live preview uses
+its existing input timing.
+
 ## Choose a model
 
 Each model has a [detailed guide](models/README.md): [ExMR](models/EXMR.md),

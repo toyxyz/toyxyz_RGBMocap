@@ -138,6 +138,7 @@ def main() -> int:
     parser.add_argument("--video", type=Path)
     parser.add_argument("--start", type=float, default=0)
     parser.add_argument("--end", type=float)
+    parser.add_argument("--rife-interpolation", action="store_true")
     parser.add_argument("--model")
     parser.add_argument("--motion-tool", choices=list(MOTION_TOOLS))
     parser.add_argument("--result", choices=["auto", *RESULTS], default="auto")
@@ -171,7 +172,9 @@ def main() -> int:
             return 0
         if args.stage == "prepare":
             from .video import prepare
-            project = prepare(args.video.resolve(), args.start, args.end,motion_tool=args.motion_tool or 'gvhmr',project=args.project)
+            project = prepare(args.video.resolve(), args.start, args.end,
+                              motion_tool=args.motion_tool or 'gvhmr', project=args.project,
+                              rife=args.rife_interpolation, emit=emit)
             manifest = json.loads((project / "project.json").read_text(encoding="utf-8"))
             if args.motion_tool=='flowhmr':
                 manifest['flow_options']={**manifest.get('flow_options',{}),'camera_interval':int(os.environ.get('RGB_MOCAP_FLOW_INTERVAL','0')),'fast_sam':os.environ.get('RGB_MOCAP_FLOW_FAST_SAM','1')=='1','sam_batch4':os.environ.get('RGB_MOCAP_FLOW_BATCH4','1')=='1','sam_gpu_crop':os.environ.get('RGB_MOCAP_FLOW_GPU_CROP','1')=='1','sam_hand_stride4':os.environ.get('RGB_MOCAP_FLOW_HAND_STRIDE4','1')=='1'}

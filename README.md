@@ -162,6 +162,9 @@ do not put passwords or account tokens in the agent chat.
 
 ## Features
 
+- Optionally use RIFE frame interpolation for videos below 30 fps before offline
+  reconstruction. The standard converter is the default. [RIFE setup and usage](docs/USER_GUIDE.md#rife-frame-interpolation)
+
 - Manage model files across workflows in one window. See which workflows share each file, filter to dedicated models, and remove installed files after reviewing the affected workflows. [Model Manager guide](docs/USER_GUIDE.md#prepare-models)
 - Reconstruct one or several people and preview the body mesh and animation bones.
 - Reduce sliding with foot/palm contact correction and editable contact timings.

@@ -364,6 +364,18 @@ change is needed. Paired 7/14.2-second mask tests cut time 17–21%, changed RAM
 
 ### Capture, correction and export
 
+The optional **RIFE Frame Interpolation** control under Movie Clip defaults
+off. Enable it before **Find person** or **Reconstruct 3D** on footage below
+30 fps. Confirm the shared RIFE 4.9 model in Model Manager. Model Manager
+verifies the checkpoint separately and **Download All** skips it. The
+converter uses source presentation timestamps, avoids interpolating across
+detected cuts and streams adjacent frames. Keep the original media and its
+timeline intact. Key prepared clips and detection caches by the interpolation
+recipe. An existing person selection must be detected again on the new working
+clip after changing modes. PromptHMR and MAMMA use separate inference identities
+for RIFE. MAMMA keeps a common 30 fps grid for mixed camera rates. See
+[the user guide](USER_GUIDE.md#rife-frame-interpolation).
+
 1. Select an AI Motion Model and prepare its models, then **File > Open Video** and optionally trim the Video track. Select MAMMA before opening multiple videos. New sessions start on the last offline model picked in the selector, otherwise ExMR.
 2. For ExMR, FlowHMR and GVHMR with multiple people, use **Find person** and check the desired rows; without it, automatic tracking selects one person and can switch identity on overlap. PromptHMR tracks people jointly during reconstruction; its People setting is a maximum count and Interaction Prompt is optional. MAMMA instead detects and matches people during reconstruction; Find person is hidden and its People setting controls the count. A checked row controls visibility and ExMR/FlowHMR/GVHMR processing targets; the selected row controls the current timeline and contact edits.
 3. Choose camera and processing settings, then **Reconstruct 3D**. Processing runs on a 30 fps working clip, without changing the original video. Progress and cancellation are in the app. **Prepare Preview** rebuilds previews from existing motion without rerunning inference.

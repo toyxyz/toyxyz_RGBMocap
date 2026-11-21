@@ -10,7 +10,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt, QSize, QRect, Signal, QPersistentModelIndex, QEvent
 from PySide6.QtGui import QColor, QIcon, QPixmap, QPainter, QPen
 from PySide6.QtWidgets import (QWidget,QFrame,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,
-    QListWidget,QListWidgetItem,QColorDialog,QComboBox,QFileDialog,QTabWidget,
+    QListWidget,QListWidgetItem,QColorDialog,QComboBox,QFileDialog,QTabWidget,QCheckBox,
     QStyledItemDelegate,QStyleOptionViewItem,QToolTip,QStyle,QMenu,QInputDialog,QMessageBox)
 
 from .people_store import load_people,save_people,root_for,safe_child,DEFAULT_COLOR
@@ -313,16 +313,40 @@ class PeopleWorkspace:
         self._sam31_prompt = 'person'
         bar.addWidget(self.find_person_button)
         bar.addWidget(self.people_tracker)
+        self.rife_interpolation = QCheckBox('RIFE Frame Interpolation')
+        self.rife_interpolation.setToolTip('Use RIFE 4.9 to bring video below 30 fps to 30 fps before offline reconstruction. Download the optional weights in Model Manager. The original video is preserved.')
+        bar.addWidget(self.rife_interpolation)
         bar.addStretch()
         movie_layout.addWidget(footer)
         layout.addWidget(movie,1)
         return body
+
+    def rife_input_rates(self):
+        if self.model_choice.currentData() == 'mamma':
+            return [entry['metadata']['fps'] for entry in self.mamma_inputs]
+        return [getattr(self, '_rife_source_fps', 0)]
+
+    def selected_interpolation(self):
+        from .rife_video import RECIPE, recipe
+        return RECIPE if any(recipe(self.rife_interpolation.isChecked(), fps) for fps in self.rife_input_rates()) else ''
+
+    def ready_for_interpolation(self, interpolation):
+        from .models import BY_KEY, ready
+        from .rife_video import MODEL_KEY
+        if not interpolation or ready(BY_KEY[MODEL_KEY]):
+            return True
+        self.status.setText('Download RIFE 4.9 in Model Manager, or turn off RIFE Frame Interpolation.')
+        self.open_model_manager()
+        return False
 
     def update_people_readiness(self):
         enabled = not self.busy and not self.contact_saving
         from .sam31_runtime import SUPPORTED
         self.people_tracker.setVisible(self.model_choice.currentData() in SUPPORTED)
         self.people_tracker.setEnabled(enabled)
+        from .rife_video import recipe
+        self.rife_interpolation.setEnabled(enabled and self.video_readable
+                                           and any(recipe(True, fps) for fps in self.rife_input_rates()))
         self.find_person_button.setEnabled(enabled and self.video_readable)
         self.people_list.setEnabled(enabled)
         self.person_takes.setEnabled(enabled)
@@ -647,7 +671,8 @@ class PeopleWorkspace:
             root_end=min(float(manifest['end']),root_start+manifest['frames']/manifest['fps'])
             # Cached discovery belongs to the group's complete input, not to a
             # newly trimmed preview or a shorter selected person's take.
-            if abs(first-root_start)<1e-6 and abs(end-root_end)<1e-6:
+            if (manifest.get('interpolation', '') == self.selected_interpolation()
+                    and abs(first-root_start)<1e-6 and abs(end-root_end)<1e-6):
                 self.start_jobs([('people',['--project',str(self.people_root)])])
                 return
         self.input_jobs(['people'])
@@ -688,7 +713,8 @@ class PeopleWorkspace:
             manifest = json.loads((self.people_root/'project.json').read_text(encoding='utf-8'))
             root_start = float(manifest['start'])
             root_end = min(float(manifest['end']), root_start + manifest['frames'] / manifest['fps'])
-            if abs(first-root_start) < 1e-6 and abs(end-root_end) < 1e-6:
+            if (manifest.get('interpolation', '') == self.selected_interpolation()
+                    and abs(first-root_start) < 1e-6 and abs(end-root_end) < 1e-6):
                 self.start_jobs([('sam31_people', ['--project', str(self.people_root), *options])])
                 return
         self.input_jobs(['sam31_people'], people_options=options)

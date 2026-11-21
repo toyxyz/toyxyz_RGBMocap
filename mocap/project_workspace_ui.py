@@ -156,6 +156,8 @@ class ModelWorkspace:
             self.status.setText('Cannot switch model: '+str(error));return False
 
     def open_workspace_video(self,state):
+        self._rife_source_fps = float(state.get('source', {}).get('fps') or 0)
+        self.rife_interpolation.setChecked(False)
         self.video_path=workspace.media_path(self.workspace_root,state)
         self.video_readable=False
         if self.model_choice.currentData()=='mamma' and state.get('mamma_inputs'):

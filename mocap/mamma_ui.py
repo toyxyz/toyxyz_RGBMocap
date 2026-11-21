@@ -216,6 +216,7 @@ class MammaWorkspace:
         self._mamma_missing_sources=tuple(entry['id'] for entry in entries
                                           if not Path(entry['path']).is_file())
         if not restore:
+            self.rife_interpolation.setChecked(False)
             if self.workspace_root is not None:self.remember_workspace_model()
             self.workspace_root=None;self._workspace_video_reference=False;self._workspace_camera=None
             self.clear_preview();self.reset_people();self.project=None
@@ -437,6 +438,9 @@ class MammaWorkspace:
             absent=[m for m in missing('mamma_assets') if options['camera_mode']!='manual' or m.key not in {'flow_vggt','pear_geocalib'}]
             if absent:
                 self.status.setText('Prepare the missing MAMMA models first.');self.open_model_manager();return
+            interpolation = self.selected_interpolation()
+            if not self.ready_for_interpolation(interpolation):
+                return
             first,end=self.processing_range()
             root=self.workspace_root
             if root is None:
@@ -445,7 +449,7 @@ class MammaWorkspace:
             folder=HOME/'cache/mamma-jobs';folder.mkdir(parents=True,exist_ok=True)
             request=folder/(uuid.uuid4().hex+'.json')
             atomic_json(request,dict(version=1,root=str(root),inputs=self.mamma_inputs,start=first,end=end,
-                options=options,active_camera=self.mamma_active_camera,
+                options=options,active_camera=self.mamma_active_camera,interpolation=interpolation,
                 correction_enabled=self.motion_correction.isChecked(),correction=self.selected_correction_options()))
             self.start_jobs([(stage,['--request',str(request)]) for stage in STAGES])
         except (OSError,ValueError,RuntimeError,KeyError) as error:

@@ -37,6 +37,14 @@ DOWNLOAD_PROGRESS_ONLY = {
 }
 
 
+# RIFE opts into a separate MAMMA identity. The original FFmpeg command is unchanged.
+DEFAULT_VIDEO_PREPARATION = {
+    '8787f0a0f4542a45509f6af5215767ec4929b3430144643aa953f3261765627d':
+    '8252ef60d906f1c36a8d3b832fbdf9da8204bedf66d3adecb55de52580121413',
+}
+
+
 def code_hash(path):
     actual=sha256(path)
+    actual=DEFAULT_VIDEO_PREPARATION.get(actual,actual)
     return DOWNLOAD_PROGRESS_ONLY.get(actual,LOGGING_ONLY.get(actual,POLICY_ONLY.get(actual,actual)))
