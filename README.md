@@ -46,12 +46,13 @@ The AppImage was tested on WSL 2. Native Linux Mint testing is welcome.
 > Python runtime used by RGB MoCap. This can stop installation or launch.
 > See [Smart App Control troubleshooting](docs/USER_GUIDE.md#smart-app-control-on-windows-11).
 
-1. Install [Git for Windows](https://git-scm.com/download/win). Open **Command Prompt**
-   in a writable folder where you want to install RGB MoCap, then clone the repository:
+1. Install [Git for Windows](https://git-scm.com/download/win). Use a short, writable
+   installation path such as `C:\RGBMoCap`. Open **Command Prompt** to clone
+   the repository. Adjust the path if you need a different folder.
 
    ```cmd
-   git clone https://github.com/toyxyz/toyxyz_RGBMocap.git
-   cd toyxyz_RGBMocap
+   git clone https://github.com/toyxyz/toyxyz_RGBMocap.git C:\RGBMoCap
+   cd /d C:\RGBMoCap
    ```
 
 2. Prepare the runtimes for ExMR, FlowHMR and GVHMR with their supported add-ons,
@@ -71,6 +72,9 @@ The AppImage was tested on WSL 2. Native Linux Mint testing is welcome.
 
    Keep the console open while the app runs. Prepare the AI model files separately
    using **Model Manager**; some require account registration and manual download.
+
+If setup fails with `WinError 3` or `WinError 206` and the error shows a long
+path, see [Windows path length troubleshooting](docs/USER_GUIDE.md#windows-path-length-during-installation).
 
 To update, close the app and run `update.cmd` from the same folder. See the
 [installation guide](docs/USER_GUIDE.md#install) for disk space, prerequisites

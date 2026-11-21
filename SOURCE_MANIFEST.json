@@ -16,8 +16,8 @@
     },
     {
       "path": "AGENTS.md",
-      "bytes": 2938,
-      "sha256": "e0aad5127a24120992e4b04348255d3b35bb2490dfa9e8cfc83d45ec9a7981a4"
+      "bytes": 3105,
+      "sha256": "fd4ac0bfa03c03ae5e774902026ab53c8380765b077eef99bde820522a0b4e2c"
     },
     {
       "path": "LICENSE",
@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 17498,
-      "sha256": "156c0668f5a7469ac27cc17b33c8747082522ad224e906aa276473252bfdf176"
+      "bytes": 17751,
+      "sha256": "1b7d32aea23eee6947c098d54304452594c84141a6d3c7be2711a59266861311"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -156,13 +156,13 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 102694,
-      "sha256": "eb4563561ba8b40c8bdfa01f63cc889de24a4f2bf140be4a0f2e0bf633f82f8e"
+      "bytes": 103217,
+      "sha256": "199df3ee3ea61374eff2ee4fc3044ac851644523ef46c372e62a390169a9e1fc"
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 17603,
-      "sha256": "93cd3d33b453d367f944f2fc04f43637e0aee3b14b785dc86fcc7fa6284f34ef"
+      "bytes": 17921,
+      "sha256": "f835869af7fa4cb03db815f7d58de9a7e19b924ecf8f84de87297c322ea3055b"
     },
     {
       "path": "docs/CITATIONS.md",
@@ -191,8 +191,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 91646,
-      "sha256": "5445bc4a7cbcaef3302d4bd3e0fa9c83674c7ecc88d901757ca0a4ab93834356"
+      "bytes": 93472,
+      "sha256": "c0ea2f6b320cae6723051a554f79956c31616b056153f3e79903700257834450"
     },
     {
       "path": "docs/VALIDATION.md",

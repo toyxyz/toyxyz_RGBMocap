@@ -99,15 +99,17 @@ On Windows 11 with Smart App Control set to **On**, see
 [Smart App Control troubleshooting](#smart-app-control-on-windows-11) before running setup.
 
 1. Install [Git for Windows](https://git-scm.com/download/win). Open **Command
-   Prompt** in a writable folder, then run:
+   Prompt** and clone into a short, writable installation path such as
+   `C:\RGBMoCap`. Adjust the path if you need a different folder.
 
    ```cmd
-   git clone https://github.com/toyxyz/toyxyz_RGBMocap.git
-   cd toyxyz_RGBMocap
+   git clone https://github.com/toyxyz/toyxyz_RGBMocap.git C:\RGBMoCap
+   cd /d C:\RGBMoCap
    ```
 
-   Use a short, writable installation path such as C:\RGBMoCap. The commands below are for
-   Command Prompt; in PowerShell, prefix each `.cmd` filename with `.\`.
+   The commands below are for Command Prompt. In PowerShell, prefix each `.cmd` filename
+   with `.\`. See [Windows path length troubleshooting](#windows-path-length-during-installation)
+   if setup fails on a deeply nested path.
 2. Run `install.cmd` with an internet connection. It downloads and verifies
    pinned Python environments, Blender 4.5.0, FFmpeg 7.1.1 and small upstream
    support files, and installs the included prebuilt motion-correction module.
@@ -311,6 +313,34 @@ records the policy block. A related **3089** entry with
 `TotalSignatureCount: 0` shows that the blocked file is unsigned. Match the
 events by their activity ID and check the blocked filename. See
 [Microsoft's App Control event reference](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/operations/event-id-explanations).
+
+### Windows path length during installation
+
+The installer creates nested folders under `.setup\staging`. A deep checkout
+or an extra folder from ZIP extraction can push the full path past the
+legacy Windows `MAX_PATH` limit of 260 characters, even when the installation
+folder itself has a short name. An affected operation may report
+`[WinError 3] The system cannot find the path specified` or `[WinError 206]`.
+Check the full path in the traceback. See [installation report #75](https://github.com/toyxyz/toyxyz_RGBMocap/issues/75).
+
+**Use a shorter folder first.** Clone or extract the source into a short,
+writable folder such as `C:\RGBMoCap`. Confirm that `install.cmd` is directly
+inside that folder, then run it from there. After setup, open saved projects
+from their existing locations and [reuse existing model files](#reuse-models-in-a-new-installation)
+as needed.
+
+**To keep the existing path**, run this command in PowerShell as Administrator.
+
+```powershell
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem" /v LongPathsEnabled /t REG_DWORD /d 1 /f
+```
+
+Open a new terminal in the RGB MoCap folder and rerun `install.cmd`
+(`.\install.cmd` in PowerShell). If the setting has yet to take effect, restart
+Windows and retry. This setting applies to programs that declare long-path
+support. The bundled setup Python declares it. A shorter installation path
+can still help when another tool has its own path limit.
+See [Microsoft's Windows path length guidance](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation#enable-long-paths-in-windows-10-version-1607-and-later).
 
 ### Installation verification and repair
 
