@@ -20,9 +20,14 @@ def offered(combo, value):
     return next((i for i in range(combo.count()) if combo.itemData(i) == value), -1)
 
 
-def restore(controls, key):
-    """Apply the saved choices these combo boxes/checkboxes offer; return the others for remember()."""
-    values = saved(key);kept = {}
+def control_values(controls):
+    return {name: control.currentData() if hasattr(control, 'findData') else control.isChecked()
+            for name, control in controls.items()}
+
+
+def apply_choices(controls, values):
+    """Apply the offered choices and retain any unavailable combo-box values."""
+    kept = {}
     if not isinstance(values, dict):return kept
     for name, control in controls.items():
         value = values.get(name)
@@ -35,9 +40,13 @@ def restore(controls, key):
     return kept
 
 
+def restore(controls, key):
+    return apply_choices(controls, saved(key))
+
+
 def remember(controls, key, kept=None):
     from .resource_safety import update
-    values = {name: control.currentData() if hasattr(control, 'findData') else control.isChecked() for name, control in controls.items()}
+    values = control_values(controls)
     # A choice this window could not offer, such as Biped under GEM-X, survives unless the user changed that control.
     for name, (value, fallback) in (kept or {}).items():
         if values.get(name) == fallback:values[name] = value

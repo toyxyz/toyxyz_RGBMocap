@@ -156,8 +156,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 102416,
-      "sha256": "dcafd09f979a1753ccf1af8f104a669a9bc9b7b0e779520d99007fd48f547962"
+      "bytes": 102694,
+      "sha256": "eb4563561ba8b40c8bdfa01f63cc889de24a4f2bf140be4a0f2e0bf633f82f8e"
     },
     {
       "path": "docs/BUILD.md",
@@ -191,8 +191,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 91407,
-      "sha256": "e8695f1795b8d9bda7c723990a4a163a84a5844fe52d8ccf070b3880f641da22"
+      "bytes": 91646,
+      "sha256": "5445bc4a7cbcaef3302d4bd3e0fa9c83674c7ecc88d901757ca0a4ab93834356"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -1306,8 +1306,8 @@
     },
     {
       "path": "mocap/character_export_dialog.py",
-      "bytes": 2833,
-      "sha256": "81959d2b7a8223bc1de48e74d19d6fbccc8ec1de30c9bb7d62f0296ec58362fb"
+      "bytes": 3230,
+      "sha256": "0cee76eee0f945087271b4a739ef6247f3cecd2355b19cf37a10750736f3d34b"
     },
     {
       "path": "mocap/character_gl.py",
@@ -1681,8 +1681,8 @@
     },
     {
       "path": "mocap/local_choices.py",
-      "bytes": 2786,
-      "sha256": "477252e57000e3d0effc0f03c633f575bb90701d7aa210ee10becea3c8345184"
+      "bytes": 2909,
+      "sha256": "dba4f7bf597f81797ec7d77474bf9a1f8aa9c9aaeeb2d83e13f8e023782b45da"
     },
     {
       "path": "mocap/mamma_body.py",
@@ -2321,8 +2321,8 @@
     },
     {
       "path": "mocap/source_export_dialog.py",
-      "bytes": 20155,
-      "sha256": "7b5063c5c57e13a0ae1875ade028702deaff04665525e276647cf0d109778171"
+      "bytes": 20994,
+      "sha256": "2d01c2f9f81c970eac1274401d833be3cda45caba9e85635e107c87769005661"
     },
     {
       "path": "mocap/source_export_worker.py",
@@ -2616,8 +2616,8 @@
     },
     {
       "path": "tests/test_local_choices.py",
-      "bytes": 12693,
-      "sha256": "7b1f3d317b3504dc1b4d19491532e8338bbae32f76209a5e34ef4c46cab7c4a9"
+      "bytes": 16307,
+      "sha256": "5a4e01ded21ff0a5ac89b738d4634a3c0f343f09fa6413e1f79f3871a74169a5"
     },
     {
       "path": "tests/test_model_manager.py",

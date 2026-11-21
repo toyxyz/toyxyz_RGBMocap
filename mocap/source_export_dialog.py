@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, Q
 
 from .export_options import FBX_A_POSE_DEGREES
 from .face_export_ui import FaceExportControls
-from .local_choices import remember, restore
+from .local_choices import apply_choices, control_values, remember, restore
 from .tooltips import tooltip_text
 
 CHOICES = 'source_export'
@@ -112,6 +112,10 @@ class SourceExportDialog(QDialog):
         layout.addStretch(1)
         buttons=QDialogButtonBox(QDialogButtonBox.Save|QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Save).setText('Continue...');buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);layout.addWidget(buttons)
+        self.defaults_button = buttons.addButton('Defaults', QDialogButtonBox.ResetRole)
+        self.defaults_button.clicked.connect(self.reset_defaults)
+        self.initial_choices = control_values(self.resettable_controls())
+        self.initial_camera_scale = self.translation_scale.value()
         self.kept_choices=restore(self.remembered_controls(),CHOICES)
         for signal in (self.format.currentIndexChanged,self.fbx_profile.currentIndexChanged,self.fbx_rest_pose.currentIndexChanged,self.blend_layout.currentIndexChanged,self.whole_scene.toggled,self.animate_camera.toggled):signal.connect(self.update_format)
         self.update_format()
@@ -196,6 +200,17 @@ class SourceExportDialog(QDialog):
             log=getattr(self.parent(),'log',None)
             if log is not None:log.append('Cannot save export options: '+str(error))
         super().accept()
+
+    def reset_defaults(self):
+        apply_choices(self.resettable_controls(), self.initial_choices)
+        self.translation_scale.setValue(self.initial_camera_scale)
+        self.kept_choices.clear()
+        self.update_format()
+
+    def resettable_controls(self):
+        return dict(self.remembered_controls(), blend_layout=self.blend_layout,
+                    whole_scene=self.whole_scene, animate_camera=self.animate_camera,
+                    background_refine=self.background_refine)
 
     def remembered_controls(self):
         # Take scope and chosen takes belong to the open project; they are not remembered.

@@ -744,7 +744,11 @@ PEAR is never saved, and opening a project restores its own model without
 writing the file. Missing, malformed or unoffered values fall back to the window
 defaults; a saved MAMMA, PromptHMR or GEM-X model without a configured runtime
 starts ExMR. These are not project data or inference identities, and they do not
-change what an export writes for given options.
+change what an export writes for given options. **Defaults** restores each
+dialog's initial export controls, including the Blender controls in the source
+dialog. Preserve the current take selection and scope. Discard retained
+unavailable choices on reset and persist the restored preferences only when
+the dialog is accepted.
 
 Use **Resource Mode > Automatic** by default. It keeps the fast path when the current GPU budget is sufficient and selects supported Low Memory paths per operation when needed. A supported fast operation that raises CUDA OOM is released and retried once in Low Memory. ExMR Low Memory uses CPU-first body/hand loading and converts Sapiens' existing FP16 layers before GPU transfer; ExMR body/hand batches stay 8. FlowHMR offloads SAM/VGGT blocks; MAMMA offloads VGGT camera blocks while retaining its pinned masks/landmark/fitting settings. GVHMR/add-ons retain adaptive image batches and full-context attention. The saved Automatic selection is not changed. Resource decisions and memory advice appear in the app Console and CMD. Model precision, frame count, resolution and iterations are not reduced. CPU loading/offloading can be slower and use more RAM; it is not a promise every clip will fit. Estimates select a path, never reject a job. With Resource Safety enabled, the desktop checks actual RAM and Windows allocation headroom every 0.5 seconds and stops workers when these become low. Preserve completed stages, genuine model limits and original motion. Do not rerun inference for operations that can use existing results.
 

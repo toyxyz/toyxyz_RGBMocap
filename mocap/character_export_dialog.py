@@ -2,7 +2,7 @@
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QFormLayout,QComboBox,QCheckBox,QLabel,QDialogButtonBox
 
 from .face_export_ui import FaceExportControls
-from .local_choices import remember, restore
+from .local_choices import apply_choices, control_values, remember, restore
 
 CHOICES = 'character_export'
 
@@ -24,6 +24,9 @@ class CharacterExportDialog(QDialog):
         self.note=QLabel();self.note.setWordWrap(True);layout.addWidget(self.note)
         buttons=QDialogButtonBox(QDialogButtonBox.Save|QDialogButtonBox.Cancel)
         buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);layout.addWidget(buttons)
+        self.defaults_button = buttons.addButton('Defaults', QDialogButtonBox.ResetRole)
+        self.defaults_button.clicked.connect(self.reset_defaults)
+        self.initial_choices = control_values(self.remembered_controls())
         self.kept_choices=restore(self.remembered_controls(),CHOICES)
         self.format.currentIndexChanged.connect(self.update_format);self.update_format()
 
@@ -33,6 +36,10 @@ class CharacterExportDialog(QDialog):
             log=getattr(self.parent(),'log',None)
             if log is not None:log.append('Cannot save export options: '+str(error))
         super().accept()
+
+    def reset_defaults(self):
+        apply_choices(self.remembered_controls(), self.initial_choices)
+        self.kept_choices.clear()
 
     def remembered_controls(self):
         return dict(format=self.format,include_mesh=self.mesh,**self.face_export.controls())

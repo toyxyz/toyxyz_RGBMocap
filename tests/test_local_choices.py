@@ -215,6 +215,77 @@ class LocalChoicesTest(unittest.TestCase):
         self.assertEqual(self.read()['source_export']['bvh_profile'], 'biped')
         self.assertEqual(self.dialog().profile.currentData(), 'biped')
 
+    def test_source_defaults_keep_selected_takes_and_save_on_continue(self):
+        parent = QWidget()
+        self.addCleanup(parent.deleteLater)
+        parent.model_choice = QComboBox(parent)
+        parent.model_choice.addItem('FlowHMR', 'flowhmr')
+        parent.camera_tools = SimpleNamespace(
+            background_options=lambda: {'flowhmr': True},
+            scale=SimpleNamespace(value=lambda: 2.5),
+        )
+        defaults = self.values(self.dialog(SourceExportDialog, parent))
+        original = dict(source_export=SAVED, motion_model='flowhmr', resource_safety=False)
+        self.write(original)
+        dialog = self.dialog(SourceExportDialog, parent, show_take_scope=True)
+        dialog.take_scope.setCurrentIndex(dialog.take_scope.findData('selected'))
+        takes = {Path('selected-take')}
+        dialog.selected_take_paths = takes
+        dialog.format.setCurrentIndex(dialog.format.findData('blend'))
+        dialog.blend_layout.setCurrentIndex(dialog.blend_layout.findData('combined'))
+        dialog.animate_camera.setChecked(False)
+        dialog.background_refine.setChecked(False)
+        dialog.translation_scale.setValue(10)
+
+        dialog.defaults_button.click()
+        self.assertEqual(self.values(dialog), defaults)
+        self.assertEqual(dialog.blend_layout.currentData(), 'separate')
+        self.assertTrue(dialog.animate_camera.isChecked())
+        self.assertTrue(dialog.background_refine.isChecked())
+        self.assertEqual(dialog.translation_scale.value(), 2.5)
+        self.assertEqual(dialog.options()['take_scope'], 'selected')
+        self.assertEqual(dialog.options()['selected_takes'], takes)
+        self.assertFalse(dialog.face_export.format.isVisibleTo(dialog))
+        self.assertEqual(dialog.result(), QDialog.Rejected)
+        dialog.reject()
+        self.assertEqual(self.read(), original)
+
+        dialog = self.dialog(validate=refuse)
+        dialog.defaults_button.click()
+        dialog.accept()
+        self.assertEqual(dialog.result(), QDialog.Rejected)
+        self.assertEqual(self.read(), original)
+
+        dialog = self.dialog()
+        dialog.defaults_button.click()
+        dialog.accept()
+        self.assertEqual(self.read(), dict(original, source_export=defaults))
+        self.assertEqual(self.dialog().options(), DEFAULT_OPTIONS)
+
+    def test_defaults_discard_a_bvh_choice_unavailable_to_gemx(self):
+        self.write(dict(source_export=dict(format='bvh', bvh_profile='biped')))
+        dialog = self.dialog(SourceExportDialog, self.gemx_window())
+        dialog.defaults_button.click()
+        dialog.accept()
+        self.assertEqual(self.read()['source_export']['bvh_profile'], 'generic')
+        self.assertEqual(self.dialog().options(), DEFAULT_OPTIONS)
+
+    def test_character_defaults_replace_unavailable_vmd_on_save(self):
+        original = dict(character_export=dict(format='vmd', include_mesh=False, export_face=True,
+                                              face_format='livelink_csv', smooth_face=False))
+        self.write(original)
+        dialog = self.dialog(CharacterExportDialog, 'fbx')
+        dialog.defaults_button.click()
+        self.assertEqual(dialog.options(), dict(format='fbx', include_mesh=True, export_face=False,
+                                                face_format='txt', smooth_face=True))
+        dialog.reject()
+        self.assertEqual(self.read(), original)
+
+        dialog = self.dialog(CharacterExportDialog, 'fbx')
+        dialog.defaults_button.click()
+        dialog.accept()
+        self.assertEqual(self.dialog(CharacterExportDialog, 'pmx').options(), dialog.options())
+
     def test_save_failure_does_not_block_export(self):
         parent = self.gemx_window()
         parent.log = []

@@ -971,7 +971,10 @@ the leading reference frame, origin placement, symmetrical rest and **Export Fac
 settings, saved locally independently of projects. Export scope, chosen takes and
 Blender project settings are not remembered. A choice the selected model does not
 offer, such as **3ds Max Biped** for GEM-X, shows its default. **Export Character...**
-remembers its format, mesh and face choices in the same way.
+remembers its format, mesh and face choices in the same way. Click **Defaults** to
+restore the export options for the current window while keeping the export scope
+and chosen takes. **Continue...** or **Save** remembers the restored preferences.
+**Cancel** keeps the previously saved preferences.
 
 BVH uses the same 52-bone hierarchy, metre units and Y up, including finger bones
 and terminal tips. Import into Blender with **Scale 1 / Forward -Z / Up Y**.
