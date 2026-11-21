@@ -25,6 +25,8 @@ def configuration(root=ROOT):
     if path.stat().st_size > 2*1024**2:
         raise ValueError('Invalid MAMMA runtime configuration.')
     value = json.loads(path.read_text(encoding='utf-8'))
+    if not isinstance(value, dict):
+        raise ValueError('Invalid MAMMA runtime configuration.')
     if value.get('version') not in (2,3) or not value.get('license_reviewed'):
         raise ValueError('Review the official MAMMA license before configuring its optional environment.')
     for key in ('python', 'engine'):

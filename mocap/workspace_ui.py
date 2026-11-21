@@ -331,7 +331,8 @@ def build_workspace(w):
     w.model_choice.setToolTip(tooltip_text('Choose the AI model used to create motion. Open Model Guide for a comparison.'))
     for tool in MOTION_TOOLS.values():
         w.model_choice.addItem(tool.label, tool.key)
-    w.model_choice.setCurrentIndex(w.model_choice.findData('exmr'))
+    from .local_choices import start_model
+    w.model_choice.setCurrentIndex(w.model_choice.findData(start_model()))
     w.model_choice.setItemData(w.model_choice.findData('gvhmr'), tooltip_text('GVHMR: body tracking with optional hand and foot refinement. Sometimes better for unusual poses such as backflips in our subjective tests.'), Qt.ToolTipRole)
     selector.addWidget(w.model_choice)
     w.htd_refine = QCheckBox("HTD Refine")
@@ -591,6 +592,8 @@ def build_workspace(w):
     content_layout.addStretch()
     w.settings_scroll=scroll
     w.model_choice.currentIndexChanged.connect(w.select_model)
+    # Connected after select_model so a refused pick is already reverted.
+    w.model_choice.currentIndexChanged.connect(w.remember_model_pick)
     main.addWidget(sidebar)
     main.setSizes([1120, 260])
     main.setStretchFactor(0, 1)

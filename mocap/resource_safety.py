@@ -1,4 +1,4 @@
-"""Local execution preference, independent of motion/project identities."""
+"""Local execution preference and the config/local.json it shares, independent of motion/project identities."""
 import json
 import os
 from pathlib import Path
@@ -37,14 +37,19 @@ def load(root=None):
     except (OSError, ValueError):return True
 
 
-def save(value, root=None):
-    if not isinstance(value, bool):raise ValueError('Invalid Resource Safety selection.')
+def update(values, root=None):
+    # Shared by every local preference; an unreadable file is kept, not replaced.
     from .storage import atomic_json
     target = path(root);settings = read_settings(target)
-    settings['resource_safety'] = value
+    settings.update(values)
     if len(json.dumps(settings, ensure_ascii=False, indent=2).encode('utf-8')) > MAX_BYTES:
         raise ValueError('Local settings exceed the size limit.')
     atomic_json(target, settings)
+
+
+def save(value, root=None):
+    if not isinstance(value, bool):raise ValueError('Invalid Resource Safety selection.')
+    update({'resource_safety': value}, root)
 
 
 def message(value):

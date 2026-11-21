@@ -506,8 +506,10 @@ These cover required files, settings, defaults and workflow limitations.
 
 These quality comparisons are **subjective observations from our test videos**,
 not accuracy scores or a universal ranking. See the in-app **Model Guide** for
-recorded speed and memory measurements. New sessions start with **ExMR** selected;
-opening a project restores its saved model. **Prepare Preview**, below
+recorded speed and memory measurements. New sessions start with the offline model
+you last selected, saved locally with Resource Safety; PEAR is not remembered.
+**ExMR** is selected the first time, or when the remembered model's optional
+runtime is not installed. Opening a project restores its saved model. **Prepare Preview**, below
 **Reconstruct 3D**, prepares existing motion without running inference again.
 
 | Model | Observed strengths | Finger animation |
@@ -943,7 +945,13 @@ for Blender project exports and do not change imported-character exports.
   Source motion, correction results, viewport geometry and cached bind data remain
   unchanged. The option is a reference skeleton change, not an added T-pose frame.
 
-The export options window keeps the same size when switching formats.
+The export options window keeps the same size when switching formats. It also
+reopens with the choices from your last **Continue...**: format, profiles, rest pose,
+the leading reference frame, origin placement, symmetrical rest and **Export Face**
+settings, saved locally independently of projects. Export scope, chosen takes and
+Blender project settings are not remembered. A choice the selected model does not
+offer, such as **3ds Max Biped** for GEM-X, shows its default. **Export Character...**
+remembers its format, mesh and face choices in the same way.
 
 BVH uses the same 52-bone hierarchy, metre units and Y up, including finger bones
 and terminal tips. Import into Blender with **Scale 1 / Forward -Z / Up Y**.

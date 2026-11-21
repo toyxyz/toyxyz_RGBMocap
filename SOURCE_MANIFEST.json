@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "date": "2026-11-20",
+  "date": "2026-11-21",
   "purpose": "Public source distribution; excludes model weights and runtime binaries",
   "version": "git-source",
   "files": [
@@ -156,8 +156,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 101278,
-      "sha256": "fcaed62ebebb7dd649033983213d447dd68dc128fd9f77747af5105a40ceb137"
+      "bytes": 102138,
+      "sha256": "b87255e1a478432d6470a04947dd5954187e2f746e8361e620f1825f1a572ea5"
     },
     {
       "path": "docs/BUILD.md",
@@ -191,8 +191,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 89403,
-      "sha256": "141eaf5ae922893a04e58656029719b982ce77e2e6d00c3bf7a1e09ede171169"
+      "bytes": 90082,
+      "sha256": "88a8ee858cbe6a20120a64285daea5f1f2bc41de055fb41d1fb83bd9b68ebfec"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -1306,8 +1306,8 @@
     },
     {
       "path": "mocap/character_export_dialog.py",
-      "bytes": 2255,
-      "sha256": "4bf5d1b0288a02c044534bb9eb73eab1ed3fe591bdf46179577d468804d17c02"
+      "bytes": 2833,
+      "sha256": "81959d2b7a8223bc1de48e74d19d6fbccc8ec1de30c9bb7d62f0296ec58362fb"
     },
     {
       "path": "mocap/character_gl.py",
@@ -1426,8 +1426,8 @@
     },
     {
       "path": "mocap/face_export_ui.py",
-      "bytes": 1633,
-      "sha256": "6799318fd62b724f1d7948e9bc1177831d5507cfa88150f58b39fa8f43252be9"
+      "bytes": 1833,
+      "sha256": "94c7995a81508ff1e382147209ea834f40958adc849e0f1f755c82b8f7875b25"
     },
     {
       "path": "mocap/face_neutral.py",
@@ -1636,8 +1636,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 129918,
-      "sha256": "1ab61926d59d526c8f37d45b95a88cccb576264e60d1ee46a356d730f550c29c"
+      "bytes": 130383,
+      "sha256": "53a943535de134a7d2c8c49fe6b63d188392c64a15dde84903333aafef38d0ae"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -1678,6 +1678,11 @@
       "path": "mocap/inference_data.py",
       "bytes": 6610,
       "sha256": "beb72010f72d08c34b775faae7a899d5a952a848026a7f4a9c662044aa2e462e"
+    },
+    {
+      "path": "mocap/local_choices.py",
+      "bytes": 2786,
+      "sha256": "477252e57000e3d0effc0f03c633f575bb90701d7aa210ee10becea3c8345184"
     },
     {
       "path": "mocap/mamma_body.py",
@@ -1726,8 +1731,8 @@
     },
     {
       "path": "mocap/mamma_runtime.py",
-      "bytes": 5812,
-      "sha256": "2e69b856b0969aed3b1e34b02130432f35c3fa434d4e669f11e40943aa6d9757"
+      "bytes": 5913,
+      "sha256": "5f442065959f6a160d0b1e2280f98c62bb5dc66161dc326aefb4b34edcdf9ee1"
     },
     {
       "path": "mocap/mamma_sam_frames.py",
@@ -2086,8 +2091,8 @@
     },
     {
       "path": "mocap/prompthmr_runtime.py",
-      "bytes": 3390,
-      "sha256": "3d2daddc130be6c24115e5f14bffe222df1d1364f34c051791cbede3188af8d6"
+      "bytes": 3493,
+      "sha256": "3172159bc60c048ff51cd2931d5c7f1d56c285b9b60808633380bd004d5153a4"
     },
     {
       "path": "mocap/prompthmr_scene.py",
@@ -2111,8 +2116,8 @@
     },
     {
       "path": "mocap/resource_safety.py",
-      "bytes": 2006,
-      "sha256": "87d3e2dab8b8e66c88b4b9c33f6a80fb3b1fc63ccdbbe553c0ccd82b83e43fa5"
+      "bytes": 2190,
+      "sha256": "aa3e618adf9d9033865f3c8f3103e6d796d86b61f541400cc55e3cbbc4a219e3"
     },
     {
       "path": "mocap/result_artifacts.py",
@@ -2316,8 +2321,8 @@
     },
     {
       "path": "mocap/source_export_dialog.py",
-      "bytes": 19150,
-      "sha256": "3472d64c595bab6ecf9dc5301e6908fee2099f255a10635eae51280eafaf3b14"
+      "bytes": 20155,
+      "sha256": "7b5063c5c57e13a0ae1875ade028702deaff04665525e276647cf0d109778171"
     },
     {
       "path": "mocap/source_export_worker.py",
@@ -2466,8 +2471,8 @@
     },
     {
       "path": "mocap/workspace_ui.py",
-      "bytes": 41324,
-      "sha256": "dfe1deb616da7cef5a7b83bc2bc2390db196e8fb9138a14b289d33708eafa0c9"
+      "bytes": 41521,
+      "sha256": "bb0437f4220bc2cbb0670a72a448b735360820b7a0ddf26e08b3bc3463d5afd9"
     },
     {
       "path": "native_compat/LICENSE",
@@ -2608,6 +2613,11 @@
       "path": "scene_boot.py",
       "bytes": 303,
       "sha256": "c0b07c153f2f6a0bf762c2c88f38ac8d1f5a1d10f5e8028a7cfa11db3664d03e"
+    },
+    {
+      "path": "tests/test_local_choices.py",
+      "bytes": 12693,
+      "sha256": "7b1f3d317b3504dc1b4d19491532e8338bbae32f76209a5e34ef4c46cab7c4a9"
     },
     {
       "path": "tests/test_model_manager.py",
