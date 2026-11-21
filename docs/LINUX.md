@@ -25,7 +25,8 @@ sudo apt install git curl ca-certificates build-essential cmake ffmpeg mesa-util
 Track Face additionally uses PortAudio (`libportaudio2` on Ubuntu). For
 Blender bundles, compatibility FBX and character retargeting, install the
 pinned Blender 4.5.0 build with `./install.sh --with-blender`. You can also use
-Blender 4.5 LTS from `PATH` or set `RGBMOCAP_BLENDER=/path/to/blender` to override it.
+Blender 4.5 LTS from `PATH`. To override the managed Blender, set
+`RGBMOCAP_BLENDER` to the Blender executable or to the directory containing it.
 Install `libsm6` and `libice6` on Ubuntu 24.04 for the standalone Blender build.
 The optional installer verifies the official archive and stages the build
 before publishing it under `runtime_character/blender-linux`. If a later release

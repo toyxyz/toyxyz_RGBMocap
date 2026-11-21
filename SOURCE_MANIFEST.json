@@ -176,8 +176,8 @@
     },
     {
       "path": "docs/LINUX.md",
-      "bytes": 6526,
-      "sha256": "ceeec0066ca5a7a34d7f6c8f8e7a8fe63665070328378b6b6ddd99fac0b732bb"
+      "bytes": 6585,
+      "sha256": "f3e36bd0e1844c564d4ed7679564a850a6f3a92a26bd704e3092d5391bb6c861"
     },
     {
       "path": "docs/MAMMA.md",
@@ -2021,8 +2021,8 @@
     },
     {
       "path": "mocap/playback_check.py",
-      "bytes": 5788,
-      "sha256": "3a889638513f377c6bb3dd60267fdee9d71f1700bc57272fc3ed64bf5c5aadcb"
+      "bytes": 5848,
+      "sha256": "2d678acea17d1d65e663a998945bd8415a1986b030669abddf5246afa73f5de2"
     },
     {
       "path": "mocap/portable_startup.py",
@@ -2056,8 +2056,8 @@
     },
     {
       "path": "mocap/process_memory.py",
-      "bytes": 978,
-      "sha256": "1b3e76f98b00b7e8684fcf0262608820cd43080622d02b1c4aeebff1ab214001"
+      "bytes": 1048,
+      "sha256": "627c37a60c775e951ddef46f2360a980f5bfe8a51ae9b82fe943a15b79354937"
     },
     {
       "path": "mocap/processing_guard.py",
@@ -2241,8 +2241,8 @@
     },
     {
       "path": "mocap/retarget/runtime.py",
-      "bytes": 1297,
-      "sha256": "30cf4d7771cda638f67ab0f8d83920564a77c28f44f60c92b007ef24ce179a77"
+      "bytes": 1317,
+      "sha256": "85b7e10d95475f74637e1f39281d75cbcb331c53b7aa53b01f8cae2208d055e3"
     },
     {
       "path": "mocap/retarget/selective_fbx.py",
@@ -2656,8 +2656,8 @@
     },
     {
       "path": "tests/test_linux_setup.py",
-      "bytes": 1915,
-      "sha256": "284dbde2751ea3e046af4d8a86327d5d1495eaed0c7fed2c583b462d8a0c705f"
+      "bytes": 4247,
+      "sha256": "084954d91ac40a82b0d4751ba850ef3fe0d69abd59e60d36bf059fbb9b8b0778"
     },
     {
       "path": "tests/test_model_manager.py",

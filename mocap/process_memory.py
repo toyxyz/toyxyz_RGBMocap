@@ -19,5 +19,11 @@ def open_handles(process):
 
 
 def private_bytes(process):
-    """Memory owned only by `process` (a psutil.Process): Windows private bytes, POSIX unique set size."""
-    return process.memory_info().private if os.name == 'nt' else process.memory_full_info().uss
+    """Private bytes on Windows or POSIX USS, when the OS allows the query."""
+    if os.name == 'nt':
+        return process.memory_info().private
+    import psutil
+    try:
+        return process.memory_full_info().uss
+    except psutil.AccessDenied:
+        return None

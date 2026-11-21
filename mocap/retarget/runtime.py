@@ -4,11 +4,15 @@ from pathlib import Path
 from mocap.paths import EXE,ROOT
 
 def blender():
-    candidates=[Path(os.environ.get('RGBMOCAP_BLENDER',''))/('blender'+EXE),ROOT/'runtime_character'/('blender'+EXE)]
-    explicit=os.environ.get('RGBMOCAP_BLENDER')
-    if explicit:candidates.insert(0,Path(explicit))
-    if EXE == '':
-        candidates.insert(1 if explicit else 0, ROOT/'runtime_character/blender-linux/blender')
+    name = 'blender' + EXE
+    candidates = []
+    explicit = os.environ.get('RGBMOCAP_BLENDER')
+    if explicit:
+        override = Path(explicit)
+        candidates.extend((override, override / name))
+    if not EXE:
+        candidates.append(ROOT / 'runtime_character/blender-linux/blender')
+    candidates.append(ROOT / 'runtime_character' / name)
     found=shutil.which('blender')
     if found:candidates.append(Path(found))
     # Development discovery only; packaged applications use the managed runtime.
