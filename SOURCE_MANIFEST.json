@@ -66,8 +66,8 @@
     },
     {
       "path": "app.py",
-      "bytes": 4655,
-      "sha256": "5f3bba99d4ca9580c970a47a0c393853ac8a077e81b4d489442f31a4e53c72d7"
+      "bytes": 4692,
+      "sha256": "a1b5fe9c6cda577834253453a8bdfe347899d4265b145b6733c4a721d978fe65"
     },
     {
       "path": "assets/fonts/NotoSansKR.ttf",
@@ -156,8 +156,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 104388,
-      "sha256": "bdbf61d4e64a724a7b0556783c85b49d6b161b3df6ce92d3195e0af0dce24ef5"
+      "bytes": 104669,
+      "sha256": "13d4c36ad616015d7f015bd08d30371de4263b3b37eb8166543ea57b5da74ac5"
     },
     {
       "path": "docs/BUILD.md",
@@ -191,8 +191,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 94913,
-      "sha256": "9e91d3f3042ed660be5458137afbd00cb8cf1d0cfb284f82427034f8a6e1e0e0"
+      "bytes": 95236,
+      "sha256": "8592436c1fa068c41bf2c15a9929242751af33ca13ed492831d5938fe0a16a65"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -1566,8 +1566,8 @@
     },
     {
       "path": "mocap/footlock_editor.py",
-      "bytes": 15712,
-      "sha256": "a4a57aaae84a23fd5c411f854f364cb671c536233d666eef5f7a75deeb74e754"
+      "bytes": 15959,
+      "sha256": "d7b17bd251a54d3a7e4a445888a5497ec475d776e9427d4952bd6666aa3d2344"
     },
     {
       "path": "mocap/footmr.py",
@@ -1636,8 +1636,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 131330,
-      "sha256": "a794319e0574dd70b79bae79c587d80401377ab5734a371e5d19f51457d910c2"
+      "bytes": 131662,
+      "sha256": "614e247ceb75cf214dbc65d4b50d8681b06dd75585e873b4722dbfb4f2a4ffcd"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -1711,8 +1711,8 @@
     },
     {
       "path": "mocap/mamma_manager.py",
-      "bytes": 4527,
-      "sha256": "4cd4307f21dee8c1788bb037064331be2c692b02427d907e738e665b897878fa"
+      "bytes": 4576,
+      "sha256": "8ac13d4a0631bd07de7747626dcf82de33cf8210467147c1868591334dfd085f"
     },
     {
       "path": "mocap/mamma_models.py",
@@ -1746,8 +1746,8 @@
     },
     {
       "path": "mocap/mamma_ui.py",
-      "bytes": 33845,
-      "sha256": "61d47da475bb13be9c5ad1de81437f13623941c87acb4674c4deb4e539c32cd2"
+      "bytes": 33894,
+      "sha256": "5b219e3a4359903db77380f2f115288c9d42dd033f6ab5583d74cc163bafda78"
     },
     {
       "path": "mocap/memory_mode.py",
@@ -1781,8 +1781,8 @@
     },
     {
       "path": "mocap/model_guide.py",
-      "bytes": 14885,
-      "sha256": "f435c4efda823c39b48650727ef3484f2924d8523e1ac78d2378d7dd41374d90"
+      "bytes": 14987,
+      "sha256": "0f5cabfb773fa56ff5d5bf5fcdb3c4d1b8598e9193d783e48465211bb99e8e4e"
     },
     {
       "path": "mocap/model_manager.py",
@@ -1961,8 +1961,8 @@
     },
     {
       "path": "mocap/pear_ui.py",
-      "bytes": 35427,
-      "sha256": "6ef9043948ddb02c9c3f01045f0b463dbc9bd1d7bf72d2c7ab51f1ab60b73126"
+      "bytes": 35476,
+      "sha256": "025bf2f83589de0d4f16468964f3a86e60d14f7f3c5279197b54bb615acaaa30"
     },
     {
       "path": "mocap/people_store.py",
@@ -2071,8 +2071,8 @@
     },
     {
       "path": "mocap/prompthmr_manager.py",
-      "bytes": 4401,
-      "sha256": "09e7850cd62760acb35194caf6ea8a8b09d95c6142248a2dbb6d1f37bea1e045"
+      "bytes": 4449,
+      "sha256": "b22e0fcde563f122142aae188130c2a28783fb231e683f6a14d7d5d22fe4a962"
     },
     {
       "path": "mocap/prompthmr_models.py",
@@ -2326,8 +2326,8 @@
     },
     {
       "path": "mocap/source_export_dialog.py",
-      "bytes": 20994,
-      "sha256": "2d01c2f9f81c970eac1274401d833be3cda45caba9e85635e107c87769005661"
+      "bytes": 21043,
+      "sha256": "ce39feba91b236a365c2ffe26e747a763627591ae085420c47551942db55fbe2"
     },
     {
       "path": "mocap/source_export_worker.py",
@@ -2391,8 +2391,8 @@
     },
     {
       "path": "mocap/theme.py",
-      "bytes": 5420,
-      "sha256": "638d5e0b449367639d3cb826aa2875ebcdeca81a175ab56b951fdcda40772210"
+      "bytes": 11588,
+      "sha256": "3795b902ebd9d617d09932de585ce6a91253eeddcf096ba69a5e083253056eae"
     },
     {
       "path": "mocap/timeline.py",
@@ -2401,8 +2401,8 @@
     },
     {
       "path": "mocap/timeline_editor.py",
-      "bytes": 14529,
-      "sha256": "57e36aa035cbaa21368f53d4748b8e14bef745d3c3b638f8bcea7b4a5196d35c"
+      "bytes": 15309,
+      "sha256": "20db5203cd72a1d412b6686ce0618618677a4e9995d29435c7dcc08dac9520a8"
     },
     {
       "path": "mocap/tooltips.py",
@@ -2456,13 +2456,13 @@
     },
     {
       "path": "mocap/viewer.py",
-      "bytes": 11435,
-      "sha256": "d105e1f8b794442e808aa8a9c5991cb394312827bb5245fb90743d4f2c179096"
+      "bytes": 11541,
+      "sha256": "41165ea5bc0d4fe31f6eb3af9bd16271b34ff5dbe8ca3b77b1e7df398862ddf9"
     },
     {
       "path": "mocap/viewport.py",
-      "bytes": 54552,
-      "sha256": "debad23b8fa4a918149581eb5144d57910535fbd7a4361d84512dabfde2ac44a"
+      "bytes": 55056,
+      "sha256": "de07519d0151887ba7fd126ec85ca069a3420430d9edc23159dd8273942f479f"
     },
     {
       "path": "mocap/worker.py",
@@ -2476,8 +2476,8 @@
     },
     {
       "path": "mocap/workspace_ui.py",
-      "bytes": 41521,
-      "sha256": "bb0437f4220bc2cbb0670a72a448b735360820b7a0ddf26e08b3bc3463d5afd9"
+      "bytes": 43025,
+      "sha256": "8b3d3a727989dbcf8da0cb1d8470cf69d06ab930af776ef12292f98b5250004f"
     },
     {
       "path": "native_compat/LICENSE",

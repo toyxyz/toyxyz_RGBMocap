@@ -3,6 +3,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QDesktopServices, QTextOption
 from PySide6.QtWidgets import QApplication, QDialog, QHBoxLayout, QPushButton, QTextBrowser, QVBoxLayout
 from .motion_tools import MOTION_TOOLS
+from .theme import appearance_style, set_appearance_style
 
 # exmr-eval-2026-10-22/summary-body.json, clip_01 (210 frames at 30 fps).
 # Historical processing-only runs; FlowHMR predates Fast SAM.
@@ -50,7 +51,7 @@ def guide_html(selected):
         f'<td><b>{MOTION_TOOLS[key].label}</b></td>' +
         ''.join(f'<td>{value}</td>' for value in values) + '</tr>'
         for key, values in BENCHMARKS.items())
-    return """<html><head><style>
+    html = """<html><head><style>
 body { font-size:12px; } h3 { margin-top:15px; } a { color:#8ed2ff; }
 th { text-align:left; background-color:#333333; } td, th { padding:7px; }
 </style></head><body>
@@ -84,6 +85,7 @@ peak private memory; MAMMA/PromptHMR RAM is peak worker working set. The older f
 measurements predate the latest Low Memory changes. These are not minimum requirements.
 Results vary by input and PC.</p>
 <p>Offline reconstruction models offer Motion Correction for foot and hand contacts. It reduces sliding after pose estimation.</p></body></html>"""
+    return appearance_style(html)
 
 
 class ModelGuideDialog(QDialog):
@@ -97,7 +99,7 @@ class ModelGuideDialog(QDialog):
         layout = QVBoxLayout(self)
         self.browser = QTextBrowser()
         self.browser.setAccessibleName('Motion model descriptions and short-clip benchmarks')
-        self.browser.setStyleSheet('QTextBrowser { font-family:"' + QApplication.font().family() + '"; font-size:12px; padding:6px; }')
+        set_appearance_style(self.browser, 'QTextBrowser { font-family:"' + QApplication.font().family() + '"; font-size:12px; padding:6px; }')
         self.browser.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
         self.browser.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.browser.setTextInteractionFlags(Qt.TextBrowserInteraction)

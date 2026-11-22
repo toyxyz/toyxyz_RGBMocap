@@ -707,6 +707,11 @@ MAMMA currently bounds the common trim to 1800 frames/eight people; geometry
 baking must not accumulate whole mesh sequences in RAM. No new inference,
 runtime dependency, source motion or contact change is part of export.
 
+**File > Settings...** stores `ui_theme` and `ui_scale` in the installation-local
+`config/local.json`. Dark and 100% are the defaults. The app updates the
+Qt palette, fonts, widget styles, and timeline geometry when the user clicks
+**OK**. The system display scale still applies.
+
 ## Character retargeting and export
 
 - **File > Import Character...** accepts Mixamo-style FBX, VRM and PMX, and adds the character in rest pose below people. Up to eight characters per project are supported.

@@ -551,6 +551,13 @@ Automatic can overlap bounded CPU image preparation with GPU work when CPU/RAM
 headroom permits; Low Memory disables that prefetch. For measured worker-startup
 and feature-stage gains, see [resource modes and optimizations](PERFORMANCE.md).
 
+### Appearance
+
+Choose **File > Settings...** to select **Dark** or **Light** and adjust
+**UI Scale**. The scale is applied on top of the display scale and changes
+text, buttons, and panels together. **Default** resets the choices to **Dark**
+and **100%**. Select **OK** to apply and save your choices immediately.
+
 ### RIFE frame interpolation
 
 **RIFE Frame Interpolation** is below the Movie Clip preview, next to **Find

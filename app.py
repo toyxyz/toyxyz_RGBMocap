@@ -32,7 +32,7 @@ def main():
     from PySide6.QtGui import QIcon, QSurfaceFormat
     from PySide6.QtCore import QTimer
     from mocap.gui import MainWindow
-    from mocap.theme import configure_application
+    from mocap.theme import configure_application, load_appearance
     # QOpenGLWidget's private FBO format does not configure the top-level
     # window's composition context. Avoid blocking input on that context's
     # default swap interval; camera redraws are paced in MotionView.
@@ -41,7 +41,7 @@ def main():
     QSurfaceFormat.setDefaultFormat(surface)
     app = QApplication(sys.argv[:1])
     app.setWindowIcon(QIcon(str(Path(__file__).resolve().parent / "assets" / "rgbmocap-icon.png")))
-    configure_application(app)
+    configure_application(app, *load_appearance())
     window = MainWindow(args.video)
     window.bone_overlay.setChecked(args.smoke_bone_overlay=='on' if args.smoke_bone_overlay else args.smoke_render_mode!='raw')
     if args.project:

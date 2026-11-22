@@ -3,6 +3,7 @@ from pathlib import Path
 from threading import Condition
 import math
 import cv2
+from .theme import set_appearance_style
 from PySide6.QtCore import Qt, QSize, QThread, Signal
 from PySide6.QtGui import QImage, QPixmap, QIcon
 from PySide6.QtWidgets import (QWidget,QVBoxLayout,QGridLayout,QScrollArea,QToolButton,
@@ -145,7 +146,7 @@ class MammaWorkspace:
         height_label.setToolTip(self.mamma_height.toolTip());box.addWidget(height_label)
         self.mamma_height.valueChanged.connect(self.mamma_settings_changed);box.addWidget(self.mamma_height)
         self.mamma_setup_notice=QLabel('MAMMA runtime required. Open Model Manager > Runtime Setup.')
-        self.mamma_setup_notice.setWordWrap(True);self.mamma_setup_notice.setStyleSheet('color:#ffb45c')
+        self.mamma_setup_notice.setWordWrap(True);set_appearance_style(self.mamma_setup_notice, 'color:#ffb45c')
         box.addWidget(self.mamma_setup_notice)
         page.setToolTip('Open synchronized, fixed-camera videos of the same performance. All videos share one trim range, starting at the same time. Select a thumbnail to change the preview camera.')
         self.model_pages.addWidget(page)

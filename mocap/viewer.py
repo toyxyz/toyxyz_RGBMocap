@@ -10,6 +10,7 @@ from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QWidget
 from .video_preview import PreviewDecoder
 from .viewport import MotionView
+from .theme import theme_color
 
 COCO_BONES = [(5, 6), (5, 7), (7, 9), (6, 8), (8, 10), (5, 11), (6, 12), (11, 12), (11, 13), (13, 15), (12, 14), (14, 16), (0, 1), (0, 2), (1, 3), (2, 4)]
 
@@ -228,9 +229,9 @@ class VideoView(QWidget):
     def paintEvent(self, _):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-        painter.fillRect(self.rect(), QColor("#202020"))
+        painter.fillRect(self.rect(), QColor(theme_color("#202020", "#f1f3f6") if self.frame is None else "#202020"))
         if self.frame is None:
-            painter.setPen(QColor("#afbdd2"))
+            painter.setPen(QColor(theme_color("#afbdd2")))
             painter.drawText(self.rect(), Qt.AlignCenter, "Open a video to begin\nMP4 · MOV · AVI")
             return
         rect = self.image_rect()

@@ -1,5 +1,6 @@
 """Source-motion export options; existing character exports remain separate."""
 from PySide6.QtCore import Qt
+from .theme import set_appearance_style
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QComboBox,
     QCheckBox, QLabel, QDialogButtonBox, QDoubleSpinBox, QWidget, QPushButton,
     QTableWidget, QTableWidgetItem, QHeaderView, QPlainTextEdit, QAbstractItemView)
@@ -105,7 +106,7 @@ class SourceExportDialog(QDialog):
         self.validation_error.setReadOnly(True)
         self.validation_error.setFixedHeight(90)
         self.validation_error.setAccessibleName('Export blockers and fixes')
-        self.validation_error.setStyleSheet('color: #f2b899;')
+        set_appearance_style(self.validation_error, 'color: #f2b899;')
         self.validation_error.hide()
         layout.addWidget(self.validation_error)
         self.take_scope.currentIndexChanged.connect(self.update_format)

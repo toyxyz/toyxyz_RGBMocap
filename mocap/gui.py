@@ -41,6 +41,7 @@ STAGES["footmr"] = "Refine Ankles / FootMR"
 STAGES["handflow"] = "Infer Fingers / HandFlow"
 STAGES['correct'] = 'Motion Correction'
 from .workspace_ui import build_workspace
+from .theme import set_appearance_style, theme_color, themed_colors, ui_px
 from .people_ui import PeopleWorkspace
 from .face_ui import FaceWorkspace
 from .stream_ui import StreamWorkspace
@@ -72,7 +73,7 @@ class ModelDownloadDialog(QDialog):
                     min(560, max(260, area.height() - 100)))
         layout = QVBoxLayout(self)
         self.browser = QTextBrowser()
-        self.browser.setStyleSheet(
+        set_appearance_style(self.browser,
             'QTextBrowser { font-family:"' + QApplication.font().family() + '"; font-size:12px; padding:6px; }')
         self.browser.setOpenLinks(False)
         self.browser.setOpenExternalLinks(False)
@@ -186,7 +187,7 @@ class ModelsDialog(QDialog):
         self.task_status.setOpenLinks(False)
         self.task_status.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
         self.task_status.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.task_status.setStyleSheet(
+        set_appearance_style(self.task_status,
             'QTextBrowser { font-family:"' + QApplication.font().family() + '"; font-size:12px; padding:4px; }')
         self.task_status.setPlainText("Ready to download or import models.")
         layout.addWidget(self.task_status)
@@ -274,10 +275,10 @@ class ModelsDialog(QDialog):
                 text = str(error)
             else:
                 text = 'GEM-X runtime is ready.'
-            note = QLabel(text + ' Review the upstream terms before downloading. '
+            note = QLabel(themed_colors(text + ' Review the upstream terms before downloading. '
                 '<a style="color:#8ed2ff" href="https://huggingface.co/nvidia/GEM-X">GEM-X</a> · '
                 '<a style="color:#8ed2ff" href="https://huggingface.co/nvidia/SOMA-X">SOMA-X</a> · '
-                '<a style="color:#8ed2ff" href="https://github.com/open-mmlab/mmpose/tree/main/projects/rtmpose">Detector</a>')
+                '<a style="color:#8ed2ff" href="https://github.com/open-mmlab/mmpose/tree/main/projects/rtmpose">Detector</a>'))
             note.setWordWrap(True)
             note.setOpenExternalLinks(True)
             self.workflow_panel.addWidget(note)
@@ -419,7 +420,7 @@ class ModelsDialog(QDialog):
                 if column == 0:
                     item.setData(Qt.UserRole, model.key)
                 item.setToolTip(str(model.path) if column == 0 else text)
-                item.setForeground(QColor("#d5d5d5" if available else "#ffb45c"))
+                item.setForeground(QColor(theme_color("#d5d5d5" if available else "#ffb45c")))
                 font = item.font(); font.setBold(not available); item.setFont(font)
             cell = self.table.cellWidget(i, 3)
             if cell is None or cell.property("model_key") != model.key:
@@ -496,7 +497,7 @@ class ModelsDialog(QDialog):
                 index = min(self._batch_total, max(1, self._batch_total - len(w.jobs)))
                 message = f"Model {index}/{self._batch_total}: " + message
             self.task_status.setPlainText(message if len(message) <= 4096 else message[:4096] + "\nSee Console for the complete message.")
-            self.task_status.setStyleSheet(
+            set_appearance_style(self.task_status,
                 'QTextBrowser { font-family:"' + QApplication.font().family() +
                 '"; font-size:12px; padding:4px;' +
                 ('color:#ffb45c;' if w.failed else '') + ' }')
@@ -584,8 +585,10 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
     def __init__(self, video: Path | None = None):
         super().__init__()
         self.setWindowTitle("RGB MoCap | Motion Workspace")
-        self.resize(1440, 880)
         self.setMinimumSize(1100, 700)
+        available = self.screen().availableGeometry()
+        self.resize(min(ui_px(1440), max(self.minimumWidth(), available.width() - 16)),
+                    min(ui_px(880), max(self.minimumHeight(), available.height() - 40)))
         self.video_path = None
         self.init_mamma()
         self.init_pear()
@@ -707,7 +710,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         if unavailable:
             noun = "model" if len(unavailable) == 1 else "models"
             text += f"\nWarning: {len(unavailable)} required {noun} missing.\nOpen Model Manager to download or import."
-        self.readiness.setStyleSheet("color:#ffb45c; font-weight:600;" if unavailable else "")
+        set_appearance_style(self.readiness, "color:#ffb45c; font-weight:600;" if unavailable else "")
         self.readiness.setToolTip(tooltip_text("Missing required models:\n" + "\n".join(model.name for model in unavailable) if unavailable else ""))
         self.readiness.setText(text)
         for button in (self.models_button, self.analyze_button, self.run_button):
