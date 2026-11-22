@@ -46,6 +46,8 @@ def publish(job,emit):
         timeline=dict(start=job['start'],step=1/30,frames=n),pipeline=dict(model='mamma',result=selected),
         correction=job['correction'],mamma_options=job['options'],mamma_work=os.path.relpath(work,group),
         workspace_root=os.path.relpath(root,group))
+    if job.get('interpolation'):
+        common['interpolation'] = job['interpolation']
     atomic_json(group/'project.json',common)
     with BY_KEY['mamma_vertices'].path.open('rb') as f:D=pickle.load(f).cpu().numpy()
     prior={}

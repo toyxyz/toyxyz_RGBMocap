@@ -16,7 +16,7 @@ animated fingers. Standard correction, retargeting and FBX controls apply.
 ## Character retargeting
 
 Transfer a reconstructed person's motion to a character without running AI
-inference again. Supported targets are **Mixamo FBX**, **VRM** and **PMX** humanoids.
+inference again. Supported targets are **Mixamo FBX**, **VRM** and **PMX** humanoids. Mixamo FBX can be binary or ASCII, including older FBX 6.1 files.
 
 1. Prepare the source person's motion and apply any contact edits.
 2. Choose **File > Import Character...** and select the character file. It appears
@@ -30,6 +30,10 @@ Up to **8 characters** can be imported per project. Each character can use a
 different source person. Check or uncheck its row to show or hide it; use
 **Remove Character** in its right-click menu to remove it from the project.
 Character data and assigned motion are saved inside the project.
+
+Mixamo FBX exports with the mesh embed its specular tint texture in the FBX
+specular color channel. Blender's legacy FBX importer reads this texture.
+Blender's newer importer may omit the connection when it opens a Blender-written FBX.
 
 Characters are drawn in front of the SMPL source meshes, with **Bone Overlay**
 above both. **Name** shows the list name above each visible person or character,
@@ -95,16 +99,21 @@ Blender retains its GPL license and bundled notices; see [Third-party notices](.
 not a minimum specification. Other GPUs, drivers and clean Windows installations
 have not yet been verified; compatibility reports are welcome.
 
+On Windows 11 with Smart App Control set to **On**, see
+[Smart App Control troubleshooting](#smart-app-control-on-windows-11) before running setup.
+
 1. Install [Git for Windows](https://git-scm.com/download/win). Open **Command
-   Prompt** in a writable folder, then run:
+   Prompt** and clone into a short, writable installation path such as
+   `C:\RGBMoCap`. Adjust the path if you need a different folder.
 
    ```cmd
-   git clone https://github.com/toyxyz/toyxyz_RGBMocap.git
-   cd toyxyz_RGBMocap
+   git clone https://github.com/toyxyz/toyxyz_RGBMocap.git C:\RGBMoCap
+   cd /d C:\RGBMoCap
    ```
 
-   Use a short, writable installation path such as C:\RGBMoCap. The commands below are for
-   Command Prompt; in PowerShell, prefix each `.cmd` filename with `.\`.
+   The commands below are for Command Prompt. In PowerShell, prefix each `.cmd` filename
+   with `.\`. See [Windows path length troubleshooting](#windows-path-length-during-installation)
+   if setup fails on a deeply nested path.
 2. Run `install.cmd` with an internet connection. It downloads and verifies
    pinned Python environments, Blender 4.5.0, FFmpeg 7.1.1 and small upstream
    support files, and installs the included prebuilt motion-correction module.
@@ -291,6 +300,51 @@ runtime\python.exe -I -X utf8 -B tools\git_update.py
 Read actual Git/download/installation errors before retrying; an incomplete
 installation remains incomplete until verification succeeds. Force-closing the
 console or deleting the running launcher is not a supported update path.
+
+### Smart App Control on Windows 11
+
+Smart App Control may block the unsigned private `python.exe` that
+`install.cmd` starts from `.setup/python/`. It can also block the private
+Python used by `RGBMoCap.cmd` after installation. Setup uses an app-local
+runtime even when Python is already installed on the system. An installation
+and launch path with Smart App Control set to **On** has yet to be verified.
+See [reported issue #68](https://github.com/toyxyz/toyxyz_RGBMocap/issues/68)
+and [Microsoft's Smart App Control overview](https://learn.microsoft.com/en-us/windows/apps/develop/smart-app-control/overview).
+
+If Windows reports a block, open **Event Viewer > Applications and Services
+Logs > Microsoft > Windows > CodeIntegrity > Operational**. Event **3077**
+records the policy block. A related **3089** entry with
+`TotalSignatureCount: 0` shows that the blocked file is unsigned. Match the
+events by their activity ID and check the blocked filename. See
+[Microsoft's App Control event reference](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/operations/event-id-explanations).
+
+### Windows path length during installation
+
+The installer creates nested folders under `.setup\staging`. A deep checkout
+or an extra folder from ZIP extraction can push the full path past the
+legacy Windows `MAX_PATH` limit of 260 characters, even when the installation
+folder itself has a short name. An affected operation may report
+`[WinError 3] The system cannot find the path specified` or `[WinError 206]`.
+Check the full path in the traceback. See [installation report #75](https://github.com/toyxyz/toyxyz_RGBMocap/issues/75).
+
+**Use a shorter folder first.** Clone or extract the source into a short,
+writable folder such as `C:\RGBMoCap`. Confirm that `install.cmd` is directly
+inside that folder, then run it from there. After setup, open saved projects
+from their existing locations and [reuse existing model files](#reuse-models-in-a-new-installation)
+as needed.
+
+**To keep the existing path**, run this command in PowerShell as Administrator.
+
+```powershell
+reg.exe add "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem" /v LongPathsEnabled /t REG_DWORD /d 1 /f
+```
+
+Open a new terminal in the RGB MoCap folder and rerun `install.cmd`
+(`.\install.cmd` in PowerShell). If the setting has yet to take effect, restart
+Windows and retry. This setting applies to programs that declare long-path
+support. The bundled setup Python declares it. A shorter installation path
+can still help when another tool has its own path limit.
+See [Microsoft's Windows path length guidance](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation#enable-long-paths-in-windows-10-version-1607-and-later).
 
 ### Installation verification and repair
 
@@ -497,6 +551,33 @@ Automatic can overlap bounded CPU image preparation with GPU work when CPU/RAM
 headroom permits; Low Memory disables that prefetch. For measured worker-startup
 and feature-stage gains, see [resource modes and optimizations](PERFORMANCE.md).
 
+### Appearance
+
+Choose **File > Settings...** to select **Dark** or **Light** and adjust
+**UI Scale**. The scale is applied on top of the display scale and changes
+text, buttons, and panels together. **Default** resets the choices to **Dark**
+and **100%**. Select **OK** to apply and save your choices immediately.
+
+### RIFE frame interpolation
+
+**RIFE Frame Interpolation** is below the Movie Clip preview, next to **Find
+person** when that button is available. It starts off for new videos. Enable it
+to create a 30 fps working clip from a video below 30 fps before finding people
+or reconstructing. Inputs at 30 fps or higher still use the standard converter.
+The original video and audio are preserved.
+
+In **Model Manager**, open an offline model tab and use **Auto Download** on
+**RIFE 4.9 / Frame Interpolation (Optional)**. One approximately 21 MB model is
+shared by all offline workflows and verified with SHA-256. It requires the
+existing NVIDIA CUDA runtime and is excluded from **Download All**. You can
+also download the pinned model manually and use **Import...** on the same row.
+
+For ExMR, FlowHMR and GVHMR, run **Find person** again after changing the
+option if people were already detected. The new working clip has its own person
+detection and motion cache. In MAMMA, RIFE runs only on cameras below 30 fps
+and places them on the common trim's 30 fps grid. PEAR's live preview uses
+its existing input timing.
+
 ## Choose a model
 
 Each model has a [detailed guide](models/README.md): [ExMR](models/EXMR.md),
@@ -506,8 +587,10 @@ These cover required files, settings, defaults and workflow limitations.
 
 These quality comparisons are **subjective observations from our test videos**,
 not accuracy scores or a universal ranking. See the in-app **Model Guide** for
-recorded speed and memory measurements. New sessions start with **ExMR** selected;
-opening a project restores its saved model. **Prepare Preview**, below
+recorded speed and memory measurements. New sessions start with the offline model
+you last selected, saved locally with Resource Safety; PEAR is not remembered.
+**ExMR** is selected the first time, or when the remembered model's optional
+runtime is not installed. Opening a project restores its saved model. **Prepare Preview**, below
 **Reconstruct 3D**, prepares existing motion without running inference again.
 
 | Model | Observed strengths | Finger animation |
@@ -740,6 +823,21 @@ managed copy.
 Changes to camera, smoothing or feature settings take effect on **Reconstruct 3D**.
 GVHMR refinement checkboxes also select saved preview/export results. If the
 selected result is missing, reconstruct it; the app reports it as unavailable.
+
+**File → Save Settings as Default** saves the starting options for new videos
+and the next app launch. The confirmation window lists GVHMR's **HTD Refine**,
+**FootMR** and **HandFlow**, FlowHMR's sampling, Fast SAM and HaMeR options, ExMR's
+camera and smoothing, both models' **Refine Camera Rotation**, PromptHMR's camera
+and interaction, correction mode and locks, **Track Face** and **Resource Mode**.
+The saved **Automatic** or **Low Memory** mode applies to new MAMMA inputs too.
+Project data such as trim, floor height, pelvis offset, people counts and MAMMA
+calibration belong to the project. Its saved model settings and result selections
+take priority. **File → Reset Default Settings** restores the built-in defaults,
+including **Automatic**, for the next video or app launch.
+The confirmation window lists the current values that would be saved or the
+built-in values that would be restored. Select **OK** to apply the change or
+**Cancel** to close the window. The current video keeps its settings. The status
+line and Console report the result.
 
 | Setting | Function and when to use it |
 | --- | --- |
@@ -977,7 +1075,16 @@ for Blender project exports and do not change imported-character exports.
   Source motion, correction results, viewport geometry and cached bind data remain
   unchanged. The option is a reference skeleton change, not an added T-pose frame.
 
-The export options window keeps the same size when switching formats.
+The export options window keeps the same size when switching formats. It also
+reopens with the choices from your last **Continue...**: format, profiles, rest pose,
+the leading reference frame, origin placement, symmetrical rest and **Export Face**
+settings, saved locally independently of projects. Export scope, chosen takes and
+Blender project settings are not remembered. A choice the selected model does not
+offer, such as **3ds Max Biped** for GEM-X, shows its default. **Export Character...**
+remembers its format, mesh and face choices in the same way. Click **Defaults** to
+restore the export options for the current window while keeping the export scope
+and chosen takes. **Continue...** or **Save** remembers the restored preferences.
+**Cancel** keeps the previously saved preferences.
 
 BVH uses the same 52-bone hierarchy, metre units and Y up, including finger bones
 and terminal tips. Import into Blender with **Scale 1 / Forward -Z / Up Y**.

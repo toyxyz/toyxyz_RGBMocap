@@ -3,6 +3,7 @@ from bisect import bisect_left,bisect_right
 from PySide6.QtCore import Qt,QRectF,QPointF
 from PySide6.QtGui import QColor,QPen
 from PySide6.QtWidgets import QMenu
+from .theme import is_light_theme, theme_color
 from .foot_contacts import FOOT_COLORS
 CONTACT_COLORS=(*FOOT_COLORS,"#79a9db","#bf8dcf")
 
@@ -62,7 +63,7 @@ class FootLockEditor:
 
     def _contact_row(self,event):
         position=event.position() if hasattr(event,'position') else event.pos()
-        row=int((position.y()-28)//self.TRACK_HEIGHT)-2
+        row=int((position.y()-self.TRACK_TOP)//self.TRACK_HEIGHT)-2
         return row if 0<=row<len(self.contacts) and self.contact_track_enabled[row] else None
 
     def _edge_position(self,event):
@@ -213,18 +214,18 @@ class FootLockEditor:
 
     def _contact_rect(self,foot,interval):
         s,e=interval;left=max(self.LEFT,self.frame_x(s));right=min(self.width()-self.RIGHT,self.frame_x(e-1))
-        return QRectF(left,28+(foot+2)*self.TRACK_HEIGHT+2,max(2,right-left),self.TRACK_HEIGHT-5)
+        return QRectF(left,self.TRACK_TOP+(foot+2)*self.TRACK_HEIGHT+2,max(2,right-left),self.TRACK_HEIGHT-5)
 
     def paint_contact_tracks(self,p):
         self.contact_draw_queries=0
         if not getattr(self,'contacts_supported',True):return
         for foot,(label,color) in enumerate(zip(('L foot','R foot','L hand','R hand'),CONTACT_COLORS)):
-            y=28+(foot+2)*self.TRACK_HEIGHT
-            p.setPen(QColor('#aaaaaa'));p.drawText(QRectF(8,y,53,self.TRACK_HEIGHT),Qt.AlignVCenter,label)
+            y=self.TRACK_TOP+(foot+2)*self.TRACK_HEIGHT
+            p.setPen(QColor(theme_color('#aaaaaa')));p.drawText(QRectF(8,y,self.LEFT-11,self.TRACK_HEIGHT),Qt.AlignVCenter,label)
             if not self.contact_track_enabled[foot]:
-                p.setPen(QColor('#777777'));p.drawText(QRectF(self.LEFT+8,y,max(0,self.width()-self.LEFT-25),self.TRACK_HEIGHT),Qt.AlignVCenter,'Disabled');continue
+                p.setPen(QColor(theme_color('#777777')));p.drawText(QRectF(self.LEFT+8,y,max(0,self.width()-self.LEFT-25),self.TRACK_HEIGHT),Qt.AlignVCenter,'Disabled');continue
             if not self.contacts_available or foot>=len(self.contacts):
-                p.setPen(QColor('#777777'));p.drawText(QRectF(self.LEFT+8,y,max(0,self.width()-self.LEFT-25),self.TRACK_HEIGHT),Qt.AlignVCenter,'Apply Correction to generate locks');continue
+                p.setPen(QColor(theme_color('#777777')));p.drawText(QRectF(self.LEFT+8,y,max(0,self.width()-self.LEFT-25),self.TRACK_HEIGHT),Qt.AlignVCenter,'Apply Correction to generate locks');continue
             p.save();p.setClipRect(QRectF(self.LEFT,y,max(1,self.width()-self.LEFT-self.RIGHT),self.TRACK_HEIGHT))
             tint=QColor(color);tint.setAlpha(90 if self.contact_edit_enabled else 40)
             lo=bisect_right(self._contact_ends[foot],self.view_start)
@@ -246,6 +247,7 @@ class FootLockEditor:
                     p.setPen(QPen(QColor(color),1));p.drawRect(rect)
                     if rect.width()>42:
                         s,e=self.contacts[foot][index]
+                        if is_light_theme():p.setPen(QColor('#333e48'))
                         p.drawText(rect,Qt.AlignCenter,f'{s+1}–{e}' if self._selected_contact==(foot,index) else 'Lock')
             p.restore()
 
@@ -257,10 +259,10 @@ class FootLockEditor:
             if index<len(self.contacts[foot]):target=(foot,self.contacts[foot][index])
         if target:
             foot,interval=target
-            p.save();p.setClipRect(QRectF(self.LEFT,25,max(1,self.width()-self.LEFT-self.RIGHT),self.height()-25))
+            p.save();p.setClipRect(QRectF(self.LEFT,self.RULER_HEIGHT,max(1,self.width()-self.LEFT-self.RIGHT),self.height()-self.RULER_HEIGHT))
             rect=self._contact_rect(foot,interval)
             if self._foot_drag:p.fillRect(rect,QColor(126,165,208,80))
-            p.setPen(QPen(QColor('#d9e8fa'),1.5));p.setBrush(Qt.NoBrush);p.drawRect(rect)
+            p.setPen(QPen(QColor(theme_color('#d9e8fa')),1.5));p.setBrush(Qt.NoBrush);p.drawRect(rect)
             for x in (rect.left(),rect.right()):p.drawLine(QPointF(x,rect.top()+3),QPointF(x,rect.bottom()-3))
             if self._foot_drag and rect.width()>42:
                 s,e=interval;p.drawText(rect,Qt.AlignCenter,f'{s+1}–{e}')

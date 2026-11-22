@@ -30,6 +30,9 @@ def workflow_catalog():
         keys = {model for stage in stages for model in STAGE_REQUIREMENTS.get(stage, ())}
         if key == 'flowhmr':
             keys.update(('flow_metadata', *MODEL_KEYS))
+        if not tool.live:
+            from .rife_video import MODEL_KEY
+            keys.add(MODEL_KEY)
         catalog[key] = keys
     return catalog
 

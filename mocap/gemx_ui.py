@@ -42,6 +42,9 @@ class GemXWorkspace:
                 self.status.setText('Prepare the missing GEM-X files in Model Manager.')
                 self.open_model_manager()
                 return
+            interpolation = self.selected_interpolation()
+            if not self.ready_for_interpolation(interpolation):
+                return
             start, end = self.processing_range()
             if end - start > 60.001 or round((end - start) * 30) < 4:
                 raise ValueError('Trim to 4–1,800 frames at 30 fps (up to 60 seconds).')
@@ -52,7 +55,7 @@ class GemXWorkspace:
             folder.mkdir(parents=True, exist_ok=True)
             request = folder / (uuid.uuid4().hex + '.json')
             atomic_json(request, dict(version=1, root=str(root), video=str(self.video_path),
-                                      start=start, end=end, correct=self.motion_correction.isChecked(),
+                                      start=start, end=end, interpolation=interpolation, correct=self.motion_correction.isChecked(),
                                       correction=self.selected_correction_options()))
             self.start_jobs([('gemx_reconstruct', ['--request', str(request)])])
         except (OSError, ValueError, RuntimeError) as error:

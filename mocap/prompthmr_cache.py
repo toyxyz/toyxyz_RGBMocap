@@ -27,8 +27,20 @@ PIPELINE_CACHE_ONLY = {
 }
 
 
-def inference_code_hash(path):
+# The opted-out video command is byte-for-byte unchanged by the optional RIFE branch.
+DEFAULT_VIDEO_PREPARATION = {
+    'c10d084216bf4313650407d8ad416de8aa02f809b398cef75849e7c30f3d883d':
+    '82b1d570030f4858683064d10a214be1ded4b1d93de190d8971ad0847ac5314e',
+}
+
+
+def default_video_code_hash(path):
     digest = sha256(path)
+    return DEFAULT_VIDEO_PREPARATION.get(digest, digest) if path.name == 'prompthmr_pipeline.py' else digest
+
+
+def inference_code_hash(path):
+    digest = default_video_code_hash(path)
     return PIPELINE_CACHE_ONLY.get(digest, digest) if path.name == 'prompthmr_pipeline.py' else digest
 
 

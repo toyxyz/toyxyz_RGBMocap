@@ -1,4 +1,5 @@
 """PromptHMR optional-runtime readiness and concise installation guidance."""
+from .theme import set_appearance_style
 from PySide6.QtWidgets import QWidget,QHBoxLayout,QLabel,QPushButton,QDialog,QVBoxLayout,QTextBrowser,QApplication
 from .paths import ROOT
 import json
@@ -14,7 +15,7 @@ def runtime_panel(parent):
             camera_configuration();label.setText(label.text()+'\nMoving camera support: Ready')
         except (OSError,ValueError,RuntimeError):label.setText(label.text()+'\nMoving camera support: Optional setup')
     except (OSError,ValueError,RuntimeError) as error:
-        label.setText('PromptHMR runtime: Setup required');label.setToolTip(str(error));label.setStyleSheet('color:#ffb45c')
+        label.setText('PromptHMR runtime: Setup required');label.setToolTip(str(error));set_appearance_style(label, 'color:#ffb45c')
     button=QPushButton('Runtime Setup...');button.setToolTip('Show separate runtime setup, disk space and license requirements. Weights are prepared below.')
     button.clicked.connect(lambda:setup_instructions(parent));layout.addWidget(label,1);layout.addWidget(button);return panel
 

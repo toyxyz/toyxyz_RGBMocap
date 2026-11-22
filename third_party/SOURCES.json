@@ -12,6 +12,12 @@
     "runtime": "Native Windows Python 3.10 / PyTorch 2.7.1+cu128",
     "registered_models_bundled": false
   },
+  "RIFE": {
+    "repository": "https://github.com/Fannovel16/ComfyUI-Frame-Interpolation",
+    "commit": "26545cc2dd95bc3d27f056016300673bdeee78f5",
+    "compatibility": "Inference-only adaptation of the 4.7 architecture for the RIFE 4.9 checkpoint. Retains the MIT license.",
+    "weights_bundled": false
+  },
   "FootMR": {
     "commit": "9c5b4123b344d74926822c20f182b2af4494dc41",
     "repository": "https://github.com/twehrbein/FootMR.git"

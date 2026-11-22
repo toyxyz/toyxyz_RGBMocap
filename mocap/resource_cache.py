@@ -67,10 +67,18 @@ MODEL_LOCATION_ONLY = {
 }
 
 
+# RIFE opts into a separate MAMMA identity. The original FFmpeg command is unchanged.
+DEFAULT_VIDEO_PREPARATION = {
+    '8787f0a0f4542a45509f6af5215767ec4929b3430144643aa953f3261765627d':
+    '8252ef60d906f1c36a8d3b832fbdf9da8204bedf66d3adecb55de52580121413',
+}
+
+
 def alias(digest):
     """Identity value of reviewed source bytes; any other digest is its own identity."""
     return MODEL_LOCATION_ONLY.get(digest,PLATFORM_ONLY.get(digest,DOWNLOAD_PROGRESS_ONLY.get(digest,LOGGING_ONLY.get(digest,POLICY_ONLY.get(digest,digest)))))
 
 
 def code_hash(path):
-    return alias(sha256(path))
+    actual=sha256(path)
+    return alias(DEFAULT_VIDEO_PREPARATION.get(actual,actual))

@@ -3,6 +3,7 @@ import math
 from PySide6.QtCore import Qt, QRectF, QPointF, Signal
 from PySide6.QtGui import QColor, QPainter, QPen, QPixmap, QPolygonF
 from PySide6.QtWidgets import QSlider, QSizePolicy
+from .theme import current_appearance, theme_color, ui_px
 from .footlock_editor import FootLockEditor
 
 
@@ -13,13 +14,9 @@ class TimelineSlider(FootLockEditor,QSlider):
     contacts_edit_started=Signal()
     contacts_reset=Signal()
     contacts_preview_changed=Signal()
-    LEFT, RIGHT = 64, 14
-    TRACK_HEIGHT = 26
-    RULER_HEIGHT = 25
 
     def __init__(self, orientation=Qt.Horizontal, parent=None):
         super().__init__(orientation, parent)
-        self.setMinimumHeight(190)
         self.init_contacts()
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setFocusPolicy(Qt.StrongFocus)
@@ -40,6 +37,15 @@ class TimelineSlider(FootLockEditor,QSlider):
         self.rangeChanged.connect(self.frame_all)
         self.rangeChanged.connect(self.reset_trim)
         self.valueChanged.connect(self._follow)
+        self.refresh_appearance()
+
+    def refresh_appearance(self):
+        self.LEFT, self.RIGHT = ui_px(64), ui_px(14)
+        self.TRACK_TOP, self.TRACK_HEIGHT = ui_px(28), ui_px(26)
+        self.RULER_HEIGHT = ui_px(25)
+        self.setMinimumHeight(ui_px(190))
+        self._cache_key = None
+        self.update()
 
     def frame_all(self, *_):
         self.view_start = float(self.minimum())
@@ -72,13 +78,13 @@ class TimelineSlider(FootLockEditor,QSlider):
         return self.frame_x(self.clip_in), self.frame_x(self.clip_out - 1)
 
     def _trim_handle(self, event):
-        if not self.trim_enabled or not 29 <= event.position().y() <= 52:
+        if not self.trim_enabled or not ui_px(29) <= event.position().y() <= ui_px(52):
             return None
         x = event.position().x()
         edges = [(abs(x - edge), name) for edge, name in zip(self.clip_edges(), ("in", "out"))
                  if self.LEFT - 1 <= edge <= self.width() - self.RIGHT + 1]
         distance, name = min(edges, default=(float("inf"), None))
-        return name if distance <= 8 else None
+        return name if distance <= ui_px(8) else None
 
     def _drag_trim(self, event):
         frame = self._position(event)
@@ -101,8 +107,8 @@ class TimelineSlider(FootLockEditor,QSlider):
 
     def playhead_rect(self):
         """Share painted and clickable geometry; the line and pointer are inert."""
-        width = max(25, self.fontMetrics().horizontalAdvance(str(self.value() + 1)) + 12)
-        return QRectF(self.frame_x(self.value()) - width / 2, 1, width, 21)
+        width = max(ui_px(25), self.fontMetrics().horizontalAdvance(str(self.value() + 1)) + ui_px(12))
+        return QRectF(self.frame_x(self.value()) - width / 2, ui_px(1), width, ui_px(21))
 
     def _in_ruler(self,event):
         point=event.position()
@@ -206,7 +212,7 @@ class TimelineSlider(FootLockEditor,QSlider):
         event.accept()
 
     def paintEvent(self, _):
-        key = (self.size(), self.devicePixelRatioF(), self.minimum(), self.maximum(), self.view_start,
+        key = (current_appearance(), self.size(), self.devicePixelRatioF(), self.minimum(), self.maximum(), self.view_start,
                self.span(), self.fps, self.has_motion, self.clip_in, self.clip_out,self.contact_revision,self.contact_edit_enabled,self.contact_track_enabled,
                self.person_color,self.person_name,self.video_track_label,
                (self._foot_drag['foot'],self._foot_drag['index']) if self._foot_drag else None,self._selected_contact)
@@ -214,10 +220,11 @@ class TimelineSlider(FootLockEditor,QSlider):
             ratio = self.devicePixelRatioF()
             cache = QPixmap(round(self.width() * ratio), round(self.height() * ratio))
             cache.setDevicePixelRatio(ratio)
-            cache.fill(QColor("#242424"))
+            cache.fill(QColor(theme_color("#242424")))
             p = QPainter(cache)
-            p.fillRect(0, 0, self.width(), self.RULER_HEIGHT, QColor("#303030"))
-            target = self.span() / max(1, (self.width() - self.LEFT) / 85)
+            p.setFont(self.font())
+            p.fillRect(0, 0, self.width(), self.RULER_HEIGHT, QColor(theme_color("#303030")))
+            target = self.span() / max(1, (self.width() - self.LEFT) / ui_px(85))
             power = 10 ** math.floor(math.log10(max(1, target)))
             step = next((v * power for v in (1, 2, 5, 10) if v * power >= target), power * 10)
             first = math.ceil((self.view_start + 1) / step) * step - 1
@@ -226,7 +233,7 @@ class TimelineSlider(FootLockEditor,QSlider):
             # Rows keep an editor-like height; extra panel space is available
             # below them for future channels rather than stretching controls.
             for row, label, color in rows:
-                y = 28 + row * row_height
+                y = self.TRACK_TOP + row * row_height
                 tint = QColor(color)
                 tint.setAlpha(80)
                 left, right = self.clip_edges() if row == 0 else (self.LEFT, self.width() - self.RIGHT)
@@ -236,55 +243,56 @@ class TimelineSlider(FootLockEditor,QSlider):
             # Draw the time grid above the translucent tracks. The visible tick
             # count remains bounded by viewport width, independent of duration.
             p.save()
-            p.setClipRect(QRectF(self.LEFT, 25, max(1,self.width()-self.LEFT-self.RIGHT),self.height()-25))
+            p.setClipRect(QRectF(self.LEFT, self.RULER_HEIGHT, max(1,self.width()-self.LEFT-self.RIGHT),self.height()-self.RULER_HEIGHT))
             minor_step = max(1,step//5)
             minor_first = math.ceil((self.view_start+1)/minor_step)*minor_step-1
             p.setPen(QPen(QColor(133,133,133,40),1))
             for frame in range(minor_first,math.ceil(self.view_start+self.span())+1,minor_step):
                 x = self.frame_x(frame)
-                p.drawLine(QPointF(x,25),QPointF(x,self.height()))
+                p.drawLine(QPointF(x, self.RULER_HEIGHT),QPointF(x,self.height()))
             p.setPen(QPen(QColor(115,115,115,145),1))
             for frame in range(first,math.ceil(self.view_start+self.span())+1,step):
                 x = self.frame_x(frame)
-                p.drawLine(QPointF(x,25),QPointF(x,self.height()))
+                p.drawLine(QPointF(x, self.RULER_HEIGHT),QPointF(x,self.height()))
             p.restore()
-            p.setPen(QColor("#999999"))
-            p.drawText(9,17,"Frame")
+            p.setPen(QColor(theme_color("#999999")))
+            p.drawText(ui_px(9), ui_px(17), "Frame")
             for frame in range(first,math.ceil(self.view_start+self.span())+1,step):
                 x = self.frame_x(frame)
-                p.setPen(QColor("#b3b3b3"))
-                p.drawText(QRectF(x-35,2,70,20),Qt.AlignCenter,str(frame+1))
+                p.setPen(QColor(theme_color("#b3b3b3")))
+                p.drawText(QRectF(x-ui_px(35), ui_px(2), ui_px(70), ui_px(20)),Qt.AlignCenter,str(frame+1))
             for row,label,color in rows:
-                y = 28+row*row_height
-                p.setPen(QColor("#aaaaaa"))
-                p.drawText(QRectF(8, y, 53, row_height), Qt.AlignVCenter, label)
-                p.setPen(QColor("#b1b9c1" if row == 0 else "#aebeb4"))
+                y = self.TRACK_TOP + row * row_height
+                p.setPen(QColor(theme_color("#aaaaaa")))
+                p.drawText(QRectF(ui_px(8), y, ui_px(53), row_height), Qt.AlignVCenter, label)
+                p.setPen(QColor(theme_color("#b1b9c1" if row == 0 else "#aebeb4")))
                 text = self.video_track_label if row == 0 else ((self.person_name or "Body animation") if self.has_motion else "No motion data")
                 if row==1 and getattr(self,"live_preview",False):text="PEAR live preview — no recording"
                 left, right = self.clip_edges() if row == 0 else (self.LEFT, self.width() - self.RIGHT)
                 left, right = max(self.LEFT, left), min(self.width() - self.RIGHT, right)
                 p.drawText(QRectF(left + 12, y, max(0, right - left - 24), row_height), Qt.AlignVCenter, text)
             # Edge grips belong to the video clip, never to the playhead/ruler.
-            p.setPen(QPen(QColor("#a6bed5"), 1))
+            p.setPen(QPen(QColor(theme_color("#a6bed5")), 1))
             left, right = self.clip_edges()
             for edge, direction in ((left, 1), (right, -1)):
                 if self.LEFT <= edge <= self.width() - self.RIGHT:
-                    p.fillRect(QRectF(edge if direction == 1 else edge - 6, 30, 6, 21), QColor(139,177,211,150))
-                    p.drawLine(QPointF(edge,30),QPointF(edge,51))
+                    p.fillRect(QRectF(edge if direction == 1 else edge - ui_px(6), ui_px(30), ui_px(6), ui_px(21)), QColor(139,177,211,150))
+                    p.drawLine(QPointF(edge, ui_px(30)), QPointF(edge, ui_px(51)))
             p.end()
             self._cache, self._cache_key = cache, key
         p = QPainter(self)
+        p.setFont(self.font())
         p.drawPixmap(0, 0, self._cache)
         self.paint_contact_selection(p)
         x = self.frame_x(self.value())
-        p.setPen(QPen(QColor("#74a6e0"), 1.4))
-        p.drawLine(QPointF(x, 23), QPointF(x, self.height()))
+        p.setPen(QPen(QColor(theme_color("#74a6e0")), 1.4))
+        p.drawLine(QPointF(x, ui_px(23)), QPointF(x, self.height()))
         p.setRenderHint(QPainter.Antialiasing)
         text = str(self.value() + 1)
         head = self.playhead_rect()
         p.setPen(Qt.NoPen)
-        p.setBrush(QColor("#477bb7"))
+        p.setBrush(QColor(theme_color("#477bb7")))
         p.drawRoundedRect(head, 3, 3)
-        p.drawPolygon(QPolygonF([QPointF(x - 4, 21), QPointF(x + 4, 21), QPointF(x, 26)]))
+        p.drawPolygon(QPolygonF([QPointF(x - ui_px(4), ui_px(21)), QPointF(x + ui_px(4), ui_px(21)), QPointF(x, ui_px(26))]))
         p.setPen(QColor("#ffffff"))
         p.drawText(head, Qt.AlignCenter, text)

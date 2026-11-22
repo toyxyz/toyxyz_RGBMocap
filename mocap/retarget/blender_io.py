@@ -2,12 +2,36 @@
 import json
 import sys
 import struct
+from contextlib import contextmanager
 from pathlib import Path
 import numpy as np
 import bpy
 import addon_utils
 from .mapping import A, PARENTS, body_mapping, body_trajectory_root
 from .file_paths import io_path, save_blend
+
+
+@contextmanager
+def preserve_fbx_specular_tint(enabled):
+    if not enabled:
+        yield
+        return
+
+    from io_scene_fbx import export_fbx_bin
+    sockets = getattr(export_fbx_bin, 'PRINCIPLED_TEXTURE_SOCKETS_TO_FBX', None)
+    if sockets is None or any(channel == b'SpecularColor' for _, channel in sockets):
+        yield
+        return
+
+    # Blender 4.5 imports FBX SpecularColor textures as Specular Tint,
+    # but its exporter only writes the reflection strength texture by default.
+    export_fbx_bin.PRINCIPLED_TEXTURE_SOCKETS_TO_FBX = sockets + (
+        ('specular_tint_texture', b'SpecularColor'),
+    )
+    try:
+        yield
+    finally:
+        export_fbx_bin.PRINCIPLED_TEXTURE_SOCKETS_TO_FBX = sockets
 
 
 def report(message):
@@ -23,7 +47,7 @@ def import_character(filename, out):
     semantic={}
     report('Importing '+filename.name)
     if kind=='mixamo':
-        bpy.ops.import_scene.fbx(filepath=str(filename),automatic_bone_orientation=False,use_prepost_rot=True)
+        bpy.ops.wm.fbx_import(filepath=str(filename))
     elif kind=='vrm':
         addon_utils.enable('io_scene_vrm',default_set=True,persistent=False)
         bpy.ops.import_scene.vrm(filepath=str(filename))
@@ -220,13 +244,15 @@ def main(args):
             for obj in bpy.context.scene.objects:
                 if obj.parent is None:obj.matrix_world=M@obj.matrix_world
         bpy.ops.object.select_all(action='DESELECT')
-        types={'ARMATURE','MESH'} if options.get('include_mesh',True) else {'ARMATURE'}
+        include_mesh = options.get('include_mesh', True)
+        types={'ARMATURE','MESH'} if include_mesh else {'ARMATURE'}
         for obj in bpy.context.scene.objects:
             if obj.type in types:obj.select_set(True)
         bpy.context.view_layer.objects.active=arm
         temp=target.with_name('.'+target.stem+'-'+uuid.uuid4().hex+'.partial.fbx')
         try:
-            with body_only_sampler(arm,set(info['keyed_bones'])|body_dependencies(kind,arm)):
+            allowed = set(info['keyed_bones']) | body_dependencies(kind, arm)
+            with body_only_sampler(arm, allowed), preserve_fbx_specular_tint(kind == 'mixamo' and include_mesh):
                 # Explicit terminal markers keep Blender's Ignore Leaf Bones
                 # option from removing real terminal finger bones.
                 bpy.ops.export_scene.fbx(filepath=io_path(temp),use_selection=True,object_types=types,add_leaf_bones=True,
