@@ -49,6 +49,22 @@ def install():
     conv_forward = torch.nn.Conv2d._conv_forward
     torch.nn.Conv2d._conv_forward = lambda self, input, weight, bias: conv_forward(self, input.contiguous(), weight, bias)
 
+    # MPS grid_sample has no border padding (RIFE warps with it). Clamping the grid to the
+    # outermost pixel centers and sampling with zero padding reads the same edge pixels.
+    functional = torch.nn.functional
+    grid_sample = functional.grid_sample
+
+    def border_grid_sample(input, grid, mode='bilinear', padding_mode='zeros', align_corners=None):
+        if padding_mode == 'border' and input.device.type == 'mps':
+            if align_corners:
+                grid = grid.clamp(-1, 1)
+            else:
+                limit = 1 - 1 / torch.tensor(input.shape[:1:-1], dtype=grid.dtype, device=grid.device)
+                grid = torch.maximum(torch.minimum(grid, limit), -limit)
+            padding_mode = 'zeros'
+        return grid_sample(input, grid, mode=mode, padding_mode=padding_mode, align_corners=align_corners)
+    functional.grid_sample = border_grid_sample
+
     fraction = [1.0]
 
     def total():
