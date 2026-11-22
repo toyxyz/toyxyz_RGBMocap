@@ -73,7 +73,7 @@ def track(project: Path, emit) -> Path:
     yolo_tasks.torch_safe_load = load_official_detector
     model = YOLO(str(BY_KEY["yolo"].path))
     from . import mps_compat
-    detector_device = 'mps' if mps_compat.ACTIVE else 0
+    detector_device = mps_compat.detector_device()
     video = cv2.VideoCapture(str(project / "input.mp4"))
     total = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
     width, height = int(video.get(3)), int(video.get(4))

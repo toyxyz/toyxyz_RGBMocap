@@ -49,6 +49,7 @@ def activate():
         if str(path) not in sys.path:sys.path.insert(0,str(path))
     os.environ.update(WANDB_MODE='disabled',PYTHONNOUSERSITE='1')
     if os.name=='nt':os.environ['PYOPENGL_PLATFORM']='win32'  # Elsewhere HaMeR's renderer defaults to EGL.
+    elif sys.platform=='darwin':os.environ['PYOPENGL_PLATFORM']='darwin'  # macOS has no EGL.
     weights=HOME/'cache/exmr/assets';weights.mkdir(parents=True,exist_ok=True)
     for key,name in LINKS.items():
         source=BY_KEY[key].path

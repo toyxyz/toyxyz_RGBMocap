@@ -220,7 +220,7 @@ def discover(project, emit):
             ok,frame = capture.read()
             if not ok:
                 raise RuntimeError(f'Cannot read video frame {index}.')
-            prediction = detector.predict(frame,device=mps_compat.DEVICE if mps_compat.ACTIVE else 0,conf=.1,classes=0,verbose=False,max_det=128)[0]
+            prediction = detector.predict(frame,device=mps_compat.detector_device(),conf=.1,classes=0,verbose=False,max_det=128)[0]
             # Upstream calls this encoder only for high-confidence candidates.
             tracks = tracker.update(prediction.boxes.cpu().numpy(),frame)
             lookup = {int(t.track_id):t for t in tracker.tracked_stracks}

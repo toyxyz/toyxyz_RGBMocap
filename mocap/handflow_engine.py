@@ -1,6 +1,7 @@
 """FP32 HandFlow inference, bounded images/windows, no body or wrist replacement."""
 import contextlib,gc,io,json,os,sys,time
 from pathlib import Path
+from . import mps_compat
 
 
 def assign_hands(boxes,confidence,classes,wrists,actor):
@@ -29,6 +30,7 @@ def infer(project,emit,n):
     from .models import BY_KEY
     from .compute_policy import retry_cuda
     if os.name=='nt':os.environ['PYOPENGL_PLATFORM']='win32'  # Elsewhere HaMeR's renderer defaults to EGL.
+    elif sys.platform=='darwin':os.environ['PYOPENGL_PLATFORM']='darwin'  # macOS has no EGL.
     os.environ['WANDB_MODE']='disabled'
     os.environ['YOLO_CONFIG_DIR']=str(MODELS/'handflow/settings')
     # Only pinned/checksummed official weights enter this worker. Upstream
@@ -47,13 +49,13 @@ def infer(project,emit,n):
     # Match the validated independent pipeline: finish detection before loading
     # the large hand networks. Only small boxes/scores survive this phase.
     from ultralytics import YOLO
-    detector=YOLO(str(BY_KEY['hand_detector'].path)).to('cuda')
+    detector=YOLO(str(BY_KEY['hand_detector'].path)).to(mps_compat.DEVICE)
     capture=cv2.VideoCapture(str(project/'input.mp4'))
     try:
         for i in range(n):
             ok,image=capture.read()
             if not ok:raise ValueError('Cannot read HandFlow video frame '+str(i))
-            prediction=detector.predict(image,conf=.3,verbose=False,imgsz=640,device=0,half=False)[0].boxes
+            prediction=detector.predict(image,conf=.3,verbose=False,imgsz=640,device=mps_compat.detector_device(),half=False)[0].boxes
             allboxes[i],valid[i],scores[i]=assign_hands(prediction.xyxy.cpu().numpy(),prediction.conf.cpu().numpy(),prediction.cls.cpu().numpy(),wrists[i],actors[i])
             if i%30==0:emit('progress',stage='handflow',current=i,total=n,message='HandFlow: detecting this actor\'s hands')
     finally:capture.release()
@@ -80,7 +82,7 @@ def infer(project,emit,n):
     hamer.load_state_dict(checkpoint['state_dict'],strict=True);del checkpoint;gc.collect();hamer.cuda()
     tokens=np.empty((n,2,512),np.float32);landmarks=np.zeros((n,2,21,2),np.float32)
     intrinsics=np.zeros((n,2,4),np.float32)
-    with torch.inference_mode():empty=compressor(torch.zeros(1,1,192,1280,device='cuda')).cpu().numpy()[0,0]
+    with torch.inference_mode():empty=compressor(torch.zeros(1,1,192,1280,device=mps_compat.DEVICE)).cpu().numpy()[0,0]
     tokens[:]=empty
     captured=[];hook=hamer.backbone.register_forward_hook(lambda m,i,o:captured.append(o))
     free,_=torch.cuda.mem_get_info();batch_limit=8 if free>3*1024**3 else 1
@@ -149,9 +151,9 @@ def infer(project,emit,n):
                 padding_mask=torch.zeros(1,n,dtype=torch.bool),images=torch.zeros(1,n,3,1,1,dtype=torch.uint8),
                 hamer_landmarks=torch.from_numpy(landmarks[:,side])[None],crop_intrinsics=torch.from_numpy(intrinsics[:,side])[None],
                 hamer_confidence=torch.from_numpy(scores[:,side])[None],image_tokens=torch.from_numpy(tokens[:,side])[None],side=['right'],source=['custom'])
-            windows,_=split_sequence_into_windows(batch,16,14,torch.device('cuda'))
+            windows,_=split_sequence_into_windows(batch,16,14,torch.device(mps_compat.DEVICE))
             windows={k:v.cuda() if torch.is_tensor(v) else v for k,v in windows.items()}
-            pose,_,_=run_fm_inference_with_overlap(wrapper,model,windows,16,2,3,torch.device('cuda'),overlap_method='vblend')
+            pose,_,_=run_fm_inference_with_overlap(wrapper,model,windows,16,2,3,torch.device(mps_compat.DEVICE),overlap_method='vblend')
             r=Rotation.from_rotvec(pose[:n,3:].cpu().numpy().reshape(-1,3)).as_matrix().reshape(n,15,3,3)
             if side==0:
                 mirror=np.diag([-1.,1.,1.]);r=mirror@r@mirror

@@ -15,6 +15,11 @@ ACTIVE = False
 DEVICE = 'cuda'
 
 
+def detector_device():
+    """Ultralytics device argument: the first CUDA device, or MPS when this layer is active."""
+    return DEVICE if ACTIVE else 0
+
+
 def install():
     """Idempotent; a no-op off macOS, with CUDA, or without MPS."""
     global ACTIVE, DEVICE
@@ -39,6 +44,10 @@ def install():
             return _to(self, *map(fix, args), **{key: fix(value) for key, value in kwargs.items()})
         cls.to = to
         cls.cuda = lambda self, *args, **kwargs: self.to(mps)
+
+    # MPS convolution rejects some strided views (the models crop with x[:, :, :, 32:-32]).
+    conv_forward = torch.nn.Conv2d._conv_forward
+    torch.nn.Conv2d._conv_forward = lambda self, input, weight, bias: conv_forward(self, input.contiguous(), weight, bias)
 
     fraction = [1.0]
 

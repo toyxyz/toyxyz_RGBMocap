@@ -33,7 +33,7 @@ class HMR2(pl.LightningModule):
                        when False, the full process of HMR2 will be executed.
         """
         # Backbone
-        x = batch["img"][:, :, :, 32:-32].contiguous()  # MPS convolution rejects this strided view
+        x = batch["img"][:, :, :, 32:-32]
         vit_feats = self.backbone(x)
 
         # Output head
