@@ -16,7 +16,7 @@ animated fingers. Standard correction, retargeting and FBX controls apply.
 ## Character retargeting
 
 Transfer a reconstructed person's motion to a character without running AI
-inference again. Supported targets are **Mixamo FBX**, **VRM** and **PMX** humanoids.
+inference again. Supported targets are **Mixamo FBX**, **VRM** and **PMX** humanoids. Mixamo FBX can be binary or ASCII, including older FBX 6.1 files.
 
 1. Prepare the source person's motion and apply any contact edits.
 2. Choose **File > Import Character...** and select the character file. It appears
@@ -30,6 +30,10 @@ Up to **8 characters** can be imported per project. Each character can use a
 different source person. Check or uncheck its row to show or hide it; use
 **Remove Character** in its right-click menu to remove it from the project.
 Character data and assigned motion are saved inside the project.
+
+Mixamo FBX exports with the mesh embed its specular tint texture in the FBX
+specular color channel. Blender's legacy FBX importer reads this texture.
+Blender's newer importer may omit the connection when it opens a Blender-written FBX.
 
 Characters are drawn in front of the SMPL source meshes, with **Bone Overlay**
 above both. **Name** shows the list name above each visible person or character,

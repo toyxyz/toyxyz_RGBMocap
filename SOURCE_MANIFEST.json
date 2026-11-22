@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "date": "2026-11-21",
+  "date": "2026-11-22",
   "purpose": "Public source distribution; excludes model weights and runtime binaries",
   "version": "git-source",
   "files": [
@@ -156,8 +156,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 104032,
-      "sha256": "4f93819ba55409fd2e384624b267f70c665f9106359b5517005462fadbd7cc74"
+      "bytes": 104388,
+      "sha256": "bdbf61d4e64a724a7b0556783c85b49d6b161b3df6ce92d3195e0af0dce24ef5"
     },
     {
       "path": "docs/BUILD.md",
@@ -191,8 +191,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 94606,
-      "sha256": "a2dc2b96eb09d5afd079e2f30340621ddcde4f0b1c99be526f2b94ef03f7f38e"
+      "bytes": 94913,
+      "sha256": "9e91d3f3042ed660be5458137afbd00cb8cf1d0cfb284f82427034f8a6e1e0e0"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -2146,8 +2146,8 @@
     },
     {
       "path": "mocap/retarget/blender_io.py",
-      "bytes": 13274,
-      "sha256": "431cecfc0b82dea62f788ae64f33ce29bd76ec90a9bc9c08e5b42757a95360d1"
+      "bytes": 14118,
+      "sha256": "d255444d02bdb016eaf9637175b5f939fdf0aadf133233ad4682d9fd62a8378a"
     },
     {
       "path": "mocap/retarget/blender_soma.py",
