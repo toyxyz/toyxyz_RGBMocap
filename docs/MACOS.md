@@ -27,7 +27,9 @@ results were not compared numerically with a CUDA run.
 | ExMR keypoint preprocessing | Works | 54 s |
 | ExMR features and reconstruction | Not tested | |
 | FlowHMR | Not tested | |
-| FBX, BVH and Blender export, retargeting | Not tested | |
+| FBX and BVH export | Works | Under 1 s |
+| Compatibility FBX and Blender project export | Works with Blender 5.1.2 | About 1 s |
+| Character import and retargeting | Not tested | |
 | Imported character preview | Not available | |
 | Track Face | Not tested | |
 | PEAR, MAMMA, PromptHMR, GEM-X, SAM 3.1, Unreal Live Link sender | Not available (Windows tooling) | |
@@ -51,9 +53,14 @@ four-dancer clip.
 - About 7.3 GiB of free space for the runtimes (about 1 GiB of downloads),
   plus the models for your pipeline. The GVHMR set with all add-ons is about
   15 GiB.
-- Blender 4.5 LTS for exports and retargeting. No managed Blender is
-  installed on macOS. Set `RGBMOCAP_BLENDER` to
-  `/Applications/Blender.app/Contents/MacOS/Blender` of a 4.5 install.
+- Blender for compatibility FBX, Blender project export and retargeting. No
+  managed Blender is installed on macOS. `Blender.app` in `/Applications` or
+  `~/Applications` is found automatically; otherwise set `RGBMOCAP_BLENDER`
+  to the application or its executable. The project is validated with
+  Blender 4.5 LTS. On macOS only 5.1.2 was tried: the exported FBX files and
+  Blender project opened there with the armature upright, 300 animated frames,
+  the camera and the linked video. Plain FBX and BVH export do not use
+  Blender.
 
 ## Install and launch
 
