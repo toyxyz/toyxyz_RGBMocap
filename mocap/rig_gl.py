@@ -31,9 +31,7 @@ class RigRenderer(MeshRenderer):
     def __init__(self,shared=None):
         super().__init__(shared)
         self.topology_key=None
-        if shared is None:
-            self.skin.removeAllShaders()
-            self.skin=self.program(((QOpenGLShader.Compute,SKIN),))
+        if shared is None:self.replace_compute(SKIN)
 
     def load(self,asset):
         if self.asset_key==asset['key']:return
@@ -45,6 +43,7 @@ class RigRenderer(MeshRenderer):
         self.release_buffers();self.vertex_count=int(asset['vertex_count']);self.index_count=asset['faces'].size
         self.raw=asset['mode']=='raw';self.bone_count=asset.get('bone_count',52);self.vao.bind()
         if self.shared and self.shared.topology_key!=topology:raise ValueError('Shared raw meshes must have identical topology')
+        if self.cpu:return self.cpu_rig_load(asset,topology)
         self.model=self.shared.model if self.shared else self.buffer(asset.get('packed',np.zeros(7,np.float32)))
         self.vertices=self.buffer(self.vertex_count*32)
         self.offsets=self.shared.offsets if self.shared else self.buffer(asset.get('offsets',np.zeros(1,np.uint32)))
@@ -57,11 +56,34 @@ class RigRenderer(MeshRenderer):
         self.vao.release();self.surface.release();self.asset_key=asset['key'];self.topology_key=topology;self.frame_key=None
         self.check('target load')
 
+    def cpu_rig_load(self,asset,topology):
+        owner=self.shared
+        self.cpu_model=owner.cpu_model if owner else np.asarray(asset.get('packed',np.zeros(7,np.float32)),np.float32).reshape(-1,7)
+        if owner:self.cpu_offsets,self.cpu_neighbors=owner.cpu_offsets,owner.cpu_neighbors
+        else:self.cpu_topology(dict(offsets=asset.get('offsets',np.zeros(1,np.uint32)),neighbors=asset.get('neighbors',np.zeros(0,np.uint32))))
+        self.vertices=self.buffer(self.vertex_count*32)
+        self.indices=owner.indices if owner else self.buffer(asset['faces'],QOpenGLBuffer.IndexBuffer);self.indices.bind()
+        self.surface.bind();self.vertices.bind()
+        for i,offset in ((0,0),(1,16)):
+            self.surface.enableAttributeArray(i);self.surface.setAttributeBuffer(i,0x1406,offset,3,32)
+        self.vao.release();self.surface.release();self.asset_key=asset['key'];self.topology_key=topology;self.frame_key=None
+        self.check('target load')
+
+    def cpu_skin(self,frame):
+        if self.raw:return frame.reshape(-1,3),None
+        bones=frame.reshape(-1,4,4)[self.cpu_model[:,6].astype(np.int64),:3]
+        normals=np.einsum('vrc,vc->vr',bones[:,:,:3],self.cpu_model[:,3:6])
+        return (np.einsum('vrc,vc->vr',bones[:,:,:3],self.cpu_model[:,:3])+bones[:,:,3],
+                normals/np.maximum(np.linalg.norm(normals,axis=1,keepdims=True),1e-20))
+
     def deform(self,frame,key):
         if self.frame_key==key:return
         frame=np.ascontiguousarray(frame,dtype=np.float32)
         expected=self.vertex_count*3 if self.raw else self.bone_count*16
         if frame.size!=expected or not np.isfinite(frame).all():raise ValueError('Invalid target render frame')
+        if self.cpu:
+            self.cpu_upload(*self.cpu_skin(frame.reshape(-1)))
+            self.check('target deform');self.frame_key=key;self.dispatches+=1;return
         self.frame.bind();self.frame.write(0,frame.tobytes(),frame.nbytes)
         for index,buffer in enumerate((self.model,self.vertices,self.offsets,self.neighbors,self.frame)):
             self.gl.glBindBufferBase(0x90D2,index,buffer.bufferId())

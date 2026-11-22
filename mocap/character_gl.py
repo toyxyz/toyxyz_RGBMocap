@@ -49,6 +49,7 @@ color=vec4(c.rgb*light,1);}'''
 class CharacterRenderer(MeshRenderer):
     def __init__(self):
         super().__init__()
+        if self.cpu:raise RuntimeError('Imported character preview requires OpenGL 4.3; the OpenGL 4.1 fallback is not implemented yet.')
         self.skin.removeAllShaders();self.surface.removeAllShaders()
         self.skin=self.program(((QOpenGLShader.Compute,SKIN),))
         self.surface=self.program(((QOpenGLShader.Vertex,VERTEX),(QOpenGLShader.Fragment,FRAGMENT)))
