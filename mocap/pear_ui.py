@@ -38,8 +38,9 @@ class CameraScan:
         finally:self.devices=devices
 
 from .pear_multi_ui import PearMultiWorkspace
+from .pear_vmc_ui import PearVmcWorkspace
 
-class PearWorkspace(PearMultiWorkspace):
+class PearWorkspace(PearMultiWorkspace,PearVmcWorkspace):
     def init_pear(self):
         self.init_pear_multi()
         self._pear_active=False;self._pear_failed=False;self.pear_session=None;self.pear_generation=0;self.pear_request=0;self._pear_last=None
@@ -100,6 +101,7 @@ class PearWorkspace(PearMultiWorkspace):
         self.pear_align_button.setToolTip('Align one or more fixed views using VGGT and GeoCalib. A single view uses an estimated body-to-depth scale. Show the person and floor; multiple videos must be synchronized. Start Live Tracking aligns automatically.')
         self.pear_align_tooltip=self.pear_align_button.toolTip()
         self.pear_align_button.clicked.connect(self.pear_camera_align)
+        self.build_pear_vmc(layout)
         self.model_pages.addWidget(self.pear_page)
         self.pear_poll_timer=QTimer(self);self.pear_poll_timer.setInterval(16);self.pear_poll_timer.timeout.connect(self.pear_poll)
 
@@ -145,6 +147,7 @@ class PearWorkspace(PearMultiWorkspace):
         return False
 
     def pear_leave(self):
+        self.pear_vmc_stop()
         if not self._pear_active:return
         self._pear_active=False;self.pear_poll_timer.stop();self.pear_close_session();self.pear_shutdown_multi()
         self.stream_tab_changed(self.people_tabs.currentIndex())
@@ -178,6 +181,7 @@ class PearWorkspace(PearMultiWorkspace):
         self.slider.live_preview=False;self.slider._cache_key=None;self.slider.update()
 
     def pear_close_session(self):
+        self.pear_vmc_publish()
         self._pear_running=False
         self._pear_reset_pending=False;self._pear_reset_pose=None
         self._pear_raw_pose=None;self._pear_world_anchor=None
@@ -214,6 +218,7 @@ class PearWorkspace(PearMultiWorkspace):
         self._pear_world_anchor=current['joints'][0].copy() if not self.pear_world_position.isChecked() and current is not None else None
         if self._pear_active and current is not None and self._pear_raw_pose is not None:
             self.pear_position_pose(self._pear_raw_pose)
+            self.pear_vmc_publish(getattr(self,"pear_last_metrics",None))
             self.motion_view.live_key=('pear-position',self.pear_generation,self._pear_position_revision,self._pear_presented_request)
             self.motion_view.update()
         if self._pear_active:self._pear_last=None;self.pear_submit()
@@ -231,6 +236,7 @@ class PearWorkspace(PearMultiWorkspace):
         if self._pear_running or self.pear_align_phase:
             try:self.pear_capture_suspended=json.dumps(self.pear_capture_request(),sort_keys=True)
             except ValueError:self.pear_capture_suspended=None
+            self.pear_vmc_stop()
             self.pear_cancel_alignment("Tracking stopped.")
             self.pear_close_capture()
             self._pear_running=False;self.pear_generation+=1
@@ -305,6 +311,7 @@ class PearWorkspace(PearMultiWorkspace):
         self._pear_source_signature=signature
         self.pear_generation+=1;self._pear_last=None
         if not keep_pair:
+            self.pear_vmc_publish()
             self._pear_reset_pending=False;self._pear_reset_pose=None
             self._pear_raw_pose=None;self._pear_world_anchor=None
             self.motion_view.live_data=None;self.motion_view.live_frame_first=True
@@ -400,6 +407,7 @@ class PearWorkspace(PearMultiWorkspace):
             self.motion_view.update()
 
     def pear_poll(self):
+        self.pear_vmc_update_status()
         self._pear_closing=[s for s in self._pear_closing if s.process.poll() is None]
         if not self._pear_active:return
         self.pear_capture_poll()
@@ -429,6 +437,7 @@ class PearWorkspace(PearMultiWorkspace):
             if self.pear_multi_packet(meta,a):return
             if 'preview' in meta and meta['preview']!=self.pear_preview:return
             if kind=='error':
+                self.pear_vmc_publish()
                 if meta.get('generation') is not None and meta['generation']!=self.pear_generation:
                     if meta.get('recoverable'):return
                     self.pear_close_session();return
@@ -455,6 +464,7 @@ class PearWorkspace(PearMultiWorkspace):
                 if meta.get('mode')=='video':self.video_view.index=meta['timeline_frame']
             if kind=='frame':a['rig_revision']=meta.get('bone_revision',0)
             self.pear_position_pose(a if kind=='frame' else None)
+            self.pear_vmc_publish(meta)
             self.motion_view.live_key=(self.pear_generation,meta.get('frame'),meta.get('request'),self._pear_position_revision)
             self.motion_view.live_message=meta.get('text','')
             if kind=='frame':
