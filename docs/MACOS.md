@@ -32,9 +32,9 @@ results were not compared numerically with a CUDA run.
 | Track Face | Not tested | |
 | PEAR, MAMMA, PromptHMR, GEM-X, SAM 3.1, Unreal Live Link sender | Not available (Windows tooling) | |
 
-Reconstruction of one person with GVHMR, FootMR and HandFlow was also run
-from the app's own controls. Multi-person reconstruction from the app was not
-confirmed.
+Reconstruction was also run from the app's own controls: one person with
+GVHMR, FootMR and HandFlow, and several people after **Find person** on a
+four-dancer clip.
 
 ## Requirements
 
