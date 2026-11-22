@@ -230,6 +230,8 @@ class MammaWorkspace:
             self.mamma_calibration=None;self.mamma_camera_mode.blockSignals(True)
             self.mamma_camera_mode.setCurrentIndex(0);self.mamma_camera_mode.blockSignals(False)
         self.mamma_inputs=entries
+        if not restore:
+            self.apply_default_settings()
         if restore and 'result_state' in restore:
             state=restore['result_state']
             info=dict(fps=state['fps'],frames=state['frames'],duration=state['frames']/state['fps'])

@@ -557,7 +557,7 @@ class PeopleWorkspace:
             path=safe_child(self.people_root,relative)
         if self.project!=path:
             source_time=self.source_offset+(self.slider.value()/self.info['fps'] if self.info else 0)
-            self.load_project(path)
+            self.load_project(path, keep_current_options=True)
             self.motion_view.auto_fit=False
             if self.info:
                 self.slider.setValue(max(0,min(self.slider.maximum(),round((source_time-self.source_offset)*self.info['fps']))))
@@ -781,7 +781,7 @@ class PeopleWorkspace:
         found=getattr(self,'_people_found_root',None)
         if found is not None:
             self._people_found_root=None
-            self.load_project(found)
+            self.load_project(found, keep_current_options=True)
             self.status.setText(f'{self.people_list.count()} people found. Check people to extract; select a row to preview.')
         if not self._people_batch:return
         self._people_batch=False

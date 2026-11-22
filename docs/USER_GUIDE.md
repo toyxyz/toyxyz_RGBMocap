@@ -790,17 +790,20 @@ Changes to camera, smoothing or feature settings take effect on **Reconstruct 3D
 GVHMR refinement checkboxes also select saved preview/export results. If the
 selected result is missing, reconstruct it; the app reports it as unavailable.
 
-**File → Save Settings as Default** makes new videos, and the next start of the app,
-begin with the current model settings instead of the built-in ones: FlowHMR Fast SAM
-switches, HaMeR and **Camera / Sampling**, ExMR **Camera** and **Smooth Motion**, PromptHMR
-camera and **Interaction Prompt**, **Correction Mode**, **Lock Preset**, **Foot**, **Hand**
-and **Track Face**. Values that belong to one video are not saved: trim, floor height,
-pelvis offset, people counts and MAMMA cameras. A project keeps the settings it saved
-for each model. A model the project has no settings for yet, such as FlowHMR after an
-ExMR reconstruction, also starts from the defaults. **File → Reset Default Settings**
-restores the built-in defaults for the next video you open or the next app launch.
-The video you are working on keeps its current settings. These defaults are stored
-locally, and both commands report their result in the Console.
+**File → Save Settings as Default** saves the starting options for new videos
+and the next app launch. The confirmation window lists GVHMR's **HTD Refine**,
+**FootMR** and **HandFlow**, FlowHMR's sampling, Fast SAM and HaMeR options, ExMR's
+camera and smoothing, both models' **Refine Camera Rotation**, PromptHMR's camera
+and interaction, correction mode and locks, **Track Face** and **Resource Mode**.
+The saved **Automatic** or **Low Memory** mode applies to new MAMMA inputs too.
+Project data such as trim, floor height, pelvis offset, people counts and MAMMA
+calibration belong to the project. Its saved model settings and result selections
+take priority. **File → Reset Default Settings** restores the built-in defaults,
+including **Automatic**, for the next video or app launch.
+The confirmation window lists the current values that would be saved or the
+built-in values that would be restored. Select **OK** to apply the change or
+**Cancel** to close the window. The current video keeps its settings. The status
+line and Console report the result.
 
 | Setting | Function and when to use it |
 | --- | --- |

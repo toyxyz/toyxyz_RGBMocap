@@ -156,8 +156,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 106130,
-      "sha256": "738781b51eb7d4fba109908e213fef9863511fc89acfa7b8d4aa2c3e2a4b9496"
+      "bytes": 105906,
+      "sha256": "b2aef9a2fec60cefdc0bf06aa623fdb424412e9df4123a5cd9509bb34dec411a"
     },
     {
       "path": "docs/BUILD.md",
@@ -191,8 +191,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 96181,
-      "sha256": "fbdc4dc978573cfb7c29942f3891bebce3f938375754dc0d1996723e63bbb18c"
+      "bytes": 96313,
+      "sha256": "f3b740605caaddbeaeb102d5a769cc466678c381e84dfff16d4e116da1ae10e9"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -1636,8 +1636,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 131787,
-      "sha256": "48e858e649fef9d530a38e6260146a305eba31b5cd96e33b6a168b0dcc8cf8e6"
+      "bytes": 132034,
+      "sha256": "02a90f3724df0f1a683919ee794b58b6b7cc9ae21750abdff60adad370f30bb9"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -1746,8 +1746,8 @@
     },
     {
       "path": "mocap/mamma_ui.py",
-      "bytes": 33894,
-      "sha256": "5b219e3a4359903db77380f2f115288c9d42dd033f6ab5583d74cc163bafda78"
+      "bytes": 33962,
+      "sha256": "f8078536930d0183c06df522f30982a63e6589455a9939eb2537d6a5eadf6681"
     },
     {
       "path": "mocap/memory_mode.py",
@@ -1971,8 +1971,8 @@
     },
     {
       "path": "mocap/people_ui.py",
-      "bytes": 47287,
-      "sha256": "fc7feb5fe5a22409e90f9a7070d4392afe53479eb5237e85f1367ef124cb5aee"
+      "bytes": 47341,
+      "sha256": "ee94f1715059204ca7fee19236e8ab05b45ed512a06b9423467bbed1d16fcc01"
     },
     {
       "path": "mocap/person_names.py",
@@ -2051,8 +2051,8 @@
     },
     {
       "path": "mocap/project_workspace_ui.py",
-      "bytes": 15141,
-      "sha256": "a99d25f5195120006d23d089e2935f9f9505b51127a511684b02aae87f6908c3"
+      "bytes": 23359,
+      "sha256": "388b033c5d60d6c5ac22e3ebfc7353ef8015093602eeccf2a2432c3a0af0d3f0"
     },
     {
       "path": "mocap/prompthmr_cache.py",
@@ -2476,8 +2476,8 @@
     },
     {
       "path": "mocap/workspace_ui.py",
-      "bytes": 43558,
-      "sha256": "8680c769ff5a679de4c73012d6bda1fab9d2bd9f37b07d24cb38bcaa78bdc6e1"
+      "bytes": 43629,
+      "sha256": "152c76d8dee2f3d0a58e08029c44592a975924efdee1457f3b59b173ade5040e"
     },
     {
       "path": "native_compat/LICENSE",
@@ -2621,8 +2621,8 @@
     },
     {
       "path": "tests/test_default_settings.py",
-      "bytes": 13289,
-      "sha256": "82f961b410b090bab23d3e5b5c282f50fdc9b0067a48b90f8ffeaff60d9fb72b"
+      "bytes": 22206,
+      "sha256": "7e74463f8f1ca04459029332ee8e7397fbcb3a3382549e2499adc6a878f41b06"
     },
     {
       "path": "tests/test_local_choices.py",

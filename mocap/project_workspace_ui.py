@@ -2,19 +2,101 @@
 import json
 from pathlib import Path
 import numpy as np
+from PySide6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QHeaderView,
+    QLabel, QTreeWidget, QTreeWidgetItem, QVBoxLayout)
 from . import project_workspace as workspace
+from .exmr_options import DEFAULTS as EXMR_DEFAULTS
+from .local_choices import offered
+from .theme import set_appearance_style, ui_px
 from .project_storage import manifest
 from .storage import atomic_json
 from .video import select_preview
 
 DEFAULTS = 'default_settings'
-# Ways of working a new video may start from, checked per value: a combo box name, allowed strings, or bool. Values of one
-# video stay out (trim, floor height, pelvis offset, people, MAMMA cameras), and so does the result selection.
-DEFAULT_SETTINGS = {'flow_options': {'camera_interval': 'flow_sampling', 'fast_sam': bool, 'sam_batch4': bool,
-                                     'sam_gpu_crop': bool, 'sam_hand_stride4': bool, 'hamer': bool},
-                    'exmr_options': {'static_camera': 'exmr_camera', 'smoothing': ('global', 'none')},
-                    'prompthmr_options': {'camera': 'prompthmr_camera', 'interaction': bool},
-                    'correction': {'mode': 'correction_mode', 'preset': 'correction_preset', 'foot_lock': bool, 'hand_lock': bool}}
+# Stored keys map to the editor controls. Checkboxes supply their own labels.
+DEFAULT_SETTINGS = {
+    'gvhmr_options': ('GVHMR', {
+        'htd': ('htd_refine', None),
+        'footmr': ('footmr_refine', None),
+        'handflow': ('handflow_refine', None),
+    }),
+    'flow_options': ('FlowHMR', {
+        'camera_interval': ('flow_sampling', 'Camera / Sampling'),
+        'fast_sam': ('fast_sam', None),
+        'sam_batch4': ('flow_batch4', None),
+        'sam_gpu_crop': ('flow_gpu_crop', None),
+        'sam_hand_stride4': ('flow_hand_stride4', None),
+        'hamer': ('flow_hamer', None),
+        'refine_camera_rotation': ('flowhmr_background', None),
+    }),
+    'exmr_options': ('ExMR', {
+        'static_camera': ('exmr_camera', 'Camera'),
+        'smoothing': ('exmr_smoothing', None),
+        'refine_camera_rotation': ('exmr_background', None),
+    }),
+    'prompthmr_options': ('PromptHMR', {
+        'camera': ('prompthmr_camera', 'Camera'),
+        'interaction': ('prompthmr_interaction', None),
+    }),
+    'correction': ('Motion Correction', {
+        'mode': ('correction_mode', 'Correction Mode'),
+        'preset': ('correction_preset', 'Lock Preset'),
+        'foot_lock': ('foot_lock', None),
+        'hand_lock': ('hand_lock', None),
+    }),
+    'processing_options': ('Processing Resources', {
+        'resource_mode': ('compute_mode', 'Resource Mode'),
+    }),
+}
+PROJECT_DEFAULT_GROUPS = ('flow_options', 'exmr_options', 'prompthmr_options', 'correction')
+DEFAULT_RESOURCE_MODE = 'auto'
+GVHMR_DEFAULTS = dict(htd=True, footmr=True, handflow=True)
+FLOW_DEFAULTS = dict(camera_interval=0, fast_sam=True, sam_batch4=True, sam_gpu_crop=True,
+                     sam_hand_stride4=True, hamer=False)
+
+
+class DefaultSettingsDialog(QDialog):
+    def __init__(self, parent, groups, *, reset):
+        super().__init__(parent)
+        self.setWindowTitle('Reset Default Settings' if reset else 'Save Settings as Default')
+        prompt = ('Restore the built-in starting settings?' if reset else
+                  'Save these options as your starting settings?')
+        scope = ('These values apply the next time you open a video or launch the app. '
+                 'The current video keeps its settings.')
+        layout = QVBoxLayout(self)
+        for text in (prompt, scope):
+            label = QLabel(text)
+            label.setWordWrap(True)
+            layout.addWidget(label)
+
+        values = QTreeWidget()
+        values.setHeaderLabels(('Setting', 'Built-in Value' if reset else 'Value to Save'))
+        values.setAccessibleName('Starting settings and values')
+        values.setSelectionMode(QTreeWidget.SelectionMode.NoSelection)
+        values.setRootIsDecorated(False)
+        values.setItemsExpandable(False)
+        set_appearance_style(values, 'QTreeWidget::item { padding: 0 8px; }')
+        values.header().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        values.header().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        for title, rows in groups:
+            group = QTreeWidgetItem(values, [title])
+            font = group.font(0)
+            font.setBold(True)
+            group.setFont(0, font)
+            for label, value in rows:
+                QTreeWidgetItem(group, [label, value])
+        values.expandAll()
+        layout.addWidget(values, 1)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+        cancel = buttons.button(QDialogButtonBox.StandardButton.Cancel)
+        cancel.setDefault(True)
+        cancel.setFocus()
+        area = parent.screen().availableGeometry()
+        self.resize(min(ui_px(600), area.width() - 32), min(ui_px(560), area.height() - 64))
 
 
 class ModelWorkspace:
@@ -38,57 +120,128 @@ class ModelWorkspace:
                              (self.handflow_refine,has_handflow(kind)),(self.motion_correction,kind.startswith('corrected_'))):
             widget.blockSignals(True);widget.setChecked(value);widget.blockSignals(False)
         self.restore_correction_options(settings.get('correction',{}))
-        flow=settings.get('flow_options',{})
-        self.flow_hamer.setChecked(False)
-        self.flow_sampling.setCurrentIndex(max(0,self.flow_sampling.findData(flow.get('camera_interval',0))))
-        self.fast_sam.setChecked(flow.get('fast_sam',True))
-        self.flow_batch4.setChecked(flow.get('sam_batch4',True))
-        self.flow_gpu_crop.setChecked(flow.get('sam_gpu_crop',True))
-        self.flow_hand_stride4.setChecked(flow.get('sam_hand_stride4',True))
-        self.flow_hamer.setChecked(flow.get('hamer',False))
-        exmr=settings.get('exmr_options',{})
-        self.exmr_camera.setCurrentIndex(self.exmr_camera.findData(exmr.get('static_camera',True)))
-        self.exmr_smoothing.setChecked(exmr.get('smoothing','global')=='global')
+        self.restore_workflow_options(settings)
         self.active_result=self.selected_result()
         self.restore_mamma_options(settings.get('mamma_options',{}))
         self.restore_prompthmr_options(settings.get('prompthmr_options',{}))
 
+    def restore_workflow_options(self, settings):
+        flow = {**FLOW_DEFAULTS, **settings.get('flow_options', {})}
+        self.flow_hamer.setChecked(False)
+        self.flow_sampling.setCurrentIndex(max(0, self.flow_sampling.findData(flow['camera_interval'])))
+        self.fast_sam.setChecked(flow['fast_sam'])
+        self.flow_batch4.setChecked(flow['sam_batch4'])
+        self.flow_gpu_crop.setChecked(flow['sam_gpu_crop'])
+        self.flow_hand_stride4.setChecked(flow['sam_hand_stride4'])
+        self.flow_hamer.setChecked(flow['hamer'])
+        exmr = {**EXMR_DEFAULTS, **settings.get('exmr_options', {})}
+        self.exmr_camera.setCurrentIndex(self.exmr_camera.findData(exmr['static_camera']))
+        self.exmr_smoothing.setChecked(exmr['smoothing'] == 'global')
+
+    def default_option_text(self, control, key, value):
+        if isinstance(control, QComboBox):
+            index = offered(control, value)
+            return control.itemText(index) if index >= 0 else None
+        if key == 'smoothing':
+            if type(value) is not str or value not in ('global', 'none'):
+                return None
+            value = value == 'global'
+        if type(value) is bool:
+            return 'On' if value else 'Off'
+        return None
+
+    def confirm_default_settings(self, settings, *, reset):
+        groups = []
+        for group, (title, fields) in DEFAULT_SETTINGS.items():
+            rows = []
+            for key, (name, label) in fields.items():
+                control = getattr(self, name)
+                value = self.default_option_text(control, key, settings[group][key])
+                rows.append((label if label is not None else control.text(), value or 'Unavailable'))
+            groups.append((title, rows))
+        groups.append(('Face Tracking', [(self.track_face.text(), 'On' if settings['track_face'] else 'Off')]))
+        return DefaultSettingsDialog(self, groups, reset=reset).exec() == QDialog.DialogCode.Accepted
+
     def save_default_settings(self):
         from .resource_safety import update
-        settings=self.workspace_settings()
-        value={group:{key:settings[group][key] for key in keys if key in settings[group]} for group,keys in DEFAULT_SETTINGS.items()}
-        value['track_face']=self.workspace_view()['track_face']
-        try:update({DEFAULTS:value})
-        except (OSError,ValueError) as error:self.log.append('Cannot save default settings: '+str(error));return
+
+        settings = self.workspace_settings()
+        settings['prompthmr_options']['camera'] = self.prompthmr_camera.currentData()
+        if self._selected_tool == 'gvhmr':
+            htd, footmr, handflow = (control.isChecked() for control in
+                                     (self.htd_refine, self.footmr_refine, self.handflow_refine))
+        else:
+            htd, footmr, _, handflow = self._tool_refinement.get('gvhmr', (True, True, True, True))
+        settings['gvhmr_options'] = dict(htd=htd, footmr=footmr, handflow=handflow)
+        camera_background = self.camera_tools.background_options()
+        settings['flow_options']['refine_camera_rotation'] = camera_background['flowhmr']
+        settings['exmr_options']['refine_camera_rotation'] = camera_background['exmr']
+        settings['processing_options'] = {'resource_mode': self.compute_mode.currentData()}
+        value = {group: {key: settings[group][key] for key in fields}
+                 for group, (_, fields) in DEFAULT_SETTINGS.items()}
+        value['track_face'] = self.track_face.isChecked()
+        if not self.confirm_default_settings(value, reset=False):
+            return
+        try:
+            update({DEFAULTS: value})
+        except (OSError, ValueError) as error:
+            self.status.setText('Could not save default settings. See Console.')
+            self.log.append('Cannot save default settings: ' + str(error))
+            return
+        self.status.setText('Default settings saved for new videos.')
         self.log.append('Default settings saved. New videos, the next start and models a project has no settings for use them.')
 
     def reset_default_settings(self):
+        from .correction_settings import correction_options
+        from .prompthmr_pipeline import options as prompthmr_options
         from .resource_safety import update
-        try:update({DEFAULTS:None})
-        except (OSError,ValueError) as error:self.log.append('Cannot reset default settings: '+str(error));return
+
+        built_in = dict(gvhmr_options=GVHMR_DEFAULTS,
+                        flow_options={**FLOW_DEFAULTS, 'refine_camera_rotation': False},
+                        exmr_options={**EXMR_DEFAULTS, 'refine_camera_rotation': False},
+                        prompthmr_options={'camera': 'static', **prompthmr_options({})},
+                        correction=correction_options(), track_face=False,
+                        processing_options={'resource_mode': DEFAULT_RESOURCE_MODE})
+        if not self.confirm_default_settings(built_in, reset=True):
+            return
+        try:
+            update({DEFAULTS: None})
+        except (OSError, ValueError) as error:
+            self.status.setText('Could not reset default settings. See Console.')
+            self.log.append('Cannot reset default settings: ' + str(error))
+            return
         self._reset_starting_settings = True
+        self.status.setText('Default settings reset for new videos.')
         self.log.append('Default settings reset. New videos and the next start use the built-in settings.')
 
     def default_groups(self):
         """Saved defaults by group, only values that pass their check, plus Track Face; None when nothing is saved."""
-        from .local_choices import offered,saved
-        start=saved(DEFAULTS)
-        if not isinstance(start,dict):return None
-        def usable(check,value):
-            if check is bool:return type(value) is bool
-            if isinstance(check,tuple):return type(value) is str and value in check
-            return offered(getattr(self,check),value)>=0
-        groups={}
-        for group,keys in DEFAULT_SETTINGS.items():
-            values=start.get(group) if isinstance(start.get(group),dict) else {}
-            groups[group]={key:values[key] for key,check in keys.items() if key in values and usable(check,values[key])}
+        from .local_choices import saved
+        start = saved(DEFAULTS)
+        if not isinstance(start, dict):
+            return None
+        groups = {}
+        for group, (_, fields) in DEFAULT_SETTINGS.items():
+            values = start.get(group)
+            groups[group] = {}
+            if isinstance(values, dict):
+                for key, (name, _) in fields.items():
+                    if key in values and self.default_option_text(getattr(self, name), key, values[key]) is not None:
+                        groups[group][key] = values[key]
         return dict(groups,track_face=start.get('track_face') is True)
 
-    def with_default_groups(self,settings):
-        # A project's model takes the defaults only for groups it saved nothing for; saved groups stay exactly as saved.
-        defaults=self.default_groups()
-        if defaults is None:return settings
-        return {**settings,**{group:defaults[group] for group in DEFAULT_SETTINGS if not isinstance(settings.get(group),dict)}}
+    def with_default_groups(self, settings, model):
+        defaults = self.default_groups()
+        if defaults is None:
+            return settings
+        # Saved project groups and preview selections take precedence.
+        settings = {**settings, **{group: defaults[group] for group in PROJECT_DEFAULT_GROUPS
+                                   if not isinstance(settings.get(group), dict)}}
+        if model == 'gvhmr' and 'result' not in settings and defaults['gvhmr_options']:
+            from .motion_tools import result_kind
+            options = {**GVHMR_DEFAULTS, **defaults['gvhmr_options']}
+            settings['result'] = result_kind(options['htd'], options['footmr'], True, options['handflow'])
+        return settings
 
     def saved_track_face(self,view):
         # A new project's view is empty until the app first saves it.
@@ -104,12 +257,31 @@ class ModelWorkspace:
         if defaults is None:
             if reset:
                 # These settings otherwise carry over between clips in the same session.
+                self.compute_mode.setCurrentIndex(self.compute_mode.findData(DEFAULT_RESOURCE_MODE))
+                self.camera_tools.restore_background({})
+                self._tool_refinement['gvhmr'] = (GVHMR_DEFAULTS['htd'], GVHMR_DEFAULTS['footmr'],
+                                                  True, GVHMR_DEFAULTS['handflow'])
                 self.restore_prompthmr_options({'people': self.prompthmr_people.value()})
                 self.restore_track_face(False)
             return
-        settings=self.workspace_settings()
-        for group,keys in DEFAULT_SETTINGS.items():
-            settings[group]={**{key:value for key,value in settings[group].items() if key not in keys},**defaults[group]}
+        from .motion_tools import result_kind
+
+        mode = defaults['processing_options'].get('resource_mode', DEFAULT_RESOURCE_MODE)
+        self.compute_mode.setCurrentIndex(self.compute_mode.findData(mode))
+        self.camera_tools.restore_background({
+            'flowhmr': defaults['flow_options'].get('refine_camera_rotation', False),
+            'exmr': defaults['exmr_options'].get('refine_camera_rotation', False),
+        })
+        options = {**GVHMR_DEFAULTS, **defaults['gvhmr_options']}
+        self._tool_refinement['gvhmr'] = (options['htd'], options['footmr'], True, options['handflow'])
+        settings = self.workspace_settings()
+        if self._selected_tool == 'gvhmr':
+            settings['result'] = result_kind(options['htd'], options['footmr'],
+                                             self.motion_correction.isChecked(), options['handflow'])
+        for group in PROJECT_DEFAULT_GROUPS:
+            fields = DEFAULT_SETTINGS[group][1]
+            settings[group] = {**{key: value for key, value in settings[group].items() if key not in fields},
+                               **defaults[group]}
         try:self.restore_workspace_settings(settings)
         except (OSError,ValueError,KeyError,TypeError) as error:self.log.append('Default settings not applied: '+str(error))
         self.restore_track_face(defaults['track_face'])
@@ -208,7 +380,8 @@ class ModelWorkspace:
                     self.model_choice.setCurrentIndex(self.model_choice.findData(model))
                     self.model_choice.blockSignals(False)
                     self.select_model()
-                    self.restore_workspace_settings(self.with_default_groups(state.get('models',{}).get(model,{}).get('settings',{})))
+                    settings = state.get('models', {}).get(model, {}).get('settings', {})
+                    self.restore_workspace_settings(self.with_default_groups(settings, model))
                     if opening or (model=='mamma' and state.get('mamma_inputs') and not self.mamma_inputs):self.open_workspace_video(state)
                     self.status.setText('MAMMA inputs loaded. Prepare its runtime and models in Model Manager, then Reconstruct 3D.' if model=='mamma' else
                         f'{self.model_choice.currentText()} has no saved motion in this project. Use Reconstruct 3D.')

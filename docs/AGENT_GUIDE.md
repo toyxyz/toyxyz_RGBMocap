@@ -776,24 +776,21 @@ unavailable choices on reset and persist the restored preferences only when
 the dialog is accepted.
 
 `default_settings` holds the starting settings saved explicitly with **File > Save
-Settings as Default** and removed with **Reset Default Settings**; nothing is saved
-silently. `project_workspace_ui.DEFAULT_SETTINGS` names the keys taken from
-`workspace_settings()` (FlowHMR options, ExMR camera/smoothing, PromptHMR camera and
-interaction, correction mode/preset/locks) plus Track Face. Values that describe one
-video stay out: trim, floor height, pelvis offset, auto floor, people counts, MAMMA
-options and the result selection, which `select_model` manages per model. MainWindow
-start and `load_video` apply them through `restore_workspace_settings` after the
-built-in resets; each missing or unusable value keeps its built-in value. After an
-explicit reset, the next new video also restores the built-in Track Face and
-PromptHMR camera and interaction values, which normally carry over within a
-session without saved defaults. When a
-model without results is restored from the project's `models[model].settings`
-(opening the project or switching to that model), a group that is absent there
-starts from the defaults; a saved group is restored exactly, and a key missing from
-it keeps its built-in value. Track Face uses the default only when the project's
-view has no `track_face` (new projects start with an empty view). `load_project`
-restores a model with results from its own take and does not read the defaults;
-MAMMA inputs and PEAR never read them.
+Settings as Default** and removed with **Reset Default Settings**. Each command
+lists the proposed values and updates local settings only after **OK**.
+`project_workspace_ui.DEFAULT_SETTINGS` maps the stored keys to the editor controls
+and display labels. Starting options include GVHMR add-ons, FlowHMR and ExMR
+options and camera rotation refinement, PromptHMR camera and interaction,
+correction mode/preset/locks, Track Face and Resource Mode. MainWindow startup
+and new single- or multi-camera inputs apply these preferences after the built-in
+resets. An explicit reset restores **Automatic** for the next clip alongside the
+other built-in values. Resource Mode stays local and is passed to workers as
+`RGB_MOCAP_COMPUTE_MODE`. Resource Safety has its own local preference.
+Trim, floor, pelvis offset, people counts and MAMMA calibration belong to the
+capture. In an existing project, restore saved result and camera view selections.
+Use local model defaults only for absent settings groups in models without a saved
+result. Track Face uses the local default when a project has no saved Track Face
+setting. PEAR live input follows its own controls.
 
 Use **Resource Mode > Automatic** by default. It keeps the fast path when the current GPU budget is sufficient and selects supported Low Memory paths per operation when needed. A supported fast operation that raises CUDA OOM is released and retried once in Low Memory. ExMR Low Memory uses CPU-first body/hand loading and converts Sapiens' existing FP16 layers before GPU transfer; ExMR body/hand batches stay 8. FlowHMR offloads SAM/VGGT blocks; MAMMA offloads VGGT camera blocks while retaining its pinned masks/landmark/fitting settings. GVHMR/add-ons retain adaptive image batches and full-context attention. The saved Automatic selection is not changed. Resource decisions and memory advice appear in the app Console and CMD. Model precision, frame count, resolution and iterations are not reduced. CPU loading/offloading can be slower and use more RAM; it is not a promise every clip will fit. Estimates select a path, never reject a job. With Resource Safety enabled, the desktop checks actual RAM and Windows allocation headroom every 0.5 seconds and stops workers when these become low. Preserve completed stages, genuine model limits and original motion. Do not rerun inference for operations that can use existing results.
 

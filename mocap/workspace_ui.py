@@ -13,6 +13,7 @@ from .paths import ROOT
 from .correction_settings import PRESETS
 from .sidebar_scroll import SettingsScrollArea
 from .theme import AppearanceDialog, apply_appearance, current_appearance, ui_px
+from .project_workspace_ui import DEFAULT_RESOURCE_MODE
 
 
 class WrappedLabel(QLabel):
@@ -572,7 +573,7 @@ def build_workspace(w):
     processing = group("Processing Resources", settings)
     processing.addWidget(QLabel('Resource Mode'))
     w.compute_mode = QComboBox()
-    w.compute_mode.addItem("Automatic", "auto")
+    w.compute_mode.addItem("Automatic", DEFAULT_RESOURCE_MODE)
     w.compute_mode.addItem("Low Memory", "low_memory")
     w.compute_mode.setToolTip(tooltip_text("Automatic uses the fast path when memory is available and switches supported stages to Low Memory when needed. Low Memory uses CPU loading and offloading; it can be slower and use more RAM. Model precision and video frames are unchanged."))
     processing.addWidget(w.compute_mode)
@@ -662,7 +663,7 @@ def build_workspace(w):
     w.save_project_action.setShortcut('Ctrl+Shift+S')
     w.save_project_action.setToolTip(tooltip_text('Save a separate project folder with a new name and location, including its video, motion and settings. Continue working in the saved copy.'))
     file_menu.addSeparator()
-    file_menu.addAction('Save Settings as Default', w.save_default_settings).setToolTip(tooltip_text('Start new videos and the next session with the current camera, sampling, smoothing, correction and Track Face settings. Trim, floor, people and opened projects are unchanged.'))
+    file_menu.addAction('Save Settings as Default', w.save_default_settings).setToolTip(tooltip_text('Start new videos and the next session with the current model options, motion correction, Track Face and Resource Mode. Trim, floor, people and opened projects are unchanged.'))
     file_menu.addAction('Reset Default Settings', w.reset_default_settings).setToolTip(tooltip_text('Start new videos and the next session with the built-in settings again. Current settings and projects are unchanged.'))
     file_menu.addSeparator()
     w.export_action = file_menu.addAction("Export...", w.save_fbx)
