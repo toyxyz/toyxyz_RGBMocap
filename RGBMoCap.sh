@@ -8,7 +8,7 @@ if [ ! -x "$python" ]; then
 fi
 cd -- "$root" || exit 1
 # X11/XWayland avoids the Qt OpenGL context failures seen on some Wayland and WSLg desktops.
-if [ -n "${DISPLAY:-}" ] && [ -z "${QT_QPA_PLATFORM:-}" ]; then
+if [ "$(uname -s)" != Darwin ] && [ -n "${DISPLAY:-}" ] && [ -z "${QT_QPA_PLATFORM:-}" ]; then
     export QT_QPA_PLATFORM=xcb
 fi
 status=0

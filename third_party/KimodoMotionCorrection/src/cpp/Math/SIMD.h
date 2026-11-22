@@ -6,7 +6,22 @@
 #pragma once
 
 #include <stdint.h>
+#if defined(__aarch64__)
+#include <sse2neon.h>
+// sse2neon defines its own FORCE_INLINE; restore the one from Compiler.h.
+#undef FORCE_INLINE
+#define FORCE_INLINE inline __attribute__((always_inline))
+// AVX intrinsic absent from sse2neon: select lanes by the low two bits of each control lane.
+static inline __m128 _mm_permutevar_ps( __m128 a, __m128i c )
+{
+    alignas( 16 ) float in[4]; alignas( 16 ) int32_t idx[4]; alignas( 16 ) float out[4];
+    _mm_store_ps( in, a ); _mm_store_si128( reinterpret_cast<__m128i*>( idx ), c );
+    for ( int i = 0; i < 4; i++ ) { out[i] = in[idx[i] & 3]; }
+    return _mm_load_ps( out );
+}
+#else
 #include <immintrin.h>
+#endif
 
 namespace SIMD
 {

@@ -1,0 +1,5 @@
+{
+  "version": 2,
+  "ffmpeg": {"system": ["ffmpeg", "ffprobe"]},
+  "correction": {"build": "third_party/KimodoMotionCorrection"}
+}

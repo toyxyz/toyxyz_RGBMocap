@@ -69,6 +69,18 @@ endif()
 
 target_compile_definitions(motion_correction_cpp_base PUBLIC EIGEN_MPL2_ONLY)
 
+# The math layer is written with SSE intrinsics; arm64 translates them to NEON.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64)$")
+    include(FetchContent)
+    FetchContent_Declare(
+        sse2neon
+        GIT_REPOSITORY https://github.com/DLTcollab/sse2neon.git
+        GIT_TAG v1.8.0
+    )
+    FetchContent_MakeAvailable(sse2neon)
+    target_include_directories(motion_correction_cpp_base PUBLIC ${sse2neon_SOURCE_DIR})
+endif()
+
 # Compiler-specific settings
 if(MSVC)
     # MSVC-specific flags
@@ -76,7 +88,10 @@ if(MSVC)
 else()
     # GCC/Clang flags (also applies to MinGW on Windows)
     # Enable SSE4.1 and AVX instructions for SIMD operations
-    target_compile_options(motion_correction_cpp_base PRIVATE -Wall -Wextra -msse4.1 -mavx)
+    target_compile_options(motion_correction_cpp_base PRIVATE -Wall -Wextra)
+    if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64)$")
+        target_compile_options(motion_correction_cpp_base PRIVATE -msse4.1 -mavx)
+    endif()
 endif()
 
 # Python bindings
