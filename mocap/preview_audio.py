@@ -38,6 +38,7 @@ class PreviewAudio(QObject):
         self.timeline_start = 0.
         self.position_ms = 0
         self.last_seek = 0.
+        self.lead_ms = 0
 
     def start(self, path, timeline_start, seconds, speed):
         source = QUrl.fromLocalFile(str(path.resolve()))
@@ -72,6 +73,10 @@ class PreviewAudio(QObject):
                 and abs(self.player.position() - self.position_ms) >= 180):
             # A visible frame may drop while decoding. Only correct sustained
             # clock drift or a late audio startup, never seek for every frame.
+            if time.monotonic() - self.last_seek < 3.:
+                # The previous seek left this lag (slow seek or output latency), so repeating
+                # it would stutter forever. Lead later seeks by the lag instead.
+                self.lead_ms = max(0, min(500, self.lead_ms + self.position_ms - self.player.position()))
             self.pending = True
             self._apply_position()
 
@@ -88,5 +93,5 @@ class PreviewAudio(QObject):
                 player.pause()
             return
         self.last_seek = time.monotonic()
-        player.setPosition(self.position_ms)
+        player.setPosition(self.position_ms + self.lead_ms)
         player.play()
