@@ -28,7 +28,7 @@ results were not compared numerically with a CUDA run.
 | ExMR features and reconstruction | Not tested | |
 | FlowHMR | Not tested | |
 | FBX and BVH export | Works | Under 1 s |
-| Compatibility FBX and Blender project export | Works with Blender 5.1.2 | About 1 s |
+| Compatibility FBX and Blender project export, one or several people | Works with Blender 5.1.2 | 1 to 3 s |
 | Character import and retargeting | Not tested | |
 | Imported character preview | Not available | |
 | Track Face | Not tested | |

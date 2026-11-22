@@ -10,6 +10,13 @@ WORLD = Matrix(((1, 0, 0, 0), (0, 0, -1, 0), (0, 1, 0, 0), (0, 0, 0, 1)))
 CV = Matrix.Diagonal((1, -1, -1, 1))
 
 
+def fcurves(action):
+    """F-curves of an action: Blender 5 keeps them in slotted channel bags."""
+    if hasattr(action, 'fcurves'):
+        return list(action.fcurves)
+    return [curve for layer in action.layers for strip in layer.strips for bag in strip.channelbags for curve in bag.fcurves]
+
+
 def progress(current, total, message):
     print('@@BLEND@@' + json.dumps(dict(current=current, total=total, message=message)), flush=True)
 
@@ -29,7 +36,7 @@ def import_rig(folder, scene, take, combined, fps_base):
 
     first, end = take['first'], take['first'] + take['frames'] + int(take['prepend_tpose'])
     action = rig.animation_data.action
-    for curve in action.fcurves:
+    for curve in fcurves(action):
         for key in curve.keyframe_points:
             key.co.x = first + key.co.x / fps_base
             key.handle_left.x = first + key.handle_left.x / fps_base
@@ -42,7 +49,7 @@ def import_rig(folder, scene, take, combined, fps_base):
         for prop in ('hide_viewport', 'hide_render'):
             setattr(rig, prop, hidden)
             rig.keyframe_insert(data_path=prop, frame=frame)
-    for curve in action.fcurves:
+    for curve in fcurves(action):
         if curve.data_path in ('hide_viewport', 'hide_render'):
             for key in curve.keyframe_points:
                 key.interpolation = 'CONSTANT'
@@ -80,7 +87,7 @@ def add_camera(folder, scene, take, name, combined):
                         obj.keyframe_insert(data_path=prop, frame=take['first'])
         finally:
             track._mmap.close()
-        for curve in obj.animation_data.action.fcurves:
+        for curve in fcurves(obj.animation_data.action):
             for key in curve.keyframe_points:
                 key.interpolation = 'LINEAR'
 
@@ -112,7 +119,7 @@ def add_camera(folder, scene, take, name, combined):
         for frame, visible in ((-1, False), (start, True), (start + frames, False)):
             camera.show_background_images = visible
             camera.keyframe_insert(data_path='show_background_images', frame=frame)
-        for key in camera.animation_data.action.fcurves[0].keyframe_points:
+        for key in fcurves(camera.animation_data.action)[0].keyframe_points:
             key.interpolation = 'CONSTANT'
     return obj
 

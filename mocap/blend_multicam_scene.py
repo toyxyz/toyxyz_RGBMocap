@@ -5,6 +5,12 @@ import bpy
 import numpy as np
 from mathutils import Matrix,Vector,Quaternion
 
+def fcurves(action):
+    """F-curves of an action: Blender 5 keeps them in slotted channel bags."""
+    if hasattr(action, 'fcurves'):
+        return list(action.fcurves)
+    return [curve for layer in action.layers for strip in layer.strips for bag in strip.channelbags for curve in bag.fcurves]
+
 def progress(current,total,message):
     print('@@BLEND@@'+json.dumps(dict(current=current,total=total,message=message)),flush=True)
 
@@ -25,7 +31,7 @@ def visibility(obj,first,end):
         for prop in ('hide_viewport','hide_render'):
             setattr(obj,prop,hide);obj.keyframe_insert(data_path=prop,frame=f)
     if obj.animation_data:
-        for curve in obj.animation_data.action.fcurves:
+        for curve in fcurves(obj.animation_data.action):
             if curve.data_path in ('hide_viewport','hide_render'):
                 for p in curve.keyframe_points:p.interpolation='CONSTANT'
 for actor_index,a in enumerate(job['actors']):
