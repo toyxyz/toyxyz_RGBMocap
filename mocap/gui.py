@@ -667,6 +667,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         # Initialize the same model-specific visibility used on selector changes.
         # Otherwise the empty GVHMR stack reserves the FlowHMR page height.
         self.select_model()
+        self._reset_starting_settings = False
+        self.apply_default_settings()
         if video:
             self.load_video(video)
 
@@ -966,6 +968,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 option.blockSignals(False)
             self.active_result = self.selected_result()
             self.restore_correction_options({})
+            self.apply_default_settings()
             self.source_offset = self.source_end = 0.0
             self.video_readable = False
             self.slider.setRange(0, 0)
@@ -1014,7 +1017,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 if root is None:
                     raise ValueError('This project uses the previous folder format. Open its video to create a new model-folder project.')
                 if self.load_project(project) and project!=root:
-                    self.restore_track_face(read(root).get('view',{}).get('track_face',False))
+                    self.restore_track_face(self.saved_track_face(read(root).get('view',{})))
             except (OSError,ValueError,KeyError) as error:self.status.setText('Cannot open project: '+str(error))
 
     @batch_readiness

@@ -775,6 +775,26 @@ dialog. Preserve the current take selection and scope. Discard retained
 unavailable choices on reset and persist the restored preferences only when
 the dialog is accepted.
 
+`default_settings` holds the starting settings saved explicitly with **File > Save
+Settings as Default** and removed with **Reset Default Settings**; nothing is saved
+silently. `project_workspace_ui.DEFAULT_SETTINGS` names the keys taken from
+`workspace_settings()` (FlowHMR options, ExMR camera/smoothing, PromptHMR camera and
+interaction, correction mode/preset/locks) plus Track Face. Values that describe one
+video stay out: trim, floor height, pelvis offset, auto floor, people counts, MAMMA
+options and the result selection, which `select_model` manages per model. MainWindow
+start and `load_video` apply them through `restore_workspace_settings` after the
+built-in resets; each missing or unusable value keeps its built-in value. After an
+explicit reset, the next new video also restores the built-in Track Face and
+PromptHMR camera and interaction values, which normally carry over within a
+session without saved defaults. When a
+model without results is restored from the project's `models[model].settings`
+(opening the project or switching to that model), a group that is absent there
+starts from the defaults; a saved group is restored exactly, and a key missing from
+it keeps its built-in value. Track Face uses the default only when the project's
+view has no `track_face` (new projects start with an empty view). `load_project`
+restores a model with results from its own take and does not read the defaults;
+MAMMA inputs and PEAR never read them.
+
 Use **Resource Mode > Automatic** by default. It keeps the fast path when the current GPU budget is sufficient and selects supported Low Memory paths per operation when needed. A supported fast operation that raises CUDA OOM is released and retried once in Low Memory. ExMR Low Memory uses CPU-first body/hand loading and converts Sapiens' existing FP16 layers before GPU transfer; ExMR body/hand batches stay 8. FlowHMR offloads SAM/VGGT blocks; MAMMA offloads VGGT camera blocks while retaining its pinned masks/landmark/fitting settings. GVHMR/add-ons retain adaptive image batches and full-context attention. The saved Automatic selection is not changed. Resource decisions and memory advice appear in the app Console and CMD. Model precision, frame count, resolution and iterations are not reduced. CPU loading/offloading can be slower and use more RAM; it is not a promise every clip will fit. Estimates select a path, never reject a job. With Resource Safety enabled, the desktop checks actual RAM and Windows allocation headroom every 0.5 seconds and stops workers when these become low. Preserve completed stages, genuine model limits and original motion. Do not rerun inference for operations that can use existing results.
 
 PromptHMR retains the same one-image batch/full temporal context in Automatic

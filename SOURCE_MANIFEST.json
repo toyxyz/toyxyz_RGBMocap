@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "date": "2026-11-22",
+  "date": "2026-11-23",
   "purpose": "Public source distribution; excludes model weights and runtime binaries",
   "version": "git-source",
   "files": [
@@ -156,8 +156,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 104669,
-      "sha256": "13d4c36ad616015d7f015bd08d30371de4263b3b37eb8166543ea57b5da74ac5"
+      "bytes": 106130,
+      "sha256": "738781b51eb7d4fba109908e213fef9863511fc89acfa7b8d4aa2c3e2a4b9496"
     },
     {
       "path": "docs/BUILD.md",
@@ -191,8 +191,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 95236,
-      "sha256": "8592436c1fa068c41bf2c15a9929242751af33ca13ed492831d5938fe0a16a65"
+      "bytes": 96181,
+      "sha256": "fbdc4dc978573cfb7c29942f3891bebce3f938375754dc0d1996723e63bbb18c"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -1636,8 +1636,8 @@
     },
     {
       "path": "mocap/gui.py",
-      "bytes": 131662,
-      "sha256": "614e247ceb75cf214dbc65d4b50d8681b06dd75585e873b4722dbfb4f2a4ffcd"
+      "bytes": 131787,
+      "sha256": "48e858e649fef9d530a38e6260146a305eba31b5cd96e33b6a168b0dcc8cf8e6"
     },
     {
       "path": "mocap/gvhmr_attention.py",
@@ -1681,8 +1681,8 @@
     },
     {
       "path": "mocap/local_choices.py",
-      "bytes": 2909,
-      "sha256": "dba4f7bf597f81797ec7d77474bf9a1f8aa9c9aaeeb2d83e13f8e023782b45da"
+      "bytes": 2961,
+      "sha256": "8a84db7ca9ab0fbf276a916acbe03fc69d2f723b99ae5ede5e4ac408286b1194"
     },
     {
       "path": "mocap/mamma_body.py",
@@ -2051,8 +2051,8 @@
     },
     {
       "path": "mocap/project_workspace_ui.py",
-      "bytes": 10792,
-      "sha256": "86beb86bfa053873c22066afda3b5a85e73ce448b9de9fbbe20060bc27d4e37e"
+      "bytes": 15141,
+      "sha256": "a99d25f5195120006d23d089e2935f9f9505b51127a511684b02aae87f6908c3"
     },
     {
       "path": "mocap/prompthmr_cache.py",
@@ -2116,8 +2116,8 @@
     },
     {
       "path": "mocap/resource_safety.py",
-      "bytes": 2190,
-      "sha256": "aa3e618adf9d9033865f3c8f3103e6d796d86b61f541400cc55e3cbbc4a219e3"
+      "bytes": 2313,
+      "sha256": "5986ca3861cc4821488c2bed524b2b5706409ea0438f8c7396dd2a7707d4cbbb"
     },
     {
       "path": "mocap/result_artifacts.py",
@@ -2476,8 +2476,8 @@
     },
     {
       "path": "mocap/workspace_ui.py",
-      "bytes": 43025,
-      "sha256": "8b3d3a727989dbcf8da0cb1d8470cf69d06ab930af776ef12292f98b5250004f"
+      "bytes": 43558,
+      "sha256": "8680c769ff5a679de4c73012d6bda1fab9d2bd9f37b07d24cb38bcaa78bdc6e1"
     },
     {
       "path": "native_compat/LICENSE",
@@ -2618,6 +2618,11 @@
       "path": "scene_boot.py",
       "bytes": 303,
       "sha256": "c0b07c153f2f6a0bf762c2c88f38ac8d1f5a1d10f5e8028a7cfa11db3664d03e"
+    },
+    {
+      "path": "tests/test_default_settings.py",
+      "bytes": 13289,
+      "sha256": "82f961b410b090bab23d3e5b5c282f50fdc9b0067a48b90f8ffeaff60d9fb72b"
     },
     {
       "path": "tests/test_local_choices.py",

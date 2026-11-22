@@ -16,8 +16,8 @@ def saved(key):
 
 
 def offered(combo, value):
-    # Python equality, not findData's QVariant conversion: a hand-edited "true" must not select a boolean item.
-    return next((i for i in range(combo.count()) if combo.itemData(i) == value), -1)
+    # Same type and value, unlike findData's QVariant conversion: "true" or 1 must not select a True item, nor True a 1.
+    return next((i for i in range(combo.count()) if type(combo.itemData(i)) is type(value) and combo.itemData(i) == value), -1)
 
 
 def control_values(controls):
