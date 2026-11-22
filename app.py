@@ -38,6 +38,11 @@ def main():
     # default swap interval; camera redraws are paced in MotionView.
     surface = QSurfaceFormat.defaultFormat()
     surface.setSwapInterval(0)
+    if sys.platform == "darwin":
+        # macOS cannot share a legacy-profile window context with the viewport's core
+        # context; without sharing the viewport shows an unrelated texture.
+        surface.setVersion(4, 1)
+        surface.setProfile(QSurfaceFormat.CoreProfile)
     QSurfaceFormat.setDefaultFormat(surface)
     app = QApplication(sys.argv[:1])
     app.setWindowIcon(QIcon(str(Path(__file__).resolve().parent / "assets" / "rgbmocap-icon.png")))
