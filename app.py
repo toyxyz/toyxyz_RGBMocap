@@ -28,6 +28,9 @@ def main():
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("toyxyz.RGBMoCap")
         except (AttributeError, OSError):
             pass
+    elif sys.platform == "darwin":
+        from mocap.macos_app import set_app_name
+        set_app_name("RGB MoCap")
     from PySide6.QtWidgets import QApplication
     from PySide6.QtGui import QIcon, QSurfaceFormat
     from PySide6.QtCore import QTimer
