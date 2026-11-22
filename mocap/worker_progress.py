@@ -26,6 +26,9 @@ def download_progress(callback):
 
 def main():
     stage=sys.argv[1] if len(sys.argv)>1 else ''
+    if sys.platform=='darwin':
+        from . import mps_compat
+        mps_compat.install()
     if stage in {'people','person','track','pva','features','gvhmr','refine','footmr','handflow','rig','mesh','export','correct'} and '--project' in sys.argv:
         from .gemx_result import is_project
         if is_project(sys.argv[sys.argv.index('--project')+1]):
