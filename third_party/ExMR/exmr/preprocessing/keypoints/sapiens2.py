@@ -158,6 +158,8 @@ def _predict(inputs, model, codec, metadata):
     """First 63 Sapiens2 keypoints in image coordinates, (N, 63, 3) [x, y, score]."""
     # the decoder runs in FP32 even though the model runs in FP16
     heatmaps = model(inputs)[:, :63].float()
+    if heatmaps.device.type == "mps":
+        heatmaps = heatmaps.cpu()  # the decoder needs float64, which MPS lacks
     keypoints, scores = _decode_udp(heatmaps, codec)
     width, height = codec.heatmap_size
     keypoints = keypoints / [width - 1, height - 1] * codec.input_size

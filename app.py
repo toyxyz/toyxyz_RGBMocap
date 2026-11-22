@@ -28,6 +28,9 @@ def main():
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("toyxyz.RGBMoCap")
         except (AttributeError, OSError):
             pass
+    elif sys.platform == "darwin":
+        from mocap.macos_app import set_app_name
+        set_app_name("RGB MoCap")
     from PySide6.QtWidgets import QApplication
     from PySide6.QtGui import QIcon, QSurfaceFormat
     from PySide6.QtCore import QTimer
@@ -38,6 +41,11 @@ def main():
     # default swap interval; camera redraws are paced in MotionView.
     surface = QSurfaceFormat.defaultFormat()
     surface.setSwapInterval(0)
+    if sys.platform == "darwin":
+        # macOS cannot share a legacy-profile window context with the viewport's core
+        # context; without sharing the viewport shows an unrelated texture.
+        surface.setVersion(4, 1)
+        surface.setProfile(QSurfaceFormat.CoreProfile)
     QSurfaceFormat.setDefaultFormat(surface)
     app = QApplication(sys.argv[:1])
     app.setWindowIcon(QIcon(str(Path(__file__).resolve().parent / "assets" / "rgbmocap-icon.png")))

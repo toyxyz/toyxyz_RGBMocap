@@ -48,9 +48,7 @@ class BoundMeshRenderer(MeshRenderer):
     def __init__(self,shared=None):
         self.binding_buffer=None;self.binding_key=None
         super().__init__(shared)
-        if shared is None:
-            self.skin.removeAllShaders()
-            self.skin=self.program(((QOpenGLShader.Compute,SKIN),))
+        if shared is None:self.replace_compute(SKIN)
 
     def release_buffers(self):
         super().release_buffers()
@@ -60,6 +58,11 @@ class BoundMeshRenderer(MeshRenderer):
         key=binding.get('key',id(binding))
         if key==self.binding_key:return
         value=np.concatenate((binding['vertices'].reshape(-1),binding['frames'].reshape(-1))).astype(np.float32)
+        if self.cpu:
+            count=self.vertex_count
+            self.cpu_bind_vertices=value[:count*3].reshape(count,3)
+            self.cpu_bind_blend=np.tensordot(self.cpu_weights,value[count*3:].reshape(55,3,3),1)
+            self.binding_buffer=True;self.binding_key=key;self.frame_key=None;return
         if self.binding_buffer is None:self.binding_buffer=self.buffer(value)
         else:
             self.binding_buffer.bind()
@@ -67,7 +70,13 @@ class BoundMeshRenderer(MeshRenderer):
             self.binding_buffer.write(0,value.tobytes(),value.nbytes)
         self.binding_key=key;self.frame_key=None
 
+    def cpu_skin(self,frame):
+        delta=(frame[880:1366]@self.cpu_pose).reshape(-1,3)
+        rest=self.cpu_bind_vertices+np.einsum('vrc,vc->vr',self.cpu_bind_blend,delta)
+        blend=np.tensordot(self.cpu_weights,frame[:880].reshape(55,4,4)[:,:3],1)
+        return np.einsum('vrc,vc->vr',blend[:,:,:3],rest)+blend[:,:,3],None
+
     def deform(self,frame,key):
         if self.binding_buffer is None:raise ValueError('Canonical skin binding missing')
-        self.gl.glBindBufferBase(0x90D2,5,self.binding_buffer.bufferId())
+        if not self.cpu:self.gl.glBindBufferBase(0x90D2,5,self.binding_buffer.bufferId())
         super().deform(frame,(self.binding_key,key))

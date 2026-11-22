@@ -14,6 +14,7 @@ import shutil
 import sqlite3
 from types import SimpleNamespace
 import uuid
+from . import mps_compat
 
 from .paths import ROOT, UPSTREAM
 from .people_store import (VERSION, load_people, media_receipt, person_color, safe_child,
@@ -30,8 +31,8 @@ class AppearanceEncoder:
         self.torch = torch
         self.model = module.osnet_x0_25(num_classes=4101, pretrained=False).eval().cuda()
         self.model.load_state_dict(torch.load(checkpoint, map_location='cpu', weights_only=True), strict=True)
-        self.mean = torch.tensor([.485, .456, .406], device='cuda')[None, :, None, None]
-        self.std = torch.tensor([.229, .224, .225], device='cuda')[None, :, None, None]
+        self.mean = torch.tensor([.485, .456, .406]).cuda()[None, :, None, None]
+        self.std = torch.tensor([.229, .224, .225]).cuda()[None, :, None, None]
 
     def inference(self, frame, boxes):
         import cv2
@@ -219,7 +220,7 @@ def discover(project, emit):
             ok,frame = capture.read()
             if not ok:
                 raise RuntimeError(f'Cannot read video frame {index}.')
-            prediction = detector.predict(frame,device=0,conf=.1,classes=0,verbose=False,max_det=128)[0]
+            prediction = detector.predict(frame,device=mps_compat.detector_device(),conf=.1,classes=0,verbose=False,max_det=128)[0]
             # Upstream calls this encoder only for high-confidence candidates.
             tracks = tracker.update(prediction.boxes.cpu().numpy(),frame)
             lookup = {int(t.track_id):t for t in tracker.tracked_stracks}

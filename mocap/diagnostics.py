@@ -16,7 +16,7 @@ def collect() -> dict:
             result["gpu"] = torch.cuda.get_device_name(0)
             result["vram_gib"] = round(torch.cuda.get_device_properties(0).total_memory / 1024**3, 1)
             result["compute_capability"] = list(torch.cuda.get_device_capability(0))
-            x = torch.arange(4096, device="cuda", dtype=torch.float32).reshape(64, 64)
+            x = torch.arange(4096, dtype=torch.float32).cuda().reshape(64, 64)
             value = (x @ x.T).sum().item()
             result["cuda_matmul_verified"] = value > 0
             torch.cuda.synchronize()

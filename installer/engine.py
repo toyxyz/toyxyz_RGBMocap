@@ -19,7 +19,7 @@ def _registry():
 REGISTRY=_registry()
 WINDOWS=os.name=='nt'
 NO_WINDOW=subprocess.CREATE_NO_WINDOW if WINDOWS else 0
-PYTHON_PLATFORM='windows-x86_64-none' if WINDOWS else 'linux-x86_64-gnu'
+PYTHON_PLATFORM='windows-x86_64-none' if WINDOWS else 'macos-aarch64-none' if REGISTRY.MACOS else 'linux-x86_64-gnu'
 UV='uv.exe' if WINDOWS else 'uv'
 
 PREFIX='@@SETUP@@'

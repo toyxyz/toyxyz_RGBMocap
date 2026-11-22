@@ -12,6 +12,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from mocap.retarget.selective_fbx import body_only_sampler
 
 
+def fcurves(action):
+    """F-curves of an action: Blender 5 keeps them in slotted channel bags."""
+    if hasattr(action, 'fcurves'):
+        return list(action.fcurves)
+    return [curve for layer in action.layers for strip in layer.strips for bag in strip.channelbags for curve in bag.fcurves]
+
+
 def progress(current, message):
     print('@@BLEND@@' + json.dumps(dict(current=current, total=3, message=message)), flush=True)
 
@@ -36,7 +43,7 @@ def export(work):
     if fps_base != 1.0:
         # Blender 4.5 imports key times using render.fps alone. Bake at the
         # original frame rate by accounting for fps_base before sampling.
-        for curve in action.fcurves:
+        for curve in fcurves(action):
             for key in curve.keyframe_points:
                 key.co.x /= fps_base
                 key.handle_left.x /= fps_base

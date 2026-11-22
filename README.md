@@ -40,6 +40,7 @@ https://github.com/user-attachments/assets/3353f5ca-6393-40af-822f-210a77f51003
 The steps below cover Windows. For the experimental x86-64 Linux AppImage and
 source installation, see the [Linux guide](https://github.com/toyxyz/toyxyz_RGBMocap/blob/linux_support/docs/LINUX.md#test-the-appimage-on-linux-mint).
 The AppImage was tested on WSL 2. Native Linux Mint testing is welcome.
+For the experimental Apple Silicon port, see the [macOS guide](docs/MACOS.md).
 
 1. Install [Git for Windows](https://git-scm.com/download/win). Open **Command Prompt**
    in a writable folder where you want to install RGB MoCap, then clone the repository:

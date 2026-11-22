@@ -72,6 +72,8 @@ def track(project: Path, emit) -> Path:
         return torch.load(selected, map_location="cpu", weights_only=False), str(selected)
     yolo_tasks.torch_safe_load = load_official_detector
     model = YOLO(str(BY_KEY["yolo"].path))
+    from . import mps_compat
+    detector_device = mps_compat.detector_device()
     video = cv2.VideoCapture(str(project / "input.mp4"))
     total = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
     width, height = int(video.get(3)), int(video.get(4))
@@ -80,7 +82,7 @@ def track(project: Path, emit) -> Path:
         ok, frame = video.read()
         if not ok:
             raise RuntimeError(f"Cannot read video frame {index}.")
-        prediction = model.predict(frame, device=0, conf=0.35, classes=0, verbose=False)[0]
+        prediction = model.predict(frame, device=detector_device, conf=0.35, classes=0, verbose=False)[0]
         candidates = prediction.boxes.xyxy.detach().cpu().numpy()
         if len(candidates):
             areas = (candidates[:, 2] - candidates[:, 0]) * (candidates[:, 3] - candidates[:, 1])

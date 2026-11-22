@@ -46,7 +46,7 @@ def main():
         if not (ROOT/name).is_file():errors.append('Missing '+name)
     registry=ROOT/'mocap/runtime_registry.py'
     registry_hash=hashlib.sha256(registry.read_bytes()).hexdigest() if registry.is_file() else None
-    for name in ('installer/runtime-lock.json','installer/runtime-lock-linux.json'):
+    for name in ('installer/runtime-lock.json','installer/runtime-lock-linux.json','installer/runtime-lock-macos.json'):
         try:
             lock=json.loads((ROOT/name).read_text(encoding='utf-8'))
             if registry_hash is None or registry_hash!=lock.get('registry_sha256'):

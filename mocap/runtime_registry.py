@@ -6,6 +6,7 @@ App startup never installs packages or changes environments.
 from __future__ import annotations
 import json
 import os
+import sys
 from pathlib import Path
 
 PROFILES = {
@@ -18,9 +19,15 @@ PROFILES = {
 }
 
 WINDOWS = os.name == 'nt'
+MACOS = sys.platform == 'darwin'
 # Every platform pins the same package versions; only the wheel files differ.
-LOCK = 'installer/runtime-lock.json' if WINDOWS else 'installer/runtime-lock-linux.json'
-SUPPORT_LOCK = 'installer/git-support-lock.json' if WINDOWS else 'installer/git-support-lock-linux.json'
+_SUFFIX = '' if WINDOWS else '-macos' if MACOS else '-linux'
+LOCK = f'installer/runtime-lock{_SUFFIX}.json'
+SUPPORT_LOCK = f'installer/git-support-lock{_SUFFIX}.json'
+if MACOS:
+    # Apple Silicon wheels of the same torch releases carry no CUDA local version.
+    for _spec in PROFILES.values():
+        _spec['packages'] = {name: version.split('+')[0] for name, version in _spec['packages'].items()}
 INSTALL_COMMAND = 'install.cmd' if WINDOWS else './install.sh'
 
 def _minor(version):
