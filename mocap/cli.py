@@ -573,8 +573,10 @@ def open_app(path, console):
         raise StageFailed('RGB MoCap is already open. Close it first; one window per installation.')
     launcher = ROOT / 'RGBMoCap.cmd'
     flags = getattr(subprocess, 'CREATE_NEW_CONSOLE', 0) | getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0)
+    # No std handles: passing any of them makes Python hand the others down too, and the window would then
+    # keep the caller's output pipe open until it closes. The new console gives the app its own.
     subprocess.Popen(['cmd.exe', '/c', str(launcher), *arguments], cwd=str(ROOT), creationflags=flags,
-                     stdin=subprocess.DEVNULL, close_fds=True)
+                     close_fds=True)
     console.say('Opening RGB MoCap' + (f' with {arguments[1]}' if arguments else '') + '...')
     return dict(opened=arguments[1] if arguments else None,
                 kind={'--video': 'video', '--project': 'project'}.get(arguments[0]) if arguments else None)
