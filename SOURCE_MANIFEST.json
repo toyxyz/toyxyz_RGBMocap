@@ -166,8 +166,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 106167,
-      "sha256": "518042078823ac1d3d2d569de322abec84cb15ad2d78a365b418c4b102a268e2"
+      "bytes": 106231,
+      "sha256": "2624ea66b23cf0dc277f123010b1d8e42cfa9ca99c88f78e21d4fbe3f8468cf5"
     },
     {
       "path": "docs/BUILD.md",
@@ -181,8 +181,8 @@
     },
     {
       "path": "docs/CLI.md",
-      "bytes": 4274,
-      "sha256": "4f86b3065ff456a0b3e9a807205197c87e82f6dfb3fcb24d2abbcb099f68926d"
+      "bytes": 4894,
+      "sha256": "80897fc5338298b4d5a05c00312627f4711fdb3d0d56112d8f25353f06c37830"
     },
     {
       "path": "docs/MAMMA.md",
@@ -211,8 +211,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 176622,
-      "sha256": "b0fe88b1d255b71a0e1c4844aab2cf2f83f2061da9851a9457f397ea9865ae29"
+      "bytes": 176949,
+      "sha256": "d93d33dc61205e3350201dadc6d4577b812f176be6a694e0de31edb58854d5c2"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -1341,8 +1341,8 @@
     },
     {
       "path": "mocap/cli.py",
-      "bytes": 31754,
-      "sha256": "685be306439a06b6b6e89a1d99514d68d94b76ab0043ac91d315a54da7ce0afc"
+      "bytes": 34260,
+      "sha256": "1196fcb7c17a35e0d6fc49323f7b782e3364540084fe840399f08c5f5be17673"
     },
     {
       "path": "mocap/compute_policy.py",
@@ -2641,8 +2641,8 @@
     },
     {
       "path": "tests/test_cli.py",
-      "bytes": 7129,
-      "sha256": "d7919a0b216d83cc5cc01d4115f30fcdb0880af9d5bcedef73401990511753ec"
+      "bytes": 8756,
+      "sha256": "830d0e84857b9610a73f03f15fbd7acbf9e0c3e950d963520e80b8d21a502739"
     },
     {
       "path": "tests/test_default_settings.py",

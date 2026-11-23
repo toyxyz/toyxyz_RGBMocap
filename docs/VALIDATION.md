@@ -30,8 +30,13 @@
   The command line now runs the same `scene_boot.py` preparation, under the
   same conditions, before a people export. On that project, `export` then
   wrote the file and the FBX.
-- `tests/test_cli.py` checks the queue, the arguments, the environment and
-  the saved starting settings without starting workers. All 65 tests in
+- `open` with the clip opened the window with that video loaded. With the
+  people project's `exmr` folder, it opened the project with its person and
+  motion. Each time it returned in about 1 s, with the window in its own
+  console. A second `open` while the window was up was refused by the app
+  lock (exit code 1).
+- `tests/test_cli.py` checks the queue, the arguments, the environment, the
+  saved starting settings and `open` without starting workers. All 67 tests in
   `tests/` pass with the installed GUI runtime, with no skips.
 - Not checked: other trims, `--moving-camera`, and a run beside an open app
   window that is processing on the same GPU.
