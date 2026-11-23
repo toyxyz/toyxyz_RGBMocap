@@ -19,10 +19,16 @@
 - `correct` on a people take rewrote `scene_floor.json` and corrected the
   group's takes. `export` wrote a generic FBX and a UE5 Manny FBX, and
   refused the group folder with the list of its takes.
+- Four further 10 s clips at 1248x704, each with two people (one seated, one
+  getting into or out of a vehicle), ran with `--find-person --people 1,2`.
+  Each run was about 2.5 min from scratch and found both people. It wrote one
+  FBX per person, both with Motion Correction and with `--no-correction`
+  (the latter reusing the completed stages).
 - `tests/test_cli.py` checks the queue, the arguments, the environment and
-  the saved starting settings without starting workers.
-- Not checked: other trims, multi-person groups, `--moving-camera`, and a run
-  beside an open app window that is processing on the same GPU.
+  the saved starting settings without starting workers. All 64 tests in
+  `tests/` pass with the installed GUI runtime, with no skips.
+- Not checked: other trims, `--moving-camera`, and a run beside an open app
+  window that is processing on the same GPU.
 
 ## Unified Model Manager (2026-11-20)
 
