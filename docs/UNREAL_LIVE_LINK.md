@@ -48,8 +48,10 @@ subjects the app publishes.
    Studio Installer, add Visual Studio 2022 **Desktop development with C++**,
    including the MSVC C++ toolchain and a Windows SDK. An Unreal installation
    alone does not establish that these compiler components are installed.
-   The tested engine and prebuilt receiver are **5.7.4**; later versions are not
-   independently verified and other engine builds may need a receiver rebuild.
+   The tested engine and prebuilt receiver are **5.7.4**. Sender setup has also
+   been built and startup-verified with installed UE **5.8.4**; other versions
+   are not independently verified, and other engine builds need a receiver
+   rebuild from source (see the plugin's Build and verification section).
 2. Close RGB MoCap. In File Explorer, open its app folder containing
    `RGBMoCap.cmd`, `install.cmd` and `Setup_UnrealStream.cmd`, then double-click
    **Setup_UnrealStream.cmd**. Keep the command window open until setup finishes.
