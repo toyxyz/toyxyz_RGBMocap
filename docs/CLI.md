@@ -6,7 +6,8 @@ starts the same worker stages, with the same arguments, environment and request
 files, that the app uses for those buttons. A project made from the command
 line opens in the app with its results, receipts and caches, and the reverse.
 
-It is meant for batches and automation. Review the motion in the app as usual.
+It is meant for batches and automation. Review the motion in the app as usual;
+`RGBMoCapCLI.cmd open` starts the app with a video or project already loaded.
 
 ## Requirements
 
@@ -26,7 +27,19 @@ RGBMoCapCLI.cmd reconstruct "D:\clips\walk.mp4" --fbx-profile ue5_mannequin --fb
 RGBMoCapCLI.cmd reconstruct "D:\clips\two.mp4" --find-person --people 1,2 --fbx "D:\out\two.fbx"
 RGBMoCapCLI.cmd correct "<project>\exmr" --preset strong --fbx "D:\out\walk_strong.fbx"
 RGBMoCapCLI.cmd export "<project>\exmr" --fbx "D:\out\walk.fbx"
+RGBMoCapCLI.cmd open "D:\clips\walk.mp4"
+RGBMoCapCLI.cmd open "<project>\exmr"
 ```
+
+- `open` starts the app window like a double-click on `RGBMoCap.cmd`, in its
+  own console, and returns at once.
+  - With a video file, the window opens with that video loaded, as after
+    **File > Open Video**.
+  - With a project folder or its `project.json`, it opens the project, as
+    **File > Open Project** does.
+  - With no path, it just opens the app.
+  - It refuses to start a second window while the app is already open in the
+    same installation.
 
 - `reconstruct` prepares the video, tracks one person and runs ExMR, Motion
   Correction and the motion export.

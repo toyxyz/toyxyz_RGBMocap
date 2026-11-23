@@ -526,10 +526,58 @@ def parser():
     exp.add_argument('project', type=Path)
     exp.add_argument('--result', default=None, help='Motion kind (default: the project pipeline result).')
     add_export_options(exp, required=True)
-    for command in (rec, cor, exp):
+
+    opn = commands.add_parser('open', help='Open the app window, optionally with a video or a project already loaded.')
+    opn.add_argument('path', type=Path, nargs='?',
+                     help='A video file, or a project folder / project.json (as File > Open Project).')
+    for command in (rec, cor, exp, opn):
         add_global_options(command, defaults=False)
-    root.commands = dict(reconstruct=rec, correct=cor, export=exp)
+    root.commands = dict(reconstruct=rec, correct=cor, export=exp, open=opn)
     return root
+
+
+def app_running():
+    """True while the app window holds its lock (launch_source.py)."""
+    from .paths import ROOT
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from tools.session_lock import app_lock
+    try:
+        with app_lock(ROOT):
+            return False
+    except RuntimeError:
+        return True
+
+
+def open_arguments(path):
+    """app.py arguments for a video (MainWindow's video) or a project (load_project)."""
+    if path is None:
+        return []
+    path = Path(path).resolve()
+    if path.is_file() and path.name == 'project.json':
+        path = path.parent
+    if path.is_dir():
+        if not (path / 'project.json').is_file():
+            raise ValueError('No project.json in ' + str(path) + '. Pass a video file or a project folder.')
+        return ['--project', str(path)]
+    if path.is_file():
+        return ['--video', str(path)]
+    raise ValueError('Not found: ' + str(path))
+
+
+def open_app(path, console):
+    """Start the app window like a double-click on RGBMoCap.cmd, with its own console, and return."""
+    from .paths import ROOT
+    arguments = open_arguments(path)
+    if app_running():
+        raise StageFailed('RGB MoCap is already open. Close it first; one window per installation.')
+    launcher = ROOT / 'RGBMoCap.cmd'
+    flags = getattr(subprocess, 'CREATE_NEW_CONSOLE', 0) | getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0)
+    subprocess.Popen(['cmd.exe', '/c', str(launcher), *arguments], cwd=str(ROOT), creationflags=flags,
+                     stdin=subprocess.DEVNULL, close_fds=True)
+    console.say('Opening RGB MoCap' + (f' with {arguments[1]}' if arguments else '') + '...')
+    return dict(opened=arguments[1] if arguments else None,
+                kind={'--video': 'video', '--project': 'project'}.get(arguments[0]) if arguments else None)
 
 
 def starting_settings():
@@ -574,6 +622,11 @@ def main(argv=None):
     console = Console(args.quiet, args.log)
     summary = {}
     try:
+        if args.command == 'open':
+            summary.update(open_app(args.path, console))
+            if args.json:
+                print(json.dumps(dict(summary, ok=True)))
+            return 0
         takes, people_root = None, None
         if args.command == 'reconstruct':
             if args.people and not args.find_person:

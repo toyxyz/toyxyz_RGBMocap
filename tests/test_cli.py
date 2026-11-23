@@ -94,6 +94,32 @@ class CommandLineTest(unittest.TestCase):
         self.assertEqual(prepare[prepare.index('--foot-lock') + 1], '0')
         self.assertEqual(cli.worker_environment()['RGB_MOCAP_RESOURCE_SAFETY'], '0')
 
+    def test_open_starts_the_app_with_a_video_or_a_project(self):
+        video = self.home / 'clip.mp4'
+        video.write_bytes(b'video')
+        project = self.home / 'projects/clip_project'
+        project.mkdir(parents=True)
+        (project / 'project.json').write_text('{}', encoding='utf-8')
+        started = []
+        fake = lambda command, **kwargs: started.append(command)
+        with patch.object(cli, 'app_running', lambda: False), patch.object(cli.subprocess, 'Popen', fake):
+            for argv in ([], [str(video)], [str(project)], [str(project / 'project.json')]):
+                self.assertEqual(cli.main(['--quiet', 'open', *argv]), 0)
+        self.assertTrue(all(command[:2] == ['cmd.exe', '/c'] and command[2].endswith('RGBMoCap.cmd') for command in started))
+        self.assertEqual([command[3:] for command in started],
+                         [[], ['--video', str(video.resolve())], ['--project', str(project.resolve())],
+                          ['--project', str(project.resolve())]])
+
+    def test_open_refuses_a_second_window_and_bad_paths(self):
+        started = []
+        with patch.object(cli.subprocess, 'Popen', lambda command, **kwargs: started.append(command)):
+            with patch.object(cli, 'app_running', lambda: True):
+                self.assertEqual(cli.main(['--quiet', 'open']), 1)
+            with patch.object(cli, 'app_running', lambda: False):
+                self.assertEqual(cli.main(['--quiet', 'open', str(self.home / 'missing.mp4')]), 1)
+                self.assertEqual(cli.main(['--quiet', 'open', str(self.home)]), 1)
+        self.assertEqual(started, [])
+
     def test_people_scene_is_prepared_like_the_gui_scene_loader(self):
         root = self.home / 'people_root'
         root.mkdir()

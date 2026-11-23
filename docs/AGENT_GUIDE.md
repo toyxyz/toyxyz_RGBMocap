@@ -1,6 +1,6 @@
 # RGB MoCap: agent operating and development guide
 
-This guide is for agents helping users operate or modify RGB MoCap. It describes the Git/CMD version. User requests and newer verified behavior take precedence over historical benchmarks. The English GUI is the supported user interface. `RGBMoCapCLI.cmd` ([command line](CLI.md)) covers only ExMR Find person, Reconstruct 3D, Motion Correction and FBX export, by starting the GUI's own worker stages; `mocap/cli.py` must keep the GUI's job order, arguments, environment and defaults when those change. Do not assume a command-line API for other models or for retargeting. Avoid asking for the user's videos or model weights if the existing local project is sufficient.
+This guide is for agents helping users operate or modify RGB MoCap. It describes the Git/CMD version. User requests and newer verified behavior take precedence over historical benchmarks. The English GUI is the supported user interface. `RGBMoCapCLI.cmd` ([command line](CLI.md)) covers only ExMR Find person, Reconstruct 3D, Motion Correction and FBX export, by starting the GUI's own worker stages, plus `open` to start the window with a video or project loaded; `mocap/cli.py` must keep the GUI's job order, arguments, environment and defaults when those change. Do not assume a command-line API for other models or for retargeting. Avoid asking for the user's videos or model weights if the existing local project is sufficient.
 
 ## Start and update
 
