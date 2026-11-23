@@ -26,13 +26,18 @@
     },
     {
       "path": "README.md",
-      "bytes": 17958,
-      "sha256": "6159f8ba52ccdea904c6b34cbca40eec7d57f150100988372590009f4fad0bfc"
+      "bytes": 18055,
+      "sha256": "fd09317864703338807a85c5ed388e6b0f31fa26247ba59fc0000fc4a8b26e9f"
     },
     {
       "path": "RGBMoCap.cmd",
       "bytes": 405,
       "sha256": "15a022a9c3c7ff5ec43bd55e35c46ea2befb1ae01953e67529b6dc1c8ded30f0"
+    },
+    {
+      "path": "RGBMoCapCLI.cmd",
+      "bytes": 242,
+      "sha256": "98a1c08530ff7cd06359e025abbd8b7b8076958409d42c79f0cbfac54bbfb3eb"
     },
     {
       "path": "Setup_GEMX.cmd",
@@ -110,6 +115,11 @@
       "sha256": "3e51960b75797f08a7e209ff50e8868c2ff0172a16582f3b6a853b59b5f04e72"
     },
     {
+      "path": "cli_boot.py",
+      "bytes": 1683,
+      "sha256": "405fdd9544ffcfafd0ffd517819955b69aee28354daba72ac7a404f63f965f1a"
+    },
+    {
       "path": "developer-build/motion-correction/README.md",
       "bytes": 1917,
       "sha256": "8956b1687f5db922169eee413b88d3d8772346e48b8bd72b1eab5d9d8437f9ca"
@@ -156,8 +166,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 105906,
-      "sha256": "b2aef9a2fec60cefdc0bf06aa623fdb424412e9df4123a5cd9509bb34dec411a"
+      "bytes": 106167,
+      "sha256": "518042078823ac1d3d2d569de322abec84cb15ad2d78a365b418c4b102a268e2"
     },
     {
       "path": "docs/BUILD.md",
@@ -168,6 +178,11 @@
       "path": "docs/CITATIONS.md",
       "bytes": 7104,
       "sha256": "e5b37b6c0d1ca5e0540dfe1e33f9ef7948d2c28f01f36f5abe64b2513b66aa8d"
+    },
+    {
+      "path": "docs/CLI.md",
+      "bytes": 4189,
+      "sha256": "fd2ca40c398d3f1a23e9d87fbba22dd0b90de2ccf813516619cb750182ecc701"
     },
     {
       "path": "docs/MAMMA.md",
@@ -196,8 +211,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 174314,
-      "sha256": "460b7be772a2378856ae29ffd68c8e7d350a3a2f9671cde90381ffd972b4b354"
+      "bytes": 175803,
+      "sha256": "d78f2c0ee95e16f03ea091ddb11c9e78bb5caed1bc60bfedc8768959af9cd744"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -1323,6 +1338,11 @@
       "path": "mocap/character_ui.py",
       "bytes": 22741,
       "sha256": "abc3a6a3cea095147a26f6643c347f16b35139e3b2cbffef363bf6a3f585c205"
+    },
+    {
+      "path": "mocap/cli.py",
+      "bytes": 28567,
+      "sha256": "bbd799f257a848f94c5651400cf404627c5d2b84a3dc5d846aafec150384e01f"
     },
     {
       "path": "mocap/compute_policy.py",
@@ -2618,6 +2638,11 @@
       "path": "scene_boot.py",
       "bytes": 303,
       "sha256": "c0b07c153f2f6a0bf762c2c88f38ac8d1f5a1d10f5e8028a7cfa11db3664d03e"
+    },
+    {
+      "path": "tests/test_cli.py",
+      "bytes": 5475,
+      "sha256": "ad3cc19f0a3e39c8501cd9102a400c7e85997070e8af80a2081c7a12d54873bb"
     },
     {
       "path": "tests/test_default_settings.py",
