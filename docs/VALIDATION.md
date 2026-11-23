@@ -1,5 +1,20 @@
 # Source package validation
 
+## Unreal Live Link sender on UE 5.8 (2026-11-23)
+
+- With the previous `BuildSettingsVersion.V6` and 5.7 include order,
+  `Setup_UnrealStream.cmd --engine` against installed UE 5.8.4 stopped before
+  compiling: UnrealBuildTool rejects an editor target that changes
+  `UnreachableCodeWarningLevel`, `ReturnTypeWarningLevel` and
+  `DanglingWarningLevel`, because it shares build products with UnrealEditor.
+- With `Latest` for both settings, setup built the provider and passed its
+  startup verification on installed UE 5.8.4 and on UE 5.7.4, using Visual
+  Studio 2022 (MSVC 14.44) on Windows with an RTX 4080.
+- The RGB MoCap Connect receiver also compiled from source against UE 5.8.4
+  without warnings. Both modules loaded in an existing project's editor and
+  Tools > RGB MoCap Connect opened. End-to-end streaming into that UE 5.8
+  editor was not part of this check.
+
 ## Unified Model Manager (2026-11-20)
 
 - In an isolated Windows app, verified every workflow tab and the Installed
