@@ -14,14 +14,17 @@ def stream_rig(asset):
     return asset.get('stream_rig') if asset else None
 
 
-class StreamWorkspace:
+from .vmc_stream_ui import VmcStreamWorkspace
+
+
+class StreamWorkspace(VmcStreamWorkspace):
     def build_stream_page(self):
         page = QWidget()
         column = QVBoxLayout(page)
         column.setContentsMargins(5, 5, 5, 5)
         column.addWidget(QLabel('Target'))
         self.stream_target = QComboBox()
-        self.stream_target.addItems(['None', 'Blender'])
+        self.stream_target.addItems(['None', 'Blender', 'VMC'])
         self.stream_target.setAccessibleName('Stream target')
         column.addWidget(self.stream_target)
         self.stream_port_controls = QWidget()
@@ -47,6 +50,7 @@ class StreamWorkspace:
         port_controls.addLayout(port_row)
         column.addWidget(self.stream_port_controls)
         self.stream_port_controls.hide()
+        self.build_vmc_stream(column)
         self.stream_people = QListWidget()
         self.stream_people.setObjectName('streamPeopleList')
         self.stream_people.setAccessibleName('People to stream')
@@ -72,6 +76,10 @@ class StreamWorkspace:
         return page
 
     def stream_tab_changed(self, index):
+        if self.stream_target.currentText() == 'VMC':
+            self.update_stream()
+            self._stream_timer.start(33 if self.pear_vmc_sender is not None else 250)
+            return
         if not self._pear_active and (index == 1 or self._stream_sender is not None):
             self.update_stream()
             self._stream_timer.start(33 if self._stream_sender else 250)
@@ -79,6 +87,10 @@ class StreamWorkspace:
             self._stream_timer.stop()
 
     def change_stream_target(self, index):
+        self.pear_vmc_stop()
+        self.stream_vmc_controls.setVisible(index == 2)
+        self.stream_people.show()
+        self._stream_rows = None
         blender = index == 1 and not self._pear_active
         self.stream_port_controls.setVisible(blender)
         if blender:
@@ -114,6 +126,7 @@ class StreamWorkspace:
         self.stream_tab_changed(self.people_tabs.currentIndex())
 
     def close_stream(self):
+        self.pear_vmc_stop()
         if self._stream_sender is not None:
             self._stream_sender.close()
             self._stream_sender = None
@@ -125,6 +138,9 @@ class StreamWorkspace:
         self._stream_timer.stop()
 
     def stream_person_changed(self, item):
+        if self.stream_target.currentText() == 'VMC':
+            self.vmc_person_changed(item)
+            return
         ident = item.data(Qt.UserRole)
         if item.checkState() == Qt.Checked:
             if len(self._stream_checked) >= MAX_ACTORS:
@@ -237,6 +253,9 @@ class StreamWorkspace:
             sender.changed.set()
 
     def update_stream(self):
+        if self.stream_target.currentText() == 'VMC':
+            self.update_vmc_stream()
+            return
         if self._pear_active:
             return
 

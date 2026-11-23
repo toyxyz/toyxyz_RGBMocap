@@ -120,6 +120,10 @@ def bundles(messages, limit=1400):
 
 def frame_packets(pose, parents, aligned, elapsed):
     bones = transforms(pose, parents, aligned)
+    return transform_packets(bones, elapsed)
+
+
+def transform_packets(bones, elapsed):
     messages = [message('/VMC/Ext/Root/Pos', 'root', 0., 0., 0., 0., 0., 0., 1.)]
     messages += [message('/VMC/Ext/Bone/Pos', name, *position, *rotation)
                  for name, position, rotation in bones]
@@ -162,6 +166,15 @@ class Sender:
             self.closed = True; self.pending = None; self.condition.notify()
         # Worker owns and closes the socket. No blocking join in Qt callbacks.
 
+    def submit_offline(self, adapter, world, transform=None):
+        value = (adapter, np.array(world, copy=True),
+                 None if transform is None else np.array(transform, copy=True), time.monotonic())
+        with self.condition:
+            if self.closed:
+                return
+            self.pending = (value,)
+            self.condition.notify()
+
     def _send(self, packets):
         for packet in packets:
             self.socket.sendto(packet, self.target)
@@ -190,8 +203,11 @@ class Sender:
                             pose, parents, aligned, submitted = value
                             if time.monotonic()-submitted > .75:
                                 self._unavailable(); continue
-                            self._send(frame_packets(pose, parents, aligned,
-                                                     time.monotonic()-self.started))
+                            elapsed = time.monotonic()-self.started
+                            packets = (frame_packets(pose, parents, aligned, elapsed)
+                                       if isinstance(pose,dict) else
+                                       transform_packets(pose.transforms(parents,aligned),elapsed))
+                            self._send(packets)
                             self.frames += 1; self.last_pose = time.monotonic()
                             self.tracking = True; self.error = ''
                     elif self.tracking and time.monotonic()-self.last_pose > .75:

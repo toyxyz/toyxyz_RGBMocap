@@ -1,4 +1,4 @@
-"""Opt-in VMC controls for the transient PEAR tool."""
+"""Opt-in VMC controls shared by live and offline motion streams."""
 from PySide6.QtWidgets import QPushButton, QGroupBox, QLabel, QLineEdit, QSpinBox, QFormLayout
 
 
@@ -12,7 +12,7 @@ class PearVmcWorkspace:
         self.pear_vmc_port.setValue(39539)
         self.pear_vmc_enabled = QPushButton('Start VMC Output')
         self.pear_vmc_enabled.setCheckable(True)
-        self.pear_vmc_enabled.setToolTip('Start or stop sending PEAR motion to the destination IP and port.')
+        self.pear_vmc_enabled.setToolTip('Start or stop sending motion to the destination IP and port.')
         self.pear_vmc_status = QLabel('Output off.'); self.pear_vmc_status.setWordWrap(True)
         form.addRow('Destination IP', self.pear_vmc_host)
         form.addRow('UDP Port', self.pear_vmc_port)
@@ -43,7 +43,7 @@ class PearVmcWorkspace:
             self.pear_vmc_enabled.setText('Start VMC Output')
             self.pear_vmc_status.setText('VMC: '+str(exc)); return
         self.pear_vmc_host.setEnabled(False); self.pear_vmc_port.setEnabled(False)
-        self.pear_vmc_status.setText('Waiting for new PEAR poses. Start Live Tracking.')
+        self.pear_vmc_status.setText('Waiting for poses. Select a person, or start PEAR live tracking.')
 
     def pear_vmc_stop(self):
         if hasattr(self, 'pear_vmc_enabled'):

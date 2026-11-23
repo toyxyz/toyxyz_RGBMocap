@@ -101,7 +101,6 @@ class PearWorkspace(PearMultiWorkspace,PearVmcWorkspace):
         self.pear_align_button.setToolTip('Align one or more fixed views using VGGT and GeoCalib. A single view uses an estimated body-to-depth scale. Show the person and floor; multiple videos must be synchronized. Start Live Tracking aligns automatically.')
         self.pear_align_tooltip=self.pear_align_button.toolTip()
         self.pear_align_button.clicked.connect(self.pear_camera_align)
-        self.build_pear_vmc(layout)
         self.model_pages.addWidget(self.pear_page)
         self.pear_poll_timer=QTimer(self);self.pear_poll_timer.setInterval(16);self.pear_poll_timer.timeout.connect(self.pear_poll)
 
@@ -149,6 +148,7 @@ class PearWorkspace(PearMultiWorkspace,PearVmcWorkspace):
     def pear_leave(self):
         self.pear_vmc_stop()
         if not self._pear_active:return
+        self.people_tabs.setTabEnabled(0,True)
         self._pear_active=False;self.pear_poll_timer.stop();self.pear_close_session();self.pear_shutdown_multi()
         self.stream_tab_changed(self.people_tabs.currentIndex())
         if self.pear_inputs and self._pear_media_restore:
@@ -278,7 +278,8 @@ class PearWorkspace(PearMultiWorkspace,PearVmcWorkspace):
         self.status.setText("PEAR experimental preview · Tracking and pose estimates may be unstable.")
         self.pear_header.show();self.model_pages.setCurrentWidget(self.pear_page);self.model_pages.show()
         self.people_tracker.hide()
-        for widget in (self.people_panel,self.find_person_button,self.correction_group,self.compute_mode.parentWidget(),self.run_button,self.mesh_button,self.cancel_button,self.htd_refine,self.refine_description,self.footmr_refine,self.handflow_refine,self.footmr_description,self.refine_preview_note,self.analyze_button):widget.hide()
+        self.people_panel.show();self.people_tabs.setTabEnabled(0,False);self.people_tabs.setCurrentIndex(1)
+        for widget in (self.find_person_button,self.correction_group,self.compute_mode.parentWidget(),self.run_button,self.mesh_button,self.cancel_button,self.htd_refine,self.refine_description,self.footmr_refine,self.handflow_refine,self.footmr_description,self.refine_preview_note,self.analyze_button):widget.hide()
         self.models_group.setTitle('PEAR Models');self.readiness.setText(f'PEAR: {len(KEYS)-len(missing_models)}/{len(KEYS)} models ready')
         self.readiness.setStyleSheet('color:#ffb45c; font-weight:600;' if missing_models else '')
         self.readiness.setToolTip(message+('\nMissing models:\n'+'\n'.join(model.name for model in missing_models) if missing_models else ''))
