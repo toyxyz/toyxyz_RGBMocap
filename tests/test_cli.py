@@ -94,6 +94,27 @@ class CommandLineTest(unittest.TestCase):
         self.assertEqual(prepare[prepare.index('--foot-lock') + 1], '0')
         self.assertEqual(cli.worker_environment()['RGB_MOCAP_RESOURCE_SAFETY'], '0')
 
+    def test_people_scene_is_prepared_like_the_gui_scene_loader(self):
+        root = self.home / 'people_root'
+        root.mkdir()
+        calls = []
+
+        def fake_run(command, **kwargs):
+            calls.append(command)
+            (root / 'people_scene.json').write_text('{}', encoding='utf-8')
+            return type('Done', (), {'returncode': 0})()
+
+        console = cli.Console(quiet=True)
+        with patch.object(cli, 'people_scene_stale', lambda path: True), \
+                patch.object(cli.subprocess, 'run', fake_run), patch.dict(cli.os.environ, RGB_MOCAP_MANAGED='1'):
+            cli.prepare_people_scene(root, console)
+        self.assertEqual(len(calls), 1)
+        self.assertTrue(calls[0][-2].endswith('scene_boot.py'))
+        self.assertEqual(calls[0][-1], str(root.resolve()))
+        with patch.object(cli, 'people_scene_stale', lambda path: False), patch.object(cli.subprocess, 'run', fake_run):
+            cli.prepare_people_scene(root, console)
+        self.assertEqual(len(calls), 1)
+
     def test_global_options_before_or_after_the_command(self):
         before = cli.parser().parse_args(['--json', '--log', 'a.log', '--compute', 'low', 'reconstruct', 'v.mp4'])
         after = cli.parser().parse_args(['reconstruct', 'v.mp4', '--json', '--log', 'a.log', '--compute', 'low'])

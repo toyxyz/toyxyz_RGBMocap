@@ -328,6 +328,57 @@ def take_context(project):
     raise ValueError('This take is not listed in its people group. Open the project in the app.')
 
 
+def people_scene_stale(root):
+    """The checks scene_data.SceneDataLoader.load makes before it prepares the shared scene cameras."""
+    from .paths import MODELS
+    from .people_store import load_people, media_receipt, safe_child
+    from .scene_camera import VERSION, read_camera, take_projects
+    from .scene_floor import current_resolution, read_config
+    state = load_people(root)
+    projects = take_projects(root, state) if state else []
+    if not projects:
+        return False
+    path = root / 'people_scene.json'
+    smplx = (MODELS / 'body_models/smplx/SMPLX_NEUTRAL.npz').exists()
+    if (read_config(root) is not None and current_resolution(root) is None and smplx) or not path.exists() \
+            or any(read_camera(project) is None for _, project in projects):
+        return True
+    reference = json.loads(path.read_text(encoding='utf-8'))
+    if reference.get('version') != VERSION or reference.get('input') != media_receipt(root):
+        return True
+    anchor = read_camera(safe_child(root, reference['anchor']))
+    return anchor is None or anchor['sources'] != reference.get('sources')
+
+
+def prepare_people_scene(root, console, timeout=300):
+    """Write people_scene.json and the scene cameras the way the GUI does when it opens a people scene.
+
+    Motion Correction writes them itself; without it, only the GUI's scene loader did, and a people
+    export needs them (scene_data.prepare_camera_process, same command and log file).
+    """
+    from .paths import ROOT
+    root = Path(root).resolve()
+    if not people_scene_stale(root):
+        return
+    console.say('Prepare shared scene cameras...')
+    if getattr(sys, 'frozen', False) or os.environ.get('RGB_MOCAP_MANAGED') == '1':
+        command = [str(ROOT / 'runtime/python.exe'), '-I', '-X', 'utf8', str(ROOT / 'scene_boot.py'), str(root)]
+    else:
+        command = [sys.executable, '-X', 'utf8', '-m', 'mocap.scene_camera', str(root)]
+    log = root / '.scene_camera.log'
+    with log.open('wb') as output:
+        try:
+            code = subprocess.run(command, stdout=output, stderr=output, cwd=str(ROOT), timeout=timeout,
+                                  creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0)).returncode
+        except subprocess.TimeoutExpired:
+            raise StageFailed('Shared scene camera preparation timed out; retry after freeing RAM.') from None
+    if code:
+        tail = log.read_bytes()[-4096:].decode('utf-8', errors='replace')
+        raise StageFailed('Cannot prepare shared cameras: ' + tail)
+    if not (root / 'people_scene.json').is_file():
+        raise StageFailed('Shared scene cameras are still unavailable after preparation; see ' + str(log))
+
+
 def export_fbx(project, kind, target, options, env, console, *, person=None, people_root=None):
     """File > Export, FBX, one take (gui.py submit_fbx_exports)."""
     from .motion_tools import selected_export
@@ -361,6 +412,7 @@ def export_fbx(project, kind, target, options, env, console, *, person=None, peo
                animate_camera=True, background_refine=False, camera_translation_scale=1.)
     if people_root is not None:
         from .scene_export import context
+        prepare_people_scene(people_root, console)
         row['scene'] = context(people_root, project)
     request = project / ('.fbx-export-' + uuid.uuid4().hex + '.json')
     atomic_json(request, [row])
