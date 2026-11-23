@@ -24,8 +24,14 @@
   Each run was about 2.5 min from scratch and found both people. It wrote one
   FBX per person, both with Motion Correction and with `--no-correction`
   (the latter reusing the completed stages).
+- A first `--no-correction` people run, on a clip where Find person found a
+  second, spurious person, failed at export: `people_scene.json` was missing.
+  Motion Correction writes it, and otherwise only the GUI's scene loader did.
+  The command line now runs the same `scene_boot.py` preparation, under the
+  same conditions, before a people export. On that project, `export` then
+  wrote the file and the FBX.
 - `tests/test_cli.py` checks the queue, the arguments, the environment and
-  the saved starting settings without starting workers. All 64 tests in
+  the saved starting settings without starting workers. All 65 tests in
   `tests/` pass with the installed GUI runtime, with no skips.
 - Not checked: other trims, `--moving-camera`, and a run beside an open app
   window that is processing on the same GPU.

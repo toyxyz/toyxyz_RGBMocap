@@ -211,8 +211,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 176210,
-      "sha256": "a801afcadebc3259b356f90ab51c47ecbc14f1bf1ee63dc5038ea309dc1bafd0"
+      "bytes": 176622,
+      "sha256": "b0fe88b1d255b71a0e1c4844aab2cf2f83f2061da9851a9457f397ea9865ae29"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -1341,8 +1341,8 @@
     },
     {
       "path": "mocap/cli.py",
-      "bytes": 29011,
-      "sha256": "48377e9aff0881a27b06a4ee9109e09cb9f3dbbb9db38adf367b98969217fcf7"
+      "bytes": 31754,
+      "sha256": "685be306439a06b6b6e89a1d99514d68d94b76ab0043ac91d315a54da7ce0afc"
     },
     {
       "path": "mocap/compute_policy.py",
@@ -2641,8 +2641,8 @@
     },
     {
       "path": "tests/test_cli.py",
-      "bytes": 6106,
-      "sha256": "8ca659221bd3e5957248a201896e52359af868038f1d4e36648387cd56769597"
+      "bytes": 7129,
+      "sha256": "d7919a0b216d83cc5cc01d4115f30fcdb0880af9d5bcedef73401990511753ec"
     },
     {
       "path": "tests/test_default_settings.py",
