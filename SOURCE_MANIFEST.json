@@ -151,8 +151,8 @@
     },
     {
       "path": "developer-build/unreal-live-link/Source/RGBMoCapLiveLinkEditor.Target.cs",
-      "bytes": 372,
-      "sha256": "9f5e6609192ab0ecb77792d5a93a0120917ac4464cef4c10076821f81bbf75af"
+      "bytes": 606,
+      "sha256": "07862167231b852f6b9105b210266868885bee8eb873438b12e2c16ba7e7981c"
     },
     {
       "path": "docs/AGENT_GUIDE.md",
@@ -186,8 +186,8 @@
     },
     {
       "path": "docs/UNREAL_LIVE_LINK.md",
-      "bytes": 23229,
-      "sha256": "78b94d48bd4ebdffcf389b8b13a4233217d4b7ddd8cb9bfa5a261e5236677c25"
+      "bytes": 23377,
+      "sha256": "e342468583e8c519e308b1d25277480605f57e5f281248329afbbd744b0d5e25"
     },
     {
       "path": "docs/USER_GUIDE.md",
@@ -196,8 +196,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 174314,
-      "sha256": "460b7be772a2378856ae29ffd68c8e7d350a3a2f9671cde90381ffd972b4b354"
+      "bytes": 175189,
+      "sha256": "c32ac70456005ff4fcec98540e6279bcbaf0e42aaf6468c05495237ace4f7b1e"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
