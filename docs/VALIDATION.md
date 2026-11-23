@@ -1,5 +1,29 @@
 # Source package validation
 
+## ExMR command line (2026-11-23)
+
+- Windows, RTX 4080 16 GB. Clip: a 10.04 s, 24 fps, 736x384 single-person
+  video. The GUI processed it first with Find person (Default) and ExMR
+  defaults. `RGBMoCapCLI.cmd reconstruct --find-person` then processed it from
+  an empty projects folder in the same installation.
+- The command line produced the same project folder name. It also produced
+  byte-identical `input.mp4`, `tracking.npz` and `scene_floor.json`.
+  `exmr_keypoints.pt` and the hand features were identical. Body features
+  differed by at most 5.7e-6 (values up to 11), consistent with CUDA kernel
+  nondeterminism. Through the temporal model this became at most 3.4e-3 in
+  `exmr_results.pt` (global orientation; translation 1.7e-3 m). These are not
+  GUI-versus-GUI repeat measurements.
+- Without Find person the run used the single-person tracker, as the GUI
+  does. Uncached, it took 2 min 14 s from prepare to motion export; with the
+  completed stages reused, it took 32 s including a UE5 Manny FBX.
+- `correct` on a people take rewrote `scene_floor.json` and corrected the
+  group's takes. `export` wrote a generic FBX and a UE5 Manny FBX, and
+  refused the group folder with the list of its takes.
+- `tests/test_cli.py` checks the queue, the arguments, the environment and
+  the saved starting settings without starting workers.
+- Not checked: other trims, multi-person groups, `--moving-camera`, and a run
+  beside an open app window that is processing on the same GPU.
+
 ## Unified Model Manager (2026-11-20)
 
 - In an isolated Windows app, verified every workflow tab and the Installed
