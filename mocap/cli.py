@@ -437,12 +437,18 @@ def fbx_targets(target, takes):
     return [target.with_name(f'{stem}_{export_stem(person["name"])}_{path.name}{suffix}') for path, person in takes]
 
 
+def add_global_options(parser, defaults=True):
+    """Accepted before or after the command; a command's copy never overwrites a value given before it."""
+    value = (lambda default: default) if defaults else (lambda default: argparse.SUPPRESS)
+    parser.add_argument('--compute', default=value('auto'), help='Resource Mode, as in the app (default: auto = Automatic).')
+    parser.add_argument('--log', type=Path, default=value(None), help='Append worker output to this file.')
+    parser.add_argument('--quiet', action='store_true', default=value(False))
+    parser.add_argument('--json', action='store_true', default=value(False), help='Print a JSON summary on stdout.')
+
+
 def parser():
     root = argparse.ArgumentParser(prog='RGBMoCapCLI', description=__doc__.split('\n\n')[0])
-    root.add_argument('--compute', default='auto', help='Resource Mode, as in the app (default: auto = Automatic).')
-    root.add_argument('--log', type=Path, help='Append worker output to this file.')
-    root.add_argument('--quiet', action='store_true')
-    root.add_argument('--json', action='store_true', help='Print a JSON summary on stdout.')
+    add_global_options(root)
     commands = root.add_subparsers(dest='command', required=True)
 
     rec = commands.add_parser('reconstruct', help='Video -> ExMR motion (Reconstruct 3D), optionally to FBX.')
@@ -468,6 +474,8 @@ def parser():
     exp.add_argument('project', type=Path)
     exp.add_argument('--result', default=None, help='Motion kind (default: the project pipeline result).')
     add_export_options(exp, required=True)
+    for command in (rec, cor, exp):
+        add_global_options(command, defaults=False)
     root.commands = dict(reconstruct=rec, correct=cor, export=exp)
     return root
 

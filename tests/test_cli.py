@@ -94,6 +94,14 @@ class CommandLineTest(unittest.TestCase):
         self.assertEqual(prepare[prepare.index('--foot-lock') + 1], '0')
         self.assertEqual(cli.worker_environment()['RGB_MOCAP_RESOURCE_SAFETY'], '0')
 
+    def test_global_options_before_or_after_the_command(self):
+        before = cli.parser().parse_args(['--json', '--log', 'a.log', '--compute', 'low', 'reconstruct', 'v.mp4'])
+        after = cli.parser().parse_args(['reconstruct', 'v.mp4', '--json', '--log', 'a.log', '--compute', 'low'])
+        plain = cli.parser().parse_args(['export', 'take', '--fbx', 'o.fbx'])
+        for args in (before, after):
+            self.assertEqual((args.json, args.log, args.compute, args.quiet), (True, Path('a.log'), 'low', False))
+        self.assertEqual((plain.json, plain.log, plain.compute, plain.quiet), (False, None, 'auto', False))
+
     def test_missing_models_stop_before_any_worker(self):
         with patch.object(cli, 'missing_models', lambda stages: ['SMPL-X Neutral']):
             recorder = Recorder(self.project)

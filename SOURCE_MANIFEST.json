@@ -181,8 +181,8 @@
     },
     {
       "path": "docs/CLI.md",
-      "bytes": 4189,
-      "sha256": "fd2ca40c398d3f1a23e9d87fbba22dd0b90de2ccf813516619cb750182ecc701"
+      "bytes": 4274,
+      "sha256": "4f86b3065ff456a0b3e9a807205197c87e82f6dfb3fcb24d2abbcb099f68926d"
     },
     {
       "path": "docs/MAMMA.md",
@@ -1341,8 +1341,8 @@
     },
     {
       "path": "mocap/cli.py",
-      "bytes": 28567,
-      "sha256": "bbd799f257a848f94c5651400cf404627c5d2b84a3dc5d846aafec150384e01f"
+      "bytes": 29011,
+      "sha256": "48377e9aff0881a27b06a4ee9109e09cb9f3dbbb9db38adf367b98969217fcf7"
     },
     {
       "path": "mocap/compute_policy.py",
@@ -2641,8 +2641,8 @@
     },
     {
       "path": "tests/test_cli.py",
-      "bytes": 5475,
-      "sha256": "ad3cc19f0a3e39c8501cd9102a400c7e85997070e8af80a2081c7a12d54873bb"
+      "bytes": 6106,
+      "sha256": "8ca659221bd3e5957248a201896e52359af868038f1d4e36648387cd56769597"
     },
     {
       "path": "tests/test_default_settings.py",

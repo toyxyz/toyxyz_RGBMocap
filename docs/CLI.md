@@ -42,6 +42,8 @@ RGBMoCapCLI.cmd export "<project>\exmr" --fbx "D:\out\walk.fbx"
     corrected again, as in the app.
 - `export` writes an FBX of an existing take. A people group folder is
   refused with the list of its take folders.
+- `--json`, `--log`, `--quiet` and `--compute` can go before or after the
+  command.
 - `--json` prints a summary with the project, takes and FBX paths on stdout.
 - `--log` appends the full worker output to a file.
 - The exit code is 0 on success and 1 on any failure; Ctrl+C stops the
