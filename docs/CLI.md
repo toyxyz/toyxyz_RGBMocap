@@ -70,6 +70,26 @@ the marker time and repeat `--sam31-point X Y` for normalized image points.
   OpenGL-capable Windows session and accepts an optional `--frames` limit.
   `project copy PROJECT --output NEW_FOLDER` copies the workspace and media.
 
+## Refine camera rotation
+
+FlowHMR and ExMR support `--refine-camera-rotation` and
+`--no-refine-camera-rotation`. On `reconstruct`, either flag saves the
+choice in the workspace. The refinement runs on the CPU when the saved
+camera is used. It skips static cameras and keeps the original rotation for
+samples that fail validation.
+
+```powershell
+.\RGBMoCapCLI.cmd reconstruct "D:\clips\walk.mp4" --model flowhmr --camera moving --refine-camera-rotation --project "D:\projects\walk"
+.\RGBMoCapCLI.cmd preview "D:\projects\walk" --model flowhmr --refine-camera-rotation --output "D:\out\walk.mp4"
+.\RGBMoCapCLI.cmd export "D:\projects\walk" --model flowhmr --format blend --no-refine-camera-rotation --output "D:\out\walk-original.blend"
+```
+
+Preview and animated Blender exports use the workspace setting when the
+flag is omitted. On those commands, either flag overrides the saved choice
+for that output. An explicit preview flag also shows the camera in the 3D
+viewport. Blender bundles record accepted samples in `camera_report.json`.
+Camera centers, body motion, and the source camera files stay unchanged.
+
 ## Face, character and live output
 
 ```powershell

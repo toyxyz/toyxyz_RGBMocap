@@ -23,6 +23,8 @@ from .storage import atomic_json, project_key, sha256
 from .take_selection import diagnose_take
 from .workflow_jobs import export_row, grouped_take_jobs, next_job, person_jobs, take_jobs, video_jobs
 
+CAMERA_REFINEMENT_MODELS = ('flowhmr', 'exmr')
+
 
 def manifest(project):
     return json.loads((project / 'project.json').read_text(encoding='utf-8'))
@@ -42,6 +44,37 @@ def model_project(path, model):
     if state.get('pipeline', {}).get('model') != model:
         raise ValueError(f'{path} is not a saved {model} project.')
     return path
+
+
+def check_camera_refinement(args):
+    if args.refine_camera_rotation is not None and args.model not in CAMERA_REFINEMENT_MODELS:
+        raise ValueError('Refine Camera Rotation is available for FlowHMR and ExMR.')
+
+
+def workspace_view(state, model):
+    return state.get('models', {}).get(model, {}).get('view', state.get('view', {}))
+
+
+def camera_refinement_enabled(project, model, override):
+    if override is not None:
+        return override
+    if model in CAMERA_REFINEMENT_MODELS:
+        root = workspace.root_for(project)
+        if root is not None:
+            view = workspace_view(workspace.read(root), model)
+            return view.get('camera_background', {}).get(model) is True
+    return False
+
+
+def reconstruction_result(args, project, **result):
+    if args.refine_camera_rotation is not None:
+        root = workspace.root_for(project)
+        state = workspace.read(root)
+        view = workspace_view(state, args.model)
+        background = {**view.get('camera_background', {}), args.model: args.refine_camera_rotation}
+        workspace.set_active(root, args.model, view={**view, 'camera_background': background})
+        result['refine_camera_rotation'] = args.refine_camera_rotation
+    return dict(project=str(project), model=args.model, **result)
 
 
 def requested_workspace(path, video, model):
@@ -216,6 +249,7 @@ def reconstruct(args, report):
     from .scene_floor import ensure_config, save_config
     from .offline_jobs import DEDICATED, reconstruct as reconstruct_dedicated
 
+    check_camera_refinement(args)
     video = args.video.resolve(strict=True)
     if args.model in DEDICATED:
         if args.find_only:
@@ -278,11 +312,14 @@ def reconstruct(args, report):
         if recipe(True, probe(video)['fps']) and not ready(model):
             absent.append(model.name)
     if args.dry_run:
-        return {'dry_run': True, 'model': args.model, 'result': kind, 'range_seconds': [first, last],
+        plan = {'dry_run': True, 'model': args.model, 'result': kind, 'range_seconds': [first, last],
                 'project': str(workspace_path) if workspace_path else None,
                 'stages': ['prepare', *discovery, *(['person'] if discovery and not args.find_only else []),
                            *[stage for stage in stages if stage != 'track' or not discovery]],
                 'takes_deferred': bool(discovery), 'missing_models': absent}
+        if args.refine_camera_rotation is not None:
+            plan['refine_camera_rotation'] = args.refine_camera_rotation
+        return plan
     if absent:
         raise ValueError('Prepare these models in Model Manager: ' + ', '.join(absent))
     env = environment(compute, exmr, flow)
@@ -291,7 +328,7 @@ def reconstruct(args, report):
                      workspace=workspace_path, interpolation=interpolation, people_options=people_options)
     project = run_jobs(jobs, None, env, report)
     if not discovery:
-        return {'project': str(project), 'result': kind, 'model': args.model}
+        return reconstruction_result(args, project, result=kind)
 
     group = load_people(project)
     if not group:
@@ -305,7 +342,7 @@ def reconstruct(args, report):
             person['checked'] = person['id'] in args.person
         save_people(project, group)
     if args.find_only:
-        return {'project': str(project), 'model': args.model, 'people': people}
+        return reconstruction_result(args, project, people=people)
     selected = [person for person in people if person.get('checked')]
     if not selected:
         raise ValueError('No person is checked. Specify --person with a found person ID.')
@@ -339,7 +376,7 @@ def reconstruct(args, report):
     run_jobs(grouped_take_jobs(project, inference, [], post), project, env, report)
     if args.model != 'flowhmr':
         prepare_people_scene(project, env, report)
-    return {'project': str(project), 'result': kind, 'model': args.model, 'takes': [str(path) for path in published]}
+    return reconstruction_result(args, project, result=kind, takes=[str(path) for path in published])
 
 
 def select_takes(args):
@@ -502,9 +539,12 @@ def output_paths(args, rows):
 
 
 def export(args, report):
+    check_camera_refinement(args)
+    fmt = args.format
+    if args.refine_camera_rotation is not None and (fmt != 'blend' or args.no_camera_animation):
+        raise ValueError('Refine Camera Rotation requires --format blend with camera animation enabled.')
     root, group, takes = select_takes(args)
     targets = output_paths(args, takes)
-    fmt = args.format
     ue5 = args.fbx_profile == 'ue5_mannequin'
     combined = args.combined or args.whole_scene
     if combined and (fmt != 'blend' or args.output is None):
@@ -526,6 +566,8 @@ def export(args, report):
                    bvh_profile=args.bvh_profile or 'generic', animate_camera=not args.no_camera_animation,
                    fbx_compatibility=args.fbx_compatibility,
                    prepend_tpose=args.prepend_tpose, place_at_origin=args.place_at_origin, symmetric_rest=args.symmetric_rest)
+    if fmt == 'blend' and options['animate_camera']:
+        options['background_refine'] = camera_refinement_enabled(root, args.model, args.refine_camera_rotation)
     if ue5:
         options.update(ue5_target=args.ue5_target or 'manny', ue5_in_place=args.in_place, ue5_include_mesh=args.include_mesh)
     else:
@@ -554,7 +596,10 @@ def export(args, report):
             from .scene_export import context
             for path, _, _, _ in selected:
                 context(root, path)
-        return {'dry_run': True, 'project': str(root), 'outputs': [str(target) for target in targets]}
+        plan = {'dry_run': True, 'project': str(root), 'outputs': [str(target) for target in targets]}
+        if fmt == 'blend' and args.model in CAMERA_REFINEMENT_MODELS:
+            plan['refine_camera_rotation'] = options.get('background_refine', False)
+        return plan
     if group is not None and args.model != 'flowhmr':
         prepare_people_scene(root, env, report)
     plan = []

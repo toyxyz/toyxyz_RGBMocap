@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 import sys
 
+from .cli_arguments import camera_refinement_flag, option_parsers
 from .motion_tools import MOTION_TOOLS, RESULTS
 from .paths import ROOT
 
@@ -65,6 +66,7 @@ def parser():
                      help='FlowHMR camera sampling interval in frames (-1 static, 0 auto).')
     for option in ('--fast-sam', '--hamer', '--htd', '--footmr', '--handflow'):
         rec.add_argument(option, action=argparse.BooleanOptionalAction)
+    camera_refinement_flag(rec, 'Save the background camera refinement preference (FlowHMR / ExMR).')
     correction_flags(rec)
 
     correct = commands.add_parser('correct', help='Update the selected take correction.')
@@ -90,6 +92,7 @@ def parser():
     exp.add_argument('--face', choices=('txt','livelink_csv'))
     exp.add_argument('--raw-face', action='store_true')
     exp.add_argument('--no-camera-animation', action='store_true')
+    camera_refinement_flag(exp, 'Override background refinement for the animated Blender camera (FlowHMR / ExMR).')
     outputs = exp.add_mutually_exclusive_group(required=True)
     outputs.add_argument('--output', type=Path)
     outputs.add_argument('--output-dir', type=Path)
@@ -110,7 +113,6 @@ def parser():
     opn.add_argument('path', type=Path, nargs='?')
     check = commands.add_parser('check', help='Check offline model files.')
     check.add_argument('--model', choices=OFFLINE_MODELS, default='exmr')
-    from .cli_arguments import option_parsers
     option_parsers(commands, OFFLINE_MODELS, take_flags)
     for sub in (rec, correct, exp, inspect, copy, opn, check):
         sub.add_argument('--json', action='store_true', help='Print one JSON result to stdout.')

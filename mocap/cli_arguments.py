@@ -1,5 +1,10 @@
 """Argument groups for operations shared by more than one model."""
+from argparse import BooleanOptionalAction
 from pathlib import Path
+
+
+def camera_refinement_flag(parser, help_text):
+    parser.add_argument('--refine-camera-rotation', action=BooleanOptionalAction, help=help_text)
 
 
 def option_parsers(commands, models, take_flags):
@@ -86,6 +91,7 @@ def option_parsers(commands, models, take_flags):
     project_arg(preview)
     preview.add_argument('--output', type=Path, required=True)
     preview.add_argument('--frames', type=int, help='Render up to this many frames from the saved trim.')
+    camera_refinement_flag(preview, 'Show the saved camera with or without background refinement (FlowHMR / ExMR).')
     json_option(preview)
 
     stream = commands.add_parser('stream', help='Stream saved motion to Blender or Unreal.')

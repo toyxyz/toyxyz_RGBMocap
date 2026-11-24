@@ -1,5 +1,19 @@
 # Source package validation
 
+## CLI camera rotation refinement
+
+- Ran animated Blender exports with refinement on and off for 72-frame
+  moving-camera FlowHMR and ExMR takes. FlowHMR accepted five of twelve
+  samples. ExMR rejected all twelve samples and kept the saved camera.
+  Comparing every exported frame in Blender 4.5 showed changed FlowHMR
+  camera rotation, camera-center differences below 2e-7 m, and identical
+  body transforms. The ExMR camera and body transforms matched exactly.
+- Both six-frame FlowHMR preview MP4s rendered with the camera visible.
+  The refined preview waited for the CPU worker and reported the same
+  five accepted samples. A fresh static-camera reconstruction saved
+  the preference, its Blender export skipped refinement, and saving the
+  preference off retained the original camera file hash.
+
 ## Windows CLI multi-video integration matrix (2026-11-24)
 
 - Tested 48–72 frame excerpts of dance, exercise, a short video, a

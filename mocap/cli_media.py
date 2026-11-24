@@ -69,10 +69,13 @@ def character(args, report):
 
 def preview(args, report):
     from .cli_runner import run_process
-    from .cli_workflows import environment, model_project
+    from .cli_workflows import camera_refinement_enabled, check_camera_refinement, environment, model_project
     from .workflow_jobs import publish_output
 
+    check_camera_refinement(args)
     project = model_project(args.project, args.model)
+    refine = camera_refinement_enabled(project, args.model, args.refine_camera_rotation)
+    show_camera = refine or args.refine_camera_rotation is not None
     target = args.output.resolve()
     if target.suffix.lower() != '.mp4' or target.exists() or not target.parent.is_dir():
         raise ValueError('Choose a new MP4 in an existing directory.')
@@ -84,12 +87,17 @@ def preview(args, report):
         command = [str(ROOT/'runtime/python.exe'), '-I', '-X', 'utf8', '-u', '-B',
                    str(ROOT/'cli_preview_boot.py'), str(project), str(output)]
         if args.frames is not None:
-            command.append(str(args.frames))
+            command.extend(['--frames', str(args.frames)])
+        if show_camera:
+            command.extend(['--camera', 'refined' if refine else 'saved'])
         run_process(command, 'Render desktop preview', env, report, env['RGB_MOCAP_RESOURCE_SAFETY']=='1')
         publish_output(output, target, replace=False)
     finally:
         output.unlink(missing_ok=True)
-    return {'project': str(project), 'output': str(target)}
+    result = {'project': str(project), 'output': str(target)}
+    if show_camera:
+        result['refine_camera_rotation'] = refine
+    return result
 
 
 def stream_take(path, result, root, stack):

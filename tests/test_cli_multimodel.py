@@ -10,12 +10,51 @@ from unittest.mock import patch
 
 from mocap.cli import parser
 from mocap.cli_tools import batch
-from mocap.cli_workflows import correct, output_paths, stage_settings
+from mocap.cli_workflows import camera_refinement_enabled, correct, export, output_paths, reconstruction_result, stage_settings
 from mocap.offline_jobs import write_jobs
+from mocap.project_workspace import create, read, set_active
+from mocap.storage import atomic_json
 from mocap.workflow_jobs import sam31_arguments
 
 
 class MultiModelCLI(unittest.TestCase):
+    def test_camera_refinement_is_saved_only_in_the_requested_model_view(self):
+        with TemporaryDirectory() as folder:
+            root = Path(folder).resolve()
+            create(root, root/'clip.mp4', {}, 'flowhmr')
+            project = root/'flowhmr'
+            project.mkdir()
+            state = dict(workspace_root='..', pipeline={'model': 'flowhmr'})
+            atomic_json(project/'project.json', state)
+            set_active(root, 'exmr', view={'source_time': 2, 'camera_background': {'exmr': True}})
+            original_view = {'source_time': 1, 'camera_background': {'flowhmr': False, 'exmr': True}}
+            set_active(root, 'flowhmr', project, view=original_view)
+            tool = parser()
+            for switch, enabled in (('--refine-camera-rotation',True),('--no-refine-camera-rotation',False)):
+                args = tool.parse_args(['reconstruct','clip.mp4','--model','flowhmr',switch])
+                self.assertEqual(reconstruction_result(args, project)['refine_camera_rotation'], enabled)
+                self.assertEqual(camera_refinement_enabled(project, 'flowhmr', None), enabled)
+                self.assertEqual(camera_refinement_enabled(project, 'flowhmr', not enabled), not enabled)
+                saved = read(root)
+                self.assertEqual(saved['view']['source_time'], 1)
+                self.assertTrue(saved['view']['camera_background']['exmr'])
+                self.assertEqual(saved['models']['exmr']['view']['source_time'], 2)
+                self.assertEqual(saved['models']['flowhmr']['active'], 'flowhmr')
+                self.assertEqual(json.loads((project/'project.json').read_text('utf8')), state)
+
+    def test_camera_refinement_requires_an_animated_blender_camera(self):
+        tool = parser()
+        for options, message in (
+            ([], 'requires --format blend'),
+            (['--format','blend','--no-camera-animation'], 'camera animation enabled'),
+            (['--format','blend','--model','gvhmr'], 'available for FlowHMR and ExMR'),
+        ):
+            with self.subTest(options=options):
+                args = tool.parse_args(['export','project','--output','motion',
+                                        '--refine-camera-rotation',*options])
+                with self.assertRaisesRegex(ValueError, message):
+                    export(args, lambda message: None)
+
     def test_flow_camera_intervals_match_the_inference_worker(self):
         from mocap.flow_backend import camera_interval
 
