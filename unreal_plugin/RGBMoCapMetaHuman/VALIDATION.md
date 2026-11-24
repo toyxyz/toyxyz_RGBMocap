@@ -1,5 +1,14 @@
 # Verification scope
 
+## Prebuilt Windows bundles
+
+Clean app and Unreal projects loaded the paired archives on Epic Games Launcher
+UE 5.6.1 (BuildId 43139311), 5.7.4 (47537391) and 5.8.4 (55116800).
+Sender setup completed its startup handshake. The installed editor received
+the test body's animation, reference pose and face subjects over Live Link.
+UnrealBuildTool did not run during sender setup or the scripted receiver check.
+These checks use synthetic frames. Actor deformation tests are described below.
+
 ## 0.5.0 mannequin and mixed targets
 
 Tested in Unreal Engine 5.7.4 / Win64 with the live app sender and saved

@@ -37,10 +37,11 @@ or working on its native preview, retarget and Blender paths.
 
 ## Optional Unreal Live Link sender
 
-The Windows source build supports **Setup_UnrealStream.cmd** with an installed
-UE 5.6+ and Visual Studio 2022 C++ tools/Windows SDK. See
-[setup and implementation](UNREAL_LIVE_LINK.md). It compiles only the app-owned
-commandlet module, verifies startup and removes compiler intermediates by default.
+On Windows, **Setup_UnrealStream.cmd --prebuilt** installs a matching sender
+ZIP into an app-local bridge project and verifies startup. With no ZIP,
+**Setup_UnrealStream.cmd** builds the app-owned commandlet module using the
+installed UE 5.6+, Visual Studio C++ tools and Windows SDK. It verifies startup
+and removes compiler intermediates by default. See [setup](UNREAL_LIVE_LINK.md).
 Use `--engine "D:/Epic Games/UE_5.7"` for a custom engine path and
 `--keep-build-cache` for repeated development builds. Epic engine binaries are
 not packaged with RGB MoCap. Keep this optional support separate from base AI
@@ -198,6 +199,27 @@ if ($LASTEXITCODE -ne 0) { throw 'Unreal receiver build failed' }
 The build folder contains temporary files. Share the resulting ZIP and its
 SHA-256 sidecar. See [receiver verification](../unreal_plugin/RGBMoCapMetaHuman/VALIDATION.md)
 and load the exact extracted ZIP in a clean project before releasing it.
+
+## RGB MoCap prebuilt sender ZIP
+
+Copy `developer-build/unreal-live-link` to a new staging folder and build the
+`RGBMoCapLiveLinkEditor` target for Win64 Development with the intended engine.
+For MSVC builds, pass `-NoDebugInfo` and
+`-CompilerArguments=/d1trimfile:<absolute-staging-folder>` to UnrealBuildTool
+to keep local source paths out of the module. Package the built project:
+
+```powershell
+.\runtime\python.exe -I -X utf8 -B tools\package_unreal_sender.py --build "$work\sender-build" --engine-version 5.6.1 --output "$work\RGBMoCapSender_UE5.6.1_Win64.zip"
+```
+
+Put both inner ZIPs, their SHA-256 sidecars and a short install README in
+`RGBMoCapLiveLink_UE<version>_Win64.zip`. Publish a SHA-256 sidecar for the
+outer bundle too. Keep the inner sender ZIP intact for installation.
+The sender ZIP contains the authored DLL, its `.modules` file, a manifest and
+the app's license notice.
+Test `Setup_UnrealStream.cmd --prebuilt` in a clean app copy and run body and
+face streaming with the extracted receiver. The user's own installed editor
+hosts the sender.
 
 ## Optional SAM 3.1 tracker
 

@@ -986,9 +986,12 @@ Use **Bake** in Object Mode to save all recorded frames for the active streaming
 ## Stream bones to Unreal Live Link
 
 In **Stream > Target**, choose **Unreal Live Link** and check prepared offline people.
-Run **Setup_UnrealStream.cmd** once first; it requires an installed Unreal Engine
-5.6+ and Visual Studio C++ tools. In Unreal enable the built-in Live Link and UDP
-Messaging plugins, then add **Message Bus Source > RGB MoCap**.
+Set up the sender once with
+[`Setup_UnrealStream.cmd --prebuilt`](UNREAL_LIVE_LINK.md#install-a-prebuilt-sender)
+for a matching Win64 Epic Launcher build, or use the
+[local build option](UNREAL_LIVE_LINK.md#build-the-sender-locally) with an
+installed Unreal Engine 5.6+ and Visual Studio C++ tools. In Unreal enable
+Live Link and UDP Messaging, then add **Message Bus Source > RGB MoCap**.
 The stream includes body and finger bones, reference poses and bone lengths.
 Use [RGB MoCap Connect](../unreal_plugin/RGBMoCapMetaHuman/README.md) to connect
 MetaHumans or UE5 Manny and Quinn. Select **Target type** for each new

@@ -122,11 +122,10 @@ LICENSE-WEIGHTS is retained with support files. No TensorRT engine/runtime is di
 
 ## Optional Unreal Live Link sender
 
-RGB MoCap authors the optional provider/commandlet source in
-`developer-build/unreal-live-link`. Setup builds it locally against the user's
-separately installed Unreal Engine. The installation retains its Epic notices
-and terms; no Unreal Engine binaries or MetaHuman assets are bundled in this
-source checkout. The separately downloadable Unreal sample contains a generated
-MetaHuman assembly under its applicable Epic terms; its own asset notices
-distinguish that content from RGB MoCap-authored MIT material.
-The receiver uses Unreal's built-in Live Link Message Bus Source.
+The optional provider/commandlet source is in
+`developer-build/unreal-live-link`. Its authored module can be installed from a
+matching prebuilt sender ZIP or compiled against the user's Unreal Engine.
+The prebuilt Live Link bundles contain RGB MoCap's authored modules and support
+files. They use the user's separate Unreal Engine installation and project
+assets under their respective terms. The receiver uses Unreal's built-in
+Live Link Message Bus Source. See the [Unreal Live Link guide](docs/UNREAL_LIVE_LINK.md).

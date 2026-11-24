@@ -59,9 +59,16 @@ def configuration(root):
                 or sha256((engine / 'Engine/Build/Build.version').read_bytes()).hexdigest() != data['engine_build']
                 or not (engine / 'Engine/Binaries/Win64/UnrealEditor-Cmd.exe').is_file()):
             raise ValueError('Unreal Live Link support changed. Run Setup_UnrealStream.cmd again.')
+        if 'build_id' in data:
+            engine_modules = engine / 'Engine/Binaries/Win64/UnrealEditor.modules'
+            sender_modules = module.with_name('UnrealEditor.modules')
+            build_id = data['build_id']
+            if any(json.loads(path.read_text(encoding='utf-8-sig')).get('BuildId') != build_id
+                   for path in (engine_modules, sender_modules)):
+                raise ValueError('The prebuilt Live Link sender does not match this Unreal Engine BuildId. Run Setup_UnrealStream.cmd again.')
         return engine, project
     except (OSError, KeyError, TypeError, json.JSONDecodeError) as error:
-        raise ValueError('Run Setup_UnrealStream.cmd first (Unreal Engine 5.6 or later and Visual Studio C++ tools required).') from error
+        raise ValueError('Run Setup_UnrealStream.cmd with a matching prebuilt sender ZIP or the Unreal C++ build tools.') from error
 
 
 def local_transforms(world, parents):
@@ -194,6 +201,7 @@ class UnrealStream:
         command = [str(engine / 'Engine/Binaries/Win64/UnrealEditor-Cmd.exe'), str(project),
                    '-run=RGBMoCapLiveLink',
                    '-unattended', '-nullrhi', '-nosound', '-nosplash', '-NoLiveCoding',
+                   '-NoCompile', '-Multiprocess',  # Skip the editor's automatic build and SDK discovery.
                    '-Messaging', '-NoAssetRegistryCache', '-NoShaderCompile', '-NoAutoLoadPlugins',
                    '-RGBPort='+str(self.port),
                    '-abslog='+str(self.log_path.with_suffix('.engine.log'))]

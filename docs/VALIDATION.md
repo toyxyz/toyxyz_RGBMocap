@@ -113,6 +113,16 @@
   and a changed receiver source file. The Windows regression suite ran 82
   tests, with 81 passing and one symbolic-link test skipped.
 
+## Unreal Live Link prebuilt sender and receiver
+
+- Loaded the public Win64 bundles in clean app and Unreal projects on Epic
+  Games Launcher 5.6.1, 5.7.4 and 5.8.4. Checked the sender's local handshake
+  and reception of synthetic body, reference and face subjects. UnrealBuildTool
+  stayed inactive during the prebuilt checks.
+- Verified the ZIP contents and SHA-256 checksums and rejected a modified
+  sender DLL. The exact build IDs are listed in the
+  [Unreal Live Link guide](UNREAL_LIVE_LINK.md#prebuilt-downloads).
+
 ## Unreal Live Link sender on UE 5.8 (2026-11-23)
 
 - With the previous `BuildSettingsVersion.V6` and 5.7 include order,

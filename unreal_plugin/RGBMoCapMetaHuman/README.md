@@ -4,35 +4,34 @@ Connect RGB MoCap motion streams to assembled MetaHumans or UE5 Manny and Quinn
 actors. Each source row shows its connected actors and target types. MetaHumans
 can also receive tracked expressions. The plugin retargets motion using the
 receiving project's existing character meshes. The [manual Live Link
-workflow](../../docs/UNREAL_LIVE_LINK.md) remains available.
+workflow](https://github.com/toyxyz/toyxyz_RGBMocap/blob/main/docs/UNREAL_LIVE_LINK.md)
+remains available.
 
 ## Install
 
-1. Obtain the RGB MoCap Connect ZIP for your engine build. For stock UE 5.7.4,
-   see the [Win64 ZIP](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-rgbmocap-connect-v0.5.0/RGBMoCapConnect_UE5.7.4_Win64_v0.5.0.zip)
-   and [SHA-256 checksum](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-rgbmocap-connect-v0.5.0/RGBMoCapConnect_UE5.7.4_Win64_v0.5.0.zip.sha256).
-   Use [Build and verification](#build-and-verification) to build for your engine.
+1. Download the [prebuilt bundle](https://github.com/toyxyz/toyxyz_RGBMocap/blob/main/docs/UNREAL_LIVE_LINK.md#prebuilt-downloads)
+   for your exact Unreal Engine version and BuildId. Extract it to find the
+   RGB MoCap Connect receiver ZIP. Use [Build and verification](#build-and-verification)
+   to build for another engine build.
 2. Close Unreal. Extract the `RGBMoCapMetaHuman` folder into your project's
    `Plugins` folder. Create `Plugins` if needed. Replace the entire existing
    `RGBMoCapMetaHuman` folder when upgrading.
 3. Open the project and enable **RGB MoCap Connect**, **Live Link** and
    **UDP Messaging** if necessary. Restart when requested.
 
-Use an archive for your exact Unreal Engine build. The linked **5.7.4 Win64**
-ZIP targets stock BuildId **47537391**. The receiver also builds from source on
-stock UE **5.6.1** and **5.8.4**. The ZIP includes source and authored DLLs.
-Use your own Unreal project and character assets.
+The bundles target Epic Games Launcher UE **5.6.1**, **5.7.4** and **5.8.4**
+on Win64. The receiver ZIP contains source and authored DLLs. Use your own
+Unreal project and character assets.
 
 ## Prepare RGB MoCap
 
-Install Unreal Engine **5.6 or later** and Visual Studio 2022 Desktop
-development with C++ plus a Windows SDK. Close RGB MoCap and run
-`Setup_UnrealStream.cmd` from the app folder. This compiles and verifies the
-optional sender against your local
-engine. Sender setup is separate from `install.cmd` and `update.cmd`.
-Rerun it after sender source or engine changes. Receiver 0.5.0 uses the same
-sender protocol as 0.4.0. If upgrading from a sender older than 0.4.0, update
-RGB MoCap and rerun sender setup for the current face revision checks.
+Update RGB MoCap to the current `main` version. Run
+`Setup_UnrealStream.cmd --prebuilt <sender.zip>` from the app folder with the
+inner sender ZIP from the same bundle. The installed editor hosts the sender
+without a local build. For another engine build, use the
+[local build option](https://github.com/toyxyz/toyxyz_RGBMocap/blob/main/docs/UNREAL_LIVE_LINK.md#build-the-sender-locally).
+Sender setup runs separately from `install.cmd` and `update.cmd`. Rerun
+sender setup after an engine or sender source change.
 
 ## Connect
 

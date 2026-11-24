@@ -448,7 +448,8 @@ See the [installation steps and controls](USER_GUIDE.md#stream-bones-to-blender)
 
 RGB MoCap Connect 0.5.0 supports MetaHuman and UE5 mannequin targets. The
 [Unreal installation and controls guide](UNREAL_LIVE_LINK.md) covers both
-connection types. The main README links to the 0.5.0 Win64 receiver ZIP.
+connection types. The main README links to the prebuilt Windows receiver
+and sender bundles for stock UE 5.6.1, 5.7.4 and 5.8.4.
 The inline
 [MetaHuman streaming demo](../README.md#unreal-engine-metahuman-live-streaming)
 lives under Sample videos. Use the [plugin guide](../unreal_plugin/RGBMoCapMetaHuman/README.md)
@@ -466,30 +467,31 @@ the target's original animation and preview tick settings.
 
 Stream target 2 is Unreal Live Link. Target 0 is None and target 1 is Blender.
 Keep PEAR excluded.
-`Setup_UnrealStream.cmd` / `tools/setup_unreal_stream.py` build the source in
-`developer-build/unreal-live-link` against the user's installed UE 5.6+ and
-verify commandlet startup before keeping a receipt in `runtime_unreal_stream`.
-They do not modify the shared inference registry or distribute engine binaries.
+`Setup_UnrealStream.cmd` / `tools/setup_unreal_stream.py` verify commandlet
+startup before keeping a receipt in `runtime_unreal_stream`. Verify that the
+normal `install.cmd` runtime exists and close RGB MoCap before either route.
 
-Before running it, verify the normal `install.cmd` runtime exists, close RGB
-MoCap and check Unreal plus Visual Studio 2022 **Desktop development with C++**
-(MSVC toolchain and Windows SDK). Do not infer compiler readiness merely from
-an installed Unreal editor. Use a receiver ZIP built for the project's exact
-engine BuildId and use that same engine for sender setup. Sender binaries are
-kept separately by engine build, and the latest successful setup selects the
-active sender.
-From the app root, run `.\Setup_UnrealStream.cmd` in PowerShell (or
-`Setup_UnrealStream.cmd` in CMD). For a custom/multiple-engine installation use
-`.\Setup_UnrealStream.cmd --engine "D:\Epic Games\UE_5.7"`; the argument is the
-installation root containing `Engine`, not the project or executable. Automatic
-discovery only checks the standard `Program Files\Epic Games\UE_5.*` location.
+- Run `.\Setup_UnrealStream.cmd --prebuilt <sender.zip>` in PowerShell with the
+  inner sender ZIP from the [matching bundle](UNREAL_LIVE_LINK.md#prebuilt-downloads).
+  Setup selects the exact Epic Launcher Win64 version and BuildId. It checks the
+  archive hashes and the app's sender source identity before starting the provider.
+- Run `.\Setup_UnrealStream.cmd` to build the module in
+  `developer-build/unreal-live-link` against the user's installed UE 5.6+.
+  Check Visual Studio **Desktop development with C++**, MSVC and the Windows SDK
+  for this route. In CMD, omit the leading `.\` from either command.
 
-Read the exit status and the **Live Link support built** completion line; the
+Match the receiver to the project's engine BuildId. Use `--engine` to specify
+the Unreal installation root containing `Engine` for a custom install path.
+Automatic discovery checks `Program Files\Epic Games\UE_5.*`. The last
+successful setup selects the app's active sender.
+
+Read the exit status and the **Live Link support is ready** completion line. The
 wrapper's final pause is not proof of success. Setup verifies the actual local
 provider handshake before accepting its receipt. On failure, resolve the stated
 runtime/compiler/engine error and retry; preserve user projects and previous
-receipts, and redact logs before sharing. Reopen the app after success. Rebuild
-after provider source or engine changes; this is not a per-session step.
+receipts, and redact logs before sharing. Reopen the app after success. Rerun
+setup with a corresponding build or sender ZIP after provider source or engine
+changes.
 `install.cmd`/`update.cmd` do not run this optional setup, and installing the
 receiver ZIP does not replace it. See [Prepare once](UNREAL_LIVE_LINK.md#prepare-once).
 
@@ -1277,7 +1279,7 @@ frame, raw preservation, valid/held rejection, offset take timing, reset/reload,
 and TXT/Live Link Face CSV with Smooth Face both on and off.
 
 
-### Public Unreal receiver package
+### Public Unreal Live Link packages
 
 Authored receiver source is in unreal_plugin/RGBMoCapMetaHuman. The release ZIP
 is built by tools/package_unreal_plugin.py from that source and matching locally
@@ -1286,6 +1288,11 @@ compiled modules. Pass `--engine-version` for the exact stock Win64 build
 that engine series and requires the matching BuildId and C++ source bytes.
 Keep the explicit allowlist, archive CRC/SHA-256 and a clean extracted-package load.
 See the [receiver ZIP build steps](BUILD.md#rgb-mocap-connect-receiver-zip).
+Use [the sender packager](BUILD.md#rgb-mocap-prebuilt-sender-zip) to build the
+matching sender ZIP. Publish paired ZIPs and checksums through Releases.
+Exercise the exact public bundle in a clean app copy and Unreal project. Check
+that the sender startup authenticates, the editor loads the receiver, body,
+reference and face subjects connect, and the prebuilt sender invokes no UBT.
 No engine/MetaHuman assets, private diagnostic modules, PDBs, screenshots of
 private projects, personal paths, capture arrays or local logs belong in the
 source or package. Logical #line filenames keep authored assertion diagnostics
