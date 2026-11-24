@@ -75,7 +75,11 @@ def prepare(path, job):
     from .models import missing
     from .project_workspace import create
     from .video import executable, probe
+    from .rife_video import RECIPE, recipe, convert
     common = common_media(job['inputs'])
+    interpolation = RECIPE if any(recipe(job.get('interpolation') == RECIPE, v['metadata']['fps'])
+                                  for v in job['inputs']) else ''
+    job['interpolation'] = interpolation
     if job['end'] > common['duration']+1e-4:
         raise ValueError('The common trim extends beyond a camera video.')
     n = round((job['end']-job['start'])*30)
@@ -108,6 +112,9 @@ def prepare(path, job):
     from .resource_cache import code_hash
     # Exact-byte aliases retain inference after the download-only progress and platform-only registry fixes.
     identity['code']={name:(code_hash if name in {'mamma_pipeline.py','worker_progress.py','runtime_registry.py'} else sha256)(ROOT/'mocap'/name) for name in ('mamma_pipeline.py','mamma_sam_frames.py','mamma_camera.py','mamma_gravity.py','mamma_gravity_worker.py','mamma_inputs.py','image_io.py','memory_mode.py','gpu_offload.py','worker_progress.py','runtime_registry.py','pear/alignment_support.py')}
+    if interpolation:
+        identity['interpolation'] = interpolation
+        identity['code']['mamma_pipeline.py'] = sha256(ROOT/'mocap/mamma_pipeline.py')
     token=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()[:24]
     slot=job['root']/'mamma'/'inference'/token
     cached=False
@@ -138,10 +145,13 @@ def prepare(path, job):
         # Trim/resample on one common time grid; do not independently reset a
         # camera's start or stretch short footage to fill the other cameras.
         vf=f"trim=start={job['start']:.9f}:end={job['end']:.9f},setpts=PTS-STARTPTS,fps=30,scale=w='min(1920,iw)':h='min(1080,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2"
-        subprocess.run([executable('ffmpeg'),'-hide_banner','-loglevel','error','-i',entry['path'],
-            '-map','0:v:0','-an','-vf',vf,'-frames:v',str(n),'-fps_mode','cfr','-c:v','libx264',
-            '-preset','fast','-crf','18','-pix_fmt','yuv420p','-threads','2',str(output)],
-            check=True,creationflags=0x08000000)
+        if recipe(bool(interpolation), actual['fps']):
+            convert(Path(entry['path']), output, job['start'], n, layout='fit', emit=emit)
+        else:
+            subprocess.run([executable('ffmpeg'),'-hide_banner','-loglevel','error','-i',entry['path'],
+                '-map','0:v:0','-an','-vf',vf,'-frames:v',str(n),'-fps_mode','cfr','-c:v','libx264',
+                '-preset','fast','-crf','18','-pix_fmt','yuv420p','-threads','2',str(output)],
+                check=True,creationflags=0x08000000)
         info=probe(output)
         if info['frames']!=n or abs(info['fps']-30)>.001:
             raise ValueError('Camera frame count differs from the common trim; synchronize or shorten the inputs.')

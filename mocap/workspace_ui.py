@@ -5,13 +5,15 @@ from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (QWidget, QFrame, QLabel, QPushButton, QComboBox, QCheckBox,
     QVBoxLayout, QHBoxLayout, QGroupBox, QSplitter,
-    QSpinBox, QDoubleSpinBox, QProgressBar, QTextEdit, QMessageBox, QSizePolicy, QStackedWidget)
+    QSpinBox, QDoubleSpinBox, QProgressBar, QTextEdit, QMessageBox, QSizePolicy, QStackedWidget, QApplication, QDialog)
 from .viewer import VideoView, MotionView
 from .timeline import TimelineSlider
 from .motion_tools import MOTION_TOOLS
 from .paths import ROOT
 from .correction_settings import PRESETS
 from .sidebar_scroll import SettingsScrollArea
+from .theme import AppearanceDialog, apply_appearance, current_appearance, ui_px
+from .project_workspace_ui import DEFAULT_RESOURCE_MODE
 
 
 class WrappedLabel(QLabel):
@@ -69,6 +71,38 @@ class SettingsStack(QStackedWidget):
     def minimumSizeHint(self):
         page=self.currentWidget()
         return page.minimumSizeHint() if page else QSize(0,0)
+
+
+def resize_appearance_controls(window):
+    window.slider.refresh_appearance()
+    window.timeline_panel.setMinimumHeight(ui_px(260))
+    window.timeline_help_button.setFixedWidth(ui_px(26))
+    window.play_button.setFixedWidth(ui_px(34))
+    window.play_button.setIconSize(QSize(ui_px(16), ui_px(16)))
+    window.frame_number.setMinimumWidth(ui_px(70))
+    window.appearance_sidebar.setMaximumWidth(ui_px(330))
+    window.appearance_sidebar.setMinimumWidth(ui_px(235))
+    window.log.setMaximumHeight(ui_px(110))
+
+
+def show_appearance_settings(window):
+    old = current_appearance()
+    dialog = AppearanceDialog(window)
+    if dialog.exec() != QDialog.DialogCode.Accepted:
+        return
+    choices = dialog.theme.currentData(), dialog.scale.currentData()
+    if choices == old:
+        return
+    apply_appearance(QApplication.instance(), *choices)
+    resize_appearance_controls(window)
+    if choices[1] > old[1] and not (window.isMaximized() or window.isFullScreen()):
+        area = window.screen().availableGeometry()
+        decorations = window.frameGeometry().size() - window.size()
+        ratio = choices[1] / old[1]
+        window.resize((window.size() * ratio).boundedTo(area.size() - decorations))
+        frame = window.frameGeometry()
+        window.move(max(area.left(), min(frame.left(), area.right() - frame.width() + 1)),
+                    max(area.top(), min(frame.top(), area.bottom() - frame.height() + 1)))
 
 
 def build_workspace(w):
@@ -224,7 +258,6 @@ def build_workspace(w):
     w.slider.contacts_reset.connect(w.reset_foot_contacts)
     timeline_panel, timeline_header = editor("Timeline", w.slider)
     w.timeline_panel = timeline_panel
-    timeline_panel.setMinimumHeight(260)
     w.timeline_help_dialog = QMessageBox(w)
     w.timeline_help_dialog.setWindowTitle("Timeline Help")
     w.timeline_help_dialog.setTextFormat(Qt.PlainText)
@@ -242,7 +275,6 @@ def build_workspace(w):
         "Apply Correction updates the preview motion and FBX after timing edits.")
     w.timeline_help_dialog.setStandardButtons(QMessageBox.Close)
     w.timeline_help_button = QPushButton("?")
-    w.timeline_help_button.setFixedWidth(26)
     w.timeline_help_button.setAccessibleName("Timeline Help")
     w.timeline_help_button.setToolTip('Show how to seek, trim and edit contact timings.')
     w.timeline_help_button.clicked.connect(w.timeline_help_dialog.open)
@@ -256,8 +288,6 @@ def build_workspace(w):
     w.previous_frame.setToolTip(tooltip_text("Previous Frame (Left Arrow)"))
     w.play_button = button("", w.toggle_play, timeline_header)
     w.play_button.setObjectName("transport")
-    w.play_button.setFixedWidth(34)
-    w.play_button.setIconSize(QSize(16, 16))
     w.play_icon = QIcon(str(ROOT / "assets/icons/play.svg"))
     w.pause_icon = QIcon(str(ROOT / "assets/icons/pause.svg"))
     w.set_playback_indicator(False)
@@ -270,7 +300,6 @@ def build_workspace(w):
     timeline_header.addStretch()
     w.frame_number = QSpinBox()
     w.frame_number.setRange(1, 1)
-    w.frame_number.setMinimumWidth(70)
     w.frame_number.setToolTip(tooltip_text("Enter a frame number to jump to it. The first frame is 1."))
     w.frame_number.valueChanged.connect(lambda value: w.slider.setValue(value - 1))
     timeline_header.addWidget(w.frame_number)
@@ -313,8 +342,7 @@ def build_workspace(w):
 
     sidebar = QWidget()
     sidebar.setObjectName("modelSidebar")
-    sidebar.setMinimumWidth(235)
-    sidebar.setMaximumWidth(330)
+    w.appearance_sidebar = sidebar
     side_layout = QVBoxLayout(sidebar)
     side_layout.setContentsMargins(4, 0, 4, 0)
     side_layout.setSpacing(7)
@@ -331,7 +359,8 @@ def build_workspace(w):
     w.model_choice.setToolTip(tooltip_text('Choose the AI model used to create motion. Open Model Guide for a comparison.'))
     for tool in MOTION_TOOLS.values():
         w.model_choice.addItem(tool.label, tool.key)
-    w.model_choice.setCurrentIndex(w.model_choice.findData('exmr'))
+    from .local_choices import start_model
+    w.model_choice.setCurrentIndex(w.model_choice.findData(start_model()))
     w.model_choice.setItemData(w.model_choice.findData('gvhmr'), tooltip_text('GVHMR: body tracking with optional hand and foot refinement. Sometimes better for unusual poses such as backflips in our subjective tests.'), Qt.ToolTipRole)
     selector.addWidget(w.model_choice)
     w.htd_refine = QCheckBox("HTD Refine")
@@ -544,7 +573,7 @@ def build_workspace(w):
     processing = group("Processing Resources", settings)
     processing.addWidget(QLabel('Resource Mode'))
     w.compute_mode = QComboBox()
-    w.compute_mode.addItem("Automatic", "auto")
+    w.compute_mode.addItem("Automatic", DEFAULT_RESOURCE_MODE)
     w.compute_mode.addItem("Low Memory", "low_memory")
     w.compute_mode.setToolTip(tooltip_text("Automatic uses the fast path when memory is available and switches supported stages to Low Memory when needed. Low Memory uses CPU loading and offloading; it can be slower and use more RAM. Model precision and video frames are unchanged."))
     processing.addWidget(w.compute_mode)
@@ -591,6 +620,8 @@ def build_workspace(w):
     content_layout.addStretch()
     w.settings_scroll=scroll
     w.model_choice.currentIndexChanged.connect(w.select_model)
+    # Connected after select_model so a refused pick is already reverted.
+    w.model_choice.currentIndexChanged.connect(w.remember_model_pick)
     main.addWidget(sidebar)
     main.setSizes([1120, 260])
     main.setStretchFactor(0, 1)
@@ -617,12 +648,12 @@ def build_workspace(w):
     w.log.setReadOnly(True)
     w.log.setUndoRedoEnabled(False)
     w.log.document().setMaximumBlockCount(500)
-    w.log.setMaximumHeight(110)
     w.log.setVisible(False)
     w.details = button("Console", lambda: w.log.setVisible(not w.log.isVisible()), footer)
     w.details.setToolTip('Show or hide processing details and error messages.')
     root.addLayout(footer)
     root.addWidget(w.log)
+    resize_appearance_controls(w)
 
     file_menu = w.menuBar().addMenu("File")
     w.open_actions = [file_menu.addAction("Open Video...", w.choose_video), file_menu.addAction("Open Project...", w.choose_project)]
@@ -632,12 +663,17 @@ def build_workspace(w):
     w.save_project_action.setShortcut('Ctrl+Shift+S')
     w.save_project_action.setToolTip(tooltip_text('Save a separate project folder with a new name and location, including its video, motion and settings. Continue working in the saved copy.'))
     file_menu.addSeparator()
+    file_menu.addAction('Save Settings as Default', w.save_default_settings).setToolTip(tooltip_text('Start new videos and the next session with the current model options, motion correction, Track Face and Resource Mode. Trim, floor, people and opened projects are unchanged.'))
+    file_menu.addAction('Reset Default Settings', w.reset_default_settings).setToolTip(tooltip_text('Start new videos and the next session with the built-in settings again. Current settings and projects are unchanged.'))
+    file_menu.addSeparator()
     w.export_action = file_menu.addAction("Export...", w.save_fbx)
     w.export_action.setToolTip(tooltip_text('Export the displayed motion as FBX, BVH or a portable Blender project. Choose the current take or all takes of checked people when available. MAMMA also offers a whole-scene Blender bundle.'))
     w.export_preview_action = file_menu.addAction('Export Preview...', w.save_preview)
     w.export_preview_action.setToolTip(tooltip_text('Save the selected input video beside the current 3D viewport as MP4 over the timeline trim. Keeps the current view, visible people/characters and viewport overlays. Includes source audio when available. Not available in PEAR live mode.'))
     w.export_preview_action.setEnabled(False)
     file_menu.addAction("Open Project Folder", w.open_folder)
+    file_menu.addSeparator()
+    file_menu.addAction("Settings...", lambda: show_appearance_settings(w))
     file_menu.addSeparator()
     file_menu.addAction("Exit", w.close)
     help_menu = w.menuBar().addMenu("Help")
@@ -649,6 +685,7 @@ def build_workspace(w):
         'Open Video...': 'Choose a video to create motion from.',
         'Open Project...': 'Open saved motion and settings without reconstructing the video.',
         'Open Project Folder': 'Open the current project folder in File Explorer.',
+        'Settings...': 'Choose the app theme and UI scale.',
         'Exit': 'Close RGB MoCap.',
         'Check System': 'Check hardware and required software. Results appear in the Console.',
         'Controls': 'Show keyboard shortcuts and workspace controls.',

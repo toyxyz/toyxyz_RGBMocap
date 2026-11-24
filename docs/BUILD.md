@@ -254,6 +254,11 @@ checkpoints. A separate GeoCalib package installation into MAMMA is not needed.
 
 ## Base update and recovery
 
+Keep Windows development checkouts in short, writable paths. A nested path
+under `.setup\staging` can hit the legacy Windows path limit during setup or
+cleanup. See [Windows path length troubleshooting](USER_GUIDE.md#windows-path-length-during-installation)
+for short-path recovery and the Windows long-path setting.
+
 Keep the existing bootstrap, pinned separate profiles and promotion journal.
 `tools/git_managed_install.py` freezes source dependency/installer inputs, recovers
 an interrupted promotion, verifies/stages the base, rechecks the frozen inputs,

@@ -32,6 +32,11 @@ class Model:
 
 
 MODELS_LIST = [
+    Model("rife49", "RIFE 4.9 / Frame Interpolation (Optional)", "rife/rife49.pth",
+          "https://github.com/hzwer/Practical-RIFE",
+          minimum_bytes=21345274,
+          download_url="https://huggingface.co/Isi99999/Frame_Interpolation_Models/resolve/bfbc870b7155e71d1ec2255f8dd800d065650e3d/rife49.pth",
+          expected_sha256="e55fd00f3cc184e3c65961f4bb827a9da022e78eed36b055242c0ac30000d533"),
     Model("sam31_people", "SAM 3.1 Person Tracking (Optional)", "sam31/sam3.1_multiplex_fp16.safetensors",
           "https://huggingface.co/Comfy-Org/sam3.1/blob/5febd4769e8802cdfdb75e1f733abd8c68434a85/checkpoints/sam3.1_multiplex_fp16.safetensors",
           minimum_bytes=1745546848,
@@ -279,7 +284,7 @@ def ready(model: Model) -> bool:
         from .pear_models import geometry_ready
         return geometry_ready()
     valid=model.path.is_file() and model.path.stat().st_size >= model.minimum_bytes
-    if valid and (model.key.startswith(('flow','hand','exmr','mamma','phmr','pear','gemx','sam31')) or model.key in ('smplh','mano_right')):
+    if valid and (model.key.startswith(('flow','hand','exmr','mamma','phmr','pear','gemx','sam31','rife')) or model.key in ('smplh','mano_right')):
         import json
         try:
             receipt=json.loads(model.receipt.read_text(encoding='utf-8'))

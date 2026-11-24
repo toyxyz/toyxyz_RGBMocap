@@ -3,6 +3,7 @@ from pathlib import Path
 from threading import Condition
 import math
 import cv2
+from .theme import set_appearance_style
 from PySide6.QtCore import Qt, QSize, QThread, Signal
 from PySide6.QtGui import QImage, QPixmap, QIcon
 from PySide6.QtWidgets import (QWidget,QVBoxLayout,QGridLayout,QScrollArea,QToolButton,
@@ -145,7 +146,7 @@ class MammaWorkspace:
         height_label.setToolTip(self.mamma_height.toolTip());box.addWidget(height_label)
         self.mamma_height.valueChanged.connect(self.mamma_settings_changed);box.addWidget(self.mamma_height)
         self.mamma_setup_notice=QLabel('MAMMA runtime required. Open Model Manager > Runtime Setup.')
-        self.mamma_setup_notice.setWordWrap(True);self.mamma_setup_notice.setStyleSheet('color:#ffb45c')
+        self.mamma_setup_notice.setWordWrap(True);set_appearance_style(self.mamma_setup_notice, 'color:#ffb45c')
         box.addWidget(self.mamma_setup_notice)
         page.setToolTip('Open synchronized, fixed-camera videos of the same performance. All videos share one trim range, starting at the same time. Select a thumbnail to change the preview camera.')
         self.model_pages.addWidget(page)
@@ -216,6 +217,7 @@ class MammaWorkspace:
         self._mamma_missing_sources=tuple(entry['id'] for entry in entries
                                           if not Path(entry['path']).is_file())
         if not restore:
+            self.rife_interpolation.setChecked(False)
             if self.workspace_root is not None:self.remember_workspace_model()
             self.workspace_root=None;self._workspace_video_reference=False;self._workspace_camera=None
             self.clear_preview();self.reset_people();self.project=None
@@ -228,6 +230,8 @@ class MammaWorkspace:
             self.mamma_calibration=None;self.mamma_camera_mode.blockSignals(True)
             self.mamma_camera_mode.setCurrentIndex(0);self.mamma_camera_mode.blockSignals(False)
         self.mamma_inputs=entries
+        if not restore:
+            self.apply_default_settings()
         if restore and 'result_state' in restore:
             state=restore['result_state']
             info=dict(fps=state['fps'],frames=state['frames'],duration=state['frames']/state['fps'])
@@ -437,6 +441,9 @@ class MammaWorkspace:
             absent=[m for m in missing('mamma_assets') if options['camera_mode']!='manual' or m.key not in {'flow_vggt','pear_geocalib'}]
             if absent:
                 self.status.setText('Prepare the missing MAMMA models first.');self.open_model_manager();return
+            interpolation = self.selected_interpolation()
+            if not self.ready_for_interpolation(interpolation):
+                return
             first,end=self.processing_range()
             root=self.workspace_root
             if root is None:
@@ -445,7 +452,7 @@ class MammaWorkspace:
             folder=HOME/'cache/mamma-jobs';folder.mkdir(parents=True,exist_ok=True)
             request=folder/(uuid.uuid4().hex+'.json')
             atomic_json(request,dict(version=1,root=str(root),inputs=self.mamma_inputs,start=first,end=end,
-                options=options,active_camera=self.mamma_active_camera,
+                options=options,active_camera=self.mamma_active_camera,interpolation=interpolation,
                 correction_enabled=self.motion_correction.isChecked(),correction=self.selected_correction_options()))
             self.start_jobs([(stage,['--request',str(request)]) for stage in STAGES])
         except (OSError,ValueError,RuntimeError,KeyError) as error:

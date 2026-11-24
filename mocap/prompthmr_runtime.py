@@ -26,6 +26,8 @@ def configuration(root=ROOT):
     if path.stat().st_size>2*1024**2:raise ValueError('Invalid PromptHMR runtime configuration.')
     cfg=json.loads(path.read_text(encoding='utf8'))
     from tools.setup_prompthmr import identity
+    if not isinstance(cfg, dict):
+        raise ValueError('Invalid PromptHMR runtime configuration.')
     if cfg.get('version')!=1 or not cfg.get('license_reviewed') or cfg.get('managed_id')!=identity(root):
         raise RuntimeError('PromptHMR runtime configuration changed. Close the app and run Setup_PromptHMR.cmd.')
     for key in ('python','engine'):

@@ -7,6 +7,11 @@ retained license files and provider agreements contain the full terms.
 
 ## AI tools and models
 
+Optional RIFE frame interpolation uses an inference-only adaptation of the
+[ComfyUI-Frame-Interpolation RIFE network](https://github.com/Fannovel16/ComfyUI-Frame-Interpolation/tree/26545cc2dd95bc3d27f056016300673bdeee78f5/vfi_models/rife).
+The [upstream MIT license](third_party/RIFE/LICENSE) is retained. Model Manager
+downloads the pinned RIFE 4.9 weights separately and verifies their SHA-256.
+
 PromptHMR's optional moving-camera support downloads [DroidCalib](https://github.com/boschresearch/DroidCalib)
 (AGPL-3.0), [LieTorch](https://github.com/princeton-vl/lietorch) (BSD-3-Clause),
 Eigen and torch-scatter with their provider licenses into the local support

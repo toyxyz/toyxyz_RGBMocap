@@ -23,6 +23,7 @@ results were not compared numerically with a CUDA run.
 | HTD Refine | Works | 35 s and 136 s |
 | FootMR | Works | 24 s |
 | HandFlow | Works | 33 s |
+| RIFE frame interpolation before reconstruction | Works | 6 s for a 4-second range |
 | Contact correction (native module) | Runs | 1 s |
 | ExMR keypoint preprocessing | Works | 54 s |
 | ExMR features and reconstruction | Not tested | |

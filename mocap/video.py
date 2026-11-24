@@ -110,7 +110,8 @@ def ensure_preview(project: Path, cancelled=None) -> Path:
     return project / "preview.mp4"
 
 
-def prepare(source: Path, start: float = 0.0, end: float | None = None, motion_tool='gvhmr', project=None, cancelled=None) -> Path:
+def prepare(source: Path, start: float = 0.0, end: float | None = None, motion_tool='gvhmr',
+            project=None, cancelled=None, *, rife=False, emit=None) -> Path:
     from .motion_tools import require_supported_tool
     tool=require_supported_tool(motion_tool)
     if tool.input_setup_only:
@@ -130,15 +131,22 @@ def prepare(source: Path, start: float = 0.0, end: float | None = None, motion_t
     end = info['duration']+offset if end is None else min(end, info['duration']+offset)
     if start < offset or end <= start:
         raise ValueError("Check the start and end of the processing range.")
+    from .rife_video import recipe
+    interpolation = recipe(rife, info['fps'])
     root=workspace.model_project(saved_root,motion_tool,saved)
     if (root/'project.json').exists():
         from .people_store import root_for
         root=root_for(root)
         workspace.child(saved_root,root.relative_to(saved_root),motion_tool)
-    if (root/'project.json').exists():
         old=json.loads((root/'project.json').read_text(encoding='utf-8'))
-        if abs(old['start']-start)>1e-6 or abs(old['end']-end)>1e-6:
-            root=saved_root/motion_tool/'clips'/workspace.range_key(start,end)
+        if old.get('interpolation', '') != interpolation:
+            root = saved_root / motion_tool
+    if interpolation or (root/'project.json').exists():
+        old = json.loads((root/'project.json').read_text(encoding='utf-8')) if (root/'project.json').exists() else {}
+        if (old.get('interpolation', '') != interpolation
+                or abs(old.get('start', start)-start)>1e-6 or abs(old.get('end', end)-end)>1e-6):
+            key = workspace.range_key(start, end)
+            root = saved_root / motion_tool / 'clips' / (f'{key}-{interpolation}' if interpolation else key)
     root.mkdir(parents=True, exist_ok=True)
     video = root / "input.mp4"
     manifest_path = root / "project.json"
@@ -155,7 +163,14 @@ def prepare(source: Path, start: float = 0.0, end: float | None = None, motion_t
     command = [executable("ffmpeg"), "-hide_banner", "-loglevel", "error", "-i", str(source), "-ss", str(start-offset),
                "-t", str(end - start), "-map", "0:v:0", "-an", "-vf", resample+",scale=trunc(iw/2)*2:trunc(ih/2)*2",
                "-c:v", "libx264", "-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p", "-y", str(temporary)]
-    run_video_command(command, cancelled)
+    if interpolation:
+        from .rife_video import convert
+        frames = round((end - start) * 30)
+        if frames < 4:
+            raise ValueError("Select a range containing at least four frames.")
+        convert(source, temporary, start - offset, frames, emit=emit, cancelled=cancelled)
+    else:
+        run_video_command(command, cancelled)
     output = probe(temporary)
     if output["frames"] < 4:
         raise ValueError("Select a range containing at least four frames.")
@@ -165,6 +180,7 @@ def prepare(source: Path, start: float = 0.0, end: float | None = None, motion_t
         "end": end, "fps": 30, "frames": output["frames"], "width": output["width"], "height": output["height"],
         "camera": "static", "stages": {}, "pipeline": {"model": motion_tool}, "timeline": timeline,
         'workspace_root':os.path.relpath(saved_root,root),
+        **({'interpolation': interpolation} if interpolation else {}),
         **({"original_times": [start + i / 30 for i in range(output["frames"])]} if output["frames"] <= 18000 else {})})
     ensure_preview(root, cancelled)
     workspace.set_active(saved_root,motion_tool,root)

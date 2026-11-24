@@ -29,3 +29,7 @@ class FaceExportControls(QWidget):
     def options(self):
         return dict(export_face=self.checkbox.isChecked(), face_format=self.format.currentData(),
                     smooth_face=self.smooth.isChecked())
+
+    def controls(self):
+        # Remembered by the export windows under the same names as options().
+        return dict(export_face=self.checkbox, face_format=self.format, smooth_face=self.smooth)

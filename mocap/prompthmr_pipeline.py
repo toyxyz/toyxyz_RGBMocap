@@ -58,7 +58,8 @@ def validate_inputs(job):
 
 
 def prepare(path,job):
-    from .prompthmr_cache import inference_code_hash
+    from .prompthmr_cache import inference_code_hash, default_video_code_hash
+    from .rife_video import RECIPE, recipe, convert
     from .prompthmr_runtime import configuration
     from .prompthmr_models import KEYS
     from .models import BY_KEY,missing
@@ -70,9 +71,14 @@ def prepare(path,job):
     info=probe(Path(job['video']));n=round((job['end']-job['start'])*30)
     if job['end']>info['duration']+1e-3 or not 4<=n<=1800:
         raise ValueError('Use a trim of 4–1,800 frames (at 30 fps) within the source video. No frames were dropped.')
+    interpolation = recipe(job.get('interpolation') == RECIPE, info['fps'])
+    job['interpolation'] = interpolation
     identity=dict(version=1,input=dict(path=job['video'],stat=file_stat(job['video'])),start=job['start'],frames=n,
         options=job['options'],models={k:file_stat(BY_KEY[k].path) for k in KEYS},runtime=cfg['managed_id'],engine=cfg['engine_files'],
         code={name:inference_code_hash(ROOT/'mocap'/name) for name in ('prompthmr_pipeline.py','image_io.py')})
+    if interpolation:
+        identity['interpolation'] = interpolation
+        identity['code']['prompthmr_pipeline.py'] = sha256(ROOT/'mocap/prompthmr_pipeline.py')
     if job['options'].get('camera')=='moving':
         from .prompthmr_camera_runtime import configuration as camera_configuration
         from .prompthmr_models import CAMERA_KEYS
@@ -80,7 +86,9 @@ def prepare(path,job):
         camera_cfg=camera_configuration(verify=True)
         identity['camera_runtime']={k:camera_cfg[k] for k in ('support_id','base_id','compute_capability','files')}
         identity['models'].update({k:file_stat(BY_KEY[k].path) for k in CAMERA_KEYS})
-        identity['code'].update({name:sha256(ROOT/'mocap'/name) for name in ('prompthmr_pipeline.py','prompthmr_camera.py','prompthmr_camera_runtime.py')})
+        identity['code'].update({name:sha256(ROOT/'mocap'/name) for name in ('prompthmr_camera.py','prompthmr_camera_runtime.py')})
+        pipeline = ROOT/'mocap/prompthmr_pipeline.py'
+        identity['code']['prompthmr_pipeline.py'] = sha256(pipeline) if interpolation else default_video_code_hash(pipeline)
     token=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()[:24]
     work=job['root']/'prompthmr/inference'/token;cached=False
     try:
@@ -96,8 +104,11 @@ def prepare(path,job):
         emit('progress',current=1,total=1,message='Reusing verified PromptHMR inference.');return
     atomic_json(work/'pending.json',identity)
     vf=f"trim=start={job['start']:.9f}:end={job['end']:.9f},setpts=PTS-STARTPTS,fps=30,scale=trunc(iw/2)*2:trunc(ih/2)*2"
-    subprocess.run([executable('ffmpeg'),'-v','error','-i',job['video'],'-an','-vf',vf,'-frames:v',str(n),'-fps_mode','cfr',
-        '-c:v','libx264','-preset','fast','-crf','18','-pix_fmt','yuv420p','-threads','2',str(work/'input.mp4')],check=True,creationflags=0x08000000)
+    if interpolation:
+        convert(Path(job['video']), work/'input.mp4', job['start'], n, emit=emit)
+    else:
+        subprocess.run([executable('ffmpeg'),'-v','error','-i',job['video'],'-an','-vf',vf,'-frames:v',str(n),'-fps_mode','cfr',
+            '-c:v','libx264','-preset','fast','-crf','18','-pix_fmt','yuv420p','-threads','2',str(work/'input.mp4')],check=True,creationflags=0x08000000)
     result=probe(work/'input.mp4')
     if result['frames']!=n or abs(result['fps']-30)>.001:raise ValueError('Working video frame count does not match the selected trim.')
     atomic_json(work/'media.json',result)

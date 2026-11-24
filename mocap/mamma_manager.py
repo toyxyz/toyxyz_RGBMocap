@@ -2,6 +2,7 @@
 from pathlib import Path
 from html import escape
 import json
+from .theme import set_appearance_style
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication,QDialog,QHBoxLayout,QLabel,QPushButton,QTextBrowser,QVBoxLayout,QWidget
 from .paths import ROOT
@@ -16,7 +17,7 @@ def runtime_panel(parent):
         label.setText('MAMMA runtime: Ready' if cfg.get('version')==3 else 'MAMMA runtime: Configured separately')
         label.setToolTip('Python: '+cfg['python']+'\nEngine: '+cfg['engine']+'\nThis environment is isolated from the single-video models.')
     except (OSError,RuntimeError,ValueError) as error:
-        label.setText('MAMMA runtime: Setup required');label.setToolTip(str(error));label.setStyleSheet('color:#ffb45c')
+        label.setText('MAMMA runtime: Setup required');label.setToolTip(str(error));set_appearance_style(label, 'color:#ffb45c')
     button=QPushButton('Runtime Setup...')
     button.setToolTip('Show the separate MAMMA runtime installation steps, disk requirements and license conditions. Model weights are installed in the table below.')
     button.clicked.connect(lambda:setup_instructions(parent))

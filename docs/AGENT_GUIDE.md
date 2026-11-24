@@ -12,10 +12,18 @@ This guide is for agents helping users operate or modify RGB MoCap. It describes
   C++17 compiler in the user's launch environment. The published preview
   compiles this module on first launch. Have the user retry the AppImage and
   check its setup log. See [AppImage build troubleshooting](LINUX.md#appimage-setup-cannot-find-cmake).
+- On Windows 11, Smart App Control in **On** mode can block the unsigned app-local Python at setup or launch. Check the blocked filename and CodeIntegrity events **3077** and **3089**. See the [installation troubleshooting guide](USER_GUIDE.md#smart-app-control-on-windows-11).
 - Base worker commands use explicit `-X utf8`, including isolated `-I` launches. Isolated mode ignores `PYTHONIOENCODING`/`PYTHONUTF8` from the parent environment. Any redirected/discarded text log stream must also specify UTF-8. Keep byte-oriented PEAR IPC unchanged.
 - Close the app before `update.cmd`. The updater requires a clean tracked worktree and the `main` branch, uses `git pull --ff-only`, then verifies/repairs runtime configuration. It refuses tracked local edits. A plain `git pull` does not perform runtime repair; use `install.cmd` after dependency changes when needed. Do not discard local edits or force an update.
 - `update.cmd` buffers its final command block before Git can replace it. Reporting/pause belongs to `tools/git_update.py`; failures preserve the subprocess status (ordinary exceptions use 1, Python-intercepted cancellation uses 130). Keep delayed expansion off for paths/arguments. The final `CALL` expands only a numeric exit status after clearing an environment shadow; never reparse paths or arguments with `CALL`. Already-running older launchers remain vulnerable during their first transition. From an open CMD in the app folder, `runtime\python.exe -I -X utf8 -B tools\git_update.py` bypasses the old wrapper. A stray command error after reported installation completion calls for rerunning the updated launcher, not deleting setup markers or models. See [update recovery](USER_GUIDE.md#installation-verification-and-repair) and the preceding transition note. Forced console termination/deletion of the running launcher is outside this guarantee.
 - For setup failure, read the message, check connectivity and free space, then retry `install.cmd`. Preserve models, projects and `.setup` state. Do not repeatedly reinstall or redownload models without evidence.
+- If installation fails with `WinError 3` or `WinError 206`, inspect the full
+  path in the traceback. A path near or above 260 characters under
+  `.setup\staging` can indicate the Windows path limit. Try a short, writable
+  checkout first. If the user wants to keep their path, use the documented
+  `LongPathsEnabled` steps and retry from a new process. The setting is
+  system-wide and requires administrator privileges. See
+  [Windows path length troubleshooting](USER_GUIDE.md#windows-path-length-during-installation).
 - Base completion and optional PEAR/camera-alignment readiness are separate. A post-commit support failure reports completion with warnings; it must not recreate the global base pending marker. Inspect `.setup/git-components.json` and the actual capability configuration. Both support checks require CUDA. For GPU warnings, check driver detection with `nvidia-smi` and verify CUDA in **Help > Check System** before retrying `install.cmd`. Camera-alignment preparation is independent of PEAR and also serves MAMMA automatic gravity. Mandatory base failures and unresolved promotion journals remain blocking. Never delete a pending marker blindly.
 - Recent full runtime checks are reused for up to seven days with matching group/verifier identities and an unchanged bounded file inventory, including additions/removals. Reuse does not refresh the full-check date. `install.cmd --verify-all` or `update.cmd --verify-all` forces the existing RECORD hashes/import checks. Missing/expired metadata, dependency changes and detected file changes trigger full checks for affected groups/dependents. Metadata is a change-detection heuristic, not an authenticity guarantee. Do not mark a runtime verified without an actual successful check.
 - `tools/pinned_download.py` supplies bounded HTTPS retries/resume for support archives. Keep certificate verification, HTTPS redirects, exact size and SHA-256, validated Content-Range, cancellation propagation and finite attempt/time limits. Ordinary base wheel downloads and optional package fetching retain their own paths; do not claim this replaces every network call. Source contracts are frozen/rechecked during base installation. A failed Git pull must preserve any pre-existing incomplete-install marker.
@@ -363,7 +371,19 @@ change is needed. Paired 7/14.2-second mask tests cut time 17–21%, changed RAM
 
 ### Capture, correction and export
 
-1. Select an AI Motion Model and prepare its models, then **File > Open Video** and optionally trim the Video track. Select MAMMA before opening multiple videos. New work defaults to ExMR.
+The optional **RIFE Frame Interpolation** control under Movie Clip defaults
+off. Enable it before **Find person** or **Reconstruct 3D** on footage below
+30 fps. Confirm the shared RIFE 4.9 model in Model Manager. Model Manager
+verifies the checkpoint separately and **Download All** skips it. The
+converter uses source presentation timestamps, avoids interpolating across
+detected cuts and streams adjacent frames. Keep the original media and its
+timeline intact. Key prepared clips and detection caches by the interpolation
+recipe. An existing person selection must be detected again on the new working
+clip after changing modes. PromptHMR and MAMMA use separate inference identities
+for RIFE. MAMMA keeps a common 30 fps grid for mixed camera rates. See
+[the user guide](USER_GUIDE.md#rife-frame-interpolation).
+
+1. Select an AI Motion Model and prepare its models, then **File > Open Video** and optionally trim the Video track. Select MAMMA before opening multiple videos. New sessions start on the last offline model picked in the selector, otherwise ExMR.
 2. For ExMR, FlowHMR and GVHMR with multiple people, use **Find person** and check the desired rows; without it, automatic tracking selects one person and can switch identity on overlap. PromptHMR tracks people jointly during reconstruction; its People setting is a maximum count and Interaction Prompt is optional. MAMMA instead detects and matches people during reconstruction; Find person is hidden and its People setting controls the count. A checked row controls visibility and ExMR/FlowHMR/GVHMR processing targets; the selected row controls the current timeline and contact edits.
 3. Choose camera and processing settings, then **Reconstruct 3D**. Processing runs on a 30 fps working clip, without changing the original video. Progress and cancellation are in the app. **Prepare Preview** rebuilds previews from existing motion without rerunning inference.
 4. Review motion and contacts. **Enable Correction** selects corrected output; Foot defaults on and Hand off for new work. Flat Ground uses a common floor; Multi Level retains inferred contact heights and does not reconstruct terrain. Inspect automatic contacts; hand contacts represent support, not hanging/object tracking.
@@ -694,13 +714,19 @@ MAMMA currently bounds the common trim to 1800 frames/eight people; geometry
 baking must not accumulate whole mesh sequences in RAM. No new inference,
 runtime dependency, source motion or contact change is part of export.
 
+**File > Settings...** stores `ui_theme` and `ui_scale` in the installation-local
+`config/local.json`. Dark and 100% are the defaults. The app updates the
+Qt palette, fonts, widget styles, and timeline geometry when the user clicks
+**OK**. The system display scale still applies.
+
 ## Character retargeting and export
 
 - **File > Import Character...** accepts Mixamo-style FBX, VRM and PMX, and adds the character in rest pose below people. Up to eight characters per project are supported.
 - Right-click the character and choose **Retarget > [source person]**. Review via timeline; row checkboxes control visibility. Custom bone mapping is not implemented. Unsupported or incomplete mappings must not be silently relabeled.
 - The source's applied contact timings are used. **Apply Correction** refreshes linked characters; after other source changes retarget again. Targets that cannot be reached do not cause bone stretching. Different limb lengths can change travel distance, and editing may be required in a 3D tool.
 - **Export Character...** offers FBX with or without character mesh, and VMD for PMX characters. VMD is sampled at 30 fps for the same PMX model; facial motion and hair/clothing physics are not generated. Character FBX preserves its imported rest hierarchy and keys body bones, not the armature object. The character viewport uses original-resolution base-color textures with simplified lighting. Texture caches are prepared off the GUI thread, independently of motion; existing characters prepare them on first display.
-- A separate Blender runtime is used for character import, rig evaluation and baking/export; the user need not open Blender for the app workflow. Preserve upstream licenses and the bundled Blender environment. See [character retargeting](USER_GUIDE.md#character-retargeting) and [FBX/Blender](USER_GUIDE.md#fbx-and-blender).
+- A separate Blender runtime is used for character import, rig evaluation and baking/export; the user need not open Blender for the app workflow. Mixamo FBX import uses Blender 4.5's `bpy.ops.wm.fbx_import` for both binary and ASCII files, including FBX 6.1. Preserve upstream licenses and the bundled Blender environment. See [character retargeting](USER_GUIDE.md#character-retargeting) and [FBX/Blender](USER_GUIDE.md#fbx-and-blender).
+- Mixamo FBX exports with a mesh map the existing Principled BSDF specular tint image to FBX `SpecularColor` during export. The legacy Blender importer restores the texture. The newer Blender importer may skip it in Blender-written FBX files.
 - MAMMA retargeting must use `mocap.mamma_body.body_path(project)`, including its actor-specific folded shape data. Never substitute the standard SMPL-X body used by ExMR/GVHMR, or require that extra model for a MAMMA-only workflow.
 
 ## Projects, state and protection
@@ -740,6 +766,38 @@ worker runtimes, including isolated launches; only explicit `0` disables it.
 PEAR workers inherit the same preference. Never remove actual OOM handling or
 change model equations/precision when extending this control. Model result
 identity must not include this local checkbox value.
+
+`mocap/local_choices.py` keeps window conveniences in the same file through
+`resource_safety.update`. `source_export` and `character_export` hold the last
+choices confirmed in each export window, under the request option names; take
+scope, chosen takes and Blender project settings are excluded. `motion_model`
+holds the last offline model picked in the selector. Only user picks are saved,
+PEAR is never saved, and opening a project restores its own model without
+writing the file. Missing, malformed or unoffered values fall back to the window
+defaults; a saved MAMMA, PromptHMR or GEM-X model without a configured runtime
+starts ExMR. These are not project data or inference identities, and they do not
+change what an export writes for given options. **Defaults** restores each
+dialog's initial export controls, including the Blender controls in the source
+dialog. Preserve the current take selection and scope. Discard retained
+unavailable choices on reset and persist the restored preferences only when
+the dialog is accepted.
+
+`default_settings` holds the starting settings saved explicitly with **File > Save
+Settings as Default** and removed with **Reset Default Settings**. Each command
+lists the proposed values and updates local settings only after **OK**.
+`project_workspace_ui.DEFAULT_SETTINGS` maps the stored keys to the editor controls
+and display labels. Starting options include GVHMR add-ons, FlowHMR and ExMR
+options and camera rotation refinement, PromptHMR camera and interaction,
+correction mode/preset/locks, Track Face and Resource Mode. MainWindow startup
+and new single- or multi-camera inputs apply these preferences after the built-in
+resets. An explicit reset restores **Automatic** for the next clip alongside the
+other built-in values. Resource Mode stays local and is passed to workers as
+`RGB_MOCAP_COMPUTE_MODE`. Resource Safety has its own local preference.
+Trim, floor, pelvis offset, people counts and MAMMA calibration belong to the
+capture. In an existing project, restore saved result and camera view selections.
+Use local model defaults only for absent settings groups in models without a saved
+result. Track Face uses the local default when a project has no saved Track Face
+setting. PEAR live input follows its own controls.
 
 Use **Resource Mode > Automatic** by default. It keeps the fast path when the current GPU budget is sufficient and selects supported Low Memory paths per operation when needed. A supported fast operation that raises CUDA OOM is released and retried once in Low Memory. ExMR Low Memory uses CPU-first body/hand loading and converts Sapiens' existing FP16 layers before GPU transfer; ExMR body/hand batches stay 8. FlowHMR offloads SAM/VGGT blocks; MAMMA offloads VGGT camera blocks while retaining its pinned masks/landmark/fitting settings. GVHMR/add-ons retain adaptive image batches and full-context attention. The saved Automatic selection is not changed. Resource decisions and memory advice appear in the app Console and CMD. Model precision, frame count, resolution and iterations are not reduced. CPU loading/offloading can be slower and use more RAM; it is not a promise every clip will fit. Estimates select a path, never reject a job. With Resource Safety enabled, the desktop checks actual RAM and Windows allocation headroom every 0.5 seconds and stops workers when these become low. Preserve completed stages, genuine model limits and original motion. Do not rerun inference for operations that can use existing results.
 
@@ -863,7 +921,7 @@ The app uses separate runtime profiles to maintain compatibility, with bounded b
 
 ## Code map and verification
 
-- GUI, people, controls and logging: `mocap/gui.py`, `workspace_ui.py`, `people_ui.py`, `character_ui.py`, `console_log.py`, `tooltips.py`.
+- GUI, people, controls and logging: `mocap/gui.py`, `workspace_ui.py`, `people_ui.py`, `character_ui.py`, `console_log.py`, `tooltips.py`; remembered window choices: `local_choices.py`.
 - Model selection and loading: `mocap/motion_tools.py`, `models.py`, `model_guide.py`; worker routing and runtimes: `worker.py`, `worker_progress.py`, `runtime_registry.py`, `compute_policy.py`.
 - MAMMA inputs/UI: `mocap/mamma_inputs.py`, `mamma_ui.py`; processing: `mamma_pipeline.py`, `mamma_camera.py`, `mamma_publish.py`, `mamma_body.py`; runtime/assets: `mamma_runtime.py`, `mamma_manager.py`, `mamma_models.py`, `installer/mamma-runtime-lock.json`, `tools/setup_mamma.py`. Follow [the native-build runbook](MAMMA_AGENT_SETUP.md) instead of guessing module build commands.
 - PromptHMR UI/pipeline: `mocap/prompthmr_ui.py`, `prompthmr_pipeline.py`, `prompthmr_cache.py`, `prompthmr_publish.py`, `prompthmr_scene.py`; runtime/assets: `prompthmr_runtime.py`, `prompthmr_manager.py`, `prompthmr_models.py`, `prompthmr_worker_boot.py`, `installer/prompthmr-runtime-lock.json`, `installer/prompthmr_adapters.py`, `installer/verify_prompthmr.py`, `tools/setup_prompthmr.py`. Follow the separate setup/verification steps above.

@@ -42,6 +42,7 @@ STAGES["footmr"] = "Refine Ankles / FootMR"
 STAGES["handflow"] = "Infer Fingers / HandFlow"
 STAGES['correct'] = 'Motion Correction'
 from .workspace_ui import build_workspace
+from .theme import set_appearance_style, theme_color, themed_colors, ui_px
 from .people_ui import PeopleWorkspace
 from .face_ui import FaceWorkspace
 from .stream_ui import StreamWorkspace
@@ -73,7 +74,7 @@ class ModelDownloadDialog(QDialog):
                     min(560, max(260, area.height() - 100)))
         layout = QVBoxLayout(self)
         self.browser = QTextBrowser()
-        self.browser.setStyleSheet(
+        set_appearance_style(self.browser,
             'QTextBrowser { font-family:"' + QApplication.font().family() + '"; font-size:12px; padding:6px; }')
         self.browser.setOpenLinks(False)
         self.browser.setOpenExternalLinks(False)
@@ -187,7 +188,7 @@ class ModelsDialog(QDialog):
         self.task_status.setOpenLinks(False)
         self.task_status.setWordWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
         self.task_status.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.task_status.setStyleSheet(
+        set_appearance_style(self.task_status,
             'QTextBrowser { font-family:"' + QApplication.font().family() + '"; font-size:12px; padding:4px; }')
         self.task_status.setPlainText("Ready to download or import models.")
         layout.addWidget(self.task_status)
@@ -275,10 +276,10 @@ class ModelsDialog(QDialog):
                 text = str(error)
             else:
                 text = 'GEM-X runtime is ready.'
-            note = QLabel(text + ' Review the upstream terms before downloading. '
+            note = QLabel(themed_colors(text + ' Review the upstream terms before downloading. '
                 '<a style="color:#8ed2ff" href="https://huggingface.co/nvidia/GEM-X">GEM-X</a> · '
                 '<a style="color:#8ed2ff" href="https://huggingface.co/nvidia/SOMA-X">SOMA-X</a> · '
-                '<a style="color:#8ed2ff" href="https://github.com/open-mmlab/mmpose/tree/main/projects/rtmpose">Detector</a>')
+                '<a style="color:#8ed2ff" href="https://github.com/open-mmlab/mmpose/tree/main/projects/rtmpose">Detector</a>'))
             note.setWordWrap(True)
             note.setOpenExternalLinks(True)
             self.workflow_panel.addWidget(note)
@@ -429,7 +430,7 @@ class ModelsDialog(QDialog):
                 if column == 0:
                     item.setData(Qt.UserRole, model.key)
                 item.setToolTip(str(model.path) if column == 0 else text)
-                item.setForeground(QColor("#d5d5d5" if available else "#ffb45c"))
+                item.setForeground(QColor(theme_color("#d5d5d5" if available else "#ffb45c")))
                 font = item.font(); font.setBold(not available); item.setFont(font)
             cell = self.table.cellWidget(i, 3)
             if cell is None or cell.property("model_key") != model.key:
@@ -506,7 +507,7 @@ class ModelsDialog(QDialog):
                 index = min(self._batch_total, max(1, self._batch_total - len(w.jobs)))
                 message = f"Model {index}/{self._batch_total}: " + message
             self.task_status.setPlainText(message if len(message) <= 4096 else message[:4096] + "\nSee Console for the complete message.")
-            self.task_status.setStyleSheet(
+            set_appearance_style(self.task_status,
                 'QTextBrowser { font-family:"' + QApplication.font().family() +
                 '"; font-size:12px; padding:4px;' +
                 ('color:#ffb45c;' if w.failed else '') + ' }')
@@ -541,7 +542,7 @@ class ModelsDialog(QDialog):
         from .flow_hamer import MODEL_KEYS
         if self.inventory_tab:
             return []
-        excluded = {'sam31_people', *MODEL_FILES}
+        excluded = {'sam31_people', 'rife49', *MODEL_FILES}
         if self.tool.key == 'flowhmr' and not self.window.flow_hamer.isChecked():
             excluded.update(MODEL_KEYS)
         return [model for model in self.models if model.key not in excluded
@@ -613,8 +614,10 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
     def __init__(self, video: Path | None = None):
         super().__init__()
         self.setWindowTitle("RGB MoCap | Motion Workspace")
-        self.resize(1440, 880)
         self.setMinimumSize(1100, 700)
+        available = self.screen().availableGeometry()
+        self.resize(min(ui_px(1440), max(self.minimumWidth(), available.width() - 16)),
+                    min(ui_px(880), max(self.minimumHeight(), available.height() - 40)))
         self.video_path = None
         self.init_mamma()
         self.init_pear()
@@ -693,12 +696,15 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         # Initialize the same model-specific visibility used on selector changes.
         # Otherwise the empty GVHMR stack reserves the FlowHMR page height.
         self.select_model()
+        self._reset_starting_settings = False
+        self.apply_default_settings()
         if video:
             self.load_video(video)
 
     @read_only_checks
     def update_readiness(self):
         self.export_preview_action.setEnabled(self.preview_export_available())
+        self.rife_interpolation.setVisible(not self._pear_active)
         self.track_face.setVisible(not self._pear_active)
         self.face_overlay.setVisible(not self._pear_active)
         for control in (self.set_neutral_face, self.reset_neutral_face, self.neutral_face_note):
@@ -735,7 +741,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         if unavailable:
             noun = "model" if len(unavailable) == 1 else "models"
             text += f"\nWarning: {len(unavailable)} required {noun} missing.\nOpen Model Manager to download or import."
-        self.readiness.setStyleSheet("color:#ffb45c; font-weight:600;" if unavailable else "")
+        set_appearance_style(self.readiness, "color:#ffb45c; font-weight:600;" if unavailable else "")
         self.readiness.setToolTip(tooltip_text("Missing required models:\n" + "\n".join(model.name for model in unavailable) if unavailable else ""))
         self.readiness.setText(text)
         for button in (self.models_button, self.analyze_button, self.run_button):
@@ -969,15 +975,10 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             self.reset_people()
             self.motion_view.auto_fit = True
             self.video_path, self.project, self.info = path, None, None
+            self._rife_source_fps = 0
+            self.rife_interpolation.setChecked(False)
             self.setWindowTitle('RGB MoCap | Motion Workspace')
-            self.flow_sampling.setCurrentIndex(self.flow_sampling.findData(0))
-            self.fast_sam.setChecked(True)
-            self.flow_batch4.setChecked(True)
-            self.flow_gpu_crop.setChecked(True)
-            self.flow_hand_stride4.setChecked(True)
-            self.flow_hamer.setChecked(False)
-            self.exmr_camera.setCurrentIndex(0)
-            self.exmr_smoothing.setChecked(True)
+            self.restore_workflow_options({})
             self.camera_tools.restore_background({})
             self.handflow_refine.blockSignals(True)
             self.handflow_refine.setChecked(self.model_choice.currentData()=='gvhmr')
@@ -989,6 +990,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 option.blockSignals(False)
             self.active_result = self.selected_result()
             self.restore_correction_options({})
+            self.apply_default_settings()
             self.source_offset = self.source_end = 0.0
             self.video_readable = False
             self.slider.setRange(0, 0)
@@ -1006,6 +1008,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.slider.set_media(self.info["fps"] if self.info else info["fps"])
         if self.project is None and not self._workspace_video_reference:
             self.info = info
+            self._rife_source_fps = info['fps']
             self.slider.setRange(0, max(0, info["frames"] - 1))
             self.source_offset, self.source_end = 0.0, info["duration"]
             self.slider.reset_trim()
@@ -1036,11 +1039,11 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 if root is None:
                     raise ValueError('This project uses the previous folder format. Open its video to create a new model-folder project.')
                 if self.load_project(project) and project!=root:
-                    self.restore_track_face(read(root).get('view',{}).get('track_face',False))
+                    self.restore_track_face(self.saved_track_face(read(root).get('view',{})))
             except (OSError,ValueError,KeyError) as error:self.status.setText('Cannot open project: '+str(error))
 
     @batch_readiness
-    def load_project(self, project):
+    def load_project(self, project, *, keep_current_options=False):
         if self._pear_active:
             self.pear_leave()
             self.model_choice.blockSignals(True);self.model_choice.setCurrentIndex(self.model_choice.findData(self._selected_tool));self.model_choice.blockSignals(False)
@@ -1058,6 +1061,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             self.status.setText(str(error))
             return False
         manifest = json.loads((project / "project.json").read_text(encoding="utf-8"))
+        self._rife_source_fps = float(manifest.get('source', {}).get('fps') or 0)
+        self.rife_interpolation.setChecked(bool(manifest.get('interpolation')))
         if manifest.get('pipeline',{}).get('model')=='prompthmr':
             group=(project/manifest.get('people_root','.')).resolve()
             if (group/'prompthmr_pending.json').exists():
@@ -1072,12 +1077,15 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.clear_preview()
         self.motion_view.auto_fit = True
         self.project = project
-        self.camera_tools.restore_background({})
+        camera_background = self.camera_tools.background_options() if keep_current_options else {}
+        self.camera_tools.restore_background(camera_background)
         self.workspace_project_loaded(project,manifest)
         from .project_storage import storage_root
         saved_root=storage_root(project,manifest)
         self.setWindowTitle('RGB MoCap | '+(saved_root.name if saved_root else 'Motion Workspace'))
         pipeline = manifest.get("pipeline", {})
+        pending_result = (self.selected_result() if keep_current_options and
+                          pipeline.get('model', 'gvhmr') == self._selected_tool else None)
         from .flow_camera import saved_interval
         from .flow_sam import saved_options
         flow=saved_options(project,manifest)
@@ -1102,6 +1110,10 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         has_motion = has_refined or any((project / name).exists() for name in ("hmr4d_results.pt", "initial_joints.npz"))
         result = pipeline.get("result", "refined" if has_refined else "initial")
         saved_selection=bool(pipeline.get('result'))
+        if not saved_selection and not has_motion and pending_result is not None:
+            # Preparing or finding people can reload a clip before it has any saved result.
+            result = pending_result
+            saved_selection = True
         self.handflow_refine.blockSignals(True)
         self.handflow_refine.setChecked(has_handflow(result) if has_motion or saved_selection else pipeline.get('model','gvhmr')=='gvhmr')
         self.handflow_refine.blockSignals(False)
@@ -1325,7 +1337,15 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         if not discovery and self._single_actor and not self._single_actor['checked']:
             self.status.setText('Check Person 1 in the People list to reconstruct it.')
             return
-        if not discovery and self.input_person_jobs(stages,result):
+        interpolation = self.selected_interpolation()
+        if not discovery and self.people_state is not None:
+            manifest = json.loads((self.people_root / 'project.json').read_bytes())
+            if manifest.get('interpolation', '') != interpolation:
+                self.status.setText('Video interpolation changed. Run Find person again, then reconstruct the selected people.')
+                return
+            if self.input_person_jobs(stages, result):
+                return
+        if not self.ready_for_interpolation(interpolation):
             return
         unavailable = [model for stage in stages for model in ([] if self.model_choice.currentData()=='flowhmr' and stage=='flow_camera' and self.flow_sampling.currentData()==-1 else missing('flow_export' if self.model_choice.currentData()=='flowhmr' and stage in ('correct','export') else stage))]
         if 'sam31_people' not in stages and self.model_choice.currentData()=='flowhmr' and self.flow_hamer.isChecked():
@@ -1339,6 +1359,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             return
         first, end = self.processing_range()
         prepare_args = ["--video", str(self.video_path), "--start", str(first), "--end", str(end)]
+        if interpolation:
+            prepare_args.append('--rife-interpolation')
         if self.workspace_root is not None:
             prepare_args += ['--project',str(self.workspace_root)]
         elif self.project is not None:
@@ -1528,6 +1550,14 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             self.log.append('Cannot save Resource Safety: '+str(error));return
         os.environ[ENV]='1' if value else '0'
         self.log.append(message(value))
+
+    def remember_model_pick(self,index):
+        # Code changes the selector with signals blocked, so this is a user pick; skip it if select_model refused it.
+        model=self.model_choice.itemData(index)
+        if model!=self.model_choice.currentData():return
+        from .local_choices import remember_model
+        try:remember_model(model)
+        except (OSError,ValueError) as error:self.log.append('Cannot save the AI Motion Model choice: '+str(error))
 
     def start_jobs(self, jobs, refresh_characters=False):
         if self.busy:
@@ -1844,7 +1874,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 self.set_active_result('corrected_initial')
         elif kind in ('mamma_ready','prompthmr_ready','gemx_ready'):
             self.workspace_root=Path(event['root'])
-            self.load_project(Path(event['project']))
+            self.load_project(Path(event['project']), keep_current_options=True)
             self.set_active_result(event['result'])
         elif kind == "prepared":
             self._task_preparing=False
@@ -1857,7 +1887,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 from .storage import atomic_json
                 atomic_json(saved_root/'workspace_state.json',dict(version=1,name=saved_root.name,
                     active=self.project.resolve().relative_to(saved_root).as_posix(),frame=0,trim=None))
-            self.load_project(self.project)
+            self.load_project(self.project, keep_current_options=True)
         elif kind == 'project_saved':
             self._project_saved_root=Path(event['root'])
         elif kind == 'save_cancelled':

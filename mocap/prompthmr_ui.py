@@ -87,10 +87,13 @@ class PromptHMRWorkspace:
                     self.status.setText('Prepare the Moving Camera files in Model Manager.');self.open_model_manager();return
             if missing('prompthmr_assets'):
                 self.status.setText('Prepare the missing PromptHMR files in Model Manager.');self.open_model_manager();return
+            interpolation = self.selected_interpolation()
+            if not self.ready_for_interpolation(interpolation):
+                return
             first,end=self.processing_range()
             root=self.workspace_root or PROJECTS/(self.video_path.stem[:80]+'_'+project_key(self.video_path,0,self.info['duration'])+'_project')
             folder=HOME/'cache/prompthmr-jobs';folder.mkdir(parents=True,exist_ok=True);request=folder/(uuid.uuid4().hex+'.json')
-            atomic_json(request,dict(version=1,root=str(root),video=str(self.video_path),start=first,end=end,options=self.prompthmr_options(),
+            atomic_json(request,dict(version=1,root=str(root),video=str(self.video_path),start=first,end=end,interpolation=interpolation,options=self.prompthmr_options(),
                 correction_enabled=self.motion_correction.isChecked(),correction=self.selected_correction_options()))
             self.start_jobs([(stage,['--request',str(request)]) for stage in STAGES])
         except (OSError,ValueError,RuntimeError) as error:self.status.setText('Cannot start PromptHMR: '+str(error))
