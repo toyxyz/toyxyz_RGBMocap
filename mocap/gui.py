@@ -1329,35 +1329,16 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             self.open_model_manager()
             return
         first, end = self.processing_range()
-        prepare_args = ["--video", str(self.video_path), "--start", str(first), "--end", str(end)]
-        if interpolation:
-            prepare_args.append('--rife-interpolation')
-        if self.workspace_root is not None:
-            prepare_args += ['--project',str(self.workspace_root)]
-        elif self.project is not None:
+        workspace = self.workspace_root
+        if workspace is None and self.project is not None:
             from .project_storage import storage_root
             if storage_root(self.project) is not None:
-                prepare_args += ['--project', str(self.project)]
-        if result or self.model_choice.currentData()!='gvhmr':
-            prepare_args+=['--motion-tool',self.model_choice.currentData()]
-        if result:
-            prepare_args += ["--result", result]
-            if result.startswith('corrected_') and not self.auto_floor.isChecked():
-                prepare_args += ['--floor',str(self.floor_height.value())]
-            if result.startswith('corrected_'):
-                prepare_args += ['--correction-preset',self.correction_preset.currentData(),
-                                 '--correction-mode',self.correction_mode.currentData(),
-                                 '--foot-lock',str(int(self.foot_lock.isChecked())),'--hand-lock',str(int(self.hand_lock.isChecked())),
-                                 '--pelvis-offset',str(self.pelvis_offset.value())]
-        jobs = [('prepare', prepare_args)]
-        for stage in stages:
-            arguments = None
-            if stage == 'sam31_people':
-                arguments = people_options
-            elif stage in {'export', 'flow_export', 'footmr', 'handflow', 'correct'} and result:
-                arguments = ['--result', result]
-            jobs.append((stage, arguments))
-        self.start_jobs(jobs)
+                workspace = self.project
+        from .workflow_jobs import video_jobs
+        correction = self.selected_correction_options() if result and result.startswith('corrected_') else None
+        self.start_jobs(video_jobs(self.video_path, first, end, self.model_choice.currentData(), stages,
+                                   result=result, correction=correction, workspace=workspace,
+                                   interpolation=interpolation, people_options=people_options))
 
     def run_analysis(self):
         self.input_jobs(["track", "pva"])
@@ -1678,9 +1659,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             else:
                 self.next_character_refresh()
             return
-        from .queue_groups import join_single_pipeline
-        self.jobs = join_single_pipeline(self.jobs, self.project)
-        stage, arguments = self.jobs.pop(0)
+        from .workflow_jobs import next_job
+        stage, arguments, self.jobs = next_job(self.jobs, self.project)
         if stage in {'gvhmr', 'refine', 'footmr', 'handflow', 'correct',
                      'flow_camera', 'flow_features', 'flowhmr',
                      'exmr_preprocess', 'exmr_features', 'exmr'}:
@@ -1688,10 +1668,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         if stage.startswith(('mamma_','prompthmr_')) or stage in ('flow_batch','exmr_batch','gvhmr_batch','gemx_reconstruct'):self._batch_has_motion=True
         self.current_stage = stage
         self._batch_inner_stage=stage
-        if arguments is None:
-            arguments = ["--project", str(self.project)]
-        elif stage in {"export", "footmr", "handflow", "correct", 'flow_export', 'sam31_people'} and "--project" not in arguments:
-            arguments = ["--project", str(self.project), *arguments]
         self.job_project = Path(arguments[arguments.index('--project')+1]) if '--project' in arguments else None
         if stage=='track':self.begin_single_tracking(self.job_project)
         if stage in {"download", "import_model"} and "--model" in arguments:
@@ -2237,7 +2213,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         rows=[]
         options=getattr(self,'_source_export_options',{})
         fmt = options.get('format', 'fbx')
-        compatible = fmt == 'fbx' and options.get('fbx_compatibility', False)
         combined = fmt == 'blend' and options.get('blend_layout') == 'combined'
         if fmt == 'blend':
             from .blend_export_ui import targets
@@ -2246,34 +2221,19 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 files = [(project, kind, source, target) for project, kind, source, _ in files]
             else:
                 files = targets(files)
+        from .workflow_jobs import export_row
         try:
-            for project,kind,source,target in files:
-                row=dict(project=str(project),kind=kind,source=str(source),target=str(target))
-                row['rig_name']=self.export_person_name(project)
-                row['prepend_tpose']=options.get('prepend_tpose',False)
-                row['export_face']=options.get('export_face',False)
-                row['face_format']=options.get('face_format','txt')
-                row['smooth_face']=options.get('smooth_face',False)
-                row['bvh_profile']=getattr(self,'_source_export_options',{}).get('bvh_profile','generic')
-                if compatible:row['fbx_compatibility']=True
-                if fmt == 'fbx':
-                    for key in ('fbx_profile', 'fbx_rest_pose', 'ue5_target', 'ue5_in_place', 'ue5_include_mesh'):
-                        if key in options:
-                            row[key] = options[key]
-                for key in ('place_at_origin','symmetric_rest'):
-                    row[key]=getattr(self,'_source_export_options',{}).get(key,False) and getattr(self,'_source_export_options',{}).get('format','fbx') in ('fbx','bvh')
-                row['origin_group']=str(Path(project).resolve())
+            for project, kind, source, target in files:
+                person_id = None
                 if self.people_state:
                     from .people_store import safe_child
                     for person in self.people_state['people']:
-                        if any(safe_child(self.people_root,t['project'])==Path(project).resolve() for t in person.get('takes',[])):
-                            row['origin_group']='person:'+str(person['id']);break
-                for key,default in (('animate_camera',True),('background_refine',False),('camera_translation_scale',1.)):
-                    row[key]=getattr(self,'_source_export_options',{}).get(key,default)
-                if self.people_root is not None:
-                    from .scene_export import context
-                    row['scene']=context(self.people_root,project)
-                rows.append(row)
+                        if any(safe_child(self.people_root, take['project']) == Path(project).resolve()
+                               for take in person.get('takes', [])):
+                            person_id = person['id']
+                            break
+                rows.append(export_row(project, kind, source, target, self.export_person_name(project),
+                                       options, people_root=self.people_root, person_id=person_id))
         except (OSError,ValueError,KeyError) as error:
             self.status.setText('Cannot export shared scene: '+str(error));return
         destinations = list(dict.fromkeys(target for _, _, _, target in files))

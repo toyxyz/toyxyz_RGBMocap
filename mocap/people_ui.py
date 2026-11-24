@@ -199,19 +199,8 @@ class PeopleWorkspace:
 
     def apply_scene_correction(self,kind):
         """Rebuild all available actor/take corrections against one plane."""
-        from .motion_tools import RESULTS,result_sources,base_result,result_is_current
-        jobs=[]
-        skipped=[]
-        bases=result_sources(base_result(kind))
-        for person in self.people_state['people']:
-            for number,take in enumerate(person.get('takes',[]),1):
-                project=safe_child(self.people_root,take['project'])
-                available=all((project/RESULTS[base][0]).is_file() and result_is_current(project,base) for base in bases)
-                if not available:
-                    if person.get('checked'):
-                        skipped.append(f"{person['name']}, Take {number}")
-                    continue
-                jobs.extend((stage,['--project',str(project),'--result',kind]) for stage in ('correct','export'))
+        from .workflow_jobs import scene_correction_jobs
+        jobs, skipped = scene_correction_jobs(self.people_root, self.people_state['people'], kind)
         for name in skipped:
             self.log.append(f'{name}: Apply Correction skipped this take because its base motion is unavailable. Reconstruct it first.')
         if not jobs:
@@ -732,43 +721,30 @@ class PeopleWorkspace:
             self.status.setText('Prepare the required motion models first.');self.open_model_manager();return True
         root_manifest=json.loads((self.people_root/'project.json').read_text(encoding='utf-8'))
         first,end=self.processing_range()
-        fps=root_manifest['fps']
-        begin=round((first-root_manifest['start'])*fps)
-        finish=round((end-root_manifest['start'])*fps)
         self._people_stages=[s for s in stages if s!='track']
         self._people_batch=True
         self._people_inference_jobs=[];self._people_post_jobs=[]
         self._people_return_id=self.active_person_id if any(p['id']==self.active_person_id for p in selected) else selected[0]['id']
         self._people_return_project=None
         self._people_result=result or self.active_result
-        options=self.selected_correction_options()
-        jobs=[]
-        for person in selected:
-            args=['--project',str(self.people_root),'--person-id',str(person['id']),
-                '--first-frame',str(begin),'--end-frame',str(finish),'--result',self._people_result,
-                '--correction-preset',options['preset'],'--correction-mode',options['mode'],'--foot-lock',str(int(options['foot_lock'])),'--hand-lock',str(int(options['hand_lock'])),'--pelvis-offset',str(options['pelvis_offset'])]
-            if not options['auto_floor']:args+=['--floor',str(options['floor'])]
-            jobs.append(('person',args))
-        self.start_jobs(jobs)
+        from .workflow_jobs import person_jobs
+        self.start_jobs(person_jobs(self.people_root, [person['id'] for person in selected], first, end,
+                                    root_manifest, self._people_result, self.selected_correction_options()))
         return True
 
     def people_event(self,event):
         if event['type']=='person_prepared':
             # Explicit project arguments prevent a later UI selection from changing
             # which person's worker, contact edits, or exports are being processed.
-            inference=[stage for stage in self._people_stages if stage not in ('correct','export','flow_export')]
-            post=[stage for stage in self._people_stages if stage in ('correct','export','flow_export')]
-            jobs=[(stage,['--project',path,'--result',self._people_result])
-                  for path in event['projects'] for stage in inference]
-            deferred=[(stage,['--project',path,'--result',self._people_result])
-                      for path in event['projects'] for stage in post]
+            from .workflow_jobs import grouped_take_jobs, take_jobs
+            jobs, deferred = take_jobs(event['projects'], self._people_stages, self._people_result)
             # Prepare every actor's original camera/motion before resolving the
             # one automatic scene plane or committing any corrected exports.
             self._people_inference_jobs.extend(jobs)
             self._people_post_jobs.extend(deferred)
             if not any(stage=='person' for stage,_ in self.jobs):
-                from .queue_groups import grouped_jobs
-                self.jobs=grouped_jobs(self._people_inference_jobs,self.people_root)+self.jobs+self._people_post_jobs
+                self.jobs = grouped_take_jobs(self.people_root, self._people_inference_jobs,
+                                              self.jobs, self._people_post_jobs)
                 self._people_inference_jobs=[];self._people_post_jobs=[]
             return True
         if event['type']=='people_found':

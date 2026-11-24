@@ -1,5 +1,22 @@
 # Source package validation
 
+## ExMR command line and desktop parity
+
+- Windows with the private runtimes, actual GPU inference, and a 48-frame clip
+  using a Unicode filename with spaces. Single-person ExMR completed from the
+  CLI and independently from the desktop. The working video, tracking file,
+  and camera array matched byte for byte and the keypoints were identical.
+  The maximum difference across raw global body pose elements was below
+  9e-7 in this test.
+- The desktop opened the CLI project and re-corrected it. The CLI also
+  re-corrected and exported the desktop project. Dry run preserved the
+  project manifest and a duplicate export request preserved the existing
+  file. Two-person reconstruction exported two independent FBXs with and
+  without motion correction.
+- Blender 4.5 imported all 48 animation frames of the Generic, Manny and
+  Quinn FBX exports. The existing FlowHMR desktop workflow also completed
+  GPU reconstruction and preview preparation in the same checkout.
+
 ## Unreal Live Link sender on UE 5.8 (2026-11-23)
 
 - With the previous `BuildSettingsVersion.V6` and 5.7 include order,

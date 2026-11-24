@@ -127,7 +127,14 @@ def run(request, emit=lambda *a, **k:None):
             if [file_stat(p) for p in paths]!=stamps or selected_export(project,kind)!=paths[1]:
                 raise ValueError('Motion generation changed during export. Retry.')
             if scene is not None and context(scene['root'],project)!=scene:raise ValueError('Scene placement changed during export. Retry.')
-        for temporary,target,*_ in staged:os.replace(temporary,target)
+        for (temporary, target, *_), row in zip(staged, rows):
+            if row.get('replace_existing', True):
+                os.replace(temporary, target)
+            elif os.name == 'nt':
+                os.rename(temporary, target)
+            else:
+                os.link(temporary, target)
+                temporary.unlink()
         return len(staged)
     finally:
         for output,_,work in staged:

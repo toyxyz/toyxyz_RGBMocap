@@ -160,6 +160,8 @@ MAMMA's [agent setup guide](docs/MAMMA_AGENT_SETUP.md) and the
 Provider login and license acceptance remain your responsibility;
 do not put passwords or account tokens in the agent chat.
 
+For scripted ExMR reconstruction, correction and FBX export, see the [command-line guide](docs/CLI.md).
+
 ## Features
 
 - Optionally use RIFE frame interpolation for videos below 30 fps before offline
