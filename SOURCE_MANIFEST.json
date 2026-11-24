@@ -216,8 +216,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 180965,
-      "sha256": "7b5c708e1ad1d7d9feb09bdd87d50f926f1cff837685bcb25aad31e647337c9e"
+      "bytes": 181177,
+      "sha256": "5650946d36370b35cc7105acdf819ca75cba1ff3ae25c3f90d28f0b866a280d6"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -1296,8 +1296,8 @@
     },
     {
       "path": "mocap/camera_background_worker.py",
-      "bytes": 8683,
-      "sha256": "31a8a0162d1b992fdb109297bbe09c45096d093c9237291445344ff1007bb9b9"
+      "bytes": 8989,
+      "sha256": "159f7cd1f83ddcf92a4778b3acd83f6db3a6fb0256a17e98f8a1f6fa80f2c52c"
     },
     {
       "path": "mocap/camera_reference.py",
@@ -2681,8 +2681,8 @@
     },
     {
       "path": "tests/test_cli_multimodel.py",
-      "bytes": 8375,
-      "sha256": "1f19e91b32ba9e8d278cd4fb0a682a705b61b7159984be5b306516f35de7a109"
+      "bytes": 9327,
+      "sha256": "3d27d0804995d71782c6684c7150ca02b8639dddc41e959c75aefea0e1c9d75a"
     },
     {
       "path": "tests/test_cli_workflows.py",

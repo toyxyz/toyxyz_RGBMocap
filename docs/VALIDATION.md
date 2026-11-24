@@ -13,6 +13,9 @@
   five accepted samples. A fresh static-camera reconstruction saved
   the preference, its Blender export skipped refinement, and saving the
   preference off retained the original camera file hash.
+- Reproduced the Windows progress-file sharing error by holding the file
+  open during replacement. The worker emitted the update on stdout and
+  resumed writing progress files when the reader released the file.
 
 ## Windows CLI multi-video integration matrix (2026-11-24)
 

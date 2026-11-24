@@ -18,6 +18,22 @@ from mocap.workflow_jobs import sam31_arguments
 
 
 class MultiModelCLI(unittest.TestCase):
+    def test_camera_progress_emits_when_the_progress_file_is_locked(self):
+        from contextlib import redirect_stdout
+        from mocap.camera_background_worker import publish_progress
+
+        with TemporaryDirectory() as folder, redirect_stdout(StringIO()) as output:
+            work = Path(folder)
+            previous = {'current': 1, 'total': 3}
+            progress = work/'progress.json'
+            progress.write_text(json.dumps(previous), encoding='utf8')
+            with patch('mocap.camera_background_worker.os.replace', side_effect=PermissionError):
+                publish_progress(work, 2, 3)
+            self.assertEqual(json.loads(progress.read_text('utf8')), previous)
+            self.assertEqual(json.loads(output.getvalue().removeprefix('@@BACKGROUND@@')), {'current': 2, 'total': 3})
+            publish_progress(work, 3, 3)
+            self.assertEqual(json.loads(progress.read_text('utf8')), {'current': 3, 'total': 3})
+
     def test_camera_refinement_is_saved_only_in_the_requested_model_view(self):
         with TemporaryDirectory() as folder:
             root = Path(folder).resolve()

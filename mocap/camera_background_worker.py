@@ -8,6 +8,19 @@ from .result_artifacts import file_stat
 MAX_BYTES=32*1024**2
 
 
+def publish_progress(work, current, total):
+    payload = json.dumps(dict(current=current, total=total))
+    temporary = work/'progress.tmp'
+    try:
+        temporary.write_text(payload, encoding='utf-8')
+        os.replace(temporary, work/'progress.json')
+    except PermissionError:
+        # A Windows reader can temporarily prevent replacement. The same event
+        # is still available on stdout and the camera calculation can continue.
+        pass
+    print('@@BACKGROUND@@'+payload, flush=True)
+
+
 def current(sources):
     try:return all(file_stat(Path(path))==stamp for path,stamp in sources)
     except OSError:return False
@@ -116,9 +129,8 @@ def main():
             def progress(current,total):
                 now=time.monotonic()
                 if total==last_progress[1] and current!=total and now-last_progress[0]<.2:return
-                event=dict(current=current,total=total);temporary=work/'progress.tmp'
-                temporary.write_text(json.dumps(event),encoding='utf-8');os.replace(temporary,work/'progress.json')
-                print('@@BACKGROUND@@'+json.dumps(event),flush=True);last_progress[:]=[now,total]
+                publish_progress(work,current,total)
+                last_progress[:]=[now,total]
             result,sources,report=refine(Path(job['project']),track,np.asarray(job['K'],float),progress=progress)
             valid_rotations(result[:,:3,:3])
             before=-np.einsum('tji,tj->ti',track[:,:3,:3],track[:,:3,3]);after=-np.einsum('tji,tj->ti',result[:,:3,:3],result[:,:3,3])
