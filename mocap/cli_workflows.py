@@ -13,7 +13,7 @@ from .compute_policy import MODES as COMPUTE_MODES
 from .correction_settings import MODES, PRESETS, correction_options, effective_options
 from .exmr_options import options as exmr_options
 from .local_choices import saved
-from .motion_tools import MOTION_TOOLS, RESULTS, base_result, result_is_current, result_kind, selected_export
+from .motion_tools import MOTION_TOOLS, RESULTS, base_result, has_handflow, result_is_current, result_kind, result_options, selected_export
 from .paths import PROJECTS, ROOT
 from .people_store import load_people, root_for, safe_child, save_people
 from .person_names import export_stem
@@ -123,16 +123,59 @@ def chosen_settings(args, state=None, base_correction=None):
     return exmr_options(exmr), correction_options(correction), compute if compute in COMPUTE_MODES else 'auto'
 
 
-def environment(compute, settings=None):
-    return {**os.environ, 'PYTHONIOENCODING': 'utf-8', 'PYTHONUNBUFFERED': '1',
-            'RGB_MOCAP_EXMR_OPTIONS': json.dumps(exmr_options(settings)),
-            'RGB_MOCAP_COMPUTE_MODE': compute,
-            'RGB_MOCAP_RESOURCE_SAFETY': '1' if resource_safety() else '0'}
+def environment(compute, settings=None, flow=None):
+    env = {**os.environ, 'PYTHONIOENCODING': 'utf-8', 'PYTHONUNBUFFERED': '1',
+           'RGB_MOCAP_EXMR_OPTIONS': json.dumps(exmr_options(settings)),
+           'RGB_MOCAP_COMPUTE_MODE': compute,
+           'RGB_MOCAP_RESOURCE_SAFETY': '1' if resource_safety() else '0'}
+    if flow is not None:
+        names = dict(camera_interval='INTERVAL', fast_sam='FAST_SAM', sam_batch4='BATCH4',
+                     sam_gpu_crop='GPU_CROP', sam_hand_stride4='HAND_STRIDE4', hamer='HAMER')
+        env.update({'RGB_MOCAP_FLOW_' + name: str(int(flow[key])) for key, name in names.items()})
+    return env
 
 
-def missing_models(stages):
+def stage_settings(args, state, corrected):
+    defaults = saved('default_settings')
+    defaults = defaults if isinstance(defaults, dict) else {}
+    model = args.model
+    if model != 'flowhmr' and any(getattr(args, name) is not None for name in ('fast_sam','hamer','camera_interval')):
+        raise ValueError('Those camera sampling or hand settings apply to FlowHMR.')
+    if model != 'gvhmr' and any(getattr(args, name) is not None for name in ('htd','footmr','handflow')):
+        raise ValueError('HTD, FootMR and HandFlow apply to GVHMR.')
+    if model != 'exmr' and args.smoothing is not None:
+        raise ValueError('--smoothing applies to ExMR.')
+    if model == 'gvhmr':
+        if args.camera is not None:
+            raise ValueError('Use the GVHMR workflow camera behavior.')
+        pipeline = state.get('pipeline', {})
+        existing = pipeline.get('result')
+        previous = (dict(zip(('htd','footmr'), result_options(existing)), handflow=has_handflow(existing))
+                    if existing in RESULTS else {})
+        choices = {key: True for key in ('htd','footmr','handflow')}
+        choices.update({k:v for k,v in defaults.get('gvhmr_options', {}).items() if k in choices and type(v) is bool})
+        choices.update(previous)
+        choices.update({key: getattr(args,key) for key in choices if getattr(args,key) is not None})
+        return MOTION_TOOLS[model].stages(refine=choices['htd'], footmr=choices['footmr'],
+                                         handflow=choices['handflow'], correction=corrected), result_kind(correction=corrected, **choices), None
+    flow = None
+    if model == 'flowhmr':
+        flow = dict(camera_interval=0, fast_sam=True, sam_batch4=True, sam_gpu_crop=True,
+                    sam_hand_stride4=True, hamer=False)
+        for values in (defaults.get('flow_options', {}), state.get('flow_options', {})):
+            flow.update({key: value for key, value in values.items() if key in flow and type(value) is type(flow[key])})
+        if args.camera is not None:
+            flow['camera_interval'] = -1 if args.camera == 'static' else 0
+        if args.camera_interval is not None:
+            flow['camera_interval'] = args.camera_interval
+        for key in ('fast_sam', 'hamer'):
+            if getattr(args,key) is not None:
+                flow[key] = getattr(args,key)
+    return MOTION_TOOLS[model].stages(correction=corrected), result_kind(correction=corrected), flow
+
+def missing_models(stages, tool=None):
     from .models import missing
-    return list(dict.fromkeys(model.name for stage in stages for model in missing(stage)))
+    return list(dict.fromkeys(model.name for stage in stages for model in missing(stage, tool=tool)))
 
 
 def video_range(video, start, end, offset):
@@ -171,8 +214,21 @@ def one_event(events, name):
 
 def reconstruct(args, report):
     from .scene_floor import ensure_config, save_config
+    from .offline_jobs import DEDICATED, reconstruct as reconstruct_dedicated
 
     video = args.video.resolve(strict=True)
+    if args.model in DEDICATED:
+        if args.find_only:
+            raise ValueError('This model tracks people as part of reconstruction.')
+        return reconstruct_dedicated(args, video, report)
+    if args.find_only:
+        args.find_person = True
+    if args.camera_video or args.calibration or args.people is not None or args.height is not None or args.active_camera is not None or args.interaction is not None:
+        raise ValueError('Those input options apply to MAMMA or PromptHMR.')
+    if args.tracker != 'sam31' and any((args.sam31_prompt, args.sam31_time is not None, args.sam31_point)):
+        raise ValueError('SAM 3.1 prompt and point options require --tracker sam31.')
+    if args.tracker != 'default' and not args.find_person:
+        raise ValueError('--tracker requires --find-person.')
     if args.person and not args.find_person:
         raise ValueError('--person requires --find-person.')
     if args.person and any(person < 1 for person in args.person):
@@ -185,13 +241,35 @@ def reconstruct(args, report):
         if not preferences(active)['checked']:
             raise ValueError('Person 1 is unchecked in this saved single-person project. Check it in the GUI first.')
     first, last = video_range(video, args.start, args.end, offset)
+    people_options = None
+    if args.tracker == 'sam31':
+        from .workflow_jobs import sam31_arguments
+        prompt = (args.sam31_prompt or 'person').strip()
+        anchor = first if args.sam31_time is None else args.sam31_time + offset
+        points = args.sam31_point or []
+        if not first <= anchor < last or len(prompt)>256 or len(points)>16 or any(
+                not 0<=x<1 or not 0<=y<1 for x,y in points):
+            raise ValueError('Choose a SAM 3.1 marker frame inside the trim and up to 16 normalized points.')
+        people_options = sam31_arguments(prompt, anchor, points)
     exmr, correction, compute = chosen_settings(args, settings)
     corrected = args.correction if args.correction is not None else (settings or {}).get('pipeline', {}).get('result', 'corrected_initial').startswith('corrected_')
     kind = result_kind(correction=corrected)
     interpolation = args.rife if args.rife is not None else bool((settings or {}).get('interpolation'))
-    stages = MOTION_TOOLS[args.model].stages(correction=corrected)
-    discovery = ['people'] if args.find_person else []
-    absent = missing_models([*discovery, *[stage for stage in stages if stage != 'track' or not discovery]])
+    stages, kind, flow = stage_settings(args, settings or {}, corrected)
+    discovery = ['people' if args.tracker == 'default' else 'sam31_people'] if args.find_person else []
+    if args.find_only:
+        stages = []
+    required = [*discovery, *[stage for stage in stages if stage != 'track' or not discovery]]
+    if flow is not None and flow['camera_interval'] == -1:
+        if 'flow_camera' in required:
+            required.remove('flow_camera')
+    if flow is not None and flow['hamer'] and not args.find_only:
+        from .flow_hamer import MODEL_KEYS
+        from .models import BY_KEY, ready
+        optional = [BY_KEY[k].name for k in MODEL_KEYS if not ready(BY_KEY[k])]
+    else:
+        optional = []
+    absent = missing_models(required, tool=args.model) + optional
     if interpolation:
         from .rife_video import recipe
         from .models import BY_KEY, ready
@@ -202,15 +280,15 @@ def reconstruct(args, report):
     if args.dry_run:
         return {'dry_run': True, 'model': args.model, 'result': kind, 'range_seconds': [first, last],
                 'project': str(workspace_path) if workspace_path else None,
-                'stages': ['prepare', *discovery, *(['person'] if discovery else []),
+                'stages': ['prepare', *discovery, *(['person'] if discovery and not args.find_only else []),
                            *[stage for stage in stages if stage != 'track' or not discovery]],
                 'takes_deferred': bool(discovery), 'missing_models': absent}
     if absent:
         raise ValueError('Prepare these models in Model Manager: ' + ', '.join(absent))
-    env = environment(compute, exmr)
+    env = environment(compute, exmr, flow)
     jobs = video_jobs(video, first, last, args.model, discovery or stages,
                      result=None if discovery else kind, correction=correction,
-                     workspace=workspace_path, interpolation=interpolation)
+                     workspace=workspace_path, interpolation=interpolation, people_options=people_options)
     project = run_jobs(jobs, None, env, report)
     if not discovery:
         return {'project': str(project), 'result': kind, 'model': args.model}
@@ -226,13 +304,17 @@ def reconstruct(args, report):
         for person in people:
             person['checked'] = person['id'] in args.person
         save_people(project, group)
+    if args.find_only:
+        return {'project': str(project), 'model': args.model, 'people': people}
     selected = [person for person in people if person.get('checked')]
     if not selected:
         raise ValueError('No person is checked. Specify --person with a found person ID.')
-
     ensure_config(project)
     state = manifest(project)
-    state['exmr_options'] = exmr
+    if args.model == 'exmr':
+        state['exmr_options'] = exmr
+    if flow is not None:
+        state['flow_options'] = {**state.get('flow_options', {}), **flow}
     atomic_json(project / 'project.json', state)
     if corrected:
         save_config(project, correction)
@@ -255,7 +337,8 @@ def reconstruct(args, report):
     if not published:
         raise WorkerError('No take was prepared for the selected people.')
     run_jobs(grouped_take_jobs(project, inference, [], post), project, env, report)
-    prepare_people_scene(project, env, report)
+    if args.model != 'flowhmr':
+        prepare_people_scene(project, env, report)
     return {'project': str(project), 'result': kind, 'model': args.model, 'takes': [str(path) for path in published]}
 
 
@@ -290,9 +373,10 @@ def select_takes(args):
 
 
 def selected_kind(path, override):
-    kind = override or manifest(path).get('pipeline', {}).get('result', 'initial')
-    if kind not in RESULTS or base_result(kind) != 'initial':
-        raise ValueError(f'Unsupported ExMR result {kind} in {path}.')
+    pipeline = manifest(path).get('pipeline', {})
+    kind = override or pipeline.get('result', 'initial')
+    if kind not in RESULTS or (pipeline.get('model') != 'gvhmr' and base_result(kind) != 'initial'):
+        raise ValueError(f'Unsupported motion result {kind} in {path}.')
     return kind
 
 
@@ -314,7 +398,9 @@ def inspect(args):
                        'frames': state.get('frames'), 'source_frame_range': state.get('person_frames'),
                        'result': kind, 'export_ready': issue is None,
                        'issue': vars(issue) if issue is not None else None})
-    return {'model': args.model, 'project': str(root), 'takes': result}
+    people = [dict(id=person['id'], name=person['name'], checked=bool(person.get('checked')))
+              for person in group['people']] if group else [dict(id=1, name=rows[0][2]['name'], checked=bool(rows[0][2]['checked']))]
+    return {'model': args.model, 'project': str(root), 'takes': result, 'people': people}
 
 
 def prepare_people_scene(root, env, report):
@@ -335,12 +421,14 @@ def prepare_people_scene(root, env, report):
 def correct(args, report):
     from .scene_floor import read_config, save_config
     root, group, rows = select_takes(args)
-    if args.result not in (None, 'corrected_initial'):
-        raise ValueError('ExMR correction writes corrected_initial.')
+    from .workflow_jobs import scene_correction_jobs
     updates, jobs, compute = [], [], None
     floor_requested = args.floor is not None or args.auto_floor or args.mode is not None
+    stages = ('gemx_correct',) if args.model == 'gemx' else ('correct', 'flow_export' if args.model == 'flowhmr' else 'export')
     for _, path, _ in rows:
-        if not (path / RESULTS['initial'][0]).is_file() or not result_is_current(path, 'initial'):
+        result = 'corrected_' + base_result(selected_kind(path, args.result))
+        base_kind = base_result(result)
+        if not result_is_current(path, base_kind) or (args.model != 'gemx' and not (path / RESULTS[base_kind][0]).is_file()):
             raise ValueError(f'{path} has no current base motion. Reconstruct it first.')
         state = manifest(path)
         base = state.get('correction')
@@ -351,19 +439,23 @@ def correct(args, report):
             compute = mode
         state['correction'] = options
         updates.append((path, state))
-    for path, _ in updates:
-        jobs.extend((stage, ['--project', str(path), '--result', 'corrected_initial'])
-                    for stage in ('correct', 'export'))
+        jobs.extend((stage, ['--project', str(path), '--result', result]) for stage in stages)
+    kinds = {values[-1] for _, values in jobs}
     if group is not None:
-        from .workflow_jobs import scene_correction_jobs
-        jobs, skipped = scene_correction_jobs(root, group['people'], 'corrected_initial')
+        if len(kinds) != 1:
+            raise ValueError('Choose one result kind with --result to correct the shared scene.')
+        result = next(iter(kinds))
+        jobs, skipped = scene_correction_jobs(root, group['people'], result, stages=stages)
         for stage, values in jobs:
             if stage == 'correct':
                 model_project(Path(values[1]), args.model)
         for name in skipped:
             report(name + ': current base motion unavailable. Reconstruct this take first.')
+    if not jobs:
+        raise ValueError('No saved take has all the required base motion.')
+    result = jobs[0][1][-1] if len(kinds)==1 else None
     if args.dry_run:
-        return {'dry_run': True, 'project': str(root), 'result': 'corrected_initial',
+        return {'dry_run': True, 'project': str(root), 'result': result,
                 'correction': {str(path): state['correction'] for path, state in updates},
                 'stages': [{'stage': stage, 'project': values[1]} for stage, values in jobs]}
     if group is not None and floor_requested:
@@ -371,44 +463,68 @@ def correct(args, report):
     for path, state in updates:
         atomic_json(path / 'project.json', state)
     run_jobs(jobs, root, environment(compute), report)
-    return {'project': str(root), 'result': 'corrected_initial'}
+    return {'project': str(root), 'result': result}
 
 
 def output_paths(args, rows):
-    if args.output is not None and len(rows) != 1:
+    if args.output is not None and len(rows) != 1 and not (
+            getattr(args, 'combined', False) or getattr(args, 'whole_scene', False)):
         raise ValueError('Use --output-dir when exporting more than one take.')
+    fmt = getattr(args,'format','fbx')
+    bundled = fmt == 'blend'
+    combined = bundled and (args.combined or args.whole_scene)
     outputs = []
     for ident, _, person in rows:
         if args.output is not None:
             path = args.output
             if not path.suffix:
-                path = path.with_suffix('.fbx')
+                path = path.with_suffix('.' + fmt)
         else:
             person_id = person['id']
             # Existing take-directory keys include the source-frame interval. Person ID disambiguates names.
             key = Path(ident).name
             name = f'{export_stem(person["name"])}_p{person_id:04d}_{key}'
-            path = args.output_dir / (name + '.fbx')
+            path = args.output_dir / (name + '.' + fmt)
         path = path.resolve()
-        if path.suffix.lower() != '.fbx' or path.is_dir():
-            raise ValueError(f'Choose an FBX file destination: {path}')
-        if path.exists() and not args.overwrite:
+        if path.suffix.lower() != '.' + fmt or path.is_dir():
+            raise ValueError(f'Choose a .{fmt} destination: {path}')
+        if bundled:
+            bundle = path.with_suffix('')
+            if bundle.exists():
+                raise ValueError(f'Choose a new Blender bundle directory: {bundle}')
+            path = bundle / path.name
+        elif path.exists() and not args.overwrite:
             raise ValueError(f'Destination exists: {path}. Pass --overwrite to replace it.')
         outputs.append(path)
-    if len({str(path).casefold() for path in outputs}) != len(outputs):
-        raise ValueError('The selected takes have duplicate FBX destinations. Export them individually.')
+    if not combined and len({str(path).casefold() for path in outputs}) != len(outputs):
+        raise ValueError('The selected takes have duplicate destinations. Export them individually.')
     return outputs
 
 
 def export(args, report):
     root, group, takes = select_takes(args)
     targets = output_paths(args, takes)
+    fmt = args.format
     ue5 = args.fbx_profile == 'ue5_mannequin'
+    combined = args.combined or args.whole_scene
+    if combined and (fmt != 'blend' or args.output is None):
+        raise ValueError('Combined and whole-scene export require --format blend and --output.')
+    if args.whole_scene and (args.model != 'mamma' or group is None):
+        raise ValueError('--whole-scene uses a reconstructed MAMMA people scene.')
+    if fmt != 'fbx' and (ue5 or args.rest_pose or args.fbx_compatibility):
+        raise ValueError('FBX profile, rest pose and compatibility are FBX options.')
+    if fmt != 'bvh' and args.bvh_profile is not None:
+        raise ValueError('--bvh-profile requires --format bvh.')
+    if fmt == 'blend' and args.overwrite:
+        raise ValueError('Blender export writes a new bundle directory.')
     if ue5 and (args.rest_pose or args.prepend_tpose or args.place_at_origin or args.symmetric_rest or args.fbx_compatibility):
         raise ValueError('The UE5 Mannequin profile uses the stock rest pose and axis settings.')
     if not ue5 and (args.ue5_target or args.in_place or args.include_mesh):
         raise ValueError('Choose --fbx-profile ue5_mannequin to set mannequin options.')
-    options = dict(fbx_profile=args.fbx_profile, export_face=False, fbx_compatibility=args.fbx_compatibility,
+    options = dict(format=fmt, fbx_profile=args.fbx_profile, export_face=bool(args.face),
+                   face_format=args.face or 'txt', smooth_face=not args.raw_face,
+                   bvh_profile=args.bvh_profile or 'generic', animate_camera=not args.no_camera_animation,
+                   fbx_compatibility=args.fbx_compatibility,
                    prepend_tpose=args.prepend_tpose, place_at_origin=args.place_at_origin, symmetric_rest=args.symmetric_rest)
     if ue5:
         options.update(ue5_target=args.ue5_target or 'manny', ue5_in_place=args.in_place, ue5_include_mesh=args.include_mesh)
@@ -416,7 +532,15 @@ def export(args, report):
         options['fbx_rest_pose'] = args.rest_pose or 't'
     env = environment('auto')
     selected, errors = [], []
+    archives = {}
     for ident, path, person in takes:
+        if args.face:
+            from .face_data import FaceArchive
+            face_root = root_for(path)
+            if face_root not in archives:
+                archives[face_root] = FaceArchive(face_root)
+            if person['id'] not in archives[face_root].index:
+                raise ValueError(f"{person['name']}: run face track before exporting face.")
         kind = selected_kind(path, args.result)
         source = selected_export(path, kind)
         if source is None:
@@ -431,7 +555,7 @@ def export(args, report):
             for path, _, _, _ in selected:
                 context(root, path)
         return {'dry_run': True, 'project': str(root), 'outputs': [str(target) for target in targets]}
-    if group is not None:
+    if group is not None and args.model != 'flowhmr':
         prepare_people_scene(root, env, report)
     plan = []
     for (path, person, kind, source), target in zip(selected, targets):
@@ -439,15 +563,28 @@ def export(args, report):
                          person_id=person['id'] if group else None)
         row['replace_existing'] = args.overwrite
         plan.append(row)
+    stage = {'fbx':'save_fbx','bvh':'copy_bvh','blend':'save_blend'}[fmt]
+    if args.whole_scene:
+        kinds = {row['kind'] for row in plan}
+        if len(kinds) != 1:
+            raise ValueError('Choose a single motion result for the whole MAMMA scene.')
+        stage = 'save_blend_scene'
+        data = dict(root=str(root), kind=kinds.pop(), target=str(targets[0]),
+                    people=list(dict.fromkeys(person['id'] for _, _, person in takes)),
+                    takes=[path.relative_to(root).as_posix() for _, path, _ in takes],
+                    **{key:options[key] for key in ('export_face','face_format','smooth_face')})
+    else:
+        data = dict(target=str(targets[0]), takes=plan) if combined else plan
     for target in targets:
-        target.parent.mkdir(parents=True, exist_ok=True)
-    request = root / ('.fbx-export-' + uuid.uuid4().hex + '.json')
-    atomic_json(request, plan)
+        (target.parent.parent if fmt == 'blend' else target.parent).mkdir(parents=True, exist_ok=True)
+    request = root / ('.cli-export-' + uuid.uuid4().hex + '.json')
+    atomic_json(request, data)
     try:
-        run_worker('save_fbx', ['--project', str(root), '--output', str(request)], env, report)
+        events = run_worker(stage, ['--project', str(root), '--output', str(request)], env, report)
     finally:
         from .blend_support import cleanup, partial
-        for path in [request, *(partial(target, request) for target in targets)]:
+        for path in [request, *dict.fromkeys(partial(target.parent if fmt == 'blend' else target, request)
+                                             for target in targets)]:
             try:
                 if path.is_dir():
                     if (path / '.rgbmocap-owner').is_file():
@@ -456,13 +593,32 @@ def export(args, report):
                     path.unlink(missing_ok=True)
             except (OSError, ValueError) as error:
                 report(f'Could not clean an export staging path: {error}')
-    return {'project': str(root), 'outputs': [str(target) for target in targets]}
+    result = {'project': str(root), 'outputs': [str(target) for target in dict.fromkeys(targets)]}
+    if args.face:
+        result['face_outputs'] = [event['face_output'] for event in events if 'face_output' in event]
+        errors = [event['face_error'] for event in events if 'face_error' in event]
+        if not errors and not result['face_outputs']:
+            errors = ['Face export did not publish any files.']
+        if errors:
+            result.update(failed=True, face_errors=errors)
+    return result
 
 
 def execute(args, report):
     if args.command == 'check':
-        stages = MOTION_TOOLS['exmr'].stages(correction=True) + ['people']
-        return {'runtime': 'verified', 'model': 'exmr', 'missing_models': missing_models(stages)}
+        from .offline_jobs import DEDICATED
+        model = args.model
+        stages = [model + '_assets'] if model in DEDICATED else MOTION_TOOLS[model].stages(correction=True) + ['people']
+        return {'runtime': 'verified', 'model': model, 'missing_models': missing_models(stages, tool=model)}
+    if args.command in {'models','face','batch','contacts','prepare-preview'} or (args.command == 'project' and args.project_action == 'copy'):
+        from .cli_tools import batch, contacts, copy_project, face_command, model_command, prepare_preview
+        command = {'models': model_command, 'face': face_command, 'project': copy_project,
+                   'batch': batch, 'contacts': contacts, 'prepare-preview': prepare_preview}
+        return command[args.command](args, report)
+    if args.command in {'stream','pear','character','preview','reference-fbx'}:
+        from .cli_media import character, pear, preview, reference, stream
+        return {'stream': stream, 'pear': pear, 'character': character,
+                'preview': preview, 'reference-fbx': reference}[args.command](args, report)
     if args.command == 'project':
         return inspect(args)
     return {'reconstruct': reconstruct, 'correct': correct, 'export': export}[args.command](args, report)

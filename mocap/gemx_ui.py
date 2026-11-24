@@ -33,8 +33,7 @@ class GemXWorkspace:
             self.show_gemx_start_error('Open a video before reconstructing.')
             return
         from .models import missing
-        from .paths import HOME, PROJECTS
-        from .storage import atomic_json, project_key
+        from .offline_jobs import single_root, write_jobs
 
         try:
             configuration()
@@ -48,15 +47,10 @@ class GemXWorkspace:
             start, end = self.processing_range()
             if end - start > 60.001 or round((end - start) * 30) < 4:
                 raise ValueError('Trim to 4–1,800 frames at 30 fps (up to 60 seconds).')
-            root = self.workspace_root or PROJECTS / (
-                self.video_path.stem[:80] + '_' +
-                project_key(self.video_path, 0, self.info['duration']) + '_project')
-            folder = HOME / 'cache/worker_jobs'
-            folder.mkdir(parents=True, exist_ok=True)
-            request = folder / (uuid.uuid4().hex + '.json')
-            atomic_json(request, dict(version=1, root=str(root), video=str(self.video_path),
-                                      start=start, end=end, interpolation=interpolation, correct=self.motion_correction.isChecked(),
-                                      correction=self.selected_correction_options()))
-            self.start_jobs([('gemx_reconstruct', ['--request', str(request)])])
+            root = self.workspace_root or single_root(self.video_path, self.info)
+            _, jobs = write_jobs('gemx', dict(root=str(root), video=str(self.video_path),
+                                 start=start, end=end, interpolation=interpolation,
+                                 correct=self.motion_correction.isChecked(), correction=self.selected_correction_options()))
+            self.start_jobs(jobs)
         except (OSError, ValueError, RuntimeError) as error:
             self.show_gemx_start_error(str(error))

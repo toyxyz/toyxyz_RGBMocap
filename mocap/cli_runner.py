@@ -12,7 +12,7 @@ from .processing_guard import ProcessingGuard
 from .queue_groups import BATCH_STAGES, argument, remove_request, write_request
 
 EVENT_PREFIX = '@@MOCAP@@'
-RETAINED_EVENTS = {'prepared', 'people_found', 'person_prepared'}
+RETAINED_EVENTS = {'prepared', 'people_found', 'person_prepared', 'gemx_ready', 'mamma_ready', 'prompthmr_ready'}
 
 
 class WorkerError(RuntimeError):
@@ -96,7 +96,7 @@ def run_process(command, stage, env, report, resource_safety):
                     report(line)
                     continue
                 kind = event.get('type')
-                if kind in RETAINED_EVENTS:
+                if kind in RETAINED_EVENTS or kind == 'info' and ('face_output' in event or 'face_error' in event):
                     events.append(event)
                 if kind in {'failed', 'blocked'}:
                     failure = event.get('message') or kind

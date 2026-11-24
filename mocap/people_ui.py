@@ -696,8 +696,8 @@ class PeopleWorkspace:
             self.status.setText('Seek to a frame inside the trim before marking people.')
             return
         self._sam31_prompt = prompt
-        options = ['--sam31-options', json.dumps(dict(prompt=prompt, time=mark_time, points=points),
-                                                 ensure_ascii=True)]
+        from .workflow_jobs import sam31_arguments
+        options = sam31_arguments(prompt, mark_time, points)
         if self.people_root is not None:
             manifest = json.loads((self.people_root/'project.json').read_text(encoding='utf-8'))
             root_start = float(manifest['start'])

@@ -417,10 +417,7 @@ class MammaWorkspace:
         if hasattr(self,'readiness'):self.update_readiness()
 
     def run_mamma(self):
-        import hashlib,json,uuid
-        from .paths import HOME,PROJECTS
-        from .storage import atomic_json
-        from .mamma_pipeline import STAGES
+        from .offline_jobs import camera_root, write_jobs
         from .mamma_runtime import configuration
         from .models import missing
         if self.busy or self.mamma_pending or self.contact_saving:return
@@ -445,16 +442,12 @@ class MammaWorkspace:
             if not self.ready_for_interpolation(interpolation):
                 return
             first,end=self.processing_range()
-            root=self.workspace_root
-            if root is None:
-                token=hashlib.sha256('|'.join(e['path'] for e in self.mamma_inputs).encode()).hexdigest()[:14]
-                root=PROJECTS/(Path(self.mamma_inputs[0]['path']).stem[:80]+'_'+token+'_project')
-            folder=HOME/'cache/mamma-jobs';folder.mkdir(parents=True,exist_ok=True)
-            request=folder/(uuid.uuid4().hex+'.json')
-            atomic_json(request,dict(version=1,root=str(root),inputs=self.mamma_inputs,start=first,end=end,
-                options=options,active_camera=self.mamma_active_camera,interpolation=interpolation,
-                correction_enabled=self.motion_correction.isChecked(),correction=self.selected_correction_options()))
-            self.start_jobs([(stage,['--request',str(request)]) for stage in STAGES])
+            root = self.workspace_root or camera_root(self.mamma_inputs)
+            _, jobs = write_jobs('mamma', dict(root=str(root), inputs=self.mamma_inputs,
+                                 start=first, end=end, options=options, active_camera=self.mamma_active_camera,
+                                 interpolation=interpolation, correction_enabled=self.motion_correction.isChecked(),
+                                 correction=self.selected_correction_options()))
+            self.start_jobs(jobs)
         except (OSError,ValueError,RuntimeError,KeyError) as error:
             self.status.setText('Cannot start MAMMA: '+str(error))
 

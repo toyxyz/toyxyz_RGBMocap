@@ -146,6 +146,7 @@ def publish(rows, emit):
         project=Path(row['project'])
         target=Path(row['target'])
         if not target.is_file():
+            emit('info', face_error=f'Exported motion file is missing: {target}')
             continue
         try:
             state=manifest(project)
@@ -172,6 +173,7 @@ def publish(rows, emit):
                 filtered = smoothed[key]
             written = write_sidecar(destination, archive, project, state, offset, leading,
                                     row.get('rig_name','Person '+str(person)), filtered=filtered)
-            emit('info',message=f'Exported face {extension[1:].upper()}: {written}')
+            emit('info', message=f'Exported face {extension[1:].upper()}: {written}', face_output=str(written))
         except (OSError,ValueError,KeyError,IndexError) as error:
-            emit('info',message=f'Face export for {row.get("rig_name","selected person")}: {error}')
+            message = f'Face export for {row.get("rig_name","selected person")}: {error}'
+            emit('info', message=message, face_error=message)

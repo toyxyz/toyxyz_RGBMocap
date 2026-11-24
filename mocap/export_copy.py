@@ -70,7 +70,9 @@ def run(request,emit=lambda *a,**k:None):
         for project,kind,source,stamp,scene in committed:
             if scene is not None and context(scene['root'],project)!=scene:raise ValueError('Scene placement changed during export. Retry.')
             if selected_export(project,kind)!=source or file_stat(source)!=stamp:raise ValueError('Target result changed during export. Retry.')
-        for temporary,target,*_ in staged:os.replace(temporary,target)
+        from .workflow_jobs import publish_output
+        for (temporary, target), row in zip(staged, rows):
+            publish_output(temporary, target, replace=row.get('replace_existing', True))
         return len(staged)
     finally:
         for temporary,*_ in staged:temporary.unlink(missing_ok=True)

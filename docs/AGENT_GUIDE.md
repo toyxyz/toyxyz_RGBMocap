@@ -1,12 +1,15 @@
 # RGB MoCap: agent operating and development guide
 
-This guide is for agents helping users operate or modify RGB MoCap. It describes the Git/CMD version. User requests and newer verified behavior take precedence over historical benchmarks. The English GUI is the supported user interface; the ExMR command line covers a documented subset of the workflow. Avoid asking for the user's videos or model weights if the existing local project is sufficient.
+This guide is for agents helping users operate or modify RGB MoCap. It describes the Git/CMD version. User requests and newer verified behavior take precedence over historical benchmarks. The Windows distribution offers the English desktop interface and a command line for automation. Avoid asking for the user's videos or model weights if the existing local project is sufficient.
 
-For headless ExMR reconstruction, correction, project inspection and source FBX, use
-[the command-line guide](CLI.md). The desktop and CLI share the job builders
-in `mocap/workflow_jobs.py`, the installed runtimes and the installation lock.
-Keep the desktop event order, worker arguments, saved project format and
-processing semantics in sync when modifying those builders.
+See the [command-line guide](CLI.md) for offline models, export formats,
+project and model management, face capture, retargeting, preview rendering,
+streaming, PEAR sampling and batch jobs. The CLI uses the same installed
+runtimes and installation lock as the desktop. Keep worker arguments, event
+order and saved state in sync in `mocap/workflow_jobs.py` and
+`mocap/offline_jobs.py`. The latter builds requests for GEM-X, MAMMA and
+PromptHMR. Keep Qt viewport rendering in the preview helper. Do not introduce
+GUI dependencies into model workers or change their numerical defaults.
 
 ## Start and update
 

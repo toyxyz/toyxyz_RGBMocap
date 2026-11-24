@@ -8,9 +8,11 @@ from pathlib import Path
 import subprocess
 import sys
 
+from .motion_tools import MOTION_TOOLS, RESULTS
 from .paths import ROOT
 
 COMMAND_SCHEMA = 1
+OFFLINE_MODELS = tuple(key for key, tool in MOTION_TOOLS.items() if not tool.live)
 
 
 def correction_flags(parser):
@@ -30,7 +32,7 @@ def take_flags(parser):
     selection.add_argument('--person', type=int, action='append', help='Include this person ID. Repeat for more people.')
     selection.add_argument('--take', action='append', help='Include this saved take ID from project inspect.')
     selection.add_argument('--all-takes', action='store_true')
-    parser.add_argument('--result', choices=('initial', 'corrected_initial'))
+    parser.add_argument('--result', choices=tuple(RESULTS))
 
 
 def parser():
@@ -38,7 +40,7 @@ def parser():
     commands = root.add_subparsers(dest='command', required=True)
     rec = commands.add_parser('reconstruct', help='Prepare and reconstruct a video.')
     rec.add_argument('video', type=Path)
-    rec.add_argument('--model', default='exmr', choices=('exmr',))
+    rec.add_argument('--model', default='exmr', choices=OFFLINE_MODELS)
     rec.add_argument('--project', type=Path, help='Destination or existing workspace for this video.')
     rec.add_argument('--start', type=float)
     rec.add_argument('--end', type=float)
@@ -48,40 +50,68 @@ def parser():
     rec.add_argument('--rife', action=argparse.BooleanOptionalAction)
     rec.add_argument('--find-person', action='store_true', help='Run the Default person tracker and use its checked people.')
     rec.add_argument('--person', type=int, action='append', help='Select a found person ID. Repeat to select more people.')
+    rec.add_argument('--find-only', action='store_true', help='Save the found people without reconstructing.')
+    rec.add_argument('--tracker', choices=('default', 'sam31'), default='default')
+    rec.add_argument('--sam31-prompt', help='Text prompt for SAM 3.1.')
+    rec.add_argument('--sam31-time', type=float, help='Marker time in video seconds.')
+    rec.add_argument('--sam31-point', type=float, nargs=2, action='append', metavar=('X','Y'))
+    rec.add_argument('--people', type=int, help='Expected count (0 Auto) for PromptHMR or MAMMA.')
+    rec.add_argument('--interaction', action=argparse.BooleanOptionalAction)
+    rec.add_argument('--camera-video', action='append', type=Path, default=[], help='Additional synchronized MAMMA camera video.')
+    rec.add_argument('--calibration', type=Path, help='MAMMA manual camera calibration.')
+    rec.add_argument('--height', type=float, help='MAMMA reference height in metres.')
+    rec.add_argument('--active-camera', type=int, help='Initial MAMMA camera number (1-based).')
+    rec.add_argument('--camera-interval', type=int, choices=(-1, 0, 1, 2, 4, 8, 16))
+    for option in ('--fast-sam', '--hamer', '--htd', '--footmr', '--handflow'):
+        rec.add_argument(option, action=argparse.BooleanOptionalAction)
     correction_flags(rec)
 
     correct = commands.add_parser('correct', help='Update the selected take correction.')
     correct.add_argument('project', type=Path)
-    correct.add_argument('--model', default='exmr', choices=('exmr',))
+    correct.add_argument('--model', default='exmr', choices=OFFLINE_MODELS)
     take_flags(correct)
     correction_flags(correct)
 
     exp = commands.add_parser('export', help='Export the selected committed motion.')
     exp.add_argument('project', type=Path)
-    exp.add_argument('--model', default='exmr', choices=('exmr',))
+    exp.add_argument('--model', default='exmr', choices=OFFLINE_MODELS)
     take_flags(exp)
-    exp.add_argument('--format', default='fbx', choices=('fbx',))
+    exp.add_argument('--format', default='fbx', choices=('fbx','bvh','blend'))
     exp.add_argument('--fbx-profile', default='generic', choices=('generic', 'ue5_mannequin'))
     exp.add_argument('--ue5-target', choices=('manny', 'quinn'))
     for option in ('--in-place', '--include-mesh', '--fbx-compatibility', '--prepend-tpose',
                    '--place-at-origin', '--symmetric-rest', '--overwrite'):
         exp.add_argument(option, action='store_true')
     exp.add_argument('--rest-pose', choices=('t', 'a'))
+    exp.add_argument('--bvh-profile', choices=('generic','biped'))
+    exp.add_argument('--combined', action='store_true', help='Put selected Blender takes on one timeline.')
+    exp.add_argument('--whole-scene', action='store_true', help='MAMMA native Blender scene.')
+    exp.add_argument('--face', choices=('txt','livelink_csv'))
+    exp.add_argument('--raw-face', action='store_true')
+    exp.add_argument('--no-camera-animation', action='store_true')
     outputs = exp.add_mutually_exclusive_group(required=True)
     outputs.add_argument('--output', type=Path)
     outputs.add_argument('--output-dir', type=Path)
 
     project = commands.add_parser('project', help='Read saved project information.')
     project_actions = project.add_subparsers(dest='project_action', required=True)
+    copy = project_actions.add_parser('copy', help='Save an independent project copy.')
+    copy.add_argument('project', type=Path)
+    copy.add_argument('--model', choices=OFFLINE_MODELS)
+    copy.add_argument('--output', type=Path, required=True)
+    copy.add_argument('--dry-run', action='store_true')
     inspect = project_actions.add_parser('inspect')
     inspect.add_argument('project', type=Path)
-    inspect.add_argument('--model', default='exmr', choices=('exmr',))
+    inspect.add_argument('--model', default='exmr', choices=OFFLINE_MODELS)
     take_flags(inspect)
 
     opn = commands.add_parser('open', help='Open the desktop app with an optional video or project.')
     opn.add_argument('path', type=Path, nargs='?')
-    check = commands.add_parser('check', help='Check the installation and ExMR model files.')
-    for sub in (rec, correct, exp, inspect, opn, check):
+    check = commands.add_parser('check', help='Check offline model files.')
+    check.add_argument('--model', choices=OFFLINE_MODELS, default='exmr')
+    from .cli_arguments import option_parsers
+    option_parsers(commands, OFFLINE_MODELS, take_flags)
+    for sub in (rec, correct, exp, inspect, copy, opn, check):
         sub.add_argument('--json', action='store_true', help='Print one JSON result to stdout.')
     for sub in (rec, correct, exp):
         sub.add_argument('--dry-run', action='store_true', help='Inspect the plan without writing files.')
@@ -119,7 +149,12 @@ def main(argv=None):
 
     code, result = 0, {}
     try:
-        mutates = args.command in {'reconstruct', 'correct', 'export'} and not args.dry_run
+        read_only = (args.command in {'open','check'} or args.command == 'project' and args.project_action == 'inspect'
+                     or args.command == 'models' and args.action == 'list'
+                     or args.command == 'face' and args.action == 'inspect'
+                     or args.command == 'pear' and args.list_devices
+                     or args.command == 'contacts' and args.action == 'list')
+        mutates = not read_only and not getattr(args, 'dry_run', False)
         with app_lock(ROOT) if mutates else nullcontext():
             verify(ROOT)
             from .runtime_registry import activate
@@ -131,6 +166,8 @@ def main(argv=None):
             else:
                 from .cli_workflows import execute
                 result = execute(args, lambda message: print(message, file=sys.stderr, flush=True))
+                if result.get('failed'):
+                    code = 1
     except KeyboardInterrupt:
         code, result = 130, {'error': 'Cancelled.'}
     except (FileNotFoundError, ValueError) as error:
@@ -140,5 +177,5 @@ def main(argv=None):
     if args.json or not code:
         format_output({'schema_version': COMMAND_SCHEMA, 'ok': not code, **result}, args.json)
     else:
-        print(result['error'], file=sys.stderr)
+        print(result.get('error', json.dumps(result, ensure_ascii=False)), file=sys.stderr)
     return code

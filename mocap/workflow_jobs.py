@@ -95,7 +95,7 @@ def export_row(project, kind, source, target, name, options, *, people_root=None
     return row
 
 
-def scene_correction_jobs(root, people, kind):
+def scene_correction_jobs(root, people, kind, *, stages=('correct', 'export')):
     from .motion_tools import RESULTS, base_result, result_is_current, result_sources
     from .people_store import safe_child
 
@@ -107,7 +107,25 @@ def scene_correction_jobs(root, people, kind):
             available = all((project / RESULTS[base][0]).is_file() and result_is_current(project, base)
                             for base in bases)
             if available:
-                jobs.extend((stage, ['--project', str(project), '--result', kind]) for stage in ('correct', 'export'))
+                jobs.extend((stage, ['--project', str(project), '--result', kind]) for stage in stages)
             elif person.get('checked'):
                 skipped.append(f"{person['name']}, Take {number}")
     return jobs, skipped
+
+
+
+def publish_output(source, target, *, replace=True):
+    import os
+    if replace:
+        os.replace(source, target)
+    elif os.name == 'nt':
+        os.rename(source, target)
+    else:
+        os.link(source, target)
+        source.unlink()
+
+
+
+def sam31_arguments(prompt, time, points):
+    import json
+    return ['--sam31-options', json.dumps(dict(prompt=prompt, time=time, points=points), ensure_ascii=True)]

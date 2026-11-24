@@ -76,9 +76,7 @@ class PromptHMRWorkspace:
         try:
             from .prompthmr_runtime import configuration
             from .models import missing
-            from .paths import HOME,PROJECTS
-            from .storage import atomic_json,project_key
-            from .prompthmr_pipeline import STAGES
+            from .offline_jobs import single_root, write_jobs
             configuration()
             if self.prompthmr_camera.currentData()=='moving':
                 from .prompthmr_camera_runtime import configuration as camera_configuration
@@ -91,9 +89,9 @@ class PromptHMRWorkspace:
             if not self.ready_for_interpolation(interpolation):
                 return
             first,end=self.processing_range()
-            root=self.workspace_root or PROJECTS/(self.video_path.stem[:80]+'_'+project_key(self.video_path,0,self.info['duration'])+'_project')
-            folder=HOME/'cache/prompthmr-jobs';folder.mkdir(parents=True,exist_ok=True);request=folder/(uuid.uuid4().hex+'.json')
-            atomic_json(request,dict(version=1,root=str(root),video=str(self.video_path),start=first,end=end,interpolation=interpolation,options=self.prompthmr_options(),
-                correction_enabled=self.motion_correction.isChecked(),correction=self.selected_correction_options()))
-            self.start_jobs([(stage,['--request',str(request)]) for stage in STAGES])
+            root = self.workspace_root or single_root(self.video_path, self.info)
+            _, jobs = write_jobs('prompthmr', dict(root=str(root), video=str(self.video_path), start=first,
+                                 end=end, interpolation=interpolation, options=self.prompthmr_options(),
+                                 correction_enabled=self.motion_correction.isChecked(), correction=self.selected_correction_options()))
+            self.start_jobs(jobs)
         except (OSError,ValueError,RuntimeError) as error:self.status.setText('Cannot start PromptHMR: '+str(error))

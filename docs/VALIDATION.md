@@ -1,5 +1,38 @@
 # Source package validation
 
+## Windows multi-model CLI and integration
+
+- Ran offline GPU reconstruction for FlowHMR, GVHMR, PromptHMR, GEM-X and
+  MAMMA with the installed workers. FlowHMR completed static and moving
+  camera runs, including HaMeR. GVHMR completed the base run and a run with
+  HTD, FootMR and HandFlow enabled. PromptHMR used fixed camera. GEM-X
+  used native SOMA output. MAMMA used two synchronized videos and a saved
+  camera calibration. The automatic MAMMA alignment test could not run
+  with the linked runtimes in the isolated checkout.
+- Confirmed SAM 3.1 tracking of two people for all 48 frames and RIFE
+  interpolation of a 24 fps clip to 30 fps. A version 1
+  batch planned and ran contact correction followed by BVH export. Also
+  verified manual contact edits and reset, a project copy, Generic and
+  Mannequin FBX export, a Blender bundle, a combined PromptHMR bundle,
+  a native MAMMA Blender scene, Live Link reference FBX, and retargeting
+  to both FBX and VMD. Rendered preview MP4 with the real Qt/OpenGL viewport,
+  including a project reconstructed with MAMMA.
+- Tracked faces for all 48 test frames, set and reset the neutral frame,
+  and exported Live Link Face CSV. A Blender protocol client received
+  the live rig, poses and a requested bake. An installed Unreal Engine
+  5.8.4 editor with RGB MoCap Connect received 52 body bones and 52 facial
+  curves. This check verified reception in Unreal.
+- Verified PEAR GPU tracking with single and dual video inputs. Dual
+  input delivered samples for consecutive requested frames and reported
+  both views available with no alignment. Windows camera enumeration ran.
+  Camera capture and aligned PEAR fusion were outside these integration
+  checks.
+- In a separate model store, imported a pinned FlowHMR configuration,
+  previewed and confirmed removal, re-imported it, and exercised cached
+  and official downloads. The installed model store was preserved.
+- The Windows regression suite ran 81 tests, with 80 passing and one
+  symbolic-link test skipped on this Windows account.
+
 ## ExMR command line and desktop parity
 
 - Windows with the private runtimes, actual GPU inference, and a 48-frame clip
