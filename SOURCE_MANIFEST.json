@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "date": "2026-11-23",
+  "date": "2026-11-24",
   "purpose": "Public source distribution; excludes model weights and runtime binaries",
   "version": "git-source",
   "files": [
@@ -1496,8 +1496,8 @@
     },
     {
       "path": "mocap/flow_backend.py",
-      "bytes": 29439,
-      "sha256": "27853e22ba019d260ee284cb464f06dfc249ea4e91be40f486d2f945cfeb8f6d"
+      "bytes": 32403,
+      "sha256": "0600532a1ff70a44f4029054f98faaa2b3169f852731d0a95f918f14a4e14d24"
     },
     {
       "path": "mocap/flow_camera.py",
@@ -2623,6 +2623,11 @@
       "path": "tests/test_default_settings.py",
       "bytes": 22206,
       "sha256": "7e74463f8f1ca04459029332ee8e7397fbcb3a3382549e2499adc6a878f41b06"
+    },
+    {
+      "path": "tests/test_flow_intrinsics.py",
+      "bytes": 5037,
+      "sha256": "9cc239eed715ca0386617d0286ba2081d43b16cf7c57815dd53d9d56cc745947"
     },
     {
       "path": "tests/test_local_choices.py",

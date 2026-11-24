@@ -102,6 +102,45 @@ def save_tensor(path,value):
     finally:temporary.unlink(missing_ok=True)
 
 
+def _moving_camera_intrinsics(root, scene):
+    """One original-pixel calibration shared by every take in this scene."""
+    message = 'Run camera estimation again before extracting FlowHMR features.'
+    if (root / 'flow_camera_pending.json').exists():
+        raise ValueError('FlowHMR scene camera estimation is incomplete. ' + message)
+    try:
+        with np.load(root / 'flow_camera.npz', allow_pickle=False) as data:
+            if 'k_space' in data and str(data['k_space']) != 'original_frame':
+                raise ValueError('expected original-frame camera intrinsics')
+            expected_size = (scene['height'], scene['width'])
+            if 'image_size_hw' in data and not np.array_equal(data['image_size_hw'], expected_size):
+                raise ValueError('camera intrinsics do not match the scene resolution')
+            matrices = np.asarray(data['K'], dtype=np.float64)
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        raise ValueError('Cannot read valid VGGT camera intrinsics. ' + message) from exc
+    if matrices.shape != (scene['frames'], 3, 3):
+        raise ValueError('VGGT camera intrinsics do not match the scene frame count. ' + message)
+    valid = (
+        np.isfinite(matrices).all(axis=(1, 2))
+        & (matrices[:, 0, 0] > 0)
+        & (matrices[:, 1, 1] > 0)
+        & np.isclose(matrices[:, 2], [0., 0., 1.]).all(axis=1)
+    )
+    if not valid.any():
+        raise ValueError('VGGT camera has no valid original-frame intrinsics. ' + message)
+    return np.median(matrices[valid], axis=0).astype(np.float32)
+
+
+def _require_feature_intrinsics(project, expected):
+    message = 'FlowHMR SAM features do not match the scene camera. Run Reconstruct 3D to refresh them.'
+    try:
+        placement = json.loads((project / 'flow_placement.json').read_text(encoding='utf-8'))
+        actual = np.asarray(placement['intrinsics'], dtype=np.float32)
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        raise ValueError(message) from exc
+    if not np.array_equal(actual, expected):
+        raise ValueError(message)
+
+
 def identity(project,stage):
     from .models import BY_KEY,STAGE_REQUIREMENTS
     state=json.loads((project/'project.json').read_text(encoding='utf-8'))
@@ -143,9 +182,14 @@ def identity(project,stage):
         code['hamer_boxes']=hamer
     if stage=='flowhmr' and hamer:code['hamer']=hamer_identity()
     import torch
-    return dict(version=VERSION,stage=stage,inputs=files,camera_interval=selected if stage=='flow_camera' else None,
+    signature = dict(version=VERSION,stage=stage,inputs=files,camera_interval=selected if stage=='flow_camera' else None,
         models={key:file_stat(BY_KEY[key].path) for key in STAGE_REQUIREMENTS[stage] if not (stage=='flow_camera' and selected==-1)},
         code=code,runtime=[str(torch.__version__),torch.version.cuda],frames=state['frames'],fps=state['fps'],take=state.get('person_frames'))
+    if stage == 'flow_features' and selected != -1:
+        if any(state[axis] != root_state[axis] for axis in ('width', 'height')):
+            raise ValueError('FlowHMR take and shared camera have different resolutions. Rebuild the take.')
+        signature['camera_intrinsics'] = _moving_camera_intrinsics(root, root_state).tolist()
+    return signature
 
 
 def validate_motion(output,n):
@@ -205,22 +249,26 @@ def camera(project,emit,force=False):
     return project/'flow_camera.npz'
 
 
-def features(project,emit):
+def features(project, emit, camera_intrinsics):
     from .memory_mode import run as memory_run
-    from .flow_sam import acceleration_options
-    state=json.loads((project/'project.json').read_text(encoding='utf-8'))
     estimate=4.5  # Admission for the one-frame fast path; batching adapts after loading.
-    return memory_run('FlowHMR SAM features',lambda low:_features(project,emit,low),estimate,emit)
+    return memory_run('FlowHMR SAM features',
+        lambda low: _features(project, emit, low, camera_intrinsics), estimate, emit)
 
 
-def _features(project,emit,low_memory):
+def _features(project, emit, low_memory, camera_intrinsics):
     import cv2, torch
     from .flow_sam import build_extractor, saved_fast_sam, acceleration_options
     state=json.loads((project/'project.json').read_text(encoding='utf-8'));n=state['frames']
     with np.load(project/'tracking.npz',allow_pickle=False) as data:boxes=data['boxes'].copy()
     if boxes.shape!=(n,4):raise ValueError('Tracking and video frame counts differ')
-    k=np.array([[math.hypot(state['width'],state['height']),0,state['width']/2],
-                [0,math.hypot(state['width'],state['height']),state['height']/2],[0,0,1]],np.float32)
+    if camera_intrinsics is None:
+        focal = math.hypot(state['width'], state['height'])
+        k = np.array([[focal, 0, state['width']/2],
+                      [0, focal, state['height']/2], [0, 0, 1]], np.float32)
+    else:
+        k = np.asarray(camera_intrinsics, dtype=np.float32)
+        emit('info', message='Using shared VGGT-Omega intrinsics for FlowHMR SAM features and placement.')
     fast=saved_fast_sam(project,state)
     options=acceleration_options(project,state)
     from .model_session import acquire, model_key
@@ -368,7 +416,10 @@ def run_stage(project,stage,result,emit,force=False):
     if stage not in ('flow_camera','flow_features','flowhmr','flow_export'):
         raise ValueError('This processing stage is not compatible with FlowHMR')
     if result not in ('auto','initial','corrected_initial'):raise ValueError('FlowHMR supports original or corrected original motion only')
-    static=(stage=='flow_camera' and json.loads((scene_root(project)/'project.json').read_text(encoding='utf-8')).get('flow_options',{}).get('camera_interval',0)==-1)
+    root = scene_root(project)
+    root_state = json.loads((root / 'project.json').read_text(encoding='utf-8'))
+    selected = root_state.get('flow_options', {}).get('camera_interval', 0)
+    static = stage == 'flow_camera' and selected == -1
     absent=[] if static else missing(stage)
     from .flow_hamer import enabled as hamer_enabled,MODEL_KEYS
     if stage in ('flow_features','flowhmr') and hamer_enabled(project):
@@ -377,12 +428,16 @@ def run_stage(project,stage,result,emit,force=False):
     if absent:raise ValueError('Open FlowHMR Model Manager and prepare: '+', '.join(m.name for m in absent))
     state=json.loads((project/'project.json').read_text(encoding='utf-8'))
     signature=identity(project,stage)
+    if stage == 'flowhmr' and selected != -1:
+        _require_feature_intrinsics(project, _moving_camera_intrinsics(root, root_state))
     receipt_path=project/(stage+'_receipt.json');pending=project/(stage+'_pending.json')
     cached=False
     if not force and not pending.exists() and receipt_path.exists():
         try:
             receipt=json.loads(receipt_path.read_text(encoding='utf-8'))
             cached=receipt['identity']==signature and all(Path(name).name==name and file_stat(project/name)==stamp for name,stamp in receipt['outputs'].items())
+            if cached and stage == 'flow_camera' and not static:
+                _moving_camera_intrinsics(root, root_state)
             if cached and stage=='flow_export':
                 from .mixamo_data import current
                 from .result_artifacts import artifacts_current
@@ -395,9 +450,8 @@ def run_stage(project,stage,result,emit,force=False):
             activate();ensure(project);cached=True
     if cached:
         emit('complete',stage=stage,output=str(project/next(iter(receipt['outputs']))),cached=True,elapsed=0);return
-    root=scene_root(project);root_state=json.loads((root/'project.json').read_text(encoding='utf-8'))
     n=root_state['frames'] if stage=='flow_camera' else state['frames']
-    interval=camera_interval(n,root_state.get('flow_options',{}).get('camera_interval',0))
+    interval=camera_interval(n,selected)
     free=total=None
     if stage!='flow_export' and not static:
         if not torch.cuda.is_available():raise RuntimeError('FlowHMR requires a supported NVIDIA CUDA GPU.')
@@ -407,9 +461,11 @@ def run_stage(project,stage,result,emit,force=False):
     if not static:activate()
     atomic_json(pending,dict(stage=stage,started=time.time()))
     if stage=='flow_camera':output=camera(project,emit,force=force)
-    elif stage=='flow_features':output=features(project,emit)
+    elif stage=='flow_features':output=features(project,emit,signature.get('camera_intrinsics'))
     elif stage=='flowhmr':
         output=infer(project,emit)
+        if selected != -1:
+            _require_feature_intrinsics(project, _moving_camera_intrinsics(root, root_state))
         from .flow_placement import ensure
         ensure(project,generated=True)
     else:
