@@ -61,7 +61,8 @@ def parser():
     rec.add_argument('--calibration', type=Path, help='MAMMA manual camera calibration.')
     rec.add_argument('--height', type=float, help='MAMMA reference height in metres.')
     rec.add_argument('--active-camera', type=int, help='Initial MAMMA camera number (1-based).')
-    rec.add_argument('--camera-interval', type=int, choices=(-1, 0, 1, 2, 4, 8, 16))
+    rec.add_argument('--camera-interval', type=int, choices=(-1, 0, 1, 2, 5, 10, 30),
+                     help='FlowHMR camera sampling interval in frames (-1 static, 0 auto).')
     for option in ('--fast-sam', '--hamer', '--htd', '--footmr', '--handflow'):
         rec.add_argument(option, action=argparse.BooleanOptionalAction)
     correction_flags(rec)

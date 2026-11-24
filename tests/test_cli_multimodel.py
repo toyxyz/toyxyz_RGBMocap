@@ -1,4 +1,6 @@
 """CLI coverage for dedicated requests and multi-model operations."""
+from contextlib import redirect_stderr
+from io import StringIO
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -14,6 +16,22 @@ from mocap.workflow_jobs import sam31_arguments
 
 
 class MultiModelCLI(unittest.TestCase):
+    def test_flow_camera_intervals_match_the_inference_worker(self):
+        from mocap.flow_backend import camera_interval
+
+        tool = parser()
+        for interval in range(-1, 31):
+            args = ['reconstruct', 'x.mp4', '--model', 'flowhmr', '--camera-interval', str(interval)]
+            with self.subTest(interval=interval):
+                try:
+                    camera_interval(72, interval)
+                except ValueError:
+                    with redirect_stderr(StringIO()), self.assertRaises(SystemExit) as error:
+                        tool.parse_args(args)
+                    self.assertEqual(error.exception.code, 2)
+                else:
+                    self.assertEqual(tool.parse_args(args).camera_interval, interval)
+
     def test_flow_static_and_gvhmr_refinements_use_existing_worker_names(self):
         tool = parser()
         with patch('mocap.cli_workflows.saved', return_value=None):
@@ -23,11 +41,14 @@ class MultiModelCLI(unittest.TestCase):
             self.assertEqual(result, 'corrected_initial')
             self.assertEqual(options['camera_interval'], -1)
             self.assertTrue(options['hamer'])
-            gv = tool.parse_args(['reconstruct','x.mp4','--model','gvhmr','--no-footmr'])
+            gv = tool.parse_args(['reconstruct','x.mp4','--model','gvhmr','--camera','static','--no-footmr'])
             stages, result, _ = stage_settings(gv, {}, False)
             self.assertEqual(result, 'handflow_refined')
             self.assertIn('handflow', stages)
             self.assertNotIn('footmr', stages)
+            gv.camera = 'moving'
+            with self.assertRaisesRegex(ValueError, 'fixed camera'):
+                stage_settings(gv, {}, False)
 
     def test_gui_and_cli_share_exact_dedicated_request(self):
         with TemporaryDirectory() as folder, patch('mocap.offline_jobs.HOME',Path(folder)):

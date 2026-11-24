@@ -1,5 +1,35 @@
 # Source package validation
 
+## Windows CLI multi-video integration matrix (2026-11-24)
+
+- Tested 48–72 frame excerpts of dance, exercise, a short video, a
+  two-person clip and a synchronized two-camera pair on an RTX 5090.
+  The CLI used normal result publication and export entry points.
+- ExMR ran fixed and moving camera with different smoothing and contact
+  settings. FlowHMR ran fixed camera and 5-frame moving camera sampling
+  with HaMeR and Low Memory. CLI argument choices now match the FlowHMR
+  worker. Invalid cadence and the unsupported GVHMR moving camera option
+  were rejected with exit code 2 before creating a project.
+- GEM-X published both raw and corrected SOMA motion. PromptHMR ran a
+  two-person interaction in fixed camera and a single person in moving
+  camera with DROID. Both manual MAMMA calibration and automatic VGGT
+  camera and GeoCalib gravity estimation ran on the same camera pair.
+- GVHMR accepted explicit fixed camera and ran with the three refinements
+  disabled and enabled. ExMR was re-corrected on a project copy using a
+  different preset and a manual floor, then exported to BVH.
+- Blender 4.5 opened 12 FBXs, two BVHs and four Blender files. Sampled
+  finite bone transforms and confirmed changing poses, including a skinned
+  Quinn, the two-person PromptHMR bundle and a two-camera MAMMA scene.
+  The standalone Blender receiver streamed each offline model and baked
+  seven actors in total. Reopening each baked scene preserved its actions.
+- Unreal Engine 5.8.4 received 52 body bones and 52 facial curves from the
+  new ExMR reconstruction. The neutral face frame and CSV export also
+  succeeded. Windows regression tests recorded 81 passes and one skip.
+- PEAR tracked seven consecutive samples both with and without smoothing,
+  and reported four samples from a synchronized pair. The normal Camera
+  Align workers created a calibration from the pair. The CLI loaded it
+  and fused both views for all four requested frames.
+
 ## Windows multi-model CLI and integration
 
 - Ran offline GPU reconstruction for FlowHMR, GVHMR, PromptHMR, GEM-X and

@@ -146,8 +146,8 @@ def stage_settings(args, state, corrected):
     if model != 'exmr' and args.smoothing is not None:
         raise ValueError('--smoothing applies to ExMR.')
     if model == 'gvhmr':
-        if args.camera is not None:
-            raise ValueError('Use the GVHMR workflow camera behavior.')
+        if args.camera == 'moving':
+            raise ValueError('The GVHMR workflow uses a fixed camera. Use --camera static.')
         pipeline = state.get('pipeline', {})
         existing = pipeline.get('result')
         previous = (dict(zip(('htd','footmr'), result_options(existing)), handflow=has_handflow(existing))

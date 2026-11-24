@@ -186,8 +186,8 @@
     },
     {
       "path": "docs/CLI.md",
-      "bytes": 7851,
-      "sha256": "b033c0d0e45e75cf1fd7aeca558a081880e0c107e7981f0d8ef479f24bfcc5db"
+      "bytes": 7885,
+      "sha256": "2e8849c71f9206bfdc6c024ffb7de1ae92d607ab069e963eb8111c575d8c19b6"
     },
     {
       "path": "docs/MAMMA.md",
@@ -216,8 +216,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 178207,
-      "sha256": "f31dfd3d6fcd77fda0c3229e126d050222d177cf09632b81b4d259c76b7f66c7"
+      "bytes": 180160,
+      "sha256": "e864208dd5c5e23f14b222d16de090fd06f97df95216f5410300258041868aff"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -1346,8 +1346,8 @@
     },
     {
       "path": "mocap/cli.py",
-      "bytes": 9749,
-      "sha256": "1fe143f5d92132f964093915c6c76a4aead22f846a37e6b904f7489375387f33"
+      "bytes": 9843,
+      "sha256": "2639cdb6ecdfdaea3cda27cf9442a4b4a43824406f604e58659002395bce38a2"
     },
     {
       "path": "mocap/cli_arguments.py",
@@ -1371,8 +1371,8 @@
     },
     {
       "path": "mocap/cli_workflows.py",
-      "bytes": 33008,
-      "sha256": "750c49852ad710e538f135af0913ea23bc067d80a179e24b455e1810238b985a"
+      "bytes": 33029,
+      "sha256": "bd0e0640a42e83ff1961c9a770faecbde6e93f5cf6e9b1ddd820dd582b814b1e"
     },
     {
       "path": "mocap/compute_policy.py",
@@ -2681,8 +2681,8 @@
     },
     {
       "path": "tests/test_cli_multimodel.py",
-      "bytes": 4868,
-      "sha256": "60f683c482c54928d92741d0b92bb544bfd21cda6f4bc30b328768e30fa64f51"
+      "bytes": 5856,
+      "sha256": "5933c97bb22187df1b07b3f3437f89b4232dbe9fb649e1e9ed9518088660cd01"
     },
     {
       "path": "tests/test_cli_workflows.py",

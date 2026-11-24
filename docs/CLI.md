@@ -20,8 +20,8 @@ and [model guides](models/README.md) for setup and required files.
 | Model key | Reconstruction options |
 | --- | --- |
 | `exmr` | Static or moving camera, smoothing and motion correction. |
-| `flowhmr` | Camera mode and sampling interval, Fast SAM and HaMeR finger refinement. |
-| `gvhmr` | Camera mode, HTD, FootMR and HandFlow. |
+| `flowhmr` | Camera mode, sampling every 1, 2, 5, 10 or 30 frames, Fast SAM and HaMeR finger refinement. |
+| `gvhmr` | Fixed camera, with optional HTD, FootMR and HandFlow. |
 | `gemx` | Native SOMA reconstruction and motion correction in the dedicated runtime. |
 | `prompthmr` | People count, interaction and camera mode. Moving camera requires the optional PromptHMR camera runtime. |
 | `mamma` | Synchronized camera views with repeated `--camera-video`. Supply saved camera calibration with `--calibration`, or use automatic alignment. |
