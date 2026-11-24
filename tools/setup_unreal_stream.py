@@ -23,9 +23,9 @@ def find_engine(explicit=None):
         version = path / 'Engine/Build/Build.version'
         if version.is_file():
             data = json.loads(version.read_text(encoding='utf-8'))
-            if (data['MajorVersion'], data['MinorVersion']) >= (5, 7):
+            if (data['MajorVersion'], data['MinorVersion']) >= (5, 6):
                 return path.resolve()
-    raise RuntimeError('Unreal Engine 5.7+ was not found. Use --engine "D:/Epic Games/UE_5.7". Only 5.7.4 has been tested.')
+    raise RuntimeError('Unreal Engine 5.6 or later was not found. Use --engine "D:/Epic Games/UE_5.6".')
 
 
 def main():
@@ -46,7 +46,11 @@ def main():
     receipt = runtime / 'bridge.json'
     # Failed builds must never leave a previously verified receipt advertising new source.
     frozen_source = source_identity(ROOT)
-    project_dir = runtime / ('Bridge-' + frozen_source[:12])
+    engine_version_file = engine / 'Engine/Build/Build.version'
+    engine_build = sha256(engine_version_file.read_bytes()).hexdigest()
+    # Keep the last working sender's binaries intact when switching engines.
+    build_key = sha256(f'{frozen_source}:{engine_build}'.encode('ascii')).hexdigest()[:12]
+    project_dir = runtime / ('Bridge-' + build_key)
     shutil.copytree(ROOT / 'developer-build/unreal-live-link', project_dir, dirs_exist_ok=True)
     project = project_dir / 'RGBMoCapLiveLink.uproject'
     if source_tree_identity(project_dir) != frozen_source or source_identity(ROOT) != frozen_source:
@@ -62,10 +66,12 @@ def main():
         raise RuntimeError('Build finished without the Live Link sender module.')
     if source_identity(ROOT) != frozen_source or source_tree_identity(project_dir) != frozen_source:
         raise RuntimeError('Live Link source changed during the build. Run setup again.')
+    if sha256(engine_version_file.read_bytes()).hexdigest() != engine_build:
+        raise RuntimeError('Unreal Engine changed during the build. Run setup again.')
     data = dict(version=1, engine=str(engine), source=frozen_source,
                 project=project.relative_to(runtime).as_posix(),
                 module=sha256(module.read_bytes()).hexdigest(),
-                engine_build=sha256((engine/'Engine/Build/Build.version').read_bytes()).hexdigest())
+                engine_build=engine_build)
     previous_receipt = receipt.read_bytes() if receipt.is_file() else None
     pending = receipt.with_suffix('.tmp')
     pending.write_text(json.dumps(data, indent=2), encoding='utf-8')

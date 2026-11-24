@@ -61,7 +61,7 @@ def configuration(root):
             raise ValueError('Unreal Live Link support changed. Run Setup_UnrealStream.cmd again.')
         return engine, project
     except (OSError, KeyError, TypeError, json.JSONDecodeError) as error:
-        raise ValueError('Run Setup_UnrealStream.cmd first (Unreal Engine 5.7 and Visual Studio C++ tools required).') from error
+        raise ValueError('Run Setup_UnrealStream.cmd first (Unreal Engine 5.6 or later and Visual Studio C++ tools required).') from error
 
 
 def local_transforms(world, parents):

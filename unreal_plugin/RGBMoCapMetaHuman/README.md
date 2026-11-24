@@ -8,25 +8,27 @@ workflow](../../docs/UNREAL_LIVE_LINK.md) remains available.
 
 ## Install
 
-1. [Download RGB MoCap Connect 0.5.0 for UE 5.7.4 / Win64](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-rgbmocap-connect-v0.5.0/RGBMoCapConnect_UE5.7.4_Win64_v0.5.0.zip)
-   and its [SHA-256 checksum](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-rgbmocap-connect-v0.5.0/RGBMoCapConnect_UE5.7.4_Win64_v0.5.0.zip.sha256).
-   For another Unreal build, see [Build and verification](#build-and-verification).
+1. Obtain the RGB MoCap Connect ZIP for your engine build. For stock UE 5.7.4,
+   see the [Win64 ZIP](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-rgbmocap-connect-v0.5.0/RGBMoCapConnect_UE5.7.4_Win64_v0.5.0.zip)
+   and [SHA-256 checksum](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-rgbmocap-connect-v0.5.0/RGBMoCapConnect_UE5.7.4_Win64_v0.5.0.zip.sha256).
+   Use [Build and verification](#build-and-verification) to build for your engine.
 2. Close Unreal. Extract the `RGBMoCapMetaHuman` folder into your project's
    `Plugins` folder. Create `Plugins` if needed. Replace the entire existing
    `RGBMoCapMetaHuman` folder when upgrading.
 3. Open the project and enable **RGB MoCap Connect**, **Live Link** and
    **UDP Messaging** if necessary. Restart when requested.
 
-The prebuilt modules were compiled with stock Unreal Engine **5.7.4**, Win64,
-BuildId **47537391**. Other engine builds may need compilation from source.
-The descriptor uses compatible EngineVersion 5.7.0. The ZIP includes source and
-authored DLLs, not Unreal Engine, characters, Epic content or a sample project.
+Use an archive for your exact Unreal Engine build. The linked **5.7.4 Win64**
+ZIP targets stock BuildId **47537391**. The receiver also builds from source on
+stock UE **5.6.1** and **5.8.4**. The ZIP includes source and authored DLLs.
+Use your own Unreal project and character assets.
 
 ## Prepare RGB MoCap
 
-Install Unreal Engine 5.7.4 and Visual Studio 2022 Desktop development with C++
-plus a Windows SDK. Close RGB MoCap and run `Setup_UnrealStream.cmd` in its app
-folder. This compiles and verifies the optional sender against your local
+Install Unreal Engine **5.6 or later** and Visual Studio 2022 Desktop
+development with C++ plus a Windows SDK. Close RGB MoCap and run
+`Setup_UnrealStream.cmd` from the app folder. This compiles and verifies the
+optional sender against your local
 engine. Sender setup is separate from `install.cmd` and `update.cmd`.
 Rerun it after sender source or engine changes. Receiver 0.5.0 uses the same
 sender protocol as 0.4.0. If upgrading from a sender older than 0.4.0, update

@@ -240,7 +240,7 @@ the exported body animation for head motion.
 
 ### Face streaming to MetaHuman
 
-Saved Track Face data can accompany each checked Unreal Live Link person. Enable **Face** on that source row in the separately installed RGB MoCap MetaHuman Connect 0.4.0 plugin. No capture is started by streaming. Missing detections hold the last expression; missing face data do not block body motion. See [face streaming setup and limitations](UNREAL_LIVE_LINK.md#optional-metahuman-face-streaming).
+Saved Track Face data can accompany each checked Unreal Live Link person. Enable **Face** on that source row in the separately installed RGB MoCap Connect plugin. No capture is started by streaming. Missing detections hold the last expression; missing face data do not block body motion. See [face streaming setup and limitations](UNREAL_LIVE_LINK.md#optional-metahuman-face-streaming).
 
 
 ### Set a neutral face
@@ -958,7 +958,7 @@ Use **Bake** in Object Mode to save all recorded frames for the active streaming
 
 In **Stream > Target**, choose **Unreal Live Link** and check prepared offline people.
 Run **Setup_UnrealStream.cmd** once first; it requires an installed Unreal Engine
-5.7+ and Visual Studio C++ tools. In Unreal enable the built-in Live Link and UDP
+5.6+ and Visual Studio C++ tools. In Unreal enable the built-in Live Link and UDP
 Messaging plugins, then add **Message Bus Source > RGB MoCap**.
 The stream includes body and finger bones, reference poses and bone lengths.
 Use [RGB MoCap Connect](../unreal_plugin/RGBMoCapMetaHuman/README.md) to connect

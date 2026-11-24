@@ -38,7 +38,7 @@ or working on its native preview, retarget and Blender paths.
 ## Optional Unreal Live Link sender
 
 The Windows source build supports **Setup_UnrealStream.cmd** with an installed
-UE 5.7+ and Visual Studio 2022 C++ tools/Windows SDK. See
+UE 5.6+ and Visual Studio 2022 C++ tools/Windows SDK. See
 [setup and implementation](UNREAL_LIVE_LINK.md). It compiles only the app-owned
 commandlet module, verifies startup and removes compiler intermediates by default.
 Use `--engine "D:/Epic Games/UE_5.7"` for a custom engine path and
@@ -177,6 +177,27 @@ Git attributes preserve exact source bytes for the source manifest, hash-pinned
 runtime registry and unpacked wheel contents. Avoid automatic line-ending rewrites
 of those files. When intentionally changing the registry, review and refresh the
 lock's registry hash; the development bootstrap rejects an unreviewed mismatch.
+
+## RGB MoCap Connect receiver ZIP
+
+Use the stock engine that matches the intended Win64 package. The packager
+supports UE 5.6.1, 5.7.4 and 5.8.4 with pinned editor BuildIds. From the app
+root, the following PowerShell commands build an editor package for UE 5.6.1
+in a new staging folder.
+
+```powershell
+$engine = 'C:\Program Files\Epic Games\UE_5.6'
+$work = Join-Path (Get-Location) 'dist\ue561-build'
+New-Item -ItemType Directory -Path $work -ErrorAction Stop | Out-Null
+Copy-Item -LiteralPath 'unreal_plugin\RGBMoCapMetaHuman' -Destination $work -Recurse
+& "$engine\Engine\Build\BatchFiles\RunUAT.bat" BuildPlugin "-Plugin=$work\RGBMoCapMetaHuman\RGBMoCapMetaHuman.uplugin" "-Package=$work\package" -HostPlatforms=Win64 -NoTargetPlatforms -NoP4 -Unattended
+if ($LASTEXITCODE -ne 0) { throw 'Unreal receiver build failed' }
+.\runtime\python.exe -I -X utf8 -B tools\package_unreal_plugin.py --build-plugin "$work\package" --engine-version 5.6.1 --output "$work\RGBMoCapConnect_UE5.6.1_Win64_v0.5.0.zip"
+```
+
+The build folder contains temporary files. Share the resulting ZIP and its
+SHA-256 sidecar. See [receiver verification](../unreal_plugin/RGBMoCapMetaHuman/VALIDATION.md)
+and load the exact extracted ZIP in a clean project before releasing it.
 
 ## Optional SAM 3.1 tracker
 

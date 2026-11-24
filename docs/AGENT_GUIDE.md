@@ -452,15 +452,17 @@ the target's original animation and preview tick settings.
 Stream target 2 is Unreal Live Link. Target 0 is None and target 1 is Blender.
 Keep PEAR excluded.
 `Setup_UnrealStream.cmd` / `tools/setup_unreal_stream.py` build the source in
-`developer-build/unreal-live-link` against the user's installed UE 5.7+ and
+`developer-build/unreal-live-link` against the user's installed UE 5.6+ and
 verify commandlet startup before keeping a receipt in `runtime_unreal_stream`.
 They do not modify the shared inference registry or distribute engine binaries.
 
 Before running it, verify the normal `install.cmd` runtime exists, close RGB
 MoCap and check Unreal plus Visual Studio 2022 **Desktop development with C++**
 (MSVC toolchain and Windows SDK). Do not infer compiler readiness merely from
-an installed Unreal editor. The prebuilt MetaHuman Connect receiver targets
-stock UE 5.7.4; use the receiving project's matching engine for sender setup.
+an installed Unreal editor. Use a receiver ZIP built for the project's exact
+engine BuildId and use that same engine for sender setup. Sender binaries are
+kept separately by engine build, and the latest successful setup selects the
+active sender.
 From the app root, run `.\Setup_UnrealStream.cmd` in PowerShell (or
 `Setup_UnrealStream.cmd` in CMD). For a custom/multiple-engine installation use
 `.\Setup_UnrealStream.cmd --engine "D:\Epic Games\UE_5.7"`; the argument is the
@@ -1264,8 +1266,11 @@ and TXT/Live Link Face CSV with Smooth Face both on and off.
 
 Authored receiver source is in unreal_plugin/RGBMoCapMetaHuman. The release ZIP
 is built by tools/package_unreal_plugin.py from that source and matching locally
-compiled modules. Require the exact supported UE build ID, source-byte identity,
-an explicit allowlist, archive CRC/SHA-256 and a clean extracted-package load.
+compiled modules. Pass `--engine-version` for the exact stock Win64 build
+(5.6.1, 5.7.4 or 5.8.4). The packager stamps the receiver descriptor for
+that engine series and requires the matching BuildId and C++ source bytes.
+Keep the explicit allowlist, archive CRC/SHA-256 and a clean extracted-package load.
+See the [receiver ZIP build steps](BUILD.md#rgb-mocap-connect-receiver-zip).
 No engine/MetaHuman assets, private diagnostic modules, PDBs, screenshots of
 private projects, personal paths, capture arrays or local logs belong in the
 source or package. Logical #line filenames keep authored assertion diagnostics

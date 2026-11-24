@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "date": "2026-11-24",
+  "date": "2026-11-25",
   "purpose": "Public source distribution; excludes model weights and runtime binaries",
   "version": "git-source",
   "files": [
@@ -26,8 +26,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 18053,
-      "sha256": "176514b3e5d2835187b2e0ee4dedca0667f3a61bac875d0d3fd0915f1ff40f39"
+      "bytes": 18097,
+      "sha256": "29159626e4bd9fe1649eb56412f1042241fa48e11dc51e9288e68aecfc415a26"
     },
     {
       "path": "RGBMoCap.cmd",
@@ -62,7 +62,7 @@
     {
       "path": "Setup_UnrealStream.cmd",
       "bytes": 484,
-      "sha256": "e0848b6acbfd391bb49af932a5cfe53d2444004c845e3d14c43847e0798609ad"
+      "sha256": "77c7bfbd22d192f8ac7dacb3bfcec129aef3f62c6741b9038b512c63e00b9e03"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -171,13 +171,13 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 106464,
-      "sha256": "a13119a1af6444cd04ca2c6344003298661343cbf17dba0e36ee4b2508fcb800"
+      "bytes": 106781,
+      "sha256": "22884c86f97bdde23ed999e08c146907308454d8b44c9bdf29f92c0228589ffd"
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 17921,
-      "sha256": "f835869af7fa4cb03db815f7d58de9a7e19b924ecf8f84de87297c322ea3055b"
+      "bytes": 19174,
+      "sha256": "787a4506e1486f94480a8c49f2070d28538b8c0b4769fbbf700b16f1d3246f32"
     },
     {
       "path": "docs/CITATIONS.md",
@@ -206,18 +206,18 @@
     },
     {
       "path": "docs/UNREAL_LIVE_LINK.md",
-      "bytes": 23377,
-      "sha256": "e342468583e8c519e308b1d25277480605f57e5f281248329afbbd744b0d5e25"
+      "bytes": 23659,
+      "sha256": "53e737bfade35b97d768ccc1c28446041783817926749c0606ebfc71095e8a18"
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 96313,
-      "sha256": "f3b740605caaddbeaeb102d5a769cc466678c381e84dfff16d4e116da1ae10e9"
+      "bytes": 96297,
+      "sha256": "faf6080be20bb3bd30760d96cca0c337989e7abbbd1ca84001faf96c800fbdbf"
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 181177,
-      "sha256": "5650946d36370b35cc7105acdf819ca75cba1ff3ae25c3f90d28f0b866a280d6"
+      "bytes": 182064,
+      "sha256": "7c86627226bec3362741a2c9c05e773dd6e8f902bed36214c7054be97e2fff14"
     },
     {
       "path": "docs/images/exmr-interaction-contact.png",
@@ -2491,8 +2491,8 @@
     },
     {
       "path": "mocap/unreal_stream.py",
-      "bytes": 14208,
-      "sha256": "c5ac8ca8c382b4d5644f941e6e56aa02f4f7d527f29fc8185647658c3fcaf98c"
+      "bytes": 14217,
+      "sha256": "bc72836ef3858ed9530f14b7000279a4ec2b06365ca756b5bbba4daa76d92d4b"
     },
     {
       "path": "mocap/validation_snapshot.py",
@@ -13366,8 +13366,8 @@
     },
     {
       "path": "tools/package_unreal_plugin.py",
-      "bytes": 4823,
-      "sha256": "4a524a4ed111bf25c5f77a71496f8005a42c5514e4c1418ca3f2333b37809429"
+      "bytes": 6046,
+      "sha256": "5ffa48b935defbb87f4596957ec9cb13f455d44b07310e94fad82ee0d7edf11b"
     },
     {
       "path": "tools/pinned_download.py",
@@ -13441,8 +13441,8 @@
     },
     {
       "path": "tools/setup_unreal_stream.py",
-      "bytes": 5375,
-      "sha256": "f8ed303dbda0288535ca89370dbd86772ed8a2f3b962ec14d0ff090f6c99243e"
+      "bytes": 5756,
+      "sha256": "603ec0fbfaa6b87c545e70998d1fcb4ad578f55643e19f9414514153a15258d1"
     },
     {
       "path": "tools/source_launch.py",
@@ -13471,13 +13471,13 @@
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/README.md",
-      "bytes": 6474,
-      "sha256": "9a000a3dd1293ac6e5bd1c4b5fff9d0f631b662837687fd8e9dadeec7db08237"
+      "bytes": 6498,
+      "sha256": "3e17fd5bcfa923ef0393fae7d83ebc2e46a875da52d6c9752ddae7378f255cb2"
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/RGBMoCapMetaHuman.uplugin",
-      "bytes": 721,
-      "sha256": "2991a18e6bcac9d4b60639ca4d3570642fc7c1f431791e16dd00cb72ef6ef8ce"
+      "bytes": 692,
+      "sha256": "d0888a61dd28c779ec7af025c199e9bdc7a39682fbe987bc21cccab69ce04b06"
     },
     {
       "path": "unreal_plugin/RGBMoCapMetaHuman/SECURITY.md",

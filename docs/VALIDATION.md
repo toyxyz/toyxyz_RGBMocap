@@ -97,6 +97,22 @@
   Quinn FBX exports. The existing FlowHMR desktop workflow also completed
   GPU reconstruction and preview preparation in the same checkout.
 
+## Unreal Live Link on UE 5.6.1 (2026-11-25)
+
+- Built the RGB MoCap sender on stock UE 5.6.1 / Win64 and passed its
+  startup handshake. Built both RGB MoCap Connect modules with stock
+  BuildId 43139311.
+- Verified the packaged files and loaded both modules from the extracted ZIP
+  in a clean content-only UE 5.6.1 project. A native Live Link probe received
+  52 body bones, their reference pose and 52 facial curves across four
+  matching source frames.
+- The same sender setup built and passed startup verification on stock UE 5.7.4
+  and 5.8.4. Each build used a separate folder. Switching engines preserved the
+  three built DLLs and selected the last successful sender.
+- Packaging rejected an incorrect engine descriptor, a mismatched BuildId
+  and a changed receiver source file. The Windows regression suite ran 82
+  tests, with 81 passing and one symbolic-link test skipped.
+
 ## Unreal Live Link sender on UE 5.8 (2026-11-23)
 
 - With the previous `BuildSettingsVersion.V6` and 5.7 include order,

@@ -9,6 +9,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = ROOT / 'unreal_plugin/RGBMoCapMetaHuman'
 MODULES = ('RGBMoCapMetaHuman', 'RGBMoCapMetaHumanEditor')
+STOCK_BUILD_IDS = {'5.6.1': '43139311', '5.7.4': '47537391', '5.8.4': '55116800'}
 PRIVATE = re.compile(r'(?:[A-Z]:[\\/]+Users[\\/]+|/(?:home|Users)/|[A-Z]:[\\/]+[^\x00\r\n]*[\\/]Plugins[\\/]RGBMoCapMetaHuman[\\/]|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|sk-(?:proj-)?[A-Za-z0-9_-]{30,}|-----BEGIN (?:RSA |OPENSSH |EC )?PRIVATE KEY-----)', re.I)
 
 
@@ -20,10 +21,20 @@ def audit(name, raw):
         raise ValueError('Forbidden plugin payload: ' + name)
 
 
-def package(build, output):
+def package(build, output, engine_version='5.7.4'):
     build = Path(build).resolve()
     output = Path(output).resolve()
-    descriptor = json.loads((PLUGIN / 'RGBMoCapMetaHuman.uplugin').read_text())
+    build_id = STOCK_BUILD_IDS[engine_version]
+    descriptor_name = 'RGBMoCapMetaHuman.uplugin'
+    descriptor = json.loads((PLUGIN / descriptor_name).read_text(encoding='utf-8'))
+    descriptor_version = engine_version.rsplit('.', 1)[0] + '.0'
+    # AutomationTool rewrites the descriptor for the host engine.
+    built_descriptor = json.loads((build / descriptor_name).read_text(encoding='utf-8-sig'))
+    identity_fields = ('FileVersion', 'Version', 'VersionName', 'Modules', 'Plugins', 'CanContainContent')
+    if (any(built_descriptor.get(key) != descriptor[key] for key in identity_fields)
+            or built_descriptor.get('EngineVersion', descriptor_version) != descriptor_version):
+        raise ValueError('Build descriptor does not match the source and selected engine')
+    descriptor['EngineVersion'] = descriptor_version
     payload = {}
     for path in sorted(PLUGIN.rglob('*')):
         if not path.is_file():
@@ -34,15 +45,15 @@ def package(build, output):
         if not allowed or path.is_symlink():
             raise ValueError('File outside the plugin source allowlist: ' + name)
         raw = path.read_bytes()
-        if name.startswith('Source/') or name.endswith('.uplugin'):
-            candidate = build / name
-            if candidate.read_bytes() != raw:
-                raise ValueError('Build source differs from repository: ' + name)
+        if name == descriptor_name:
+            raw = (json.dumps(descriptor, indent=2) + '\n').encode('utf-8')
+        elif name.startswith('Source/') and (build / name).read_bytes() != raw:
+            raise ValueError('Build source differs from repository: ' + name)
         audit(name, raw)
         payload[name] = raw
     modules = json.loads((build / 'Binaries/Win64/UnrealEditor.modules').read_text())
-    if set(modules['Modules']) != set(MODULES) or modules['BuildId'] != '47537391':
-        raise ValueError('Expected the verified stock UE 5.7.4 build and exactly two plugin modules')
+    if set(modules['Modules']) != set(MODULES) or modules['BuildId'] != build_id:
+        raise ValueError(f'Expected stock UE {engine_version} BuildId {build_id} and exactly two plugin modules')
     for module in MODULES:
         filename = 'UnrealEditor-' + module + '.dll'
         if modules['Modules'][module] != filename:
@@ -53,8 +64,9 @@ def package(build, output):
             raise ValueError('Invalid native module')
         audit(name, raw)
         payload[name] = raw
-    payload['Binaries/Win64/UnrealEditor.modules'] = (json.dumps(modules, indent=2) + '\n').encode()
-    manifest = dict(schema=1, version=descriptor['VersionName'], engine='5.7.4', platform='Win64', build_id=modules['BuildId'],
+    module_manifest = {'BuildId': build_id, 'Modules': modules['Modules']}
+    payload['Binaries/Win64/UnrealEditor.modules'] = (json.dumps(module_manifest, indent=2) + '\n').encode()
+    manifest = dict(schema=1, version=descriptor['VersionName'], engine=engine_version, platform='Win64', build_id=modules['BuildId'],
                     files=[dict(path=name, bytes=len(raw), sha256=hashlib.sha256(raw).hexdigest()) for name, raw in sorted(payload.items())])
     payload['PACKAGE_MANIFEST.json'] = (json.dumps(manifest, indent=2) + '\n').encode()
     if output.exists():
@@ -81,8 +93,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--build-plugin', type=Path, required=True, help='Locally compiled plugin root; Source must match this repository')
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--engine-version', choices=STOCK_BUILD_IDS, default='5.7.4',
+                        help='Exact stock Unreal version used to build the plugin (default: 5.7.4)')
     args = parser.parse_args()
-    print(json.dumps(package(args.build_plugin, args.output), indent=2))
+    print(json.dumps(package(args.build_plugin, args.output, args.engine_version), indent=2))
 
 
 if __name__ == '__main__':

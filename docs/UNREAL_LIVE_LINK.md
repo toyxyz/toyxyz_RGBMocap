@@ -11,7 +11,9 @@ For file-based animation on stock Manny or Quinn, see
 ## Recommended MetaHuman connection
 
 Use [RGB MoCap Connect](../unreal_plugin/RGBMoCapMetaHuman/README.md)
-for the direct source-to-target panel. [Download 0.5.0 for UE 5.7.4 / Win64](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-rgbmocap-connect-v0.5.0/RGBMoCapConnect_UE5.7.4_Win64_v0.5.0.zip).
+for the direct source-to-target panel. Use a receiver ZIP for your exact engine
+build. [Download 0.5.0 for UE 5.7.4 / Win64](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-rgbmocap-connect-v0.5.0/RGBMoCapConnect_UE5.7.4_Win64_v0.5.0.zip)
+or [build from source](../unreal_plugin/RGBMoCapMetaHuman/README.md#build-and-verification).
 Close Unreal and place the extracted `RGBMoCapMetaHuman` folder in your
 project's `Plugins` folder. Replace the entire existing plugin folder when upgrading. Then complete sender setup below, reopen Unreal and use
 **Tools > RGB MoCap Connect**. Set **Target type** to **MetaHuman** in 0.5.0
@@ -44,14 +46,14 @@ subjects the app publishes.
 ## Prepare once
 
 1. Complete the normal RGB MoCap `install.cmd` setup first; this creates
-   `runtime\python.exe`. Install Unreal Engine **5.7 or later** and, in Visual
+   `runtime\python.exe`. Install Unreal Engine **5.6 or later** and, in Visual
    Studio Installer, add Visual Studio 2022 **Desktop development with C++**,
    including the MSVC C++ toolchain and a Windows SDK. An Unreal installation
    alone does not establish that these compiler components are installed.
-   The tested engine and prebuilt receiver are **5.7.4**. Sender setup has also
-   been built and startup-verified with installed UE **5.8.4**; other versions
-   are not independently verified, and other engine builds need a receiver
-   rebuild from source (see the plugin's Build and verification section).
+   The sender and receiver have been built on stock UE **5.6.1**, **5.7.4**
+   and **5.8.4**. Use a receiver ZIP built for your engine's exact BuildId
+   or build the receiver source with your project's engine. See the plugin's
+   [Build and verification](../unreal_plugin/RGBMoCapMetaHuman/README.md#build-and-verification).
 2. Close RGB MoCap. In File Explorer, open its app folder containing
    `RGBMoCap.cmd`, `install.cmd` and `Setup_UnrealStream.cmd`, then double-click
    **Setup_UnrealStream.cmd**. Keep the command window open until setup finishes.
@@ -66,7 +68,7 @@ subjects the app publishes.
    by the receiving project:
 
    ```powershell
-   .\Setup_UnrealStream.cmd --engine "D:\Epic Games\UE_5.7"
+   .\Setup_UnrealStream.cmd --engine "C:\Program Files\Epic Games\UE_5.6"
    ```
 
    Pass the Unreal installation root containing the `Engine` folder, not an
@@ -77,8 +79,9 @@ subjects the app publishes.
    starts it to verify the app/provider handshake, and records a source/module/
    engine receipt under `runtime_unreal_stream`. It downloads no models or
    Unreal binaries. The installed Unreal Engine must remain available.
-   Temporary compiler intermediates are removed after success; developers can
-   retain them with `--keep-build-cache`.
+   Each engine build has a separate sender build folder. The last successful
+   setup selects the active sender. Temporary compiler intermediates are removed
+   after success; developers can retain them with `--keep-build-cache`.
 4. Successful setup ends with **Live Link support built. In Stream choose
    Unreal Live Link, then check people.** Reopen RGB MoCap and choose
    **Stream > Target > Unreal Live Link**. This setup builds the app sender;
