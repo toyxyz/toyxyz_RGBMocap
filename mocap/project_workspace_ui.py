@@ -11,6 +11,7 @@ from .theme import set_appearance_style, ui_px
 from .project_storage import manifest
 from .storage import atomic_json
 from .video import select_preview
+from .vggt_camera_opt import DEFAULT_ENABLED, enabled as vggt_opt_enabled
 
 DEFAULTS = 'default_settings'
 # Stored keys map to the editor controls. Checkboxes supply their own labels.
@@ -22,6 +23,7 @@ DEFAULT_SETTINGS = {
     }),
     'flow_options': ('FlowHMR', {
         'camera_interval': ('flow_sampling', 'Camera / Sampling'),
+        'vggt_opt': ('flow_vggt_opt', None),
         'fast_sam': ('fast_sam', None),
         'sam_batch4': ('flow_batch4', None),
         'sam_gpu_crop': ('flow_gpu_crop', None),
@@ -38,6 +40,9 @@ DEFAULT_SETTINGS = {
         'camera': ('prompthmr_camera', 'Camera'),
         'interaction': ('prompthmr_interaction', None),
     }),
+    'mamma_options': ('MAMMA', {
+        'vggt_opt': ('mamma_vggt_opt', None),
+    }),
     'correction': ('Motion Correction', {
         'mode': ('correction_mode', 'Correction Mode'),
         'preset': ('correction_preset', 'Lock Preset'),
@@ -48,10 +53,10 @@ DEFAULT_SETTINGS = {
         'resource_mode': ('compute_mode', 'Resource Mode'),
     }),
 }
-PROJECT_DEFAULT_GROUPS = ('flow_options', 'exmr_options', 'prompthmr_options', 'correction')
+PROJECT_DEFAULT_GROUPS = ('flow_options', 'exmr_options', 'prompthmr_options', 'mamma_options', 'correction')
 DEFAULT_RESOURCE_MODE = 'auto'
 GVHMR_DEFAULTS = dict(htd=True, footmr=True, handflow=True)
-FLOW_DEFAULTS = dict(camera_interval=0, fast_sam=True, sam_batch4=True, sam_gpu_crop=True,
+FLOW_DEFAULTS = dict(camera_interval=0, vggt_opt=DEFAULT_ENABLED, fast_sam=True, sam_batch4=True, sam_gpu_crop=True,
                      sam_hand_stride4=True, hamer=False)
 
 
@@ -101,7 +106,8 @@ class DefaultSettingsDialog(QDialog):
 
 class ModelWorkspace:
     def selected_flow_options(self):
-        return dict(camera_interval=self.flow_sampling.currentData(), fast_sam=self.fast_sam.isChecked(),
+        return dict(camera_interval=self.flow_sampling.currentData(), vggt_opt=self.flow_vggt_opt.isChecked(),
+                    fast_sam=self.fast_sam.isChecked(),
                     sam_batch4=self.flow_batch4.isChecked(), sam_gpu_crop=self.flow_gpu_crop.isChecked(),
                     sam_hand_stride4=self.flow_hand_stride4.isChecked(),hamer=self.flow_hamer.isChecked())
 
@@ -129,6 +135,7 @@ class ModelWorkspace:
         flow = {**FLOW_DEFAULTS, **settings.get('flow_options', {})}
         self.flow_hamer.setChecked(False)
         self.flow_sampling.setCurrentIndex(max(0, self.flow_sampling.findData(flow['camera_interval'])))
+        self.flow_vggt_opt.setChecked(vggt_opt_enabled(flow))
         self.fast_sam.setChecked(flow['fast_sam'])
         self.flow_batch4.setChecked(flow['sam_batch4'])
         self.flow_gpu_crop.setChecked(flow['sam_gpu_crop'])
@@ -199,6 +206,7 @@ class ModelWorkspace:
         built_in = dict(gvhmr_options=GVHMR_DEFAULTS,
                         flow_options={**FLOW_DEFAULTS, 'refine_camera_rotation': False},
                         exmr_options={**EXMR_DEFAULTS, 'refine_camera_rotation': False},
+                        mamma_options={'vggt_opt': DEFAULT_ENABLED},
                         prompthmr_options={'camera': 'static', **prompthmr_options({})},
                         correction=correction_options(), track_face=False,
                         processing_options={'resource_mode': DEFAULT_RESOURCE_MODE})
@@ -262,6 +270,7 @@ class ModelWorkspace:
                 self._tool_refinement['gvhmr'] = (GVHMR_DEFAULTS['htd'], GVHMR_DEFAULTS['footmr'],
                                                   True, GVHMR_DEFAULTS['handflow'])
                 self.restore_prompthmr_options({'people': self.prompthmr_people.value()})
+                self.mamma_vggt_opt.setChecked(DEFAULT_ENABLED)
                 self.restore_track_face(False)
             return
         from .motion_tools import result_kind

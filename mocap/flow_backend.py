@@ -185,6 +185,12 @@ def identity(project,stage):
     signature = dict(version=VERSION,stage=stage,inputs=files,camera_interval=selected if stage=='flow_camera' else None,
         models={key:file_stat(BY_KEY[key].path) for key in STAGE_REQUIREMENTS[stage] if not (stage=='flow_camera' and selected==-1)},
         code=code,runtime=[str(torch.__version__),torch.version.cuda],frames=state['frames'],fps=state['fps'],take=state.get('person_frames'))
+    if stage == 'flow_camera' and selected != -1:
+        from .vggt_camera_opt import available, enabled
+        requested = enabled(root_state.get('flow_options', {}))
+        signature['vggt_opt'] = requested and available()
+        if signature['vggt_opt']:
+            code['vggt_camera_opt.py'] = sha256(ROOT/'mocap/vggt_camera_opt.py')
     if stage == 'flow_features' and selected != -1:
         if any(state[axis] != root_state[axis] for axis in ('width', 'height')):
             raise ValueError('FlowHMR take and shared camera have different resolutions. Rebuild the take.')
@@ -227,10 +233,14 @@ def camera(project,emit,force=False):
     target.unlink(missing_ok=True)  # upstream must not reuse a partial extraction
     from .memory_mode import run as memory_run
     from .gpu_offload import load_vggt,release
+    from .vggt_camera_opt import enabled, select
+    samples=len(set(range(0,n,interval))|{n-1})
+    optimize, estimated_gib = select(enabled(state.get('flow_options', {})), samples, emit)
     def estimate(low):
         models=[]
         def loader(path,device,camera_only=True):
-            model=load_vggt(path,device,camera_only,low_memory=low);models.append(model);return model
+            model=load_vggt(path,device,camera_only,low_memory=low,optimize_camera=optimize)
+            models.append(model);return model
         try:
             target.unlink(missing_ok=True)
             return extract_vggt_camera(str(project/'input.mp4'),output_npz=str(target),frame_range=(0,n-1),
@@ -238,8 +248,7 @@ def camera(project,emit,force=False):
         finally:
             for model in models:release(model)
             models.clear()
-    samples=len(set(range(0,n,interval))|{n-1})
-    memory_run('FlowHMR VGGT camera',estimate,6.+.1*samples,emit)
+    memory_run('FlowHMR VGGT camera',estimate,estimated_gib,emit)
     with np.load(target,allow_pickle=False) as data:
         if data['camera_RT_yup'].shape!=(n,4,4) or data['K'].shape!=(n,3,3) or not all(np.isfinite(data[k]).all() for k in ('camera_RT_yup','K')):
             raise ValueError('VGGT-Omega returned incomplete camera data')

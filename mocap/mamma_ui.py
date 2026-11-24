@@ -7,9 +7,10 @@ from .theme import set_appearance_style
 from PySide6.QtCore import Qt, QSize, QThread, Signal
 from PySide6.QtGui import QImage, QPixmap, QIcon
 from PySide6.QtWidgets import (QWidget,QVBoxLayout,QGridLayout,QScrollArea,QToolButton,
-    QComboBox,QLabel,QPushButton,QFileDialog,QSizePolicy,QSpinBox,QDoubleSpinBox)
+    QComboBox,QLabel,QPushButton,QFileDialog,QSizePolicy,QSpinBox,QDoubleSpinBox,QCheckBox)
 from .mamma_inputs import video_paths, common_media, read_calibration, match_calibration, resolved_entries
 from .ui_refresh import batch_readiness
+from .vggt_camera_opt import DEFAULT_ENABLED, HELP, LABEL, enabled as vggt_opt_enabled
 
 
 def saved_camera_preview(root, project, state, entry):
@@ -126,6 +127,11 @@ class MammaWorkspace:
         self.mamma_camera_mode.setToolTip('VGGT-Omega estimates fixed-camera placement. GeoCalib estimates background vertical direction before MAMMA 3D fitting. Manual uses your calibration without automatic gravity changes.')
         self.mamma_camera_mode.currentIndexChanged.connect(self.mamma_settings_changed)
         box.addWidget(self.mamma_camera_mode)
+        self.mamma_vggt_opt=QCheckBox(LABEL)
+        self.mamma_vggt_opt.setChecked(DEFAULT_ENABLED)
+        self.mamma_vggt_opt.setToolTip(HELP)
+        self.mamma_vggt_opt.toggled.connect(self.mamma_settings_changed)
+        box.addWidget(self.mamma_vggt_opt)
         self.mamma_camera_import=QPushButton('Import Camera Data...')
         self.mamma_camera_import.setToolTip('Load JSON or MAMMA YAML calibration for these videos. Camera names must match filenames without extensions; use original image sizes and metres. See docs/MAMMA.md for the format and docs/samples/mamma-camera-example.json for a synthetic example.')
         self.mamma_camera_import.clicked.connect(self.choose_mamma_calibration);box.addWidget(self.mamma_camera_import)
@@ -229,6 +235,7 @@ class MammaWorkspace:
             self.restore_correction_options({});self.active_result=self.selected_result()
             self.mamma_calibration=None;self.mamma_camera_mode.blockSignals(True)
             self.mamma_camera_mode.setCurrentIndex(0);self.mamma_camera_mode.blockSignals(False)
+            self.mamma_vggt_opt.setChecked(DEFAULT_ENABLED)
         self.mamma_inputs=entries
         if not restore:
             self.apply_default_settings()
@@ -325,6 +332,7 @@ class MammaWorkspace:
         entries=resolved_entries(root,saved.get('mamma_inputs',[]))
         if not entries:return
         options=state.get('mamma_options',{})
+        options={**options,'vggt_opt':vggt_opt_enabled(options)}
         import copy
         self._mamma_committed_options=copy.deepcopy(options)
         thumbnail_paths=tuple(saved_camera_preview(root,project,state,entry)[0] for entry in entries)
@@ -375,11 +383,13 @@ class MammaWorkspace:
             self.status.setText('Checking camera calibration...')
 
     def mamma_options(self):
-        return dict(camera_mode=self.mamma_camera_mode.currentData(),calibration=self.mamma_calibration,people=self.mamma_people.value(),height_m=self.mamma_height.value())
+        return dict(camera_mode=self.mamma_camera_mode.currentData(),calibration=self.mamma_calibration,
+                    people=self.mamma_people.value(),height_m=self.mamma_height.value(),vggt_opt=self.mamma_vggt_opt.isChecked())
 
     def restore_mamma_options(self,options):
         if not isinstance(options,dict) or options.get('camera_mode','vggt') not in {'vggt','manual'}:
             raise ValueError('Invalid saved MAMMA camera settings.')
+        opted=vggt_opt_enabled(options)
         people=options.get('people',0);height=options.get('height_m',1.7)
         if isinstance(people,bool) or not isinstance(people,int) or not 0<=people<=8:
             raise ValueError('Invalid saved MAMMA person count.')
@@ -396,6 +406,9 @@ class MammaWorkspace:
         self.mamma_camera_mode.blockSignals(True)
         self.mamma_camera_mode.setCurrentIndex(max(0,self.mamma_camera_mode.findData(options.get('camera_mode','vggt'))))
         self.mamma_camera_mode.blockSignals(False)
+        self.mamma_vggt_opt.blockSignals(True)
+        self.mamma_vggt_opt.setChecked(opted)
+        self.mamma_vggt_opt.blockSignals(False)
         self.mamma_settings_changed()
 
     def mamma_settings_changed(self,*_):
@@ -412,6 +425,7 @@ class MammaWorkspace:
         self.mamma_camera_note.setVisible(manual)
         self.mamma_camera_import.setEnabled(not self.busy)
         self.mamma_camera_mode.setEnabled(not self.busy)
+        self.mamma_vggt_opt.setEnabled(not self.busy and not manual)
         self.mamma_height.setEnabled(not self.busy and not manual)
         self.mamma_people.setEnabled(not self.busy)
         if hasattr(self,'readiness'):self.update_readiness()
@@ -484,6 +498,7 @@ class MammaWorkspace:
                 self.run_button.setEnabled(False)
             self.mamma_camera_import.setEnabled(not self.busy)
             self.mamma_camera_mode.setEnabled(not self.busy)
+            self.mamma_vggt_opt.setEnabled(not self.busy and self.mamma_camera_mode.currentData()!='manual')
         else:
             self.run_button.setToolTip('Create 3D motion for checked people in the trimmed video range using the selected model.')
         if self.mamma_pending:

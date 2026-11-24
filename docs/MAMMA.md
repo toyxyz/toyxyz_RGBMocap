@@ -198,15 +198,21 @@ report a meaningful percentage. The app uses SAM 2.1 and FP32 fitting; SAM 3.1
 standalone tests remain separate. No quantization, TF32, iteration reduction or
 physics simulation is enabled in this path.
 
-Low Memory does not select smaller MAMMA camera sets, fewer fitting iterations
-or a lower-precision model. It keeps VGGT camera transformer blocks on CPU and
+**Camera Calibration > VGGT-Ω OPT** is on by default for automatic calibration.
+It reduces peak GPU memory for VGGT-Omega using BF16 and PyTorch SDPA on
+supported GPUs. Turn it off to use standard VGGT-Omega. The option uses the same
+checkpoint and camera samples. Manual Camera Data bypasses VGGT-Omega.
+OPT also works with Low Memory block offload.
+[Camera-stage VRAM with OPT on and off](PERFORMANCE.md#vggt-camera-memory-with-opt)
+
+Low Memory keeps VGGT camera transformer blocks on CPU and
 transfers them for inference. Automatic uses the fast camera path when GPU memory
 is sufficient, selects offloading when needed, and can recover once from a camera
 CUDA OOM. Decisions and Low Memory advice appear in Console and the CMD window.
 
 The Automatic VGGT camera fast path shares FlowHMR's meta-initialized,
-direct-assignment checkpoint loader. It reduces temporary model loading work;
-landmarks, masks, fitting and camera calculations are unchanged. Low Memory and
+direct-assignment checkpoint loader. It reduces temporary model loading work.
+The VGGT-Ω OPT setting still controls camera inference precision. Low Memory and
 Automatic fallback retain copy loading because the experimental assign/offload
 combination increased Windows private allocation. See the
 [camera-loading measurements and scope](PERFORMANCE.md#vggt-camera-checkpoint-loading).
@@ -258,11 +264,13 @@ speedup. Reducing fitting diagnostics did not show a reliable fitting-stage gain
 The latest ExMR/FlowHMR CPU prefetch and connected-worker changes do not apply
 to MAMMA, which already processes multiple people together.
 
-**Low Memory offloads VGGT only**, not the full landmark/fitting pipeline. A
-controlled shared-VGGT test with nine images from three cameras measured
+**Low Memory offloads VGGT camera blocks.** Masks, landmarks and fitting keep
+their existing settings. The four-camera comparison includes OPT on and off in
+both resource modes. [VGGT camera VRAM comparison](PERFORMANCE.md#vggt-camera-memory-with-opt)
+
+An earlier standard VGGT test with nine images from three cameras measured
 allocated VRAM **6.47 → 3.14 GiB** (52% less), RAM working set **8.75 → 8.85 GiB**,
-and warm inference **0.225 → 0.751 s** (3.3× as long). That is a camera-component
-measurement, not a 52% saving for all of MAMMA.
+and warm inference **0.225 → 0.751 s** (3.3× as long) for the camera component.
 
 A separate paired app-mode check used two views, two people and 30 frames:
 RAM was **8.15 → 8.12 GiB**, and total time **241.61 → 222.00 s**. Whole-pipeline

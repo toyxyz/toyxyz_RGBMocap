@@ -44,6 +44,8 @@ def request(path):
     options=value['options']
     if options.get('camera_mode') not in ('vggt','manual') or not isinstance(options.get('people',0),int) or not 0<=options.get('people',0)<=8:
         raise ValueError('Invalid MAMMA camera/person settings.')
+    from .vggt_camera_opt import enabled
+    options['vggt_opt'] = enabled(options)
     height=float(options.get('height_m',1.7))
     if not math.isfinite(height) or not .5<=height<=2.5:raise ValueError('Invalid reference height.')
     value['root'] = Path(value['root']).resolve()
@@ -97,8 +99,11 @@ def prepare(path, job):
     from .mamma_runtime import verify_engine
     verify_engine(runtime)
     from .models import BY_KEY, STAGE_REQUIREMENTS
+    camera_options = dict(options)
+    if options['camera_mode'] == 'manual':
+        camera_options.pop('vggt_opt', None)
     identity = dict(version=1, inputs=[dict(path=str(Path(v['path']).resolve()),stat=file_stat(v['path']),id=v['id']) for v in job['inputs']],
-                    start=job['start'], end=job['end'], frames=n, options=options,
+                    start=job['start'], end=job['end'], frames=n, options=camera_options,
                     engine=runtime['engine_files'], models={k:file_stat(BY_KEY[k].path) for k in STAGE_REQUIREMENTS['mamma_assets'] if options['camera_mode']!='manual' or k not in {'flow_vggt','pear_geocalib'}})
     if options['camera_mode']!='manual':
         from .mamma_gravity import support_identity
@@ -112,6 +117,8 @@ def prepare(path, job):
     from .resource_cache import code_hash
     # Exact-byte aliases retain inference after the download-only progress fix.
     identity['code']={name:(code_hash if name in {'mamma_pipeline.py','worker_progress.py'} else sha256)(ROOT/'mocap'/name) for name in ('mamma_pipeline.py','mamma_sam_frames.py','mamma_camera.py','mamma_gravity.py','mamma_gravity_worker.py','mamma_inputs.py','image_io.py','memory_mode.py','gpu_offload.py','worker_progress.py','runtime_registry.py','pear/alignment_support.py')}
+    if camera_options.get('vggt_opt'):
+        identity['code']['vggt_camera_opt.py']=sha256(ROOT/'mocap/vggt_camera_opt.py')
     if interpolation:
         identity['interpolation'] = interpolation
         identity['code']['mamma_pipeline.py'] = sha256(ROOT/'mocap/mamma_pipeline.py')

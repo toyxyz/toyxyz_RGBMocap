@@ -64,6 +64,8 @@ def parser():
     rec.add_argument('--active-camera', type=int, help='Initial MAMMA camera number (1-based).')
     rec.add_argument('--camera-interval', type=int, choices=(-1, 0, 1, 2, 5, 10, 30),
                      help='FlowHMR camera sampling interval in frames (-1 static, 0 auto).')
+    rec.add_argument('--vggt-opt', action=argparse.BooleanOptionalAction,
+                     help='Use lower-memory VGGT-Omega for FlowHMR or MAMMA automatic cameras (on by default).')
     for option in ('--fast-sam', '--hamer', '--htd', '--footmr', '--handflow'):
         rec.add_argument(option, action=argparse.BooleanOptionalAction)
     camera_refinement_flag(rec, 'Save the background camera refinement preference (FlowHMR / ExMR).')

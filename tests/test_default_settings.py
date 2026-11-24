@@ -16,7 +16,7 @@ from mocap.gui import MainWindow
 from mocap.project_workspace_ui import DEFAULTS, DefaultSettingsDialog
 
 APP = QApplication.instance() or QApplication([])
-BUILT_IN = dict(flow_options=dict(camera_interval=0, fast_sam=True, sam_batch4=True, sam_gpu_crop=True,
+BUILT_IN = dict(flow_options=dict(camera_interval=0, vggt_opt=True, fast_sam=True, sam_batch4=True, sam_gpu_crop=True,
                                   sam_hand_stride4=True, hamer=False),
                 exmr_options=dict(static_camera=True, smoothing='global'),
                 prompthmr_options=dict(people=2, interaction=True),
@@ -76,6 +76,8 @@ class DefaultSettingsTest(unittest.TestCase):
     def test_file_menu_confirms_save_and_reset_with_the_values_that_apply(self):
         window = self.window(automatically_confirm=False)
         self.choose(window, window.flow_sampling, 5)
+        window.flow_vggt_opt.setChecked(False)
+        window.mamma_vggt_opt.setChecked(False)
         self.choose(window, window.exmr_camera, False)
         window.exmr_smoothing.setChecked(False)
         window.camera_tools.restore_background({'exmr': True})
@@ -118,9 +120,11 @@ class DefaultSettingsTest(unittest.TestCase):
         self.assertFalse(self.settings.exists())
         self.assertEqual(window.status.text(), status)
         self.assertEqual({group: len(values) for group, values in preview.items()},
-                         {'GVHMR': 3, 'FlowHMR': 7, 'ExMR': 3, 'PromptHMR': 2,
+                         {'GVHMR': 3, 'FlowHMR': 8, 'ExMR': 3, 'PromptHMR': 2, 'MAMMA': 1,
                           'Motion Correction': 4, 'Processing Resources': 1, 'Face Tracking': 1})
         self.assertEqual(preview['FlowHMR']['Camera / Sampling'], 'Every 5 Frames')
+        self.assertEqual(preview['FlowHMR']['VGGT-Ω OPT'], 'Off')
+        self.assertEqual(preview['MAMMA']['VGGT-Ω OPT'], 'Off')
         self.assertEqual(preview['ExMR'], {'Camera': 'Moving Camera / SimpleVO', 'Smooth Motion': 'Off',
                                            'Refine Camera Rotation': 'On'})
         self.assertEqual(preview['Processing Resources'], {'Resource Mode': 'Low Memory'})
@@ -128,6 +132,8 @@ class DefaultSettingsTest(unittest.TestCase):
         self.assertEqual(preview, click_confirmation(save, QDialogButtonBox.StandardButton.Ok))
         self.assertEqual(window.status.text(), 'Default settings saved for new videos.')
         self.assertEqual(self.read()[DEFAULTS]['flow_options']['camera_interval'], 5)
+        self.assertFalse(self.read()[DEFAULTS]['flow_options']['vggt_opt'])
+        self.assertFalse(self.read()[DEFAULTS]['mamma_options']['vggt_opt'])
         self.assertEqual(self.read()[DEFAULTS]['processing_options'], {'resource_mode': 'low_memory'})
 
         before_reset = self.settings.read_bytes()
@@ -135,6 +141,8 @@ class DefaultSettingsTest(unittest.TestCase):
         self.assertEqual(self.settings.read_bytes(), before_reset)
         self.assertFalse(window._reset_starting_settings)
         self.assertEqual(preview['FlowHMR']['Camera / Sampling'], 'Moving / Unknown - Auto')
+        self.assertEqual(preview['FlowHMR']['VGGT-Ω OPT'], 'On')
+        self.assertEqual(preview['MAMMA']['VGGT-Ω OPT'], 'On')
         self.assertEqual(preview['ExMR'], {'Camera': 'Static Camera', 'Smooth Motion': 'On',
                                            'Refine Camera Rotation': 'Off'})
         self.assertEqual(preview['GVHMR'], {'HTD Refine': 'On', 'FootMR': 'On', 'HandFlow': 'On'})
@@ -150,6 +158,7 @@ class DefaultSettingsTest(unittest.TestCase):
         self.assertEqual(window.compute_mode.currentData(), 'low_memory')
         window.load_video(self.video)
         self.assertEqual(self.state(window), BUILT_IN)
+        self.assertTrue(window.mamma_vggt_opt.isChecked())
         self.assertEqual(window.compute_mode.currentData(), 'auto')
 
     def test_nothing_saved_is_todays_app(self):
@@ -163,6 +172,21 @@ class DefaultSettingsTest(unittest.TestCase):
         window.load_video(self.video)
         self.assertEqual((window.track_face.isChecked(), window.prompthmr_interaction.isChecked()), (True, False))
         self.assertFalse(self.settings.exists())
+
+    def test_vggt_opt_controls_preserve_selection_when_camera_mode_bypasses_vggt(self):
+        window = self.window()
+        window.restore_workflow_options({'flow_options': {'vggt_opt': False}})
+        window.restore_mamma_options({'vggt_opt': False})
+        self.choose(window, window.flow_sampling, -1)
+        self.choose(window, window.mamma_camera_mode, 'manual')
+        self.assertFalse(window.flow_vggt_opt.isEnabled())
+        self.assertFalse(window.mamma_vggt_opt.isEnabled())
+        self.choose(window, window.flow_sampling, 0)
+        self.choose(window, window.mamma_camera_mode, 'vggt')
+        self.assertTrue(window.flow_vggt_opt.isEnabled())
+        self.assertTrue(window.mamma_vggt_opt.isEnabled())
+        self.assertFalse(window.selected_flow_options()['vggt_opt'])
+        self.assertFalse(window.mamma_options()['vggt_opt'])
 
     def test_save_then_new_window_and_new_video_start_from_saved(self):
         window = self.window()
@@ -295,9 +319,10 @@ class DefaultSettingsTest(unittest.TestCase):
         window.save_default_settings()
         saved = self.read()[DEFAULTS]
         self.assertEqual(set(saved), {'gvhmr_options', 'flow_options', 'exmr_options', 'prompthmr_options',
-                                      'correction', 'track_face', 'processing_options'})
+                                      'mamma_options', 'correction', 'track_face', 'processing_options'})
         self.assertEqual(saved['correction'], dict(mode='flat', preset='normal', foot_lock=True, hand_lock=False))
         self.assertEqual(saved['prompthmr_options'], dict(interaction=True, camera='moving'))
+        self.assertEqual(saved['mamma_options'], dict(vggt_opt=True))
         self.assertNotIn('result', json.dumps(saved))
         second = self.window()
         self.assertEqual(second.workspace_settings()['correction'], BUILT_IN['correction'])

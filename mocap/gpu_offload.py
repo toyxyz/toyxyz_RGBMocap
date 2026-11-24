@@ -63,7 +63,7 @@ class BlockOffload:
         self.model = None
 
 
-def load_vggt(checkpoint, device, camera_only=True, low_memory=False):
+def load_vggt(checkpoint, device, camera_only=True, low_memory=False, *, optimize_camera=False):
     import gc
     import torch
     from vggt_omega.models import VGGTOmega
@@ -84,6 +84,9 @@ def load_vggt(checkpoint, device, camera_only=True, low_memory=False):
         raise RuntimeError('VGGT camera checkpoint left uninitialized tensors. Repair its checkpoint or runtime.')
     del state
     gc.collect()
+    if optimize_camera:
+        from .vggt_camera_opt import configure
+        configure(model)
     if low_memory:model._mocap_offload = BlockOffload(model, device)
     else:model.to(device)
     return model

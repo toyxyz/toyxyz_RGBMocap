@@ -17,7 +17,6 @@ def infer(work,job,emit):
     from .models import BY_KEY
     from .paths import ROOT
     sys.path.insert(0,str(ROOT/'third_party/FlowHMR/third_party/vggt-omega'))
-    from vggt_omega.models import VGGTOmega
     from vggt_omega.utils.load_fn import load_and_preprocess_images,_balanced_target_shape
     from vggt_omega.utils.pose_enc import encoding_to_camera
     entries=json.loads((work/'inputs.json').read_text(encoding='utf-8'))
@@ -50,15 +49,17 @@ def infer(work,job,emit):
     emit('progress',current=0,total=0,message=f'VGGT: estimate {len(entries)} fixed cameras from {len(paths)} background images')
     from .memory_mode import run as memory_run
     from .gpu_offload import load_vggt,release
+    from .vggt_camera_opt import enabled, select
+    optimize, estimated_gib = select(enabled(job['options']), len(paths), emit)
     def predict(low):
-        model=load_vggt(BY_KEY['flow_vggt'].path,'cuda',low_memory=low)
+        model=load_vggt(BY_KEY['flow_vggt'].path,'cuda',low_memory=low,optimize_camera=optimize)
         try:
             images=load_and_preprocess_images(paths,mode='balanced',image_resolution=512).cuda()
             with torch.inference_mode():
                 prediction=model(images);E,K=encoding_to_camera(prediction['pose_enc'],images.shape[-2:])
             return E[0].cpu().numpy(),K[0].cpu().numpy(),*images.shape[-2:]
         finally:release(model)
-    E,K,H,W=memory_run('MAMMA VGGT camera',predict,6.+.1*len(paths),emit)
+    E,K,H,W=memory_run('MAMMA VGGT camera',predict,estimated_gib,emit)
     for i,(w,h,(hh,ww)) in enumerate(sizes):
         K[i,0,2]-=(W-ww)//2;K[i,1,2]-=(H-hh)//2
         K[i,0,:]*=w/ww;K[i,1,:]*=h/hh

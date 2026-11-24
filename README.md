@@ -183,6 +183,7 @@ For scripted reconstruction, export and streaming, see the [command-line guide](
 - Inspect source-video/bone alignment in Camera Preview and display saved cameras in 3D, with optional background rotation refinement for FlowHMR/ExMR.
 - Save projects with separate results for each AI model.
 - Reduce FlowHMR memory use with query-batched attention and optional sparse hand sampling; optional HaMeR refines fingers. See [controls and trade-offs](docs/models/FLOWHMR.md#controls) and [measured time/memory comparisons](docs/PERFORMANCE.md#flowhmr-query-batches-and-four-frame-hands-2026-11-03).
+- Reduce camera-estimation VRAM with default-on **VGGT-Ω OPT** in FlowHMR and automatic MAMMA calibration. It also works in Low Memory mode. [Measured camera VRAM](docs/PERFORMANCE.md#vggt-camera-memory-with-opt)
 - Track webcam or video input in real time with PEAR's experimental body/finger bone preview; tracking and poses may be unstable.
 
 ## How it works

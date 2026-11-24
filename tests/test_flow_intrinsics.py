@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -72,6 +73,28 @@ class FlowIntrinsicsTests(unittest.TestCase):
         signature = flow_backend.identity(self.root, 'flow_features')
         self.assertNotIn('camera_intrinsics', signature)
         self.assertFalse((self.root / 'flow_camera.npz').exists())
+
+    def test_camera_opt_separates_moving_cache_and_leaves_static_alone(self):
+        (self.root / 'input.mp4').touch()
+        with patch('mocap.vggt_camera_opt.available', return_value=True):
+            default = flow_backend.identity(self.root, 'flow_camera')
+            self.assertTrue(default['vggt_opt'])
+            self.state['flow_options']['vggt_opt'] = False
+            self.manifest(self.root, self.state)
+            standard = flow_backend.identity(self.root, 'flow_camera')
+            self.assertFalse(standard['vggt_opt'])
+            self.assertNotEqual(default, standard)
+        with patch('mocap.vggt_camera_opt.available', return_value=False):
+            self.state['flow_options']['vggt_opt'] = True
+            self.manifest(self.root, self.state)
+            self.assertEqual(standard, flow_backend.identity(self.root, 'flow_camera'))
+
+        self.state['flow_options']['camera_interval'] = -1
+        self.manifest(self.root, self.state)
+        static = flow_backend.identity(self.root, 'flow_camera')
+        self.state['flow_options']['vggt_opt'] = False
+        self.manifest(self.root, self.state)
+        self.assertEqual(static, flow_backend.identity(self.root, 'flow_camera'))
 
     def test_missing_or_incomplete_moving_camera(self):
         with self.assertRaisesRegex(ValueError, 'Run camera estimation again'):

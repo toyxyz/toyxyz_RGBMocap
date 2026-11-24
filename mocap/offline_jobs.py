@@ -45,6 +45,8 @@ def request_for(args, video):
     if model != 'mamma' and (args.camera_video or args.calibration or args.height is not None
                             or args.active_camera is not None):
         raise ValueError('Camera videos, calibration, reference height and active camera are MAMMA options.')
+    if model != 'mamma' and args.vggt_opt is not None:
+        raise ValueError('--vggt-opt applies to FlowHMR and MAMMA.')
     if model != 'prompthmr' and args.interaction is not None:
         raise ValueError('--interaction applies to PromptHMR.')
     if model == 'gemx' and (args.people is not None or args.camera not in (None, 'static')):
@@ -55,6 +57,8 @@ def request_for(args, video):
     previous = {}
     if model == 'mamma':
         from .mamma_inputs import common_media, match_calibration, read_calibration, video_paths
+        from .vggt_camera_opt import enabled as vggt_opt_enabled
+        from .local_choices import saved
         if args.camera is not None:
             raise ValueError('MAMMA uses fixed cameras. Supply --calibration for manual calibration.')
         paths = video_paths([video, *args.camera_video])
@@ -74,6 +78,9 @@ def request_for(args, video):
         elif root.exists() and (not root.is_dir() or any(root.iterdir())):
             raise ValueError('Choose an empty MAMMA workspace.')
         prior = state.get('mamma_options', {})
+        defaults = saved('default_settings') or {}
+        opted = args.vggt_opt if args.vggt_opt is not None else vggt_opt_enabled(
+            prior if prior else defaults.get('mamma_options', {}))
         calibration = read_calibration(args.calibration) if args.calibration else prior.get('calibration')
         if calibration:
             match_calibration(calibration, entries)
@@ -83,7 +90,7 @@ def request_for(args, video):
         if not 0 <= count <= 8 or not math.isfinite(height) or not .5 <= height <= 2.5 or not 1 <= camera <= len(entries):
             raise ValueError('MAMMA expects 0–8 people, 0.5–2.5 m height and a valid 1-based camera number.')
         options = dict(camera_mode='manual' if calibration else 'vggt', calibration=calibration,
-                       people=count, height_m=height)
+                       people=count, height_m=height, vggt_opt=opted)
         source = dict(inputs=entries, active_camera=camera-1, options=options)
         duration = common_media(entries)['duration']
         fps_values = [e['metadata']['fps'] for e in entries]

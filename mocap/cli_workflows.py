@@ -163,7 +163,7 @@ def environment(compute, settings=None, flow=None):
            'RGB_MOCAP_RESOURCE_SAFETY': '1' if resource_safety() else '0'}
     if flow is not None:
         names = dict(camera_interval='INTERVAL', fast_sam='FAST_SAM', sam_batch4='BATCH4',
-                     sam_gpu_crop='GPU_CROP', sam_hand_stride4='HAND_STRIDE4', hamer='HAMER')
+                     sam_gpu_crop='GPU_CROP', sam_hand_stride4='HAND_STRIDE4', hamer='HAMER', vggt_opt='VGGT_OPT')
         env.update({'RGB_MOCAP_FLOW_' + name: str(int(flow[key])) for key, name in names.items()})
     return env
 
@@ -174,6 +174,8 @@ def stage_settings(args, state, corrected):
     model = args.model
     if model != 'flowhmr' and any(getattr(args, name) is not None for name in ('fast_sam','hamer','camera_interval')):
         raise ValueError('Those camera sampling or hand settings apply to FlowHMR.')
+    if model != 'flowhmr' and args.vggt_opt is not None:
+        raise ValueError('--vggt-opt applies to FlowHMR and MAMMA.')
     if model != 'gvhmr' and any(getattr(args, name) is not None for name in ('htd','footmr','handflow')):
         raise ValueError('HTD, FootMR and HandFlow apply to GVHMR.')
     if model != 'exmr' and args.smoothing is not None:
@@ -193,15 +195,16 @@ def stage_settings(args, state, corrected):
                                          handflow=choices['handflow'], correction=corrected), result_kind(correction=corrected, **choices), None
     flow = None
     if model == 'flowhmr':
+        from .vggt_camera_opt import DEFAULT_ENABLED
         flow = dict(camera_interval=0, fast_sam=True, sam_batch4=True, sam_gpu_crop=True,
-                    sam_hand_stride4=True, hamer=False)
+                    sam_hand_stride4=True, hamer=False, vggt_opt=DEFAULT_ENABLED)
         for values in (defaults.get('flow_options', {}), state.get('flow_options', {})):
             flow.update({key: value for key, value in values.items() if key in flow and type(value) is type(flow[key])})
         if args.camera is not None:
             flow['camera_interval'] = -1 if args.camera == 'static' else 0
         if args.camera_interval is not None:
             flow['camera_interval'] = args.camera_interval
-        for key in ('fast_sam', 'hamer'):
+        for key in ('fast_sam', 'hamer', 'vggt_opt'):
             if getattr(args,key) is not None:
                 flow[key] = getattr(args,key)
     return MOTION_TOOLS[model].stages(correction=corrected), result_kind(correction=corrected), flow

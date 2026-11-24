@@ -68,6 +68,17 @@ Keep warm generator measurements separate from fresh feature jobs and the
 additional HaMeR child pass. HaMeR is an optional finger-accuracy refinement,
 not a guarantee of better results for every video.
 
+FlowHMR moving-camera estimation and automatic MAMMA calibration expose
+**VGGT-Ω OPT**, on by default. `mocap/vggt_camera_opt.py` uses BF16 and PyTorch
+SDPA with the same checkpoint and input samples. Keep the standard path
+available for an explicit opt-out and GPUs without native CUDA BF16. Camera
+receipts distinguish the active inference mode. PEAR alignment uses VGGT depth
+and stays on its separate path. The option needs no additional packages.
+**Resource Mode > Low Memory** can be combined with either VGGT mode. It
+offloads transformer blocks while keeping the selected precision and samples.
+Use the paired camera-stage measurements when describing VRAM savings.
+[VGGT OPT measurements in both resource modes](PERFORMANCE.md#vggt-camera-memory-with-opt)
+
 ## Models and model files
 
 The unified Model Manager builds its workflow tabs and **Used by** labels from

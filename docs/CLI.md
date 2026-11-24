@@ -72,6 +72,12 @@ the marker time and repeat `--sam31-point X Y` for normalized image points.
 
 ## Refine camera rotation
 
+Use `--vggt-opt` or `--no-vggt-opt` to set the lower-memory VGGT-Omega camera
+path for FlowHMR and MAMMA. The built-in default is on. FlowHMR Static Camera
+and MAMMA manual calibration bypass VGGT-Omega.
+Combine this with `--compute low_memory` for CPU block offload.
+[VGGT memory measurements](PERFORMANCE.md#vggt-camera-memory-with-opt)
+
 FlowHMR and ExMR support `--refine-camera-rotation` and
 `--no-refine-camera-rotation`. On `reconstruct`, either flag saves the
 choice in the workspace. The refinement runs on the CPU when the saved

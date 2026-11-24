@@ -96,6 +96,12 @@ class MultiModelCLI(unittest.TestCase):
             self.assertEqual(result, 'corrected_initial')
             self.assertEqual(options['camera_interval'], -1)
             self.assertTrue(options['hamer'])
+            self.assertTrue(options['vggt_opt'])
+            opt_out = tool.parse_args(['reconstruct','x.mp4','--model','flowhmr','--no-vggt-opt'])
+            _, _, choices = stage_settings(opt_out, {'flow_options': {'vggt_opt': True}}, False)
+            self.assertFalse(choices['vggt_opt'])
+            from mocap.cli_workflows import environment
+            self.assertEqual(environment('auto', flow=choices)['RGB_MOCAP_FLOW_VGGT_OPT'], '0')
             gv = tool.parse_args(['reconstruct','x.mp4','--model','gvhmr','--camera','static','--no-footmr'])
             stages, result, _ = stage_settings(gv, {}, False)
             self.assertEqual(result, 'handflow_refined')
@@ -112,6 +118,21 @@ class MultiModelCLI(unittest.TestCase):
             self.assertEqual([stage for stage, _ in jobs],
                              ['mamma_prepare','mamma_masks','mamma_landmarks','mamma_camera','mamma_fit','mamma_publish'])
             self.assertTrue(all(flags==['--request',str(path)] for _, flags in jobs))
+
+    def test_mamma_vggt_opt_is_in_the_worker_request(self):
+        from mocap.offline_jobs import request_for
+
+        with TemporaryDirectory() as folder, \
+                patch('mocap.video.probe', return_value=dict(fps=30, frames=60, duration=2, width=1280, height=720)), \
+                patch('mocap.local_choices.saved', return_value=None), \
+                patch('mocap.cli_workflows.missing_models', return_value=[]):
+            path = Path(folder)
+            command = ['reconstruct', str(path/'one.mp4'), '--model', 'mamma',
+                       '--camera-video', str(path/'two.mp4'), '--project', str(path/'scene')]
+            for flags, enabled in (([], True), (['--no-vggt-opt'], False)):
+                args = parser().parse_args(command + flags)
+                job, *_ = request_for(args, args.video)
+                self.assertIs(job['options']['vggt_opt'], enabled)
 
     def test_sam31_arguments_keep_prompt_anchor_and_points(self):
         flags=sam31_arguments('person',1.5,[(.25,.5)])

@@ -448,6 +448,11 @@ def build_workspace(w):
     w.flow_sampling.setToolTip(tooltip_text('Choose Static Camera only if the camera stays still without zooming. Otherwise start with Moving / Unknown - Auto. Frame intervals control camera analysis only; shorter intervals use more memory. Applies on Reconstruct 3D.'))
     w.flow_sampling.currentIndexChanged.connect(lambda _: w.update_readiness())
     flow_camera.addWidget(w.flow_sampling)
+    from .vggt_camera_opt import DEFAULT_ENABLED, HELP, LABEL
+    w.flow_vggt_opt = QCheckBox(LABEL)
+    w.flow_vggt_opt.setChecked(DEFAULT_ENABLED)
+    w.flow_vggt_opt.setToolTip(tooltip_text(HELP))
+    flow_camera.addWidget(w.flow_vggt_opt)
     from .camera_ui import BACKGROUND_HELP
     w.flowhmr_background=QCheckBox('Refine Camera Rotation')
     w.flowhmr_background.setChecked(False);w.flowhmr_background.setToolTip(tooltip_text(BACKGROUND_HELP))

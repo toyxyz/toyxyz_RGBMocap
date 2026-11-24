@@ -20,7 +20,7 @@ def relative_camera(rt):
     return value
 
 
-def saved_interval(project,state):
+def saved_camera_options(project,state):
     """People/takes inherit the scene camera policy rather than a row-local value."""
     import json
     from pathlib import Path
@@ -28,7 +28,11 @@ def saved_interval(project,state):
     if state.get('people_root'):
         root=(project/state['people_root']).resolve()
         if not project.resolve().is_relative_to(root) or not (root/'people.json').is_file():
-            return options.get('camera_interval',0)  # Detached baked takes remain viewable; processing validates the group.
+            return options  # Detached baked takes remain viewable; processing validates the group.
         options=json.loads((root/'project.json').read_text(encoding='utf-8')).get('flow_options',options)
-    return options.get('camera_interval',0)
+    return options
+
+
+def saved_interval(project,state):
+    return saved_camera_options(project,state).get('camera_interval',0)
 

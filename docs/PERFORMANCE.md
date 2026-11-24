@@ -113,6 +113,39 @@ about **3.3 times as long**. This does not establish a 52% reduction for MAMMA's
 full fitting pipeline. For that pipeline, see the separate
 [MAMMA processing records](MAMMA.md#recorded-processing-time-and-memory).
 
+## VGGT camera memory with OPT
+
+**VGGT-Ω OPT** is on by default in FlowHMR's **Camera / Sampling** and
+MAMMA's **Camera Calibration**. It uses the existing VGGT-Omega 512 checkpoint,
+BF16 weights, smaller frame batches and PyTorch SDPA. Camera sampling, input
+resolution and cross-frame attention are preserved. GPUs without native CUDA
+BF16 use standard VGGT. The option needs no additional packages or compilation.
+
+**Processing Resources > Resource Mode > Low Memory** adds CPU block offload to
+the selected VGGT mode. Automatic uses the GPU-resident path when the current
+budget allows it. The RTX 5090 Windows tests below ran both settings on the same
+input for each workflow with PyTorch 2.7.1 and CUDA 12.8.
+
+| Camera workload | Resource Mode | Peak allocated VRAM, OPT off → on | Allocated VRAM saved by OPT | Peak reserved VRAM, OPT off → on |
+| --- | --- | ---: | ---: | ---: |
+| FlowHMR moving camera, 900 video frames / 114 VGGT samples | Automatic | 10.67 → **4.85 GiB** | **55%** | 12.15 → 6.75 GiB |
+| FlowHMR moving camera, same input | Low Memory | 7.34 → **3.18 GiB** | **57%** | 8.77 → 5.00 GiB |
+| MAMMA automatic calibration, 4 fixed cameras / 12 VGGT samples | Automatic | 7.01 → **3.05 GiB** | **56%** | 7.13 → 3.90 GiB |
+| MAMMA automatic calibration, same input | Low Memory | 3.68 → **1.38 GiB** | **62%** | 3.77 → 2.15 GiB |
+
+Compared with **Automatic + OPT off**, **Low Memory + OPT on** reduced peak
+allocated camera VRAM by **70%** for FlowHMR and **80%** for MAMMA in these tests.
+Allocated memory tracks live PyTorch GPU allocations. Reserved memory includes
+the allocator's retained blocks. Both figures are for the VGGT camera worker,
+including model loading and inference. The separate GeoCalib worker, SAM,
+body reconstruction and fitting have their own memory peaks. Block offload
+adds CPU↔GPU transfers and can increase RAM use and processing time.
+
+FlowHMR **Static Camera** and MAMMA **Manual Camera Data** bypass VGGT. Use
+**Reconstruct 3D** after changing OPT to generate a camera result with the chosen
+mode. CLI equivalents are `--vggt-opt`, `--no-vggt-opt` and `--compute low_memory`.
+[FlowHMR controls](models/FLOWHMR.md#controls) · [MAMMA guide](MAMMA.md) · [CLI guide](CLI.md)
+
 ## Applied speed improvements
 
 The following methods are enabled by the current app. Their measurements use

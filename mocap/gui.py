@@ -748,6 +748,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.mesh_button.setEnabled(self.preview_preparation_available())
         self.import_character_action.setEnabled(not self.busy and not self.contact_saving)
         self.flow_sampling.setEnabled(not self.busy)
+        self.flow_vggt_opt.setEnabled(not self.busy and self.flow_sampling.currentData()!=-1)
         self.fast_sam.setEnabled(not self.busy and not self.flow_hamer.isChecked())
         self.flow_hand_stride4.setEnabled(not self.busy and not self.flow_hamer.isChecked())
         self.flow_hamer.setEnabled(not self.busy)
@@ -1057,9 +1058,11 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         pipeline = manifest.get("pipeline", {})
         pending_result = (self.selected_result() if keep_current_options and
                           pipeline.get('model', 'gvhmr') == self._selected_tool else None)
-        from .flow_camera import saved_interval
+        from .flow_camera import saved_camera_options
         from .flow_sam import saved_options
+        from .vggt_camera_opt import enabled as vggt_opt_enabled
         flow=saved_options(project,manifest)
+        camera_options=saved_camera_options(project,manifest)
         self.flow_hamer.setChecked(False)
         self.fast_sam.setChecked(flow['fast_sam'])
         self.flow_batch4.setChecked(flow['sam_batch4'])
@@ -1070,7 +1073,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         exmr=saved_exmr(project,manifest)
         self.exmr_camera.setCurrentIndex(self.exmr_camera.findData(exmr['static_camera']))
         self.exmr_smoothing.setChecked(exmr['smoothing']=='global')
-        self.flow_sampling.setCurrentIndex(max(0,self.flow_sampling.findData(saved_interval(project,manifest))))
+        self.flow_sampling.setCurrentIndex(max(0,self.flow_sampling.findData(camera_options.get('camera_interval',0))))
+        self.flow_vggt_opt.setChecked(vggt_opt_enabled(camera_options))
         self.model_choice.blockSignals(True)
         self.model_choice.setCurrentIndex(self.model_choice.findData(pipeline.get('model','gvhmr')))
         self.model_choice.blockSignals(False)
@@ -1726,6 +1730,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         environment.insert("RGB_MOCAP_COMPUTE_MODE", self.compute_mode.currentData())
         environment.insert('RGB_MOCAP_RESOURCE_SAFETY','1' if self._job_resource_safety else '0')
         environment.insert('RGB_MOCAP_FLOW_INTERVAL',str(self.flow_sampling.currentData()))
+        environment.insert('RGB_MOCAP_FLOW_VGGT_OPT','1' if self.flow_vggt_opt.isChecked() else '0')
         environment.insert('RGB_MOCAP_FLOW_FAST_SAM','1' if self.fast_sam.isChecked() else '0')
         environment.insert('RGB_MOCAP_FLOW_BATCH4','1' if self.flow_batch4.isChecked() else '0')
         environment.insert('RGB_MOCAP_FLOW_GPU_CROP','1' if self.flow_gpu_crop.isChecked() else '0')

@@ -1,5 +1,20 @@
 # Source package validation
 
+## VGGT-Omega camera optimization
+
+- Ran the FlowHMR moving-camera worker on a 900-frame clip and MAMMA automatic
+  calibration on a synchronized four-camera scene in Automatic and Low Memory,
+  with OPT enabled and disabled for each mode. The same checkpoint and camera
+  samples were used in each pair. The FlowHMR run returned all 900 camera poses.
+  MAMMA produced a four-camera calibration and a capture in each mode.
+- Checked default-on behavior, explicit opt-out, project and saved-default
+  restoration, CLI settings and camera-cache separation. Static FlowHMR and
+  manual MAMMA bypass the optimization.
+- A separate three-camera scene intermittently failed the GeoCalib gravity
+  quality check across both VGGT modes. Matching prepared images and VGGT input
+  matrices were verified across retries within the same mode.
+  [Camera VRAM and measurement scope](PERFORMANCE.md#vggt-camera-memory-with-opt)
+
 ## CLI camera rotation refinement
 
 - Ran animated Blender exports with refinement on and off for 72-frame

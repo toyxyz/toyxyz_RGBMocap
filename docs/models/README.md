@@ -27,6 +27,9 @@ and Interaction Prompt on; see its guide for setup and fixed-camera limits.
 For manual MAMMA cameras, see the [calibration format and JSON example](../MAMMA.md#manual-cameras).
 Automatic MAMMA cameras combine VGGT-Omega placement with GeoCalib background
 vertical direction before 3D fitting; both checkpoints appear in its Model Manager.
+FlowHMR moving-camera estimation and automatic MAMMA calibration enable
+**VGGT-Ω OPT** by default. Both workflows can combine OPT with Low Memory.
+[Camera VRAM comparison](../PERFORMANCE.md#vggt-camera-memory-with-opt)
 GeoCalib reuses the base Flow support overlay rather than MAMMA's separate runtime.
 PEAR support is prepared by `install.cmd` and `update.cmd` over the shared runtime;
 its weights/body data are obtained separately. It is a live preview without motion
