@@ -69,6 +69,10 @@ results are under the project's `exmr/` folder. Switching models loads that
 model's own available results; it does not convert one model's inference into
 another's. **Save Project As** copies saved work to the selected location.
 
+ExMR predicts root velocity from the sequence of body observations. See
+[treadmill and walking-pad motion](../USER_GUIDE.md#treadmill-and-walking-pad-motion)
+for the capture guidance and the FlowHMR examples.
+
 ## Limitations and resources
 
 Reconstruction reuses one model at a time across selected people and connects

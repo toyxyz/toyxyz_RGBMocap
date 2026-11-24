@@ -613,6 +613,34 @@ models offer a 52-bone overlay and FBX/BVH export. GEM-X uses the 77-bone SOMA
 rig for its overlay and FBX, BVH and Blender exports. See the
 [GEM-X guide](models/GEMX.md) for its setup, correction and retargeting workflow.
 
+### Treadmill and walking-pad motion
+
+Monocular motion models such as FlowHMR and ExMR estimate root movement from
+the performer's pose and gait across frames. On a treadmill or walking pad,
+the belt carries the planted foot backward relative to the hips while the
+performer stays near the same spot in the room. That motion can give the model
+enough information to reconstruct forward walking or running in 3D.
+
+For a camera that stays fixed without zooming, choose **Static Camera**. Keep
+the feet visible through each stride. After **Reconstruct 3D**, turn on
+**Motion Path** in the viewport to see the estimated travel. Turn off
+**Enable Correction** to inspect the original reconstruction.
+
+Both previews below pair the input video with the FlowHMR result. The distance
+and speed come from the original pelvis trajectory. Motion Correction changed
+the measured forward distance by less than 1 cm in these examples.
+
+| Preview | Camera setting | Clip | Estimated forward travel | Estimated speed |
+| --- | --- | ---: | ---: | ---: |
+| [Walking-pad walk](samples/walking-pad-locomotion.mp4) | Moving / Unknown - Auto | 4.93 s | 4.22 m | 0.90 m/s (2.0 mph) |
+| [Treadmill sprint](samples/treadmill-sprint-locomotion.mp4) | Static Camera | 3.03 s | 14.55 m | 5.26 m/s (11.8 mph) |
+
+The walking video displays 3.5 mph, and the sprint video is titled *18mph
+Treadmill Sprint*. Those speeds come from the source videos. The output speed
+is an estimate, so it can differ from the belt speed. When the performer lifts
+each foot and puts it back in the same place on a fixed floor, the intended
+stride length and travel path are ambiguous.
+
 ### MAMMA multi-view reconstruction
 
 Select **MAMMA** before opening two or more synchronized fixed-camera videos.

@@ -11,8 +11,8 @@
     },
     {
       "path": ".gitignore",
-      "bytes": 2085,
-      "sha256": "95e785d22a23f008c80986a2ec019b896116abb7eb9c6b37a1453b80b0b334b7"
+      "bytes": 2176,
+      "sha256": "12a32757a1cdb79e85f688056b73554a064a3e3c0d3a2f80e9a841244c3a5b30"
     },
     {
       "path": "AGENTS.md",
@@ -171,8 +171,8 @@
     },
     {
       "path": "docs/AGENT_GUIDE.md",
-      "bytes": 106781,
-      "sha256": "22884c86f97bdde23ed999e08c146907308454d8b44c9bdf29f92c0228589ffd"
+      "bytes": 107687,
+      "sha256": "d5ec7650bbd409652592f1c8c9d5a880a49ce4804d603931ba1b1c9df0866614"
     },
     {
       "path": "docs/BUILD.md",
@@ -211,8 +211,8 @@
     },
     {
       "path": "docs/USER_GUIDE.md",
-      "bytes": 96448,
-      "sha256": "dca143f68fe359ca48d23477bd54299bed897b87ac39ba71d34f58764cb2afab"
+      "bytes": 98112,
+      "sha256": "fa7ceb77fe07c38203461016d4dcdb3d9c302fade2d7b7be1207866ac8367139"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -241,13 +241,13 @@
     },
     {
       "path": "docs/models/EXMR.md",
-      "bytes": 9955,
-      "sha256": "c2034befa319a570a32c419d60b42bbd63f8540af44e4543df88d4b55cf0811b"
+      "bytes": 10165,
+      "sha256": "fcdb230d3f2571a95c9436a0064f5448631cdafd0db13c083f3eaf6eedf43d78"
     },
     {
       "path": "docs/models/FLOWHMR.md",
-      "bytes": 18786,
-      "sha256": "bb30b6c138d5e48effcbb7451881887d2cb007654244fb865aeade2d98e7e663"
+      "bytes": 19046,
+      "sha256": "32e841ee828f1a54a8205507d120b4be6f943ee48cb2554da9b5f58e0d6ffc2e"
     },
     {
       "path": "docs/models/GEMX.md",
@@ -313,6 +313,16 @@
       "path": "docs/samples/streaming-to-blender.mp4",
       "bytes": 12490446,
       "sha256": "82fce160b6290916382edd21012b99952be92323b245a04f2f3fd2af0268b5e5"
+    },
+    {
+      "path": "docs/samples/treadmill-sprint-locomotion.mp4",
+      "bytes": 4581637,
+      "sha256": "f36b78737565a13109217d0a414c79b010316f2d7eb898d84c620b9a6c6675c1"
+    },
+    {
+      "path": "docs/samples/walking-pad-locomotion.mp4",
+      "bytes": 5301088,
+      "sha256": "348d215813af924a2658454821e735e756261eb3ed361d8a5cea2b805cec7963"
     },
     {
       "path": "face_worker_boot.py",
@@ -1156,8 +1166,8 @@
     },
     {
       "path": "installer/source-resources.json",
-      "bytes": 5176,
-      "sha256": "ca8a949d42c3033b51202965b4419ff8e212624a7776f41748169630f499b695"
+      "bytes": 5552,
+      "sha256": "4744c12f5c50780086a136e433526ab2bd5c28ba818371b01c4723155597e9e7"
     },
     {
       "path": "installer/verify_gemx.py",

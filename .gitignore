@@ -53,6 +53,8 @@ __pycache__/
 !/docs/samples/character-retargeting.mp4
 !/docs/samples/multi-cam-mocap.mp4
 !/docs/samples/streaming-to-blender.mp4
+!/docs/samples/walking-pad-locomotion.mp4
+!/docs/samples/treadmill-sprint-locomotion.mp4
 *.avi
 *.mov
 *.mkv

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "purpose": "Hash-verified importer assets, UE5 mannequin data, prebuilt correction module, README samples, and the Blender stream add-on package",
+  "purpose": "Hash-verified importer assets, UE5 mannequin data, prebuilt correction module, documentation samples, and the Blender stream add-on package",
   "files": [
     {
       "path": "third_party/character_import/io_scene_vrm/common/mtoon0.blend",
@@ -101,6 +101,16 @@
       "path": "docs/samples/streaming-to-blender.mp4",
       "bytes": 12490446,
       "sha256": "82fce160b6290916382edd21012b99952be92323b245a04f2f3fd2af0268b5e5"
+    },
+    {
+      "path": "docs/samples/walking-pad-locomotion.mp4",
+      "bytes": 5301088,
+      "sha256": "348d215813af924a2658454821e735e756261eb3ed361d8a5cea2b805cec7963"
+    },
+    {
+      "path": "docs/samples/treadmill-sprint-locomotion.mp4",
+      "bytes": 4581637,
+      "sha256": "f36b78737565a13109217d0a414c79b010316f2d7eb898d84c620b9a6c6675c1"
     },
     {
       "path": "blender_addon/rgbmocap_bone_stream.zip",

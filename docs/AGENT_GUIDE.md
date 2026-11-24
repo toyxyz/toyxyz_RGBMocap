@@ -403,6 +403,20 @@ notices. Existing saved previews are not automatically replaced; use Apply
 Correction to recompute without inference. See the v9 measurements and limits
 in [validation](VALIDATION.md#contact-correction-v9-coherent-root-and-swing-transitions-2026-10-30).
 
+### Treadmill and walking-pad root motion
+
+FlowHMR and ExMR use the sequence of body observations to estimate root
+velocity. A visible gait on a moving belt can produce forward travel even
+when the performer remains in roughly the same place in the camera view.
+FlowHMR's **Static Camera** mode skips VGGT-Omega and continues to infer root
+motion. Preserve that behavior when changing camera inputs or contact correction.
+
+The walking-pad and sprint examples were verified with FlowHMR. The original
+reconstruction already contains the forward travel. When investigating a
+report, compare the original and corrected trajectories and record the selected
+camera mode. Use independently measured belt speed to assess speed accuracy.
+See [the sample previews and measurements](USER_GUIDE.md#treadmill-and-walking-pad-motion).
+
 ### Preview-video export
 
 **File > Export Preview...** saves one MP4 pairing the selected input-camera
@@ -419,7 +433,8 @@ off the GUI thread with a one-frame handoff, bounded FFmpeg logs and existing
 FFmpeg. Keep the window/viewport geometry fixed during capture, reject changing
 input generations and atomically replace only a finished destination. Cancel
 and window close must reap the encoder before destroying its QThread. Keep test
-projects, input media and output videos outside the public source package.
+projects and ordinary input and output media outside the public source package.
+Register approved documentation samples in `installer/source-resources.json`.
 
 ### Blender bone streaming
 

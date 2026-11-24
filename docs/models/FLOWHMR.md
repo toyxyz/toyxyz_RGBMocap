@@ -156,6 +156,10 @@ may require a shorter take. Results are kept under the project's `flowhmr/`
 folder. **Save Project As** copies saved work; switching models keeps their
 results separate.
 
+FlowHMR estimates root travel from the sequence of body observations, including
+with **Static Camera**. See [treadmill and walking-pad motion](../USER_GUIDE.md#treadmill-and-walking-pad-motion)
+for walking and sprinting previews with measured forward travel.
+
 ## Limitations and resources
 
 Single-person reconstruction connects feature extraction and motion generation
