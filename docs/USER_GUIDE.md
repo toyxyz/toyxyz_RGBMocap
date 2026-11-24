@@ -928,6 +928,7 @@ an estimate and can leave residual sliding or penetration.
 | **Name** | Show list names above visible people and imported characters. Text stays upright and the same screen size as you move the camera. Rename a person from the list's right-click menu. |
 | **Timeline ruler / blue frame box** | Click or drag to seek. Track editing does not seek. Wheel zooms; middle drag or Shift+wheel pans. |
 | **Playback / frame number / speed** | Space plays/pauses; arrows step one frame, Shift+arrows one second. Enter a frame number to jump. Playback plays the video's audio when available. MAMMA uses the selected camera's audio. Playback speed affects preview only. |
+| **Loop** | Repeat the trimmed clip by default. Turn Loop off to play once and hold the last frame. Press Play after it stops to restart the clip. |
 | **Timeline Frame All / Reset Trim** | Fit the full timeline / restore the full clip range. |
 
 ExMR/FlowHMR/GVHMR process checked people independently; MAMMA and PromptHMR

@@ -116,10 +116,12 @@ separately installed Unreal Engine; RGB MoCap distributes its own bridge source.
 4. Choose **Add Source > Message Bus Source > RGB MoCap**.
    The app's status changes from starting/waiting to connected only after the
    provider reports a real Live Link connection.
-5. Play, pause or scrub the RGB MoCap timeline. Pausing holds the current pose
-   while continuing the Live Link heartbeat. An unchecked person, or a person
-   without motion at the current frame, has its subjects removed; returning to
-   valid motion declares them again.
+5. Play, pause or scrub the RGB MoCap timeline. For a single pass, turn off
+   **Loop** next to the playback buttons. Playback stops at the last frame of
+   the trimmed clip and Live Link keeps sending the pose for each checked
+   person with motion at that frame. Pausing also holds the current pose.
+   Unchecking a person or moving to a frame without their motion removes
+   their subjects. Returning to valid motion declares them again.
 
 **None**, switching to Blender, entering PEAR or closing the app stops the owned
 provider process. **Retry connection** restarts it after a startup/connection

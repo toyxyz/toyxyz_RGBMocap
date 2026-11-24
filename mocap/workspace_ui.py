@@ -266,6 +266,7 @@ def build_workspace(w):
         "The thin playhead line does not capture clicks.\n"
         "Wheel: zoom | Shift + wheel or MMB: pan\n\n"
         "Video clip edges: trim the playback and reconstruction range.\n"
+        "Loop: repeat the clip when enabled. Turn it off to hold the last frame.\n"
         "Frame All: fit the full timeline | Reset Trim: restore the full clip.\n\n"
         "L/R foot and L/R hand: drag empty space to add a lock.\n"
         "Drag a lock to move it; drag its edges to resize it.\n"
@@ -297,6 +298,14 @@ def build_workspace(w):
     last = button(">|", lambda: w.step_frames(w.slider.maximum()), timeline_header)
     last.setObjectName("transport")
     last.setToolTip(tooltip_text("Last Frame (End)"))
+    w.loop_playback = QPushButton("Loop")
+    w.loop_playback.setObjectName("transport")
+    w.loop_playback.setAccessibleName("Loop Playback")
+    w.loop_playback.setToolTip(tooltip_text("Repeat the clip. Turn off to play once and hold the last frame."))
+    w.loop_playback.setCheckable(True)
+    w.loop_playback.setChecked(True)
+    w.loop_playback.toggled.connect(w.reset_play_clock)
+    timeline_header.addWidget(w.loop_playback)
     timeline_header.addStretch()
     w.frame_number = QSpinBox()
     w.frame_number.setRange(1, 1)

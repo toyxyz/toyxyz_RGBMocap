@@ -29,6 +29,8 @@ QPushButton:disabled { color:#747474; background:#353535; }
 QPushButton#primary { background:#477bb7; border-color:#37689d; color:white; font-weight:600; }
 QPushButton#primary:hover { background:#548dce; }
 QPushButton#transport { padding:3px; min-width:25px; }
+QPushButton#transport:checked { background:#477bb7; border-color:#37689d; color:white; }
+QPushButton#transport:checked:hover { background:#548dce; }
 QComboBox,QAbstractSpinBox { background:#454545; border:1px solid #242424; border-radius:3px; padding:3px 5px; min-height:20px; }
 QComboBox:hover,QAbstractSpinBox:hover { border-color:#737373; }
 QComboBox QAbstractItemView { background:#333333; selection-background-color:#477bb7; }

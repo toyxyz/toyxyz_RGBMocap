@@ -1188,6 +1188,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.play_clock.start()
         self.presented_times.clear()
         first, end = self.slider.clip_in, self.slider.clip_out
+        if not self.loop_playback.isChecked() and not first <= self.play_anchor < end:
+            self.play_anchor = first
         length = max(1, end - first)
         self.play_cycle, local_frame = divmod(self.play_anchor - first, length)
         if self.timer.isActive() and self.info:
@@ -1220,8 +1222,10 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         if self.timer.isActive():
             self.stop_playback()
         elif self.video_path and self.info and self.video_readable:
-            if not self.slider.clip_in <= self.slider.value() < self.slider.clip_out:
-                self.slider.setValue(self.slider.clip_in)
+            first, end = self.slider.clip_in, self.slider.clip_out
+            current = self.slider.value()
+            if not first <= current < end or (not self.loop_playback.isChecked() and current == end - 1):
+                self.slider.setValue(first)
             self.timer_resolution.acquire()
             self.reset_play_clock()
             self.timer.start(max(1, math.ceil(1000 / (self.info['fps'] * self.play_speed.currentData()))))
@@ -1244,19 +1248,27 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         if not self.timer.isActive() or self.info is None or not self.video_readable:
             return
         elapsed = self.play_clock.nsecsElapsed() / 1e9
-        rate = self.info["fps"] * self.play_speed.currentData()
-        target = self.slider.clip_in + playback_frame(self.play_anchor - self.slider.clip_in,
-                                elapsed, self.info["fps"], self.slider.clip_out - self.slider.clip_in,
-                                self.play_speed.currentData())
+        fps, speed = self.info["fps"], self.play_speed.currentData()
+        rate = fps * speed
+        first, end = self.slider.clip_in, self.slider.clip_out
+        elapsed_frames = math.floor(elapsed * rate + 1e-8)
+        frame = self.play_anchor + elapsed_frames
+        loop = self.loop_playback.isChecked()
+        if loop:
+            target = first + playback_frame(self.play_anchor - first, elapsed, fps, end - first, speed)
+        else:
+            target = min(frame, end - 1)
         self.playback_tick = True
         try:
             self.slider.setValue(target)
         finally:
             self.playback_tick = False
-        elapsed_frames = math.floor(elapsed * rate + 1e-8)
+        if not loop and frame >= end:
+            self.stop_playback()
+            return
         if self.preview_audio is not None:
-            cycle = (self.play_anchor - self.slider.clip_in + elapsed_frames) // (self.slider.clip_out - self.slider.clip_in)
-            self.preview_audio.sync(target / self.info['fps'], looping=cycle != self.play_cycle)
+            cycle = (frame - first) // (end - first)
+            self.preview_audio.sync(target / fps, looping=loop and cycle != self.play_cycle)
             self.play_cycle = cycle
         next_deadline = (elapsed_frames + 1) / rate
         remaining = next_deadline - self.play_clock.nsecsElapsed() / 1e9
