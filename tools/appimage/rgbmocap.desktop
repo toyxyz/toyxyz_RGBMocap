@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=RGB MoCap
+Comment=Video motion capture
+Exec=rgbmocap
+Icon=rgbmocap
+Terminal=true
+Categories=AudioVideo;Video;

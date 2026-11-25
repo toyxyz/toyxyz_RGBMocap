@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+appdir=$(cd -- "$(dirname -- "$0")" && pwd -P)
+revision=$(<"$appdir/source-revision")
+if [[ ! $revision =~ ^[0-9a-f]{40}$ ]]; then
+    printf 'Invalid RGB MoCap source revision.\n' >&2
+    exit 1
+fi
+
+data_home=${XDG_DATA_HOME:-$HOME/.local/share}
+if [[ $data_home != /* ]]; then
+    data_home="$HOME/.local/share"
+fi
+parent="$data_home/rgbmocap/appimage"
+root="$parent/$revision"
+action=launch
+install_args=()
+case "${1:-}" in
+    --help|-h)
+        printf '%s\n' 'RGB MoCap Linux AppImage (experimental)' \
+            'Run without arguments to install the private runtimes and launch the app.' \
+            'Use --setup-only [--verify-all] [--with-blender] to install or repair without launching.' \
+            'Use --setup-sam31 to set up optional SAM 3.1 person tracking without launching.' \
+            "Installation folder: $root"
+        exit
+        ;;
+    --setup-only)
+        action=setup
+        shift
+        install_args=("$@")
+        ;;
+    --setup-sam31)
+        action=sam31
+        if (( $# != 1 )); then
+            printf '%s\n' '--setup-sam31 takes no additional arguments.' >&2
+            exit 2
+        fi
+        ;;
+esac
+if [[ $action == launch && -z ${DISPLAY:-} && -z ${WAYLAND_DISPLAY:-} ]]; then
+    printf 'A graphical session is required. Use --setup-only or --setup-sam31 for terminal-only setup.\n' >&2
+    exit 1
+fi
+
+umask 077
+mkdir -p -- "$parent"
+exec 9>"$parent/$revision.lock"
+flock 9
+
+if [[ ! -e $root && ! -L $root ]]; then
+    stage=$(mktemp -d -- "$parent/.extract-$revision.XXXXXXXX")
+    trap 'rm -rf -- "$stage"' EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    tar --extract --file="$appdir/rgbmocap-source.tar" --no-same-owner --directory="$stage"
+    printf '%s\n' "$revision" > "$stage/.appimage-source"
+    mv -T -- "$stage" "$root"
+    trap - EXIT INT TERM
+fi
+if [[ -L $root || ! -f $root/.appimage-source || $(<"$root/.appimage-source") != "$revision" ]]; then
+    printf 'Refusing to overwrite the existing installation directory: %s\n' "$root" >&2
+    exit 1
+fi
+
+cd -- "$root"
+if [[ $action == setup || ! -x runtime/bin/python3.10 ||
+    ! -f .setup/git-runtime-state.json || -e .setup/git-sync.pending ]]; then
+    log="$root/appimage-setup.log"
+    printf 'Preparing RGB MoCap. Setup log: %s\n' "$log"
+    if [[ -t 1 ]]; then
+        ./install.sh "${install_args[@]}" 2>&1 | tee -- "$log" || {
+            printf 'RGB MoCap setup failed. See %s\n' "$log" >&2
+            exit 1
+        }
+    elif ! ./install.sh "${install_args[@]}" > "$log" 2>&1; then
+        printf 'RGB MoCap setup failed. See %s\n' "$log" >&2
+        tail -n 30 -- "$log" >&2
+        exit 1
+    fi
+fi
+
+if [[ $action == sam31 ]]; then
+    ./setup_sam31.sh
+fi
+
+flock -u 9
+exec 9>&-
+if [[ $action == launch ]]; then
+    exec ./RGBMoCap.sh "$@"
+fi
