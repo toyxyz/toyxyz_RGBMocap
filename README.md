@@ -56,7 +56,6 @@ The AppImage was tested on WSL 2. Native Linux Mint testing is welcome.
    ```
 
 2. Prepare the runtimes for ExMR, FlowHMR and GVHMR with their supported add-ons,
-   plus PEAR live-preview support,
    Blender, FFmpeg and native motion correction. AI weights and registered body
    files are downloaded separately in Model Manager:
 
@@ -78,17 +77,18 @@ path, see [Windows path length troubleshooting](docs/USER_GUIDE.md#windows-path-
 
 To update, close the app and run `update.cmd` from the same folder. See the
 [installation guide](docs/USER_GUIDE.md#install) for disk space, prerequisites
-and recovery.
+and recovery. If you used PEAR in RGB MoCap, see
+[real-time tracking and existing installations](docs/USER_GUIDE.md#real-time-tracking).
 
-Updates reuse recently verified, unchanged runtimes. If PEAR or camera-alignment
+Updates reuse recently verified, unchanged runtimes. If MAMMA camera-alignment
 support preparation fails after the base installation succeeds, the base app
-remains usable; rerun `install.cmd` to retry the unavailable support. See
+remains usable. Rerun `install.cmd` to retry the unavailable support. See
 [verification and repair](docs/USER_GUIDE.md#installation-verification-and-repair).
 
 ### Optional model runtimes
 
-`install.cmd` prepares ExMR, FlowHMR, GVHMR and the small shared-runtime support
-for [PEAR live preview](docs/models/PEAR.md). Install the following only if
+`install.cmd` prepares ExMR, FlowHMR, GVHMR and camera alignment support
+for MAMMA. Install the following only if
 you use them, after the base installation:
 
 | Model | Separate setup command | Installation and usage |
@@ -106,10 +106,6 @@ files in **Model Manager**. Their optional runtimes do not require each other;
 GEM-X uses the existing ExMR Python base with its own pinned inference packages.
 Run its separate setup after `install.cmd`, then prepare its public files in
 **Model Manager**. It does not require the C++ build tools or CUDA Toolkit.
-
-PEAR reuses the base shared runtime with a small support overlay prepared by
-`install.cmd` and `update.cmd`. No separate setup or compiler is required.
-Model files are prepared separately.
 
 For optional text-prompt and click-guided **Find person** tracking on Windows,
 run `Setup_SAM31.cmd` after the base setup. Then choose **SAM 3.1** next to
@@ -184,7 +180,7 @@ For scripted reconstruction, export and streaming, see the [command-line guide](
 - Save projects with separate results for each AI model.
 - Reduce FlowHMR memory use with query-batched attention and optional sparse hand sampling; optional HaMeR refines fingers. See [controls and trade-offs](docs/models/FLOWHMR.md#controls) and [measured time/memory comparisons](docs/PERFORMANCE.md#flowhmr-query-batches-and-four-frame-hands-2026-11-03).
 - Reduce camera-estimation VRAM with default-on **VGGT-Ω OPT** in FlowHMR and automatic MAMMA calibration. It also works in Low Memory mode. [Measured camera VRAM](docs/PERFORMANCE.md#vggt-camera-memory-with-opt)
-- Track webcam or video input in real time with PEAR's experimental body/finger bone preview; tracking and poses may be unstable.
+- For real-time webcam or video tracking, use [RGB MoCap Live](https://github.com/toyxyz/rgbmocap_live).
 
 ## How it works
 
@@ -206,13 +202,6 @@ For scripted reconstruction, export and streaming, see the [command-line guide](
 In Blender 5.0 or later, use the [Toyxyz Blender Retargeter](https://github.com/toyxyz/toyxyz-blender-retargeter)
 add-on to transfer exported RGB MoCap animation to another humanoid rig.
 
-**PEAR · Live (Experimental)** tracks webcam or video input in real time. Tracking
-and pose estimates may be unstable. Click **Start Live Tracking** to attempt camera
-alignment and begin the bone preview. If alignment fails, tracking continues from
-the selected camera with a warning; camera fusion and aligned foot lock are unavailable.
-Recording, offline correction and export are unavailable in this live mode.
-See the [PEAR guide](docs/models/PEAR.md) for its controls.
-
 ## Supported AI models
 
 In our subjective tests, **PromptHMR** could improve relative placement and
@@ -221,7 +210,6 @@ motion quality was lower than **ExMR**. It does not support finger tracking.
 
 | Model / original project | Body representation | Fingers | Setup and use |
 | --- | --- | --- | --- |
-| [PEAR](https://github.com/Pixel-Talk/PEAR) · experimental live preview; may be unstable | SMPL-X / FLAME | Included | [PEAR guide](docs/models/PEAR.md) |
 | [ExMR](https://github.com/twehrbein/ExMR) | SMPL-X | Included | [ExMR guide](docs/models/EXMR.md) |
 | [FlowHMR](https://github.com/flowhmr/flowhmr) | SMPL-H | Included | [FlowHMR guide](docs/models/FLOWHMR.md) |
 | [GVHMR](https://github.com/zju3dv/GVHMR) | SMPL-X | Optional HandFlow add-on | [GVHMR guide](docs/models/GVHMR.md) |
@@ -243,13 +231,8 @@ projects, caches or retained downloads; shared files are counted once.
 | PromptHMR additional files, Fixed Camera | 6.22 GiB | 6.13 GiB | 12.34 GiB |
 | GEM-X additional files, with CUDA sharing | 2.13 GiB | 7.11 GiB | 9.24 GiB |
 | **Six offline models** | **26.81 GiB** | **45.66 GiB** | **72.46 GiB** |
-| PEAR live preview, additional | Small support overlay; shared runtime reused | ~2.84 GiB | ~2.85 GiB |
 
-Including PEAR, the estimated combined model/runtime total is about
-**75.31 GiB (80.9 GB)**, before the additional space listed below. If GEM-X
-cannot share the verified CUDA DLLs, add about **2.95 GiB**. GeoCalib weights
-(about **0.11 GiB**) are shared by MAMMA and PEAR and counted once; both also reuse VGGT. See the
-[PEAR camera guide](docs/models/PEAR.md#multiple-fixed-cameras-and-camera-align).
+If GEM-X cannot share the verified CUDA DLLs, add about **2.95 GiB**.
 
 Optional PromptHMR moving-camera support adds approximately **18.6 MiB** of
 native modules and **1.55 GiB** of weights beyond these totals; see its model guide.

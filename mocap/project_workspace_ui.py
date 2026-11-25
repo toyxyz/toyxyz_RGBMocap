@@ -304,7 +304,6 @@ class ModelWorkspace:
                     for key in ('yaw','pitch','distance','pan','scene_center')},'target':self.motion_view.target().tolist()})
 
     def remember_workspace_model(self):
-        if getattr(self,"_pear_active",False):return
         root=self.workspace_root
         if root is None:return
         if self.project is not None:

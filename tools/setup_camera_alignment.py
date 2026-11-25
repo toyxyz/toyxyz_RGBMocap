@@ -3,20 +3,21 @@ from pathlib import Path
 import json,zipfile,stat,uuid,subprocess
 from mocap.paths import ROOT
 from mocap.storage import atomic_json
-from mocap.pear.alignment_support import identity,base_identity,configuration
+from mocap.camera_alignment_support import RECEIPT, RUNTIME, identity, base_identity, configuration
 
 def prepare(cache=None):
     from tools.support_components import download
     try:
-        current=configuration();print('Keeping verified PEAR camera alignment support.',flush=True);return current
+        current=configuration();print('Keeping verified MAMMA camera alignment support.',flush=True);return current
     except (OSError,ValueError,KeyError,TypeError):pass
-    lock=json.loads((ROOT/'installer/pear-alignment.json').read_text('utf8'))
+    source=identity()
+    lock=json.loads((ROOT/'installer/camera-alignment.json').read_text('utf8'))
     base=base_identity()
-    cache=Path(cache) if cache else ROOT/'.setup/pear-downloads';cache.mkdir(parents=True,exist_ok=True)
-    folder=ROOT/'runtime_pear'/('alignment-'+identity()[:16]+'-'+uuid.uuid4().hex[:8])
+    cache=Path(cache) if cache else ROOT/'.setup/camera-alignment-downloads';cache.mkdir(parents=True,exist_ok=True)
+    folder=ROOT/RUNTIME/('alignment-'+source[:16]+'-'+uuid.uuid4().hex[:8])
     archives={}
     for name,row in lock['sources'].items():
-        print('Preparing PEAR camera alignment: '+name,flush=True)
+        print('Preparing MAMMA camera alignment: '+name,flush=True)
         archives[name]=download(cache,name,row)
     folder.mkdir(parents=True)
     for name,archive in archives.items():
@@ -31,10 +32,11 @@ def prepare(cache=None):
                     if not p.parts or (p.parts[0]!='geocalib' and p.name not in ('LICENSE','NOTICE','LICENSE-WEIGHTS')):continue
                     if p.name in ('LICENSE','NOTICE','LICENSE-WEIGHTS'):p=Path('licenses/geocalib')/p
                 target=folder/p;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(z.read(info))
-    code='import sys;sys.path.insert(0,'+repr(str(ROOT))+');from mocap.runtime_registry import activate;activate('+repr(str(ROOT))+',"flow");sys.path.insert(0,'+repr(str(folder))+');import torch,kornia,kornia_rs;from geocalib import GeoCalib;assert kornia.__version__=="0.7.4";assert torch.cuda.is_available();print("PEAR camera alignment imports verified")'
+    code='import sys;sys.path.insert(0,'+repr(str(ROOT))+');from mocap.runtime_registry import activate;activate('+repr(str(ROOT))+',"flow");sys.path.insert(0,'+repr(str(folder))+');import torch,kornia,kornia_rs;from geocalib import GeoCalib;assert kornia.__version__=="0.7.4";assert torch.cuda.is_available();print("MAMMA camera alignment imports verified")'
     subprocess.run([str(ROOT/'runtime/python.exe'),'-I','-X','utf8','-B','-c',code],check=True,timeout=180)
     if base_identity()!=base:raise RuntimeError('Camera alignment base runtime changed during setup; retry install.cmd.')
+    if identity()!=source:raise RuntimeError('Camera alignment setup files changed during setup; retry install.cmd.')
     atomic_json(folder/'PROVENANCE.json',lock)
     files={p.relative_to(folder).as_posix():[p.stat().st_size,p.stat().st_mtime_ns] for p in folder.rglob('*') if p.is_file()}
-    atomic_json(ROOT/'.setup/pear-alignment.json',dict(identity=identity(),base_identity=base,folder=folder.relative_to(ROOT).as_posix(),files=files))
-    print('PEAR camera alignment support ready; model weights remain separate.',flush=True);return folder
+    atomic_json(ROOT/RECEIPT,dict(identity=source,base_identity=base,folder=folder.relative_to(ROOT).as_posix(),files=files))
+    print('MAMMA camera alignment support ready; model weights remain separate.',flush=True);return folder

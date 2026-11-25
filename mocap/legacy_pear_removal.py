@@ -1,0 +1,28 @@
+"""File allowlist for recovering a PEAR removal started by a previous release."""
+
+GEOMETRY_ASSETS = frozenset((
+    'FLAME/203_landmark_embeding.npz',
+    'FLAME/FLAME2020/generic_model.pkl',
+    'FLAME/FLAME_masks/FLAME_masks.pkl',
+    'FLAME/head_template.obj',
+    'FLAME/l_eyelid.npy',
+    'FLAME/landmark_embedding.npy',
+    'FLAME/mediapipe_landmark_embedding.npz',
+    'FLAME/r_eyelid.npy',
+    'FLAME/selected_lowerhead.npy',
+    'SMPLX/203_landmark_embeding.npz',
+    'SMPLX/flame_generic_model.pkl',
+    'SMPLX/flame_l_eyelid.npy',
+    'SMPLX/flame_r_eyelid.npy',
+    'SMPLX/lbs_map_smplx_512.npy',
+    'SMPLX/MANO_SMPLX_vertex_ids.pkl',
+    'SMPLX/mediapipe_landmark_embedding.npz',
+    'SMPLX/SMPL-X__FLAME_vertex_ids.npy',
+    'SMPLX/smpl_mean_params.npz',
+    'SMPLX/smplx_extra_joints.yaml',
+    'SMPLX/smplx_faces.npy',
+    'SMPLX/SMPLX_NEUTRAL_2020.npz',
+    'SMPLX/SMPLX_to_J14.pkl',
+    'SMPLX/smplx_uv.obj',
+    'SMPLX/uv_masks/uv_mask512_with_faceid_smplx.npy',
+))

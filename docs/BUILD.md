@@ -258,42 +258,22 @@ Changing the optional lock/adapters invalidates this runtime only: the UI reques
 `Setup_MAMMA.cmd`, while other models and saved results stay available. Keep
 private benchmark scripts, logs and derived models outside the source checkout.
 
-## PEAR support
+## MAMMA camera alignment support
 
-`install.cmd` and `update.cmd` prepare PEAR support with `tools/setup_pear.py`
-after committing the base shared Python/Torch runtime. The helper runs under the
-installer's existing application lock; it must not acquire that lock a second time.
-It prepares pinned
-upstream PEAR source and pure-Python support in `runtime_pear/`, rather than
-changing base dependencies. No native PyTorch3D build is used. Source URLs and
-hashes are in `installer/pear-sources.json`; explicit import adaptations are in
-`installer/pear_adapters.py`. Geometry imports use `installer/pear-assets.json`
-for exact archive/member hashes. See [PEAR](models/PEAR.md). Models, generated
-support folders, diagnostics and private regression artifacts are excluded from Git.
-The active receipt binds the support/adapters to the installed shared-runtime group.
-Matching verified support is retained without downloading or extracting it again;
-a source/base change or damaged support stages and CUDA-verifies a new generation
-before replacing the pointer. Failure preserves prior support generations. Base
-completion is independent: a post-commit PEAR failure reports a warning rather
-than leaving the base install retry marker. No weights or registered geometry
-are acquired by this step.
+After committing the base runtimes, `install.cmd` and `update.cmd` prepare
+the pinned GeoCalib/Kornia overlay from `installer/camera-alignment.json`
+using `tools/setup_camera_alignment.py`. Setup verifies imports and CUDA
+availability over the Flow runtime and records file metadata and base runtime
+identity in `.setup/camera-alignment.json`. New generations live under
+`runtime_camera_alignment/`. Upgrades may reuse the verified
+`.setup/pear-alignment.json` receipt and its overlay under `runtime_pear/`.
+Keep those files in place while that configuration is in use. Setup prepares
+a new overlay if the legacy receipt or its base runtime no longer verifies.
 
-`tools/setup_pear_alignment.py` additionally stages the pinned GeoCalib/Kornia
-support from `installer/pear-alignment.json`, over the existing Flow runtime,
-without upgrading shared packages. It verifies imports/CUDA availability and
-writes a separate `.setup/pear-alignment.json` inventory bound to the installed
-shared/Flow group IDs and runtime directory creation stamps. A replaced or changed
-base requires support revalidation. VGGT/GeoCalib model
-weights are obtained in Model Manager. This support enables camera alignment;
-if it is unavailable, PEAR can still track the selected camera with a warning,
-provided its base support and model files are ready.
-
-MAMMA automatic cameras reuse this overlay through the `flow_mamma_gravity`
-child worker. Its numeric gravity result is passed back to MAMMA before 3D
-fitting; cp310 GeoCalib/Kornia packages must not enter MAMMA's Python 3.11
-environment. Missing or unreliable gravity is an actionable failure for MAMMA
-automatic cameras. Manual camera data bypasses this support and both camera
-checkpoints. A separate GeoCalib package installation into MAMMA is not needed.
+MAMMA automatic cameras use the `flow_mamma_gravity` worker before fitting.
+Keep these CPython 3.10 packages outside MAMMA's Python 3.11 runtime. Obtain
+VGGT and GeoCalib in Model Manager. Manual camera data bypasses this support
+and both camera checkpoints.
 
 ## Base update and recovery
 
@@ -306,9 +286,8 @@ Keep the existing bootstrap, pinned separate profiles and promotion journal.
 `tools/git_managed_install.py` freezes source dependency/installer inputs, recovers
 an interrupted promotion, verifies/stages the base, rechecks the frozen inputs,
 then commits receipts and finishes journal cleanup. Only then clear the global
-pending marker. PEAR and camera alignment are independently attempted through
-`tools/optional_support.py`; `.setup/git-components.json` records their readiness
-and errors. A support warning is not a successful capability verification.
+pending marker. `tools/optional_support.py` prepares camera alignment next.
+`.setup/git-components.json` records its readiness and errors. A support warning is not a successful capability verification.
 Cancellation must propagate; mandatory base errors remain fatal.
 If a live runtime is reused, discard its leftover installer staging directory
 before installing dependents, and never promote that stale directory. Otherwise

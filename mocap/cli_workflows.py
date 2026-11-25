@@ -663,9 +663,9 @@ def execute(args, report):
         command = {'models': model_command, 'face': face_command, 'project': copy_project,
                    'batch': batch, 'contacts': contacts, 'prepare-preview': prepare_preview}
         return command[args.command](args, report)
-    if args.command in {'stream','pear','character','preview','reference-fbx'}:
-        from .cli_media import character, pear, preview, reference, stream
-        return {'stream': stream, 'pear': pear, 'character': character,
+    if args.command in {'stream','character','preview','reference-fbx'}:
+        from .cli_media import character, preview, reference, stream
+        return {'stream': stream, 'character': character,
                 'preview': preview, 'reference-fbx': reference}[args.command](args, report)
     if args.command == 'project':
         return inspect(args)

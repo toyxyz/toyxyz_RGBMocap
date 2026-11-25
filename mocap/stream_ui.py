@@ -90,15 +90,15 @@ class StreamWorkspace:
         return page
 
     def stream_tab_changed(self, index):
-        if not self._pear_active and (index == 1 or self._stream_sender is not None):
+        if index == 1 or self._stream_sender is not None:
             self.update_stream()
             self._stream_timer.start(33 if self._stream_sender else 250)
         else:
             self._stream_timer.stop()
 
     def change_stream_target(self, index):
-        blender = index == 1 and not self._pear_active
-        unreal = index == 2 and not self._pear_active
+        blender = index == 1
+        unreal = index == 2
         self.stream_port_controls.setVisible(blender)
         self.stream_unreal_controls.setVisible(unreal)
         self._stream_port_error = None
@@ -113,7 +113,7 @@ class StreamWorkspace:
             self.stream_tab_changed(self.people_tabs.currentIndex())
 
     def restart_unreal_stream(self):
-        if self.stream_target.currentIndex() != 2 or self._pear_active:
+        if self.stream_target.currentIndex() != 2:
             return
         self.close_stream()
         self._stream_port_error = None
@@ -129,7 +129,7 @@ class StreamWorkspace:
         self.apply_stream_port()
 
     def apply_stream_port(self):
-        if self.stream_target.currentIndex() != 1 or self._pear_active:
+        if self.stream_target.currentIndex() != 1:
             return
         port = self.stream_port.value()
         active = self._stream_sender
@@ -214,9 +214,6 @@ class StreamWorkspace:
         QMessageBox.warning(self, 'Export Live Link Reference Rig', message)
 
     def export_stream_reference(self):
-        if self._pear_active:
-            self.stream_reference_problem('Reference export requires prepared offline motion. Leave PEAR and select an offline model.')
-            return
         if self.busy:
             self.stream_reference_problem('Wait for the current job to finish before exporting a reference rig.')
             return
@@ -375,9 +372,6 @@ class StreamWorkspace:
                     tracked=bool(archive.valid[slot, source]))
 
     def update_stream(self):
-        if self._pear_active:
-            return
-
         scope = (self.people_root or self.project, self.model_choice.currentData())
         if scope != self._stream_scope:
             self._stream_scope = scope

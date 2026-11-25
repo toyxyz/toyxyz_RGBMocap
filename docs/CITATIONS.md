@@ -23,27 +23,6 @@ Credit [SOMA: Unifying Parametric Human Body Models](https://github.com/NVlabs/S
 for the native skeleton and geometry. RGB MoCap uses GEM-X's fixed-camera
 Body Motion workflow with native SOMA.
 
-## PEAR
-
-[Paper](https://doi.org/10.1145/3799902.3811096) · [Official citation](https://github.com/Pixel-Talk/PEAR/blob/8e915f8c3dfae4063d66763e6296b2b0b02eb303/README.md#-citation)
-
-```bibtex
-@inproceedings{wu2026pear,
-  author    = {Wu, Jiahao and Liu, Yunfei and Lin, Lijian and Zhu, Ye and Zhu, Lei and Li, Jingyi and Li, Yu},
-  title     = {PEAR: Pixel-aligned Expressive humAn mesh Recovery},
-  booktitle = {Proceedings of the Special Interest Group on Computer Graphics and Interactive Techniques Conference Conference Papers},
-  series    = {SIGGRAPH '26 Conference Papers},
-  year      = {2026},
-  pages     = {46:1--46:12},
-  doi       = {10.1145/3799902.3811096},
-  publisher = {Association for Computing Machinery}
-}
-```
-
-RGB MoCap uses PEAR for live bone preview; its fixed-length display rig and
-filtering are application features, not a claim to reproduce the paper's full
-mesh workflow or reported throughput.
-
 ## ExMR
 
 [Paper](https://arxiv.org/abs/2610.26213) · [Official citation](https://github.com/twehrbein/ExMR/blob/main/README.md)
@@ -162,7 +141,7 @@ application's use of Kimodo MotionCorrection does not imply use of the Kimodo
 text-to-motion generator.
 
 
-## GeoCalib (PEAR Camera Align and MAMMA background gravity)
+## GeoCalib (MAMMA background gravity)
 
 [Original project and citation](https://github.com/cvg/GeoCalib) ·
 [Code license](https://github.com/cvg/GeoCalib/blob/1dedb29f94fc11b896c5f572005978aeebccd67f/LICENSE) ·
@@ -177,6 +156,4 @@ text-to-motion generator.
 }
 ```
 
-Camera Align also uses VGGT-Omega with its existing source/model acknowledgements.
-Its background-floor estimation and fixed-rig multiview fusion are application
-features, not an official PEAR multiview inference mode.
+MAMMA automatic calibration uses VGGT-Omega for camera poses and GeoCalib for background gravity.

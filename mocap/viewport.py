@@ -10,12 +10,12 @@ from pathlib import Path
 import numpy as np
 from PySide6.QtCore import Qt, QPointF, QRectF, QLineF, Signal, QTimer
 from PySide6.QtGui import QColor, QFont, QPainter, QPen, QPolygonF, QRadialGradient, QSurfaceFormat
-from PySide6.QtWidgets import QWidget,QLabel
+from PySide6.QtWidgets import QWidget
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
 from .preview_data import mapped_array, motion_summary, close_array
 from .foot_contacts import FOOT_COLORS
 from .footlock_editor import CONTACT_COLORS
-from .theme import set_appearance_style, theme_color, ui_px
+from .theme import theme_color, ui_px
 
 OPENGL_VIEW = os.environ.get("QT_QPA_PLATFORM") != "offscreen"
 ViewportBase = QOpenGLWidget if OPENGL_VIEW else QWidget
@@ -40,10 +40,6 @@ class MotionView(ViewportBase):
         self.setMinimumSize(350, 280)
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.StrongFocus)
-        self._pear_renderer=None
-        self._pear_notice=QLabel(self);self._pear_notice.setWordWrap(True);self._pear_notice.setAlignment(Qt.AlignCenter);self._pear_notice.setAttribute(Qt.WA_TransparentForMouseEvents)
-        set_appearance_style(self._pear_notice, "color:#dddddd; background:transparent; font-size:14px; padding:20px;");self._pear_notice.hide()
-        self.live_active=False;self.live_data=None;self.live_asset=None;self.live_frame_first=True;self.live_message="";self.live_key=None
         self.joints = None
         self.rotations = None
         self.mesh_frames = self.mesh_asset = self.mesh_renderer = None
@@ -308,10 +304,6 @@ class MotionView(ViewportBase):
             self.update()
 
     def target(self):
-        if self.live_active:
-            target=self.scene_center.copy()
-            if self.follow and self.live_data is not None:target[[0,2]]=self.live_data["joints"][0,[0,2]]
-            return target+self.pan
         target = self.scene_center.copy()
         if self.follow and self.people_scene is not None:
             actors=self.scene_actors()
@@ -336,10 +328,6 @@ class MotionView(ViewportBase):
         self.update()
 
     def frame_all(self):
-        if self.live_active:
-            if self.live_data is not None:
-                v=self.live_data.get("bounds",self.live_data.get("vertices"));self.scene_center=(v.min(0)+v.max(0))*.5;self.body_height=float(max(1.,np.ptp(v,axis=0).max()));self.scene_span=self.body_height
-            self.fit_view();return
         # Explicit user framing may recenter. Replacing a corrected preview or
         # resizing the widget must retain the existing world-space camera Y.
         if self.people_scene is not None and self.people_scene.summary:
@@ -476,7 +464,6 @@ class MotionView(ViewportBase):
         self.context().aboutToBeDestroyed.connect(self.cleanup_gl)
 
     def cleanup_gl(self):
-        self.release_live_renderer()
         self.clear_characters()
         self.release_scene_renderers()
         if self.mesh_renderer is not None:
@@ -536,15 +523,6 @@ class MotionView(ViewportBase):
             self.paint_scene(event)
 
     def paintGL(self):
-        if self.live_active:
-            from .pear.live_view import LiveRenderer
-            if self._pear_renderer is None:self._pear_renderer=LiveRenderer(self)
-            self._paint_camera=self.camera()
-            try:self._pear_renderer.paint(self)
-            except Exception as e:self.live_message='PEAR preview: '+str(e)
-            self._pear_notice.setGeometry(self.rect());self._pear_notice.setText(self.live_message)
-            self._pear_notice.setVisible(bool(self.live_message));return
-        self._pear_notice.hide()
         self.paint_scene(None)
 
     def foot_lock_discs(self,index,joints,activity=None,floor=None):
@@ -803,12 +781,6 @@ class MotionView(ViewportBase):
             text=self.mesh_error or '; '.join(warnings[:2])
             painter.drawText(self.rect().adjusted(18,80,-95,-80),Qt.AlignTop|Qt.TextWordWrap,text)
 
-    def release_live_renderer(self):
-        self._pear_notice.hide()
-        if self._pear_renderer is not None and OPENGL_VIEW and self.isValid():
-            self.makeCurrent();self._pear_renderer.close();self.doneCurrent()
-        self._pear_renderer=None
-
     def paint_scene(self, event):
         painter = QPainter(self)
         painter.setFont(self.font())
@@ -854,8 +826,6 @@ class MotionView(ViewportBase):
             line3d([-edge, self.grid_floor + .001, 0], [edge, self.grid_floor + .001, 0], "#99515b", 1.1)
             line3d([0, self.grid_floor + .001, -edge], [0, self.grid_floor + .001, edge], "#4c759c", 1.1)
         painter.setRenderHint(QPainter.Antialiasing, True)
-        if self.live_active:
-            painter.setPen(QColor(theme_color("#dddddd")));painter.drawText(self.rect(),Qt.AlignCenter|Qt.TextWordWrap,self.live_message);painter.end();return
         correction_plane_visible=self.draw_correction_floor(painter,lines3d)
         self.name_labels_presented=[]
         bone_actors=[]

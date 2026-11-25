@@ -1,5 +1,31 @@
 # Source package validation
 
+Historical PEAR results below describe earlier versions. For current real-time tracking, use [RGB MoCap Live](https://github.com/toyxyz/rgbmocap_live).
+
+## RGB MoCap Live separation
+
+- On Windows with an RTX 5090, ran ExMR, FlowHMR, GVHMR, PromptHMR and
+  GEM-X on a 72-frame video segment. MAMMA processed four synchronized cameras
+  with manual calibration over 63 frames and automatic VGGT-Omega and GeoCalib
+  calibration over 93 frames. FlowHMR also processed a 24 fps source with RIFE
+  interpolation to 30 fps and VGGT-Ω OPT in Low Memory mode.
+- All six models produced FBX, BVH and retargeted character animation.
+  Blender 4.5 opened or imported 28 results, including Blender bundles, UE5 Quinn
+  FBX and a Live Link reference rig. Verified the 16-frame desktop preview,
+  project Copy/reopen, a 72-frame face CSV and real face-smoothing parity with
+  the previous implementation.
+- Confirmed changing poses over the Blender stream for all six models and baked
+  72 frames with the Blender receiver. A native Unreal Engine 5.8.4 listener
+  received the animated body skeleton, reference subject and 52 face curves
+  through built-in Live Link. The Unreal check measured data reception.
+- Ran `update.cmd --verify-all` against an isolated existing installation.
+  Setup retained all six runtime groups, existing models and projects, and
+  verified legacy GeoCalib support. Ran `install.cmd` in a source folder with no
+  installed runtimes using verified download caches. All six runtime profiles,
+  the new GeoCalib overlay and the installed CLI passed.
+- Checked the desktop model list, Model Manager and retired CLI command.
+  The Windows regression suite passed 87 tests and skipped one symlink test.
+
 ## VGGT-Omega camera optimization
 
 - Ran the FlowHMR moving-camera worker on a 900-frame clip and MAMMA automatic

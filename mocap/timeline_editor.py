@@ -267,7 +267,6 @@ class TimelineSlider(FootLockEditor,QSlider):
                 p.drawText(QRectF(ui_px(8), y, ui_px(53), row_height), Qt.AlignVCenter, label)
                 p.setPen(QColor(theme_color("#b1b9c1" if row == 0 else "#aebeb4")))
                 text = self.video_track_label if row == 0 else ((self.person_name or "Body animation") if self.has_motion else "No motion data")
-                if row==1 and getattr(self,"live_preview",False):text="PEAR live preview — no recording"
                 left, right = self.clip_edges() if row == 0 else (self.LEFT, self.width() - self.RIGHT)
                 left, right = max(self.LEFT, left), min(self.width() - self.RIGHT, right)
                 p.drawText(QRectF(left + 12, y, max(0, right - left - 24), row_height), Qt.AlignVCenter, text)

@@ -13,7 +13,7 @@ from .motion_tools import MOTION_TOOLS, RESULTS
 from .paths import ROOT
 
 COMMAND_SCHEMA = 1
-OFFLINE_MODELS = tuple(key for key, tool in MOTION_TOOLS.items() if not tool.live)
+OFFLINE_MODELS = tuple(MOTION_TOOLS)
 
 
 def correction_flags(parser):
@@ -148,7 +148,11 @@ def format_output(result, machine):
 
 
 def main(argv=None):
-    args = parser().parse_args(argv)
+    commands = parser()
+    argv = sys.argv[1:] if argv is None else argv
+    if argv and argv[0] == 'pear':
+        commands.error('PEAR live tracking moved to RGB MoCap Live: https://github.com/toyxyz/rgbmocap_live')
+    args = commands.parse_args(argv)
     from tools.session_lock import app_lock
     from tools.source_launch import verify
 
@@ -157,7 +161,6 @@ def main(argv=None):
         read_only = (args.command in {'open','check'} or args.command == 'project' and args.project_action == 'inspect'
                      or args.command == 'models' and args.action == 'list'
                      or args.command == 'face' and args.action == 'inspect'
-                     or args.command == 'pear' and args.list_devices
                      or args.command == 'contacts' and args.action == 'list')
         mutates = not read_only and not getattr(args, 'dry_run', False)
         with app_lock(ROOT) if mutates else nullcontext():

@@ -27,7 +27,7 @@ def main():
         r=np.asarray(c['rotation']);k=np.asarray(c['intrinsics'])
         if r.shape!=(3,3) or k.shape!=(3,3) or not np.isfinite(r).all() or not np.isfinite(k).all() or np.max(np.abs(r@r.T-np.eye(3)))>1e-3 or np.linalg.det(r)<.999 or min(k[0,0],k[1,1])<=0:
             raise ValueError('Invalid VGGT camera matrices.')
-    from .pear.alignment_support import activate
+    from .camera_alignment_support import activate
     activate()
     import cv2,torch
     from geocalib import GeoCalib

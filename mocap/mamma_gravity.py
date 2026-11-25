@@ -71,7 +71,7 @@ def estimate(observations,expected_cameras,check_holdouts=True):
     return result
 
 def support_identity():
-    from .pear.alignment_support import configuration,identity
+    from .camera_alignment_support import configuration,identity
     from .runtime_registry import PROFILES
     from .storage import sha256
     folder=configuration()

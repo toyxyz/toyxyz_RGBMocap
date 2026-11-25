@@ -4,8 +4,7 @@ SAM 3.1 is a **Find person** tracker for **ExMR, FlowHMR and GVHMR** on
 Windows. It fills the People list using a text prompt and optional clicks.
 The selected motion model then reconstructs the people you check.
 **Default** remains available and uses the standard person tracker.
-MAMMA, PromptHMR and GEM-X use their own tracking workflows. PEAR uses its
-live detector.
+MAMMA, PromptHMR and GEM-X use their own tracking workflows.
 
 ## Setup
 

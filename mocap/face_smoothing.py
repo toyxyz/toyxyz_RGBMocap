@@ -1,5 +1,39 @@
 """Deterministic One Euro filtering shared by face playback and export."""
+import math
+
 import numpy as np
+
+
+def _alpha(cutoff, dt):
+    return 1 / (1 + 1 / (2 * math.pi * np.asarray(cutoff) * dt))
+
+
+class _AdaptiveFilter:
+    def __init__(self, min_cutoff, beta, max_cutoff, vector):
+        self.min_cutoff = min_cutoff
+        self.beta = beta
+        self.max_cutoff = max_cutoff
+        self.vector = vector
+        self.raw = self.value = self.derivative = None
+
+    def update(self, value, dt):
+        sample = np.asarray(value, dtype=np.float64)
+        if self.raw is not None and dt == 0 and self.raw.shape == sample.shape:
+            return self.value.astype(np.float32)
+        if self.raw is None or not 0 < dt <= .25 or self.raw.shape != sample.shape:
+            self.raw = sample.copy()
+            self.value = sample.copy()
+            self.derivative = np.zeros_like(sample)
+            return self.value.astype(np.float32)
+
+        derivative = (sample - self.raw) / dt
+        self.derivative += _alpha(1., dt) * (derivative - self.derivative)
+        speed = (np.linalg.norm(self.derivative, axis=-1, keepdims=True)
+                 if self.vector else np.abs(self.derivative))
+        cutoff = np.minimum(self.max_cutoff, self.min_cutoff + self.beta * speed)
+        self.value += _alpha(cutoff, dt) * (sample - self.value)
+        self.raw = sample.copy()
+        return self.value.astype(np.float32)
 
 
 def expression_profile(name):
@@ -12,14 +46,12 @@ def expression_profile(name):
 
 
 def smooth_valid(values, valid, fps, profiles, *, vector=False, cancelled=None):
-    from .pear.temporal_filter import AdaptiveFilter
-
     if not np.isfinite(fps) or fps <= 0:
         raise ValueError('Invalid face capture frame rate.')
     minimum, beta, maximum = np.asarray(profiles).T
     if vector:
         minimum, beta, maximum = minimum[:, None], beta[:, None], maximum[:, None]
-    smoothing = AdaptiveFilter(min_cutoff=minimum, beta=beta, max_cutoff=maximum,
+    smoothing = _AdaptiveFilter(min_cutoff=minimum, beta=beta, max_cutoff=maximum,
                                vector=vector)
     filtered = values.copy()
     previous = None

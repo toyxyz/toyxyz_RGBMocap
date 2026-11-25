@@ -110,9 +110,14 @@ MODELS_LIST.extend([
 from .mamma_models import ASSETS as MAMMA_ASSETS, KEYS as MAMMA_KEYS, INSTRUCTIONS as MAMMA_INSTRUCTIONS
 MODELS_LIST.extend(Model(**entry) for entry in MAMMA_ASSETS)
 from .prompthmr_models import ASSETS as PHMR_ASSETS,KEYS as PHMR_KEYS,CAMERA_KEYS as PHMR_CAMERA_KEYS,INSTRUCTIONS as PHMR_INSTRUCTIONS
-from .pear_models import ASSETS as PEAR_ASSETS,KEYS as PEAR_KEYS,INSTRUCTIONS as PEAR_INSTRUCTIONS
 from .gemx_models import ASSETS as GEMX_ASSETS,KEYS as GEMX_KEYS,INSTRUCTIONS as GEMX_INSTRUCTIONS
-MODELS_LIST.extend(Model(**entry) for entry in PEAR_ASSETS)
+# Keep the original storage key/path so existing GeoCalib weights and receipts work.
+MODELS_LIST.append(Model(
+    'pear_geocalib', 'Scene Gravity / GeoCalib', 'pear/geocalib-pinhole.tar',
+    'https://github.com/cvg/GeoCalib', minimum_bytes=116074121,
+    download_url='https://github.com/cvg/GeoCalib/releases/download/v1.0/geocalib-pinhole.tar',
+    expected_sha256='86d6aeacd8bbd974c59ce39f61854e00d36911c732ad89be471476fd708722ac',
+))
 MODELS_LIST.extend(Model(**entry) for entry in PHMR_ASSETS)
 MODELS_LIST.extend(Model(**entry) for entry in GEMX_ASSETS)
 BY_KEY = {model.key: model for model in MODELS_LIST}
@@ -133,7 +138,11 @@ MANUAL_INSTRUCTIONS = {
 
 MANUAL_INSTRUCTIONS.update(MAMMA_INSTRUCTIONS)
 MANUAL_INSTRUCTIONS.update(PHMR_INSTRUCTIONS)
-MANUAL_INSTRUCTIONS.update(PEAR_INSTRUCTIONS)
+MANUAL_INSTRUCTIONS['pear_geocalib'] = (
+    'MAMMA uses GeoCalib for automatic background gravity before 3D fitting. '
+    'Download geocalib-pinhole.tar from the official v1.0 release and import it here. '
+    'Code: Apache-2.0. Checkpoint: CC BY 4.0. See the official GeoCalib LICENSE-WEIGHTS.'
+)
 MANUAL_INSTRUCTIONS.update(GEMX_INSTRUCTIONS)
 
 for _key in ('mano_right','smplh'):
@@ -244,8 +253,6 @@ STAGE_REQUIREMENTS = {
     'gemx_assets': GEMX_KEYS,
     'gemx_reconstruct': GEMX_KEYS,
     'prompthmr_camera_assets': PHMR_CAMERA_KEYS,
-    'pear_assets': ('pear','pear_geometry','pear_yolo'),
-    'pear_align': ('flow_vggt','pear_geocalib'),
     "people": ("yolo", "person_reid"),
     "sam31_people": ("sam31_people",),
     "track": ("yolo",), "pva": ("pva",),
@@ -273,11 +280,8 @@ STAGE_REQUIREMENTS = {
 
 
 def ready(model: Model) -> bool:
-    if model.key=='pear_geometry':
-        from .pear_models import geometry_ready
-        return geometry_ready()
     valid=model.path.is_file() and model.path.stat().st_size >= model.minimum_bytes
-    if valid and (model.key.startswith(('flow','hand','exmr','mamma','phmr','pear','gemx','sam31','rife')) or model.key in ('smplh','mano_right')):
+    if valid and (model.key.startswith(('flow','hand','exmr','mamma','phmr','gemx','sam31','rife')) or model.key in ('smplh','mano_right','pear_geocalib')):
         import json
         try:
             receipt=json.loads(model.path.with_suffix(model.path.suffix+'.receipt.json').read_text(encoding='utf-8'))
@@ -370,9 +374,6 @@ def download(key: str, progress=None) -> Path:
 def import_model_file(key: str, source: Path) -> Path:
     """Worker-only validated, atomic registration; never unpickles imports."""
     import os, uuid
-    if key=='pear_geometry':
-        from .pear_models import import_bundle
-        return import_bundle(source)
     model=BY_KEY[key]; source=Path(source).resolve()
     if source.stat().st_size < model.minimum_bytes:
         raise ValueError('The file is too small for '+model.name)

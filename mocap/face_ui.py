@@ -5,7 +5,7 @@ from .face_data import root_for
 
 class FaceWorkspace:
     def face_project(self):
-        if self.project is None or self._pear_active:
+        if self.project is None:
             return None
         root = self.people_root if self.people_root is not None else root_for(self.project)
         return root if (root/'input.mp4').is_file() else None
@@ -56,7 +56,7 @@ class FaceWorkspace:
     def update_neutral_face_controls(self, archive):
         if not hasattr(self, 'set_neutral_face'):
             return
-        ready = archive is not None and not self.busy and not self.contact_saving and not self._pear_active
+        ready = archive is not None and not self.busy and not self.contact_saving
         try:
             person = self.neutral_face_person()
             ident = person['id']

@@ -10,10 +10,9 @@ class MotionTool:
     reconstruction: tuple[str, ...]
     refinement: tuple[str, ...] = ()
     input_setup_only: bool = False
-    live: bool = False
 
     def stages(self, refine=False, footmr=False, correction=False, handflow=False):
-        if self.input_setup_only or self.live:
+        if self.input_setup_only:
             return []
         if self.key in ('mamma','prompthmr','gemx'):return list(self.reconstruction)
         if self.key == 'flowhmr':
@@ -23,7 +22,7 @@ class MotionTool:
                 *(("correct",) if correction else ()), "export"]
 
 
-MOTION_TOOLS = {"pear": MotionTool("pear", "PEAR · Live (Experimental)", (), live=True),"gvhmr": MotionTool("gvhmr", "GVHMR", ("track", "gvhmr"), ("pva", "refine")),
+MOTION_TOOLS = {"gvhmr": MotionTool("gvhmr", "GVHMR", ("track", "gvhmr"), ("pva", "refine")),
                 "flowhmr": MotionTool("flowhmr", "FlowHMR", ("track", "flow_camera", "flow_features", "flowhmr")),
                 "exmr": MotionTool("exmr", "ExMR", ("track", "exmr_preprocess", "exmr_features", "exmr")),
                 "mamma": MotionTool("mamma", "MAMMA", ("mamma_prepare","mamma_masks","mamma_landmarks","mamma_camera","mamma_fit","mamma_publish")),
@@ -36,6 +35,8 @@ class UnsupportedMotionTool(ValueError):
 
 
 def require_supported_tool(model):
+    if model == "pear":
+        raise UnsupportedMotionTool("PEAR live tracking moved to RGB MoCap Live. Visit https://github.com/toyxyz/rgbmocap_live")
     if model not in MOTION_TOOLS:
         raise UnsupportedMotionTool(f"This project's motion model ({model}) is no longer supported. Its files have been preserved. Open a supported project or prepare the source video as a new project.")
     return MOTION_TOOLS[model]
@@ -49,9 +50,7 @@ def require_supported_project(project):
 
 
 def require_offline_tool(model):
-    tool=require_supported_tool(model)
-    if tool.live:raise UnsupportedMotionTool('PEAR is a transient live preview, not a saved reconstruction model. Project files were preserved.')
-    return tool
+    return require_supported_tool(model)
 
 # Derived results never replace either upstream prediction.
 RESULTS = {

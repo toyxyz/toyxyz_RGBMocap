@@ -49,15 +49,6 @@ def main():
     if stage=='flow_mamma_gravity':
         from .mamma_gravity_worker import main as gravity_main
         return gravity_main()
-    if stage=='pear_camera_preview':
-        from .pear.camera_preview import main as camera_main
-        return camera_main()
-    if stage=='flow_pear_align':
-        from .pear.align_worker import main as align_main
-        return align_main()
-    if stage=='pear_live':
-        from .pear.worker import main as live_main
-        return live_main()
     if stage in ('prompthmr_prepare','prompthmr_publish'):
         from .compute_policy import configure_worker_cpu
         configure_worker_cpu(stage)

@@ -59,8 +59,7 @@ The setup downloads approximately 3.57 GiB of package/source archives, excluding
 Python and models. Retained downloads, videos and generated projects use extra
 space. These figures are separate from the base installation's storage estimate.
 The cache-free additional runtime/model total is about **9.65 GiB** when
-VGGT is already installed. GeoCalib adds about 0.108 GiB of weights if PEAR has
-not already installed that shared checkpoint. The existing base camera-alignment
+VGGT is already installed. GeoCalib adds about 0.108 GiB of weights for automatic gravity. The existing base camera-alignment
 support is reused; MAMMA's Python 3.11 environment is not upgraded.
 See the [all-model inventory](USER_GUIDE.md#installed-size)
 for shared-file accounting and setup versus installed-space differences.
@@ -114,7 +113,7 @@ GeoCalib; manual cameras do not require either checkpoint. The paths below are r
 | YOLO12x | Automatic download | `mamma/yolo12x.pt` |
 | OpenCLIP ViT-B/32 | Automatic download | `mamma/open_clip_model.safetensors` |
 | VGGT-Omega 512 | Model Manager's manual download instructions; shared with FlowHMR | `flowhmr/vggt_omega_1b_512.pt` |
-| Scene Gravity / GeoCalib | Automatic download; shared with PEAR | `pear/geocalib-pinhole.tar` |
+| Scene Gravity / GeoCalib | Automatic download for background gravity | `pear/geocalib-pinhole.tar` |
 
 For the MAMMA checkpoint and surface landmarks, open the
 [official MAMMA website](https://mamma.is.tue.mpg.de/) and click **Data**.

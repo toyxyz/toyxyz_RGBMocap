@@ -285,8 +285,7 @@ class PreviewExportWorkspace:
 
     def preview_export_available(self):
         view = self.motion_view
-        return (not getattr(self, '_pear_active', False) and self.model_choice.currentData() != 'pear'
-                and not self.busy and not self.contact_saving and not getattr(self, '_preview_export', None)
+        return (not self.busy and not self.contact_saving and not getattr(self, '_preview_export', None)
                 and not self._workspace_loading
                 and (self.model_choice.currentData() != 'mamma' or (not self.mamma_pending and not self._mamma_switching))
                 and self.info is not None and self.video_readable and self.video_view.frame is not None
@@ -318,7 +317,7 @@ class PreviewExportWorkspace:
 
     def start_preview_export(self, destination, *, resume=None):
         if not self.preview_export_available():
-            raise ValueError('Load an offline motion and its video before exporting a preview. PEAR is not supported.')
+            raise ValueError('Load an offline motion and its video before exporting a preview.')
         path = Path(destination).resolve()
         if path.suffix.lower() != '.mp4' or not path.parent.is_dir():
             raise ValueError('Choose an MP4 file in an existing folder.')

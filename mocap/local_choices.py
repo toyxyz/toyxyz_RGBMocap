@@ -66,12 +66,11 @@ def start_model():
     from .motion_tools import MOTION_TOOLS
     model = saved(MODEL)
     tool = MOTION_TOOLS.get(model) if isinstance(model, str) else None
-    return model if tool is not None and not tool.live and runtime_ready(model) else DEFAULT_MODEL
+    return model if tool is not None and runtime_ready(model) else DEFAULT_MODEL
 
 
 def remember_model(model):
     from .motion_tools import MOTION_TOOLS
     from .resource_safety import update
-    # PEAR is a transient live preview, not a model to start a session on.
-    if MOTION_TOOLS[model].live or saved(MODEL) == model:return
+    if model not in MOTION_TOOLS or saved(MODEL) == model:return
     update({MODEL: model})

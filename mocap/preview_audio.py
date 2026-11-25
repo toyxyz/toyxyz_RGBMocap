@@ -10,7 +10,7 @@ def source_for_preview(window):
     start = window.source_offset
     if window.model_choice.currentData() == 'mamma' and window.mamma_inputs:
         source = window.mamma_inputs[window.mamma_active_camera]['path']
-    elif not window._pear_active:
+    else:
         if window.workspace_root is not None:
             from .project_workspace import read
             start -= float(read(window.workspace_root).get('time_offset', 0.))

@@ -19,26 +19,23 @@ def workflow_catalog():
     catalog = {}
     for key, tool in MOTION_TOOLS.items():
         stages = tool.stages(refine=True, footmr=True, handflow=True)
-        if key in ('mamma', 'prompthmr', 'pear', 'gemx'):
+        if key in ('mamma', 'prompthmr', 'gemx'):
             stages = (*stages, key + '_assets')
         if key in SUPPORTED:
             stages = (*stages, 'people', 'sam31_people')
-        if key == 'pear':
-            stages = (*stages, 'pear_align')
         if key == 'prompthmr':
             stages = (*stages, 'prompthmr_camera_assets')
         keys = {model for stage in stages for model in STAGE_REQUIREMENTS.get(stage, ())}
         if key == 'flowhmr':
             keys.update(('flow_metadata', *MODEL_KEYS))
-        if not tool.live:
-            from .rife_video import MODEL_KEY
-            keys.add(MODEL_KEY)
+        from .rife_video import MODEL_KEY
+        keys.add(MODEL_KEY)
         catalog[key] = keys
     return catalog
 
 
 def workflow_name(key):
-    return 'PEAR' if key == 'pear' else MOTION_TOOLS[key].label
+    return MOTION_TOOLS[key].label
 
 
 def model_consumers(catalog):
@@ -135,21 +132,11 @@ def receipt_path(model):
 
 
 def installed_files(model):
-    if model.key != 'pear_geometry':
-        payload = entry(model.path, HOME)
-        if payload is None:
-            return ()
-        receipt = entry(receipt_path(model), HOME)
-        return (payload, *((receipt,) if receipt else ()), *linked_entries(model, payload))
-
-    from .pear_models import geometry_folder, spec
-    pointer = entry(model.path, HOME)
-    if pointer is None:
+    payload = entry(model.path, HOME)
+    if payload is None:
         return ()
-    folder = geometry_folder()
-    if folder.parent.parent != MODELS / 'pear' or not folder.parent.name.startswith('geometry-') or folder.name != 'assets':
-        raise ValueError('PEAR geometry is outside its managed generation.')
-    return (pointer, *(entry(folder / asset['path'], HOME) for asset in spec()['files']))
+    receipt = entry(receipt_path(model), HOME)
+    return (payload, *((receipt,) if receipt else ()), *linked_entries(model, payload))
 
 
 def installed_models():
@@ -196,23 +183,30 @@ def journal_path():
 
 
 def recovery_roots(keys, paths):
+    from .legacy_pear_removal import GEOMETRY_ASSETS
+
+    retired = {'pear': 'pear/pear_model.pt', 'pear_yolo': 'yolo/yolov8s.pt'}
     allowed = {}
     for key in keys:
-        model = BY_KEY[key]
-        allowed[model.path] = HOME
-        if key != 'pear_geometry':
-            allowed[receipt_path(model)] = HOME
-            allowed.update(runtime_aliases(model))
+        if key == 'pear_geometry':
+            # Old transactions inventoried only the active managed generation.
+            pear = MODELS / 'pear'
+            allowed[pear / 'geometry.json'] = HOME
+            for path in paths:
+                if path.is_relative_to(pear):
+                    parts = path.relative_to(pear).parts
+                    if (len(parts) > 2 and parts[0].startswith('geometry-') and parts[1] == 'assets'
+                            and '/'.join(parts[2:]) in GEOMETRY_ASSETS):
+                        allowed[path] = HOME
             continue
-        from .pear_models import spec
-        assets = {Path(item['path']) for item in spec()['files']}
-        pear = MODELS / 'pear'
-        for path in paths:
-            if path.is_relative_to(pear):
-                parts = path.relative_to(pear).parts
-                if (len(parts) > 2 and parts[0].startswith('geometry-') and parts[1] == 'assets'
-                        and Path(*parts[2:]) in assets):
-                    allowed[path] = HOME
+        if key in retired:
+            from .models import Model
+            model = Model(key, key, retired[key], '')
+        else:
+            model = BY_KEY[key]
+        allowed[model.path] = HOME
+        allowed[receipt_path(model)] = HOME
+        allowed.update(runtime_aliases(model))
     return allowed
 
 

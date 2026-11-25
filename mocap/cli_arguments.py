@@ -21,7 +21,7 @@ def option_parsers(commands, models, take_flags):
     models_parser = commands.add_parser('models', help='List and manage installed model files.')
     actions = models_parser.add_subparsers(dest='action', required=True)
     listing = actions.add_parser('list')
-    listing.add_argument('--workflow', choices=(*models,'pear'))
+    listing.add_argument('--workflow', choices=models)
     listing.add_argument('--installed', action='store_true')
     json_option(listing)
     for action in ('import','download'):
@@ -104,14 +104,3 @@ def option_parsers(commands, models, take_flags):
     stream.add_argument('--loop', action='store_true')
     stream.add_argument('--face', action='store_true', help='Send tracked face curves to Unreal.')
     json_option(stream)
-
-    pear = commands.add_parser('pear', help='Run the PEAR latest-frame preview worker.')
-    inputs = pear.add_mutually_exclusive_group(required=True)
-    inputs.add_argument('--video', type=Path, action='append', help='Repeat for synchronized multi-view video.')
-    inputs.add_argument('--camera-device', type=int)
-    inputs.add_argument('--list-devices', action='store_true')
-    pear.add_argument('--calibration', type=Path, help='Optional PEAR camera alignment JSON.')
-    pear.add_argument('--frame', type=int, default=1, help='1-based starting video frame.')
-    pear.add_argument('--count', type=int, default=1, help='Number of samples to report.')
-    pear.add_argument('--no-smoothing', action='store_true')
-    json_option(pear)

@@ -5,8 +5,7 @@ import os
 
 
 def prepare(root):
-    from tools.setup_pear import prepare as pear
-    from tools.setup_pear_alignment import prepare as alignment
+    from tools.setup_camera_alignment import prepare as alignment
     path = Path(root) / '.setup/git-components.json'
     rows = {}
 
@@ -15,17 +14,17 @@ def prepare(root):
         temp.write_text(json.dumps(dict(version=1, components=rows), indent=2), encoding='utf8')
         os.replace(temp, path)
 
-    for name, action in [('PEAR', lambda: pear(align=False)), ('Camera alignment', alignment)]:
-        rows[name] = dict(status='preparing')
-        record()
-        try:
-            action()
-        except Exception as exc:
-            rows[name] = dict(status='unavailable', error=str(exc)[-1500:])
-            print(name + ' support unavailable: ' + str(exc), flush=True)
-        else:
-            rows[name] = dict(status='ready')
-        record()
+    name = 'Camera alignment'
+    rows[name] = dict(status='preparing')
+    record()
+    try:
+        alignment()
+    except Exception as exc:
+        rows[name] = dict(status='unavailable', error=str(exc)[-1500:])
+        print(name + ' support unavailable: ' + str(exc), flush=True)
+    else:
+        rows[name] = dict(status='ready')
+    record()
     failures = [name for name, row in rows.items() if row['status'] != 'ready']
     if failures:
         print('Installation complete with warnings. The base app is ready. Unavailable: '

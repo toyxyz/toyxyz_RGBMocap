@@ -10,7 +10,6 @@ from .theme import appearance_style, set_appearance_style
 # MAMMA: separate 413-frame/three-view manual run (SAM 2.1, VGGT, two people).
 # Time includes correction/preview; memory is measured across four inference workers.
 BENCHMARKS = {
-    'pear': ('5s live video<br>1 person','21.43 ms/frame median<br>23.80 ms p95','1.50','—'),
     'gvhmr': ('7s<br>1 video', '2m 01s', '5.08', '12.47'),
     'flowhmr': ('7s<br>1 video', '2m 49s', '14.89', '22.19'),
     'exmr': ('7s<br>1 video', '1m 08s', '11.32', '19.31'),
@@ -19,7 +18,6 @@ BENCHMARKS = {
     'gemx': ('9.8s<br>1 video<br>1 person', '1m 44s', '3.48', '—'),
 }
 PROJECT_URLS = {
-    'pear':'https://github.com/Pixel-Talk/PEAR',
     'prompthmr': 'https://github.com/yufu-wang/PromptHMR',
     'mamma': 'https://mamma.is.tue.mpg.de/',
     'gvhmr': 'https://github.com/zju3dv/GVHMR',
@@ -28,7 +26,6 @@ PROJECT_URLS = {
     'gemx': 'https://github.com/NVlabs/GEM-X',
 }
 DESCRIPTIONS = {
-    'pear':'Experimental support. Tracking and pose estimates may be unstable. Real-time tracking of webcam or video input, with a single-person body and finger bone preview from one or multiple fixed-camera views. Select synchronized videos with Open Video, or assign distinct webcam devices using the camera-count slots and thumbnails. Start Live Tracking attempts Camera Align first, including one camera; VGGT and GeoCalib are needed for alignment. A single view uses estimated body/depth scale; multiple views use triangulation. If alignment fails or its support/models are missing, tracking continues from the selected camera with a visible warning, without camera fusion or aligned foot lock. Use Camera Align to retry. Fixed bone lengths are calibrated once; Reset Bones recalibrates from the displayed pose, then aligns cameras again. World Position is on by default; off fixes pelvis translation while preserving rotation. Body mesh is not computed per live frame. Select a webcam in the table below the video for image preview without loading PEAR; click Start Live Tracking to attempt alignment and begin tracking. Capture stays connected during Start and Camera Align; opened videos can play while models load or align. Choose None for video. Stop releases models and the webcam. Uses YOLOv8s person detection; detector boxes can affect the resulting pose. Rotation and One Euro Filter apply to both sources. One Euro Filter has independent Bone Rotation and World Position checkboxes, both on by default, with shared Filter Strength. The position-filter checkbox is separate from the World Position movement switch. Filtering reduces tremors with some motion-dependent lag and no extra inference. Seeks start from the selected frame; filtering continues during playback. After successful alignment, default-on lightweight Foot Lock stabilizes low, slow feet with smooth causal transitions, fixed lengths and preserved ankle/toe directions. Reach limits and incorrect ground estimates can leave residual sliding. No Find person, recording, offline Motion Correction, retargeting or motion export in this live mode. Single-view pelvis placement assumes a fixed camera. Camera Align estimates background gravity, camera positions, scale and floor; these are not measured calibration and feet can still slide. Changed inputs and Reset Bones trigger realignment. After moving physical cameras, click Camera Align again. Webcam arrival-time pairing is approximate, not hardware sync. Support files are included in install.cmd and update.cmd, reusing the shared runtime without upgrading its packages or requiring a CUDA compiler. Prepare the checkpoint and registered SMPL-X 2020/FLAME geometry bundle in Model Manager. See docs/models/PEAR.md.',
     'prompthmr': 'Reconstructs multiple people together from one video. In our subjective tests, it could give more accurate relative placement and interactions, but overall motion quality was lower than ExMR. Contacts, depth and intersections can still be wrong. Fixed Camera is the default; optional Moving Camera uses masked DroidCalib + Metric3D, with a separate camera build and two additional models. Estimated tracking/scale can drift. People defaults to 2; 0 detects automatically, up to 8. Find person is not needed. Interaction Prompt defaults on; off follows the official default video path. Body motion uses SMPL-X. No finger tracking; untracked fingers use a fixed neutral pose. Supports the usual optional foot/hand contact correction, retargeting and FBX/BVH/Blender export. Requires Setup_PromptHMR.cmd and separate weights. Non-commercial scientific research license. See docs/models/PROMPTHMR.md.',
     'mamma': 'Multi-view reconstruction of one or several people from two or more synchronized fixed-camera videos of the same performance. No fixed camera-count maximum; practical capacity depends on available RAM and VRAM. Detects people automatically; Find person is not needed. Uses SAM 2.1 masks and FP32 landmarks. Automatic cameras combine VGGT-Omega placement with GeoCalib background gravity before 3D fitting; manual calibration bypasses both. GeoCalib uses the base Flow support overlay and a shared checkpoint in Model Manager. Unreliable gravity needs manual calibration or clearer views; it does not fall back to the person as a vertical reference. Body and finger motion, original results and contact-corrected results are preserved. Best suited to views that complement each other; occlusion and bad masks can cause errors. Slower than single-video methods. Requires the separate Setup_MAMMA.cmd runtime and registered restricted-use models. See Model Manager > Runtime Setup and docs/MAMMA.md.',
     'gvhmr': 'Lowest overall motion quality in our tests, but sometimes better for unusual poses such as backflips. '
@@ -56,11 +53,12 @@ body { font-size:12px; } h3 { margin-top:15px; } a { color:#8ed2ff; }
 th { text-align:left; background-color:#333333; } td, th { padding:7px; }
 </style></head><body>
 <h3>Choosing a model</h3>
+<p>For real-time tracking, see <a href="https://github.com/toyxyz/rgbmocap_live">RGB MoCap Live</a>.</p>
 <p>These are subjective observations from our test videos, not a universal ranking or accuracy benchmark.
 Try another model if a particular movement looks wrong.</p>""" + descriptions + """
 <p><b>Find person</b> offers optional SAM 3.1 tracking for ExMR, FlowHMR and GVHMR. Start with the <code>person</code> prompt and optionally click people in the marking preview to keep their tracks. Run Setup_SAM31.cmd once and prepare the public FP16 weights in Model Manager. See docs/models/SAM31.md.</p>
 <p>File &gt; Export offers FBX, BVH and portable Blender projects for SMPL source motion. MAMMA also offers a whole-scene Blender bundle. GEM-X offers Native77 FBX, BVH and Blender exports. Keep exported video/mesh folders together.</p>
-<p><b>Resource Safety</b> defaults on below Resource Mode. On retains low-RAM stopping and the PyTorch VRAM allocation limit. Off bypasses these limits; Automatic batching, supported Low Memory paths and actual allocation-error handling remain. The preference is saved locally, separately from projects. PEAR inherits it while its offline resource controls are hidden. See docs/PERFORMANCE.md for details.</p>
+<p><b>Resource Safety</b> defaults on below Resource Mode. On retains low-RAM stopping and the PyTorch VRAM allocation limit. Off bypasses these limits; Automatic batching, supported Low Memory paths and actual allocation-error handling remain. The preference is saved locally, separately from projects. See docs/PERFORMANCE.md for details.</p>
 <h3>Recorded processing time and memory</h3>
 <table width="98%" border="0" cellspacing="1" cellpadding="7">
 <tr><th>Model</th><th>Input</th><th>Processing time</th><th>Peak VRAM (GiB)</th><th>Peak RAM (GiB)</th></tr>""" + rows + """</table>
@@ -78,7 +76,6 @@ masks; this is not a whole-job speedup. See docs/MAMMA.md and docs/PERFORMANCE.m
 Interaction Prompt and app correction on. Time includes tracking, native inference,
 post-optimization, correction and preview/bone preparation; writing public FBX files is excluded.
 Its peak reserved CUDA memory was 7.83 GiB. It used a different clip from the older three-model test.</p>
-<p>PEAR is a live preview, not a full-clip reconstruction. Its row measures the fixed-length bone worker after warmup, excluding model startup, GUI and camera capture. Maximum processing time was 160.31 ms; the visible app presented 150 paired frames in five seconds. Startup took about 34 seconds. Peak RAM was not separately recorded for this row. See docs/models/PEAR.md for scope and limits. This is not directly comparable with offline processing times.</p>
 <p>GEM-X used a separate 294-frame fixed-camera clip. Its time includes model verification, video preparation, inference and SOMA mesh evaluation. Peak RAM was not recorded for this run.</p>
 <p>VRAM is peak PyTorch allocated memory, not total GPU usage. ExMR/FlowHMR/GVHMR RAM is
 peak private memory; MAMMA/PromptHMR RAM is peak worker working set. The older four-model

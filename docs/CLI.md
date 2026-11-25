@@ -105,7 +105,6 @@ Camera centers, body motion, and the source camera files stay unchanged.
 .\RGBMoCapCLI.cmd character "D:\projects\walk" --model flowhmr --asset "D:\rigs\character.fbx" --output "D:\out\character.fbx"
 .\RGBMoCapCLI.cmd reference-fbx "D:\projects\walk" --model flowhmr --output "D:\out\reference.fbx"
 .\RGBMoCapCLI.cmd stream "D:\projects\walk" --model flowhmr --target unreal --face --wait 15 --loop
-.\RGBMoCapCLI.cmd pear --video "D:\clips\walk.mp4" --frame 1 --count 3 --json
 ```
 
 - `face inspect` reports tracking coverage. Frame numbers for `face neutral`
@@ -123,10 +122,9 @@ Camera centers, body motion, and the source camera files stay unchanged.
   `--face` for actors with face data. `--wait` allows time to connect and
   `--seconds` limits the run. Ctrl+C stops a loop. See the
   [desktop streaming setup](USER_GUIDE.md).
-- `pear --list-devices` lists indices for `--camera-device`. Repeat `--video`
-  for synchronized views and supply `--calibration` to reuse an alignment
-  with its original videos. The command reports a bounded set of fixed-bone
-  samples. The desktop provides interactive alignment and live preview.
+
+The former `pear` command now points to [RGB MoCap Live](https://github.com/toyxyz/rgbmocap_live)
+for real-time tracking.
 
 ## Model files and batch jobs
 

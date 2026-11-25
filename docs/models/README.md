@@ -12,7 +12,6 @@ saved selection. Only implemented tools appear in the list.
 | MAMMA | Two or more synchronized fixed-camera videos; SMPL-X | Included | [MAMMA](../MAMMA.md) |
 | PromptHMR | One video; fixed or optional moving camera; jointly reconstructed people; SMPL-X | Not generated | [PromptHMR](PROMPTHMR.md) |
 | GEM-X | One fixed-camera video; one primary person; SOMA Native77 | Included | [GEM-X](GEMX.md) |
-| PEAR | Experimental real-time tracking from webcam or video input; one person, one or multiple fixed views; may be unstable | Included | [PEAR](PEAR.md) |
 
 One-video input does not mean one-person output. ExMR, FlowHMR and GVHMR can
 process checked people independently after **Find person**. Without discovery,
@@ -31,11 +30,7 @@ FlowHMR moving-camera estimation and automatic MAMMA calibration enable
 **VGGT-Ω OPT** by default. Both workflows can combine OPT with Low Memory.
 [Camera VRAM comparison](../PERFORMANCE.md#vggt-camera-memory-with-opt)
 GeoCalib reuses the base Flow support overlay rather than MAMMA's separate runtime.
-PEAR support is prepared by `install.cmd` and `update.cmd` over the shared runtime;
-its weights/body data are obtained separately. It is a live preview without motion
-recording, offline contact correction, retargeting or export. Camera Align is
-attempted first; if it fails, tracking continues from the selected camera with a
-warning, without camera fusion or aligned live foot lock.
+For real-time tracking, use [RGB MoCap Live](https://github.com/toyxyz/rgbmocap_live).
 
 In this project's subjective tests, ExMR was generally fast with good quality;
 FlowHMR was slower with the best overall quality; GVHMR was less consistent
@@ -49,7 +44,7 @@ MAMMA uses synchronized views in a separate multi-view workflow.
 ## Installation and shared workflow
 
 1. Run `install.cmd` in the app folder. It prepares ExMR, FlowHMR and GVHMR
-   runtimes and their supported add-ons, PEAR's shared support, Blender, FFmpeg and native
+   runtimes and their supported add-ons, camera alignment support for MAMMA, Blender, FFmpeg and native
    motion correction. It does **not** download AI weights or registered body data.
 2. For MAMMA, additionally follow [its runtime setup](../MAMMA.md#install-the-runtime).
    `Setup_MAMMA.cmd` is separate from the base installation and update commands.
@@ -68,11 +63,6 @@ MAMMA uses synchronized views in a separate multi-view workflow.
 4. Open footage, trim, reconstruct and review. Contact correction defaults on;
    Foot defaults on and Hand off. Edit contact timings and **Apply Correction**
    without rerunning AI inference. **File > Export...** offers FBX, BVH or a portable Blender project for the displayed applied motion. MAMMA also offers checked bodies and all cameras in one Blender scene; see [export options](../USER_GUIDE.md#fbx-and-blender).
-
-For PEAR, use **Start Live Tracking** instead of reconstruction. It displays
-live bones only; offline contact, project-save, retarget and export steps do not
-apply. Multiple synchronized files/webcam slots and Camera Align are described
-in its guide, along with filtering, World Position and Reset Bones.
 
 GEM-X uses its native SOMA result for preview, foot and hand correction,
 and character retargeting. **File > Export...** offers Native77 FBX and BVH for

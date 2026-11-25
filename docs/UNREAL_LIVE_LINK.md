@@ -166,7 +166,7 @@ terms apply to the separately installed Unreal Engine.
    Unchecking a person or moving to a frame without their motion removes
    their subjects. Returning to valid motion declares them again.
 
-**None**, switching to Blender, entering PEAR or closing the app stops the owned
+**None**, switching to Blender or closing the app stops the owned
 provider process. **Retry connection** restarts it after a startup/connection
 error. After restarting the provider, wait for it to start, then recreate the Message
 Bus Source if Unreal does not reconnect. Logs are under `cache/unreal_stream`; check the app Console
@@ -315,7 +315,7 @@ only the latest snapshot. A bounded, token-authenticated localhost TCP channel
 feeds an app-owned Unreal commandlet; the official `ILiveLinkProvider`
 publishes through the stock Message Bus protocol. The optional MetaHuman Connect plugin provides direct targets; the stock manual workflow also remains available.
 Limits are 128 people, 256 bones per person and 4 MiB per local snapshot.
-Only people with a prepared stream rig are listed; PEAR is excluded.
+Only people with a prepared stream rig are listed.
 
 On the development Windows PC with UE 5.7.4, a warm provider start took **2.77 s**,
 provider peak working RAM was **859 MiB**, and steady CPU averaged **0.77% of one

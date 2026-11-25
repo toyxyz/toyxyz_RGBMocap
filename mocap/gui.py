@@ -282,11 +282,6 @@ class ModelsDialog(QDialog):
             note.setWordWrap(True)
             note.setOpenExternalLinks(True)
             self.workflow_panel.addWidget(note)
-        elif key == 'pear':
-            from .pear_runtime import status
-            note = QLabel(status()[1] + '\nCamera Align uses optional VGGT and GeoCalib files.')
-            note.setWordWrap(True)
-            self.workflow_panel.addWidget(note)
         from .sam31_runtime import SUPPORTED
         if key in SUPPORTED:
             note = QLabel('SAM 3.1 is optional. Run Setup_SAM31.cmd with RGB MoCap closed before using it.')
@@ -351,10 +346,7 @@ class ModelsDialog(QDialog):
                 if item.column() == 0 and item.data(Qt.UserRole)}
 
     def removal_idle(self):
-        return not (self.window.busy or getattr(self.window, '_pear_running', False)
-                    or getattr(self.window, 'pear_align_phase', None)
-                    or getattr(self.window, 'pear_session', None)
-                    or getattr(self.window, 'contact_saving', False))
+        return not (self.window.busy or getattr(self.window, 'contact_saving', False))
 
     def sync_delete_button(self):
         selected = self.selected_models()
@@ -404,10 +396,8 @@ class ModelsDialog(QDialog):
             return
         self.table.setRowCount(len(self.models))
         self.removable = set()
-        from .models import STAGE_REQUIREMENTS
         for i, model in enumerate(self.models):
             name = model.name + (" (Optional: HTD / 2D)" if self.tool.key == "gvhmr" and model.key == "pva" else "")
-            if self.tool.key=='pear' and model.key in STAGE_REQUIREMENTS['pear_align']:name+=' (Optional: Camera Align)'
             available = ready(model)
             files = self.inspect_model_files(model)
             if files and all(item is not None for item in files):
@@ -569,7 +559,7 @@ class ModelsDialog(QDialog):
             raise ValueError("This model is not part of the selected motion tool.")
         model = BY_KEY[key]
         name, _ = QFileDialog.getOpenFileName(picker_parent or self, 'Import ' + model.name, '',
-            ('PEAR assets (assets.zip);;All files (*)' if key=='pear_geometry' else f'Model file ({model.path.name});;All files (*)'))
+            f'Model file ({model.path.name});;All files (*)')
         if name:
             self.start_model_jobs([('import_model', ['--model', key, '--video', name])])
 
@@ -578,10 +568,9 @@ class ModelsDialog(QDialog):
 from .character_ui import CharacterWorkspace
 from .mamma_ui import MammaWorkspace
 from .prompthmr_ui import PromptHMRWorkspace
-from .pear_ui import PearWorkspace
 from .preview_export_ui import PreviewExportWorkspace
 
-class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,StreamWorkspace,FaceWorkspace,QMainWindow):
+class MainWindow(PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,StreamWorkspace,FaceWorkspace,QMainWindow):
     def __init__(self, video: Path | None = None):
         super().__init__()
         self.setWindowTitle("RGB MoCap | Motion Workspace")
@@ -591,7 +580,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                     min(ui_px(880), max(self.minimumHeight(), available.height() - 40)))
         self.video_path = None
         self.init_mamma()
-        self.init_pear()
         self.project = None
         self.workspace_root=None
         self._workspace_loading=False
@@ -675,17 +663,9 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
     @read_only_checks
     def update_readiness(self):
         self.export_preview_action.setEnabled(self.preview_export_available())
-        self.rife_interpolation.setVisible(not self._pear_active)
-        self.track_face.setVisible(not self._pear_active)
-        self.face_overlay.setVisible(not self._pear_active)
-        for control in (self.set_neutral_face, self.reset_neutral_face, self.neutral_face_note):
-            control.setVisible(not self._pear_active)
         self.track_face.setEnabled(not self.busy and not self.contact_saving)
         cache = getattr(self, '_face_playback', None)
         self.update_neutral_face_controls(cache.archive if cache else None)
-        if self._pear_active:
-            if hasattr(self,'camera_tools'):self.camera_tools.sync()
-            self.pear_sync_controls();return
         if getattr(self,'_readiness_depth',0):
             self._readiness_pending=True
             return
@@ -782,7 +762,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             dialog.deleteLater()
 
     def select_model(self, *_):
-        if self.pear_select_model():return
         tool = MOTION_TOOLS[self.model_choice.currentData()]
         if self.workspace_root is not None and not self._workspace_loading and tool.key!=getattr(self,'_selected_tool',None):
             if self.busy or self.contact_saving:
@@ -842,14 +821,13 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.set_active_result(self.selected_result())
 
     def source_export_available(self):
-        if self._pear_active or self.project is None:
+        if self.project is None:
             return False
         if self.people_state and any(person.get('takes') for person in self.people_state['people']):
             return True
         return self.current_export() is not None
 
     def current_export(self):
-        if self._pear_active:return None
         info=self.contact_tracks.get(base_result(self.active_result))
         if self.active_result.startswith('corrected_') and (self.contact_saving or (info and info.get('unsaved'))):return None
         # selected_export checks source, correction and target receipts itself.
@@ -922,10 +900,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.update_readiness()
 
     def choose_video(self):
-        if self._pear_active:
-            names,_=QFileDialog.getOpenFileNames(self,'Open PEAR Camera Videos','', 'Videos (*.mp4 *.mov *.avi *.mkv *.webm)')
-            if names:self.load_pear_videos(names)
-            return
         if self.model_choice.currentData()=='mamma':
             names,_=QFileDialog.getOpenFileNames(self,'Open MAMMA Camera Videos','', 'Videos (*.mp4 *.mov *.avi *.mkv *.webm)')
             if names:self.load_mamma_videos(names)
@@ -935,7 +909,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             self.load_video(Path(name))
 
     def load_video(self, path):
-        if self._pear_active:return self.load_pear_videos([path])
         if self.model_choice.currentData()=='mamma':
             return self.load_mamma_videos([path])
         try:
@@ -973,8 +946,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             QMessageBox.warning(self, "Video Error", str(error))
 
     def video_ready(self, info):
-        if self.pear_restore_media_ready():return
-        if self.pear_video_ready(info):return
         if self.mamma_video_ready(info):return
         self.video_readable = True
         self.slider.set_media(self.info["fps"] if self.info else info["fps"])
@@ -1016,9 +987,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
 
     @batch_readiness
     def load_project(self, project, *, keep_current_options=False):
-        if self._pear_active:
-            self.pear_leave()
-            self.model_choice.blockSignals(True);self.model_choice.setCurrentIndex(self.model_choice.findData(self._selected_tool));self.model_choice.blockSignals(False)
         from .project_workspace import is_workspace
         if is_workspace(project):return self.open_workspace(project)
         from .project_storage import project_to_open, source_video
@@ -1142,7 +1110,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         return True
 
     def seek(self, index):
-        self.pear_seek(index)
         self.frame_number.blockSignals(True)
         self.frame_number.setValue(index + 1)
         self.frame_number.blockSignals(False)
@@ -1172,8 +1139,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             self.clip_label.setText("Clip: no video")
 
     def present_frame(self, index):
-        if self._pear_active:
-            self.pear_submit();return
         # 3D and overlays advance only when the corresponding decoded image is ready.
         self.motion_view.index = index
         self.motion_view.scene_time=self.source_offset+index/(self.info['fps'] if self.info else 30)
@@ -1208,7 +1173,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             self.preview_audio.pause()
         self.timer_resolution.release()
         self.set_playback_indicator(False)
-        self.pear_playback_stopped()
 
     def set_playback_indicator(self, playing):
         label = "Pause" if playing else "Play"
@@ -1217,12 +1181,10 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.play_button.setAccessibleName(label)
 
     def step_frames(self, amount):
-        if self._pear_active and self.pear_using_webcams():return
         self.stop_playback()
         self.slider.setValue(max(0, min(self.slider.maximum(), self.slider.value() + amount)))
 
     def toggle_play(self):
-        if self._pear_active and self.pear_using_webcams():return
         if self.timer.isActive():
             self.stop_playback()
         elif self.video_path and self.info and self.video_readable:
@@ -1926,10 +1888,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             self.update_readiness()
 
     def cancel_job(self):
-        self.pear_leave()
         self._stream_timer.stop()
         self.close_stream()
-        self.pear_stop_scan()
         if self.character_process is not None:
             self.cancel_character();return
         if self.current_stage=='save_project' and getattr(self,'_project_save_request',None):
@@ -2292,8 +2252,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
     def dropEvent(self, event):
         urls = event.mimeData().urls()
         if urls and not self.busy:
-            if self._pear_active:self.load_pear_videos([Path(url.toLocalFile()) for url in urls])
-            elif self.model_choice.currentData()=='mamma':self.load_mamma_videos([Path(url.toLocalFile()) for url in urls])
+            if self.model_choice.currentData()=='mamma':self.load_mamma_videos([Path(url.toLocalFile()) for url in urls])
             else:self.load_video(Path(urls[0].toLocalFile()))
 
     def closeEvent(self, event):
@@ -2310,8 +2269,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             worker = self.process
             if worker:
                 worker.waitForFinished(3000)
-        self.pear_leave()
-        self.pear_stop_scan()
         if self.character_process is not None:
             self.cancel_character();self.character_process.waitForFinished(5000)
         self.character_loader.close()

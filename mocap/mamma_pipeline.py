@@ -116,7 +116,7 @@ def prepare(path, job):
     from .storage import sha256
     from .resource_cache import code_hash
     # Exact-byte aliases retain inference after the download-only progress fix.
-    identity['code']={name:(code_hash if name in {'mamma_pipeline.py','worker_progress.py'} else sha256)(ROOT/'mocap'/name) for name in ('mamma_pipeline.py','mamma_sam_frames.py','mamma_camera.py','mamma_gravity.py','mamma_gravity_worker.py','mamma_inputs.py','image_io.py','memory_mode.py','gpu_offload.py','worker_progress.py','runtime_registry.py','pear/alignment_support.py')}
+    identity['code']={name:(code_hash if name in {'mamma_pipeline.py','worker_progress.py'} else sha256)(ROOT/'mocap'/name) for name in ('mamma_pipeline.py','mamma_sam_frames.py','mamma_camera.py','mamma_gravity.py','mamma_gravity_worker.py','mamma_inputs.py','image_io.py','memory_mode.py','gpu_offload.py','worker_progress.py','runtime_registry.py','camera_alignment_support.py')}
     if camera_options.get('vggt_opt'):
         identity['code']['vggt_camera_opt.py']=sha256(ROOT/'mocap/vggt_camera_opt.py')
     if interpolation:

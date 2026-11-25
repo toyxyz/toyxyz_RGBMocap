@@ -37,7 +37,9 @@ class InstalledModelTests(unittest.TestCase):
         users = manager.model_consumers(manager.workflow_catalog())
         self.assertEqual(users['flow_sam'], ('flowhmr', 'exmr'))
         self.assertEqual(users['flowhmr'], ('flowhmr',))
-        self.assertEqual(set(users['flow_vggt']), {'flowhmr', 'mamma', 'pear'})
+        self.assertEqual(set(users['flow_vggt']), {'flowhmr', 'mamma'})
+        self.assertEqual(users['pear_geocalib'], ('mamma',))
+        self.assertTrue({'pear', 'pear_geometry', 'pear_yolo'}.isdisjoint(users))
         self.assertEqual(set(users['sam31_people']), {'flowhmr', 'exmr', 'gvhmr'})
 
     def test_removes_known_links_but_keeps_import_source_and_unrelated_files(self):
@@ -95,29 +97,33 @@ class InstalledModelTests(unittest.TestCase):
         self.assertEqual(self.payload.read_bytes(), b'Replacement')
         self.assertFalse(self.receipt.exists())
 
-    def test_pear_removes_active_bundle_and_preserves_old_generation(self):
-        from mocap import pear_models
+    def test_recovers_interrupted_legacy_pear_removal(self):
+        from mocap.legacy_pear_removal import GEOMETRY_ASSETS
 
-        pear = models.BY_KEY['pear_geometry'].path
-        active = pear.parent / 'geometry-active' / 'assets'
-        old = pear.parent / 'geometry-old' / 'assets'
-        relative = 'body/geometry.bin'
-        for directory in (active, old):
-            (directory / relative).parent.mkdir(parents=True)
-        payload = active / relative
-        payload.write_bytes(b'Geometry')
-        os.link(payload, old / relative)
-        stamp = payload.stat()
-        manifest = dict(bundle_sha256='test-bundle', files=[dict(path=relative, bytes=stamp.st_size)])
-        atomic_json(pear, dict(folder='geometry-active/assets', bundle_sha256='test-bundle',
-                               files={relative:[stamp.st_size, stamp.st_mtime_ns]}))
-        with patch.object(pear_models, 'MODELS', manager.MODELS), patch.object(pear_models, 'spec', return_value=manifest):
-            plan = manager.removal_plan(['pear_geometry'])
-            self.assertEqual(manager.physical_bytes(plan, reclaim=True), pear.stat().st_size)
-            manager.remove_models(['pear_geometry'], plan)
-            self.assertFalse(pear_models.geometry_ready())
-        self.assertFalse(active.parent.exists())
-        self.assertEqual((old / relative).read_bytes(), b'Geometry')
+        pear = manager.MODELS / 'pear'
+        relative = sorted(GEOMETRY_ASSETS)[0]
+        payload = pear / 'geometry-active' / 'assets' / relative
+        pointer = pear / 'geometry.json'
+        checkpoint = pear / 'pear_model.pt'
+        untouched = pear / 'geometry-old' / 'assets' / relative
+        untouched.parent.mkdir(parents=True)
+        untouched.write_bytes(b'Old generation')
+        payload.parent.mkdir(parents=True)
+        txid = 'a' * 32
+        files = []
+        for i, path in enumerate((payload, pointer, checkpoint)):
+            stage = path.with_name(f'.rgbmocap-remove-{txid}-{i}')
+            stage.write_bytes(b'Interrupted removal')
+            files.append(dict(path=str(path), fingerprint=manager.fingerprint(manager.entry(stage, manager.HOME))))
+        atomic_json(manager.journal_path(), dict(
+            version=1, id=txid, committed=False, keys=['pear_geometry', 'pear'], files=files))
+
+        self.assertTrue(manager.recover_removal())
+        self.assertEqual(payload.read_bytes(), b'Interrupted removal')
+        self.assertEqual(pointer.read_bytes(), b'Interrupted removal')
+        self.assertEqual(checkpoint.read_bytes(), b'Interrupted removal')
+        self.assertEqual(untouched.read_bytes(), b'Old generation')
+        self.assertFalse(manager.journal_path().exists())
 
     def test_rejects_unrecognized_path_in_recovery_record(self):
         custom = manager.MODELS / 'my-model.ckpt'
