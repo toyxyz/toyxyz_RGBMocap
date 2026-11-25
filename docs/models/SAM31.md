@@ -17,6 +17,7 @@ live detector.
    | --- | --- | --- |
    | Windows | `install.cmd` | `Setup_SAM31.cmd` |
    | [Linux source checkout](../LINUX.md#optional-sam-31-person-tracking) | `./install.sh` | `./setup_sam31.sh` |
+   | [Linux AppImage](../LINUX.md#optional-sam-31-person-tracking) | Normal launch or optional setup | Run the AppImage with `--setup-sam31` |
 
    Setup needs Git, internet access and an NVIDIA CUDA GPU with native
    bfloat16 support. It reuses the installed ExMR Python and Torch and adds

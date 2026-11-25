@@ -1,5 +1,18 @@
 # Source package validation
 
+## Linux AppImage with SAM 3.1 (2026-11-25)
+
+- Built the x86-64 AppImage from Linux source revision `7b2fe9d7` and
+  verified the SHA-256 checksum. Audited the packaged source for local
+  runtimes, projects, weights and local settings.
+- Installed the six base runtimes and SAM 3.1 into a new data directory
+  on Ubuntu 24.04 under WSL 2. Verified headless setup, overlay reuse,
+  and normal and extracted WSLg launch and exit.
+- Imported the pinned checkpoint and ran GPU tracking from that
+  installation on an RTX 5090. On a 48-frame clip, text tracking passed
+  for ExMR and FlowHMR, and a GVHMR click marker selected one person
+  using Low Memory. A repeated FlowHMR request reused its cached tracks.
+
 ## SAM 3.1 on Linux (2026-11-25)
 
 - In an isolated Ubuntu 24.04 WSL 2 source checkout with an RTX 5090,
@@ -12,8 +25,7 @@
   its cached tracks. GVHMR used Low Memory and an interior-frame marker to
   track only the selected person. The results contained tracking data and
   thumbnails.
-- These runs exercised person tracking in source installations on WSL 2.
-  The published AppImage predates this change.
+- These runs exercised person tracking in a source installation on WSL 2.
 
 ## Unified Model Manager (2026-11-20)
 

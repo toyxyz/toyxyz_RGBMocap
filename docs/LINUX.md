@@ -5,7 +5,7 @@ separate hash-checked Linux wheels. Both platforms keep their own Python
 runtimes, models, projects and caches. Try the AppImage below or install from the `linux_support` branch
 in a dedicated checkout on the Linux filesystem. The Linux paths cover single-video ExMR,
 FlowHMR and GVHMR, native motion correction, source export and optional Track
-Face. The source installation also supports optional SAM 3.1 person tracking.
+Face. Both distributions support optional SAM 3.1 person tracking.
 The optional PEAR, MAMMA, PromptHMR, GEM-X and Unreal Live Link sender setups
 use Windows tooling.
 
@@ -53,9 +53,9 @@ Native Linux Mint testing is welcome. Install the host dependencies listed
 above and run the AppImage from a terminal to see setup progress.
 
 ```sh
-sha256sum -c RGBMoCap-Linux-0dc69476-x86_64.AppImage.sha256
-chmod +x RGBMoCap-Linux-0dc69476-x86_64.AppImage
-./RGBMoCap-Linux-0dc69476-x86_64.AppImage
+sha256sum -c RGBMoCap-Linux-7b2fe9d7-x86_64.AppImage.sha256
+chmod +x RGBMoCap-Linux-7b2fe9d7-x86_64.AppImage
+./RGBMoCap-Linux-7b2fe9d7-x86_64.AppImage
 ```
 
 The AppImage is about 21 MiB. On first launch it installs the pinned Python
@@ -76,7 +76,7 @@ If FUSE cannot mount the AppImage, run it with `--appimage-extract-and-run`.
 For runtime repair without opening the app, use `--setup-only --verify-all`.
 For the optional Blender installation, use `--setup-only --with-blender`.
 
-[appimage-release]: https://github.com/toyxyz/toyxyz_RGBMocap/releases/tag/linux-appimage-0dc69476
+[appimage-release]: https://github.com/toyxyz/toyxyz_RGBMocap/releases/tag/linux-appimage-7b2fe9d7
 
 ### AppImage setup cannot find CMake
 
@@ -93,7 +93,7 @@ sudo apt update
 sudo apt install cmake build-essential
 cmake --version
 g++ --version
-./RGBMoCap-Linux-0dc69476-x86_64.AppImage
+./RGBMoCap-Linux-7b2fe9d7-x86_64.AppImage
 ```
 
 Run the last command from the folder containing the downloaded AppImage. If
@@ -101,22 +101,34 @@ the error suggests running `./install.sh`, that command is for a source
 checkout. Retry the same AppImage and consult `appimage-setup.log` if it still
 fails. See [the Linux Mint report](https://github.com/toyxyz/toyxyz_RGBMocap/issues/56#issuecomment-7033302555).
 
-The AppImage linked above contains source revision `0dc69476`. Follow the source
-installation steps below to use changes made to `linux_support` after that build.
+The AppImage linked above contains source revision `7b2fe9d7`. Follow the source
+installation steps below to use later code changes on `linux_support`.
 
 ## Optional SAM 3.1 person tracking
 
-Use a source checkout of `linux_support` and complete `./install.sh` first.
-Close RGB MoCap and run `./setup_sam31.sh`. Review the upstream terms shown by
-the setup command. Setup requires an NVIDIA GPU with native CUDA bfloat16
-support and verifies CUDA before activating the overlay. It uses ExMR's
-installed Python and CUDA packages. SAM 3.1 setup itself needs no additional
-compiler or FlashAttention installation.
+Close RGB MoCap and run the optional setup command for your installation.
+Review the upstream terms when prompted.
+
+- **AppImage**. Run the executable with `--setup-sam31` from a terminal.
+  The command installs the base runtimes first if needed.
+
+  ```sh
+  ./RGBMoCap-Linux-7b2fe9d7-x86_64.AppImage --setup-sam31
+  ```
+
+  If FUSE is unavailable, pass `--appimage-extract-and-run` before
+  `--setup-sam31`. Use the same `XDG_DATA_HOME` for setup and normal launch
+  if you set it yourself.
+- **Source checkout**. Complete `./install.sh` and run `./setup_sam31.sh`.
+
+Setup requires an NVIDIA GPU with native CUDA bfloat16 support and verifies
+CUDA before activating the overlay. It uses ExMR's installed Python and CUDA
+packages. SAM 3.1 setup itself needs no additional compiler or FlashAttention
+installation.
 
 Reopen the app, choose **SAM 3.1** next to **Find person**, then use the
 optional SAM 3.1 checkpoint row in **Model Manager**. This tracker works
-with ExMR, FlowHMR and GVHMR. The AppImage linked above predates this support.
-See the [tracker guide](models/SAM31.md#setup) for model setup and usage.
+with ExMR, FlowHMR and GVHMR. See the [tracker guide](models/SAM31.md#setup).
 
 ## Install, launch and update
 
@@ -153,3 +165,18 @@ RGB_MOCAP_SETUP_TEMP=/tmp/rgbmocap-setup ./install.sh
 Review both platform locks after changing the runtime registry or package
 pins. `tools/linux_lock.py` derives the Linux runtime lock from the Windows
 pins and adds exact versions for Linux-only requirements.
+
+## Build the AppImage
+
+From a Linux checkout, run the packager with the executable x86-64
+[appimagetool 1.9.1](https://github.com/AppImage/appimagetool/releases/tag/1.9.1)
+and [AppImage type 2 runtime 20251108](https://github.com/AppImage/type2-runtime/releases/tag/20251108).
+
+```sh
+chmod +x /path/to/appimagetool-x86_64.AppImage
+./tools/appimage/build.sh . /path/to/appimagetool-x86_64.AppImage /path/to/runtime-x86_64 ./dist
+```
+
+The packager checks the tool hashes, uses the committed source at HEAD, and
+writes the AppImage and its SHA-256 checksum. Runtime environments and model
+weights are obtained after launch.

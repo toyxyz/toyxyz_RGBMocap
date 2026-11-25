@@ -161,8 +161,10 @@ Model files are in `<installation>/models/` by default; the local `config/local.
 
 1. Verify the base installation and ExMR runtime. Review the linked upstream
    terms with the user. Close RGB MoCap, then run `Setup_SAM31.cmd` on Windows
-   or `./setup_sam31.sh` in the Linux source checkout. Setup stages the pinned Meta source and SHA-256-pinned wheels in a separate
-   `runtime_sam31/` overlay and tests native CUDA bfloat16 attention before
+   or `./setup_sam31.sh` in the Linux source checkout. For the Linux AppImage,
+   run the AppImage with `--setup-sam31` from a terminal. Setup stages the pinned
+   Meta source and SHA-256-pinned wheels in a separate `runtime_sam31/` overlay
+   and tests native CUDA bfloat16 attention before
    activation. It uses the base ExMR Python and Torch. Keep the ExMR pins and
    the locked base runtime registry intact.
 2. In the app, choose ExMR, FlowHMR or GVHMR, then **SAM 3.1** next to

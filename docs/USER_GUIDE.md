@@ -153,7 +153,8 @@ run installation inside the app.
 ### Optional SAM 3.1 person tracker
 
 After the base install, close RGB MoCap and run `Setup_SAM31.cmd` on Windows
-or `./setup_sam31.sh` in a [Linux source checkout](LINUX.md#optional-sam-31-person-tracking).
+or `./setup_sam31.sh` in a Linux source checkout. For the [Linux AppImage](LINUX.md#optional-sam-31-person-tracking),
+run the AppImage with `--setup-sam31` from a terminal.
 This setup reuses ExMR's Python and CUDA runtime and requires native NVIDIA
 CUDA bfloat16 support. Reopen the app, select ExMR, FlowHMR or GVHMR and choose **SAM 3.1**
 next to **Find person**. In **Model Manager**, use **Auto Download** on

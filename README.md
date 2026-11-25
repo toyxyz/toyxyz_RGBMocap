@@ -107,8 +107,9 @@ PEAR reuses the base shared runtime with a small support overlay prepared by
 Model files are prepared separately.
 
 For optional text-prompt and click-guided **Find person** tracking, run
-`Setup_SAM31.cmd` on Windows or `./setup_sam31.sh` in a [Linux source checkout](docs/LINUX.md#optional-sam-31-person-tracking)
-after the base setup. Then choose **SAM 3.1** next to
+`Setup_SAM31.cmd` on Windows or `./setup_sam31.sh` in a Linux source checkout.
+For the [Linux AppImage](docs/LINUX.md#optional-sam-31-person-tracking), use
+`--setup-sam31`. Then choose **SAM 3.1** next to
 **Find person** and use **Auto Download** on its 1.75 GB checkpoint row in
 **Model Manager**. SAM 3.1 uses more VRAM than **Default** tracking.
 **Resource Mode > Automatic** can offload tracking state and masks to system
