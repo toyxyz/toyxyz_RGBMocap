@@ -1,5 +1,20 @@
 # Source package validation
 
+## SAM 3.1 on Linux (2026-11-25)
+
+- In an isolated Ubuntu 24.04 WSL 2 source checkout with an RTX 5090,
+  installed the overlay over a copy of the managed ExMR runtime. The setup
+  verified the pinned Linux wheels and CUDA bfloat16 attention. A second run
+  verified and retained the installed overlay.
+- Imported the pinned checkpoint through the Model Manager import code.
+  With a 48-frame, 30 fps excerpt, the normal worker found three people with
+  the text prompt in both FlowHMR and ExMR. A repeated FlowHMR request reused
+  its cached tracks. GVHMR used Low Memory and an interior-frame marker to
+  track only the selected person. The results contained tracking data and
+  thumbnails.
+- These runs exercised person tracking in source installations on WSL 2.
+  The published AppImage predates this change.
+
 ## Unified Model Manager (2026-11-20)
 
 - In an isolated Windows app, verified every workflow tab and the Installed

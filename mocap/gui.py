@@ -287,9 +287,9 @@ class ModelsDialog(QDialog):
             note = QLabel(status()[1] + '\nCamera Align uses optional VGGT and GeoCalib files.')
             note.setWordWrap(True)
             self.workflow_panel.addWidget(note)
-        from .sam31_runtime import SUPPORTED
+        from .sam31_runtime import SETUP_COMMAND, SUPPORTED
         if key in SUPPORTED:
-            note = QLabel('SAM 3.1 is optional. Run Setup_SAM31.cmd with RGB MoCap closed before using it.')
+            note = QLabel(f'SAM 3.1 is optional. Run {SETUP_COMMAND} with RGB MoCap closed before using it.')
             note.setWordWrap(True)
             self.workflow_panel.addWidget(note)
 

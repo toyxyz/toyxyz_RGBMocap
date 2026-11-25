@@ -5,8 +5,9 @@ separate hash-checked Linux wheels. Both platforms keep their own Python
 runtimes, models, projects and caches. Try the AppImage below or install from the `linux_support` branch
 in a dedicated checkout on the Linux filesystem. The Linux paths cover single-video ExMR,
 FlowHMR and GVHMR, native motion correction, source export and optional Track
-Face. The optional PEAR, MAMMA, PromptHMR, GEM-X, SAM 3.1 and Unreal Live Link
-sender setups use Windows tooling.
+Face. The source installation also supports optional SAM 3.1 person tracking.
+The optional PEAR, MAMMA, PromptHMR, GEM-X and Unreal Live Link sender setups
+use Windows tooling.
 
 ## Requirements
 
@@ -102,6 +103,20 @@ fails. See [the Linux Mint report](https://github.com/toyxyz/toyxyz_RGBMocap/iss
 
 The AppImage linked above contains source revision `0dc69476`. Follow the source
 installation steps below to use changes made to `linux_support` after that build.
+
+## Optional SAM 3.1 person tracking
+
+Use a source checkout of `linux_support` and complete `./install.sh` first.
+Close RGB MoCap and run `./setup_sam31.sh`. Review the upstream terms shown by
+the setup command. Setup requires an NVIDIA GPU with native CUDA bfloat16
+support and verifies CUDA before activating the overlay. It uses ExMR's
+installed Python and CUDA packages. SAM 3.1 setup itself needs no additional
+compiler or FlashAttention installation.
+
+Reopen the app, choose **SAM 3.1** next to **Find person**, then use the
+optional SAM 3.1 checkpoint row in **Model Manager**. This tracker works
+with ExMR, FlowHMR and GVHMR. The AppImage linked above predates this support.
+See the [tracker guide](models/SAM31.md#setup) for model setup and usage.
 
 ## Install, launch and update
 

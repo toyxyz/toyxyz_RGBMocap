@@ -1,4 +1,4 @@
-"""Run pinned Meta video inference with Windows-compatible tensor operations."""
+"""Run pinned Meta video inference with portable CUDA and OpenCV operations."""
 
 import functools
 import sys
@@ -8,7 +8,7 @@ from types import ModuleType
 from unittest.mock import patch
 
 
-def windows_builder():
+def compatible_builder():
     import cv2
     import numpy as np
     import torch
@@ -53,7 +53,7 @@ def predictor(weights, folder):
     import torch
     from safetensors.torch import load_file
 
-    model_builder = windows_builder()
+    model_builder = compatible_builder()
     with patch.object(model_builder, 'download_ckpt_from_hf', return_value=None):
         result = model_builder.build_sam3_multiplex_video_predictor(
             bpe_path=str(folder / 'sam3/assets/bpe_simple_vocab_16e6.txt.gz'),

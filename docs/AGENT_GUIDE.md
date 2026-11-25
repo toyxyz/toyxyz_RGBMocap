@@ -114,7 +114,7 @@ Use **Model Manager** for the selected model and add-ons. Automatic download may
 | `Setup_MAMMA.cmd` | Optional independent MAMMA runtime | VS 2022 C++ tools/Windows SDK, CUDA Toolkit 12.8, provider license review |
 | `Setup_PromptHMR.cmd` | Optional independent PromptHMR runtime | Same build tools, separate provider license review; MAMMA/SDF not required |
 | `Setup_GEMX.cmd` | Optional GEM-X Windows runtime | Reuses the pinned ExMR CPython and compatible CUDA DLLs, keeps its own inference packages, verifies CUDA. No compiler required. |
-| `Setup_SAM31.cmd` | Optional SAM 3.1 Find person tracker for ExMR, FlowHMR and GVHMR on Windows | Base ExMR profile, Git, internet, upstream terms review and NVIDIA CUDA with native bfloat16. Uses pinned wheels and a separate overlay. |
+| `Setup_SAM31.cmd` (Windows), `./setup_sam31.sh` (Linux source) | Optional SAM 3.1 Find person tracker for ExMR, FlowHMR and GVHMR | Base ExMR profile, Git, internet, upstream terms review and NVIDIA CUDA with native bfloat16. Uses pinned wheels and a separate overlay. |
 | `update.cmd` | Source update and base runtime verification | Close the app and preserve tracked edits; it does not install the optional runtimes |
 
 ### GEM-X support
@@ -160,8 +160,8 @@ Model files are in `<installation>/models/` by default; the local `config/local.
 ### SAM 3.1 person discovery
 
 1. Verify the base installation and ExMR runtime. Review the linked upstream
-   terms with the user. Close RGB MoCap, then run `Setup_SAM31.cmd`. Setup
-   stages the pinned Meta source and SHA-256-pinned wheels in a separate
+   terms with the user. Close RGB MoCap, then run `Setup_SAM31.cmd` on Windows
+   or `./setup_sam31.sh` in the Linux source checkout. Setup stages the pinned Meta source and SHA-256-pinned wheels in a separate
    `runtime_sam31/` overlay and tests native CUDA bfloat16 attention before
    activation. It uses the base ExMR Python and Torch. Keep the ExMR pins and
    the locked base runtime registry intact.

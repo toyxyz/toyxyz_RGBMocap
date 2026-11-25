@@ -180,8 +180,8 @@ lock's registry hash; the development bootstrap rejects an unreviewed mismatch.
 
 ## Optional SAM 3.1 tracker
 
-On Windows, `Setup_SAM31.cmd` installs a separate `runtime_sam31/` overlay
-on the pinned ExMR environment. Follow the [setup guide](models/SAM31.md).
+`Setup_SAM31.cmd` on Windows and `./setup_sam31.sh` on Linux install a separate
+`runtime_sam31/` overlay on the pinned ExMR environment. Follow the [setup guide](models/SAM31.md).
 Keep the optional dependencies in `tools/setup_sam31.py` and the worker route
 through `sam31_worker_boot.py`. Model Manager verifies the checkpoint separately.
 Keep the overlay, weights and experiment outputs out of the source package.

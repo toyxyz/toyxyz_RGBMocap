@@ -1,7 +1,8 @@
 # Optional SAM 3.1 person tracking
 
 SAM 3.1 is a **Find person** tracker for **ExMR, FlowHMR and GVHMR** on
-Windows. It fills the People list using a text prompt and optional clicks.
+Windows and Linux. It fills the People list using a text prompt and optional
+clicks.
 The selected motion model then reconstructs the people you check.
 **Default** remains available and uses the standard person tracker.
 MAMMA, PromptHMR and GEM-X use their own tracking workflows. PEAR uses its
@@ -9,12 +10,13 @@ live detector.
 
 ## Setup
 
-1. Run `install.cmd` in the app folder. Close RGB MoCap, then run this command
-   from the same folder and review the upstream terms when prompted.
+1. Complete the base install and close RGB MoCap. Run the optional setup from
+   the app folder and review the upstream terms when prompted.
 
-   ```cmd
-   Setup_SAM31.cmd
-   ```
+   | Platform | Base install | SAM 3.1 setup |
+   | --- | --- | --- |
+   | Windows | `install.cmd` | `Setup_SAM31.cmd` |
+   | [Linux source checkout](../LINUX.md#optional-sam-31-person-tracking) | `./install.sh` | `./setup_sam31.sh` |
 
    Setup needs Git, internet access and an NVIDIA CUDA GPU with native
    bfloat16 support. It reuses the installed ExMR Python and Torch and adds
@@ -75,9 +77,9 @@ tracking settings. Find person runs separately from 3D reconstruction.
 
 ## Troubleshooting
 
-- If the app asks for SAM 3.1 setup, close it and run `Setup_SAM31.cmd` again.
-  If the optional checkpoint row says **Missing**, download or import that
-  file in Model Manager.
+- If the app asks for SAM 3.1 setup, close it and rerun the SAM 3.1 setup
+  command for your platform. If the optional checkpoint row says **Missing**,
+  download or import that file in Model Manager.
 - A broad prompt can include people in the background. Use a more specific
   description or mark the intended people in a clear frame. Long occlusions
   can still cause a lost track or identity switch. If a marker misses, retry

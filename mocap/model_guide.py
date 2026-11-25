@@ -3,6 +3,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QDesktopServices, QTextOption
 from PySide6.QtWidgets import QApplication, QDialog, QHBoxLayout, QPushButton, QTextBrowser, QVBoxLayout
 from .motion_tools import MOTION_TOOLS
+from .sam31_runtime import SETUP_COMMAND
 
 # exmr-eval-2026-10-22/summary-body.json, clip_01 (210 frames at 30 fps).
 # Historical processing-only runs; FlowHMR predates Fast SAM.
@@ -57,7 +58,7 @@ th { text-align:left; background-color:#333333; } td, th { padding:7px; }
 <h3>Choosing a model</h3>
 <p>These are subjective observations from our test videos, not a universal ranking or accuracy benchmark.
 Try another model if a particular movement looks wrong.</p>""" + descriptions + """
-<p><b>Find person</b> offers optional SAM 3.1 tracking for ExMR, FlowHMR and GVHMR. Start with the <code>person</code> prompt and optionally click people in the marking preview to keep their tracks. Run Setup_SAM31.cmd once and prepare the public FP16 weights in Model Manager. See docs/models/SAM31.md.</p>
+<p><b>Find person</b> offers optional SAM 3.1 tracking for ExMR, FlowHMR and GVHMR. Start with the <code>person</code> prompt and optionally click people in the marking preview to keep their tracks. Run <code>""" + SETUP_COMMAND + """</code> once and prepare the public FP16 weights in Model Manager. See docs/models/SAM31.md.</p>
 <p>File &gt; Export offers FBX, BVH and portable Blender projects for SMPL source motion. MAMMA also offers a whole-scene Blender bundle. GEM-X offers Native77 FBX, BVH and Blender exports. Keep exported video/mesh folders together.</p>
 <p><b>Resource Safety</b> defaults on below Resource Mode. On retains low-RAM stopping and the PyTorch VRAM allocation limit. Off bypasses these limits; Automatic batching, supported Low Memory paths and actual allocation-error handling remain. The preference is saved locally, separately from projects. PEAR inherits it while its offline resource controls are hidden. See docs/PERFORMANCE.md for details.</p>
 <h3>Recorded processing time and memory</h3>
