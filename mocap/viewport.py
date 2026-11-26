@@ -41,6 +41,13 @@ class MotionView(ViewportBase):
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.StrongFocus)
         self.joints = None
+        self.first_person_hands = None
+        self.first_person_bones = None
+        self.first_person_head = None
+        self.first_person_arms = None
+        self.first_person_mano = None
+        self.show_mano = True
+        self.first_person_camera_edit = None
         self.rotations = None
         self.mesh_frames = self.mesh_asset = self.mesh_renderer = None
         self.mesh_binding=None
@@ -136,11 +143,13 @@ class MotionView(ViewportBase):
         close_array(old)
         close_array(old_rotations)
 
-    def set_motion(self, joints, summary=None, path=None, rotations=None, mesh_frames=None, mesh_asset=None):
+    def set_motion(self, joints, summary=None, path=None, rotations=None, mesh_frames=None, mesh_asset=None,
+                   *,first_person_hands=None,first_person_bones=None,first_person_head=None,
+                   first_person_mano=None,first_person_arms=None):
         if self.mesh_frames is not mesh_frames or self.mesh_asset is not mesh_asset:
             self.mesh_error=None
         self.mesh_binding=None
-        if joints is None:
+        if joints is None or first_person_hands is not None:
             self.target_frames=None;self.target_asset=None;self.raw_asset=None;self.native_vertices=None
             self.release_target_renderers()
         if self._owned_array is not None and self._owned_array is not joints:
@@ -156,10 +165,15 @@ class MotionView(ViewportBase):
         fit=not self._camera_initialized or project!=self._camera_project
         self.path = path
         self.joints = joints
+        self.first_person_hands = first_person_hands
+        self.first_person_bones = first_person_bones
+        self.first_person_head = first_person_head
+        self.first_person_arms = first_person_arms
+        self.first_person_mano = first_person_mano
         self.rotations = rotations
         self.mesh_frames, self.mesh_asset = mesh_frames, mesh_asset
         self.mesh_presented_index = None
-        if joints is None and not self.people_mode and self.mesh_renderer is not None and OPENGL_VIEW and self.isValid():
+        if (joints is None or first_person_hands is not None) and not self.people_mode and self.mesh_renderer is not None and OPENGL_VIEW and self.isValid():
             self.makeCurrent()
             self.mesh_renderer.release_buffers()
             self.doneCurrent()
@@ -167,10 +181,13 @@ class MotionView(ViewportBase):
             self.floor = self.people_scene.reference['floor'] if self.people_scene else summary["floor"]
             self.body_height = summary["height"] + .16  # Mesh extends above the head joint.
             self.scene_span = summary["span"]
+            if first_person_hands is not None:
+                self.body_height=self.scene_span
             if fit:
                 if not self.people_mode:
                     self.scene_center = summary["center"].copy()
-                    self.scene_center[1] = self.floor + self.body_height * 0.50
+                    if first_person_hands is None:
+                        self.scene_center[1] = self.floor + self.body_height * 0.50
                 self._camera_project=project;self._camera_initialized=True
             if fit and self.auto_fit:
                 self.fit_view()
@@ -225,6 +242,9 @@ class MotionView(ViewportBase):
 
     def draw_bones(self,painter,actors=None):
         if not self.show_bones:return
+        if actors is None and self.first_person_bones is not None:
+            self.draw_first_person_bones(painter)
+            return
         entries=[];missing=False
         if actors is not None:
             for take,frame in actors:
@@ -236,26 +256,108 @@ class MotionView(ViewportBase):
                 entries.append(('single',self.target_asset['bones'],self.target_frames[self.index],self.index,None))
             else:missing=True
         if OPENGL_VIEW and entries:
-            painter.beginNativePainting()
-            try:
-                from .bone_gl import BoneRenderer
-                used=set()
-                # One fresh depth pass puts every bone in front of all Raw
-                # meshes while retaining occlusion between bones and actors.
-                for ordinal,(slot,asset,frame,index,transform) in enumerate(entries):
-                    used.add(slot)
-                    if slot not in self.bone_renderers:self.bone_renderers[slot]=BoneRenderer()
-                    renderer=self.bone_renderers[slot];renderer.load(asset);renderer.deform(frame,(asset['key'],index))
-                    renderer.draw(*self._paint_camera,self.width(),self.height(),transform=transform,clear_depth=ordinal==0)
-                for slot in list(self.bone_renderers):
-                    if slot not in used:self.bone_renderers.pop(slot).close()
-                self.bone_error=None
-            except Exception as error:self.bone_error='Cannot render export bones: '+str(error)
-            finally:painter.endNativePainting()
+            self.draw_bone_entries(painter,entries)
         if missing or self.bone_error:
             painter.setPen(QColor(theme_color('#e0b06c')))
             painter.drawText(self.rect().adjusted(18,105,-95,-80),Qt.AlignTop|Qt.TextWordWrap,
                 self.bone_error or 'Export bone overlay unavailable for this result. Use Prepare Preview / Apply Correction.')
+
+    def draw_bone_entries(self,painter,entries,colors=None):
+        colors=colors or {}
+        painter.beginNativePainting()
+        try:
+            from .bone_gl import BoneRenderer
+            used=set()
+            # One fresh depth pass retains occlusion between bones and actors.
+            for ordinal,(slot,asset,frame,index,transform) in enumerate(entries):
+                used.add(slot)
+                if slot not in self.bone_renderers:self.bone_renderers[slot]=BoneRenderer()
+                renderer=self.bone_renderers[slot]
+                renderer.load(asset);renderer.deform(frame,(asset['key'],index))
+                palette=colors.get(slot)
+                style=dict(color=palette[0],edge_color=palette[1]) if palette else {}
+                renderer.draw(*self._paint_camera,self.width(),self.height(),transform=transform,
+                              clear_depth=ordinal==0,**style)
+            for slot in list(self.bone_renderers):
+                if slot not in used:self.bone_renderers.pop(slot).close()
+            self.bone_error=None
+        except Exception as error:self.bone_error='Cannot render bones: '+str(error)
+        finally:painter.endNativePainting()
+
+    def set_mano_visible(self, visible):
+        self.show_mano = visible
+        self.update()
+
+    def draw_mano_hands(self, painter, index):
+        mano = self.first_person_mano
+        if not OPENGL_VIEW or not self.show_mano or mano is None:
+            return
+        edit = self.first_person_camera_edit
+        index = 0 if edit is not None else index
+        transform = edit.transform if edit is not None else None
+        poses = self.first_person_bones[index]
+        visible = np.flatnonzero(np.isfinite(poses).all(axis=(1,2,3)))
+        if not len(visible):
+            return
+        colors = ((.35,.61,.68), (.69,.53,.37))
+        painter.beginNativePainting()
+        try:
+            for ordinal, side in enumerate(visible):
+                asset = mano.assets[side]
+                key = (asset['key'], index)
+                slot = ('mano', side)
+                renderer = self.target_renderers.get(slot)
+                vertices = mano.vertices(side, poses[side]) if renderer is None or renderer.frame_key != key else None
+                self.draw_target(slot, asset, vertices, key, colors[side], transform, clear_depth=ordinal==0)
+            self.mesh_error = None
+        except Exception as error:
+            self.mesh_error = f"Cannot render MANO hands: {error}"
+        finally:
+            painter.endNativePainting()
+        if self.mesh_error:
+            painter.setPen(QColor(theme_color('#e0b06c')))
+            painter.drawText(18, ui_px(75), self.mesh_error)
+
+    def draw_first_person_bones(self,painter):
+        from .bone_overlay import segment_geometry
+
+        bones=self.first_person_bones
+        edit = self.first_person_camera_edit
+        index=0 if edit is not None else min(self.index,len(bones)-1)
+        key=(id(bones),index)
+        poses=[(0,bones[index,0]),(1,bones[index,1])]
+        if self.first_person_head is not None:
+            poses.append((2,self.first_person_head[index]))
+        if self.first_person_arms is not None:
+            poses.extend((3+side,frame) for side,frame in enumerate(self.first_person_arms[index]))
+        if edit is not None:
+            poses = [(slot,edit.matrices(pose)) for slot,pose in poses]
+            key += (edit, edit.revision)
+        entries=[(slot,segment_geometry(len(frame)),frame,key,None)
+                 for slot,frame in poses if np.isfinite(frame).all()]
+        colors={0:((.22,.63,.75),(.27,.77,.93)),
+                1:((.75,.46,.21),(.94,.63,.31)),
+                2:((.60,.48,.78),(.81,.68,.98))}
+        colors.update({3:colors[0],4:colors[1]})
+        if OPENGL_VIEW and entries:
+            self.draw_bone_entries(painter,entries,colors)
+            if not self.bone_error:return
+        # Use the same octahedron in offscreen previews and if GL is unavailable.
+        faces=[]
+        for slot,asset,matrices,_,_ in entries:
+            vertices=np.einsum('tij,vj->tvi',matrices[:,:3,:3],asset['octahedron'])+matrices[:,None,:3,3]
+            for points in vertices:
+                xy,depth,_=self.project(points)
+                if np.min(depth)<=.08:continue
+                for i in range(4):
+                    a,b=2+i,2+(i+1)%4
+                    for j,indices in enumerate(((0,b,a),(1,a,b))):
+                        faces.append((float(np.mean(depth[list(indices)])),xy[list(indices)],slot,i+j))
+        for _,xy,slot,shade in sorted(faces,key=lambda item:item[0],reverse=True):
+            fill,edge=colors[slot]
+            painter.setPen(QPen(QColor.fromRgbF(*edge),.65))
+            painter.setBrush(QColor.fromRgbF(*(channel*(.70+.07*shade) for channel in fill)))
+            painter.drawPolygon(QPolygonF([QPointF(*p) for p in xy]))
 
     def scene_actors(self):
         return self.people_scene.actors_at(self.scene_time,self.scene_visible,self.path.parent if self.path else None) if self.people_scene else []
@@ -310,7 +412,11 @@ class MotionView(ViewportBase):
             roots=[self.scene_joint_points(take,frame)[0] for take,frame in actors]
             if roots:target[[0,2]]=np.mean(roots,axis=0)[[0,2]]
         elif self.follow and self.joints is not None:
-            target[[0, 2]] = self.joints[min(self.index, len(self.joints) - 1), 0, [0, 2]]
+            i = 0 if self.first_person_camera_edit is not None else min(self.index, len(self.joints) - 1)
+            if self.first_person_hands is not None:
+                target += self.joints[i,0]-self.joints[0,0]
+            else:
+                target[[0, 2]] = self.joints[i, 0, [0, 2]]
         return target + self.pan
 
     def scene_joint_points(self,take,frame):
@@ -332,9 +438,10 @@ class MotionView(ViewportBase):
         # resizing the widget must retain the existing world-space camera Y.
         if self.people_scene is not None and self.people_scene.summary:
             self.scene_center=np.asarray(self.people_scene.summary['center']).copy()
-        self.scene_center[1]=self.floor+self.body_height*.5
+        if self.first_person_hands is None:
+            self.scene_center[1]=self.floor+self.body_height*.5
         self.fit_view()
-        if self.character_workspace:
+        if self.character_workspace and OPENGL_VIEW and self.isValid():
             bounds=[]
             self.makeCurrent()
             try:
@@ -391,6 +498,10 @@ class MotionView(ViewportBase):
         return xy, view[..., 2], focal
 
     def mousePressEvent(self, event):
+        edit = self.first_person_camera_edit
+        if edit is not None and event.button() == Qt.LeftButton and edit.begin(self, event.position()):
+            event.accept()
+            return
         if event.button() == Qt.LeftButton:
             for center, name in reversed(self._gizmo_hits):
                 if (event.position() - center).manhattanLength() <= 14:
@@ -401,6 +512,9 @@ class MotionView(ViewportBase):
         self.drag_point = event.position()
 
     def mouseReleaseEvent(self, event):
+        edit = self.first_person_camera_edit
+        if edit is not None:
+            edit.drag = None
         self.drag_point = None
         if self._camera_update_timer.isActive():
             self._camera_update_timer.stop()
@@ -420,6 +534,15 @@ class MotionView(ViewportBase):
             self._camera_update_timer.start(max(1, math.ceil(remaining * 1000)))
 
     def mouseMoveEvent(self, event):
+        edit = self.first_person_camera_edit
+        if edit is not None:
+            if edit.drag is not None and event.buttons() & Qt.LeftButton:
+                edit.move(event.position())
+                self.request_camera_update()
+                return
+            if self.drag_point is None and edit.hit(self, event.position()) is not None:
+                self.setCursor(Qt.PointingHandCursor)
+                return
         if self.drag_point is None:
             hovered = next((name for center, name in reversed(self._gizmo_hits)
                             if (event.position() - center).manhattanLength() <= 14), None)
@@ -826,7 +949,7 @@ class MotionView(ViewportBase):
             line3d([-edge, self.grid_floor + .001, 0], [edge, self.grid_floor + .001, 0], "#99515b", 1.1)
             line3d([0, self.grid_floor + .001, -edge], [0, self.grid_floor + .001, edge], "#4c759c", 1.1)
         painter.setRenderHint(QPainter.Antialiasing, True)
-        correction_plane_visible=self.draw_correction_floor(painter,lines3d)
+        correction_plane_visible=self.first_person_hands is None and self.draw_correction_floor(painter,lines3d)
         self.name_labels_presented=[]
         bone_actors=[]
 
@@ -846,6 +969,12 @@ class MotionView(ViewportBase):
             painter.setPen(QColor(theme_color("#bcbcbc")))
             painter.drawText(self.rect().adjusted(25, 30, -25, -30), Qt.AlignCenter | Qt.TextWordWrap,
                              "No motion loaded\n\nReconstruct a motion or open a project\nto compare the initial and refined animation.")
+        elif self.first_person_hands is not None:
+            index=min(self.index,len(self.first_person_hands)-1)
+            bone_actors=None
+            self.draw_mano_hands(painter, index)
+            painter.setPen(QColor(theme_color("#bebebe")))
+            painter.drawText(18,ui_px(53),f"Frame {index+1} / {len(self.first_person_hands)}")
         elif self.joints is not None:
             index = min(self.index, len(self.joints) - 1)
             joints = self.joints[index, :22]
@@ -891,12 +1020,16 @@ class MotionView(ViewportBase):
             painter.drawText(QRectF(18, ui_px(39), self.width() - 36, ui_px(20)), Qt.AlignLeft, f"Frame {index + 1} / {len(self.joints)}")
             painter.drawText(QRectF(18, ui_px(60), self.width() - 36, ui_px(20)), Qt.AlignLeft,
                              f"X {joints[0, 0]:+.2f}   Z {joints[0, 2]:+.2f} m")
-        if self.show_cameras:
+        edit = self.first_person_camera_edit
+        if self.show_cameras or edit is not None:
             from .camera_tracks import at,geometry
             for camera,trail in self.camera_records:
-                matrix=at(camera,self.scene_time,self.camera_translation_scale)
+                scene_time = self.scene_time if edit is None else camera["start"]
+                matrix=at(camera,scene_time,self.camera_translation_scale)
                 if matrix is None:continue
-                edges,origin=geometry(camera,matrix)
+                edges,origin=geometry(camera,matrix,time=scene_time)
+                if edit is not None:
+                    edges, origin, trail = edit.points(edges), edit.points(origin), edit.points(trail)
                 lines3d(edges,'#ffae42',1.4)
                 if len(trail)>1:lines3d(np.stack((trail[:-1],trail[1:]),axis=1),'#a48250',1.)
                 xy,z,_=self.project(origin)
@@ -908,6 +1041,8 @@ class MotionView(ViewportBase):
         # Final independent depth layer: exported bones stay above characters,
         # with the same ordering whether Bone Overlay was on or off previously.
         self.draw_bones(painter,bone_actors)
+        if edit is not None:
+            edit.draw(self, painter)
         if self.show_faces and self.face_archive is not None:
             from .face_overlay import draw_faces
             draw_faces(self,bone_actors,lines3d)
@@ -938,8 +1073,9 @@ class MotionView(ViewportBase):
         painter.drawText(QRectF(15, self.height() - ui_px(43), hint_width, ui_px(17)), Qt.AlignLeft | Qt.AlignVCenter, hint)
         painter.restore()
         painter.setPen(QColor(theme_color("#a8a8a8")))
-        painter.drawText(QRectF(15, self.height() - ui_px(26), self.width() - 30, ui_px(20)), Qt.AlignRight,
-                         f"Grid Y {self.grid_floor:+.3f} m | 20 m | 0.25 / 1 m | Y up")
+        if self.show_grid or self.first_person_hands is None:
+            painter.drawText(QRectF(15, self.height() - ui_px(26), self.width() - 30, ui_px(20)), Qt.AlignRight,
+                             f"Grid Y {self.grid_floor:+.3f} m | 20 m | 0.25 / 1 m | Y up")
         # Six clickable axis endpoints, drawn back to front in camera space.
         _, basis = self.camera()
         origin = QPointF(self.width() - 56, 58)

@@ -12,6 +12,7 @@ saved selection. Only implemented tools appear in the list.
 | MAMMA | Two or more synchronized fixed-camera videos; SMPL-X | Included | [MAMMA](../MAMMA.md) |
 | PromptHMR | One video; fixed or optional moving camera; jointly reconstructed people; SMPL-X | Not generated | [PromptHMR](PROMPTHMR.md) |
 | GEM-X | One fixed-camera video; one primary person; SOMA Native77 | Included | [GEM-X](GEMX.md) |
+| ViDiHand2 (experimental) | One first-person video with hands, camera-driven head and optional arm IK | Included | [ViDiHand2](../FIRST_PERSON_ARMS.md) |
 
 One-video input does not mean one-person output. ExMR, FlowHMR and GVHMR can
 process checked people independently after **Find person**. Without discovery,

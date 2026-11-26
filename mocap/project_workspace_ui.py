@@ -356,6 +356,8 @@ class ModelWorkspace:
             workspace.model_project(root,state['active_model'],state)
             if self.workspace_root is not None and self.workspace_root!=root and not self.busy:
                 self.remember_workspace_model()
+            if self.workspace_root != root:
+                self.clear_first_person_calibration()
             self.clear_mamma_inputs()
             self.workspace_root=root
             self._workspace_camera=None

@@ -211,6 +211,7 @@ class VideoView(QWidget):
         self.keypoints = arrays.get("keypoints")
         confidence = arrays.get("confidence")
         self.confidence = confidence
+        self.first_person_points=arrays.get("first_person_points")
         self.update()
 
     def seek(self, index: int):
@@ -264,6 +265,18 @@ class VideoView(QWidget):
                 if score >= 0.25:
                     painter.setBrush(QColor("#fff6cf"))
                     painter.drawEllipse(QPointF(offset_x + point[0] * ratio, offset_y + point[1] * ratio), 3, 3)
+        first_person=getattr(self,"first_person_points",None)
+        if self.show_observations and first_person is not None and self.index < len(first_person):
+            from .first_person.motion import HAND_PARENTS
+            painter.save()
+            painter.setClipRect(rect)
+            for points,hue in zip(first_person[self.index],("#44c5ec","#f0a04e")):
+                painter.setPen(QPen(QColor(hue),2))
+                for j,parent in enumerate(HAND_PARENTS):
+                    if parent>=0 and np.isfinite(points[[j,parent]]).all():
+                        pair=points[[j,parent]]*[rect.width(),rect.height()]+[rect.x(),rect.y()]
+                        painter.drawLine(QPointF(*pair[0]),QPointF(*pair[1]))
+            painter.restore()
         if self.show_observations and self.projected_overlay is not None:
             self.projected_overlay(painter,rect)
         painter.end()

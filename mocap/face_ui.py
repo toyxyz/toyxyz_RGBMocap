@@ -151,6 +151,8 @@ class FaceWorkspace:
                 self.status.setText('Face tracking unavailable: '+str(error))
 
     def queue_face_after_reconstruction(self):
+        if self.model_choice.currentData()=='vidihand2':
+            return
         if (self.jobs or self.failed or self.cancelled or not self.track_face.isChecked()
                 or not self._batch_has_motion or self.current_stage not in
                 ('export','flow_export','gemx_reconstruct','mamma_publish','prompthmr_publish')):

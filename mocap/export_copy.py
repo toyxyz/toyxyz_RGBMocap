@@ -8,6 +8,7 @@ from .result_artifacts import file_stat
 
 
 def run(request,emit=lambda *a,**k:None):
+    from .first_person.rig import is_project as is_first_person_take
     request=Path(request)
     if request.stat().st_size>4*1024**2:raise ValueError('Export request is too large')
     rows=json.loads(request.read_text(encoding='utf-8'))
@@ -20,6 +21,7 @@ def run(request,emit=lambda *a,**k:None):
             profile=row.get('bvh_profile','generic')
             if profile not in ('generic','biped'):raise ValueError('Unsupported BVH export profile')
             project=Path(row['project']);source=selected_export(project,row['kind']);target=Path(row['target'])
+            if is_first_person_take(project):raise ValueError('Export the ViDiHand2 first-person skeleton as FBX.')
             if target.suffix.lower()!='.bvh':raise ValueError('Choose a BVH destination')
             if source is None or source.resolve()!=Path(row['source']).resolve():raise ValueError('Selected target motion changed. Export again.')
             if source.resolve() in destinations:raise ValueError('An export destination overlaps a committed source file.')

@@ -26,6 +26,9 @@ and [model guides](models/README.md) for setup and required files.
 | `prompthmr` | People count, interaction and camera mode. Moving camera requires the optional PromptHMR camera runtime. |
 | `mamma` | Synchronized camera views with repeated `--camera-video`. Supply saved camera calibration with `--calibration`, or use automatic alignment. |
 
+Run ViDiHand2 reconstruction in the desktop workspace. Its checkpoints
+are available under `models list --workflow vidihand2`. [ViDiHand2 guide](FIRST_PERSON_ARMS.md)
+
 Without `--project`, reconstruction uses the desktop's default project
 location. An existing workspace must match the source video. `--start` and
 `--end` use source-video seconds. `--rife` enables interpolation for eligible

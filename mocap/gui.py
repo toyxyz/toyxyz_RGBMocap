@@ -50,6 +50,11 @@ from .project_workspace_ui import ModelWorkspace
 STAGES.update(mamma_prepare='Prepare Multi-view Videos',mamma_masks='MAMMA Person Masks',mamma_landmarks='MAMMA Surface Landmarks',mamma_camera='MAMMA Cameras',mamma_fit='MAMMA 3D Fit',mamma_publish='MAMMA Motion Correction and Preview')
 STAGES.update(prompthmr_prepare='Prepare PromptHMR Video',prompthmr_track='PromptHMR People and Masks',prompthmr_pose='PromptHMR Camera, Keypoints and Motion',prompthmr_world='PromptHMR Shared World and Post-optimization',prompthmr_publish='PromptHMR Motion Correction and Preview')
 from .gemx_ui import GemXWorkspace
+from .first_person.workspace import FirstPersonWorkspace
+STAGES.update(flow_vidihand_camera='Estimate First-Person Camera',vidihand_track='Track Both Hands / ViDiHand2',
+              vidihand_refit='Apply First-Person Camera Tilt',
+              vidihand_publish='Prepare First-Person Hand and Head Bones',
+              vidihand_arms='Estimate First-Person Arms')
 STAGES['gemx_reconstruct']='Reconstruct Native SOMA / GEM-X'
 STAGES['gemx_correct']='Motion Correction / GEM-X'
 STAGES['save_project']='Save Project As'
@@ -282,6 +287,13 @@ class ModelsDialog(QDialog):
             note.setWordWrap(True)
             note.setOpenExternalLinks(True)
             self.workflow_panel.addWidget(note)
+        elif key == 'vidihand2':
+            note = QLabel(
+                'Download both ViDiHand2 checkpoints or import them. Import MANO Right from the official MANO archive. '
+                'VGGT-Omega is needed for Automatic / Moving camera mode. '
+                'The separate ViDiHand2 runtime can also use existing checkpoints in its own folder.')
+            note.setWordWrap(True)
+            self.workflow_panel.addWidget(note)
         from .sam31_runtime import SUPPORTED
         if key in SUPPORTED:
             note = QLabel('SAM 3.1 is optional. Run Setup_SAM31.cmd with RGB MoCap closed before using it.')
@@ -398,6 +410,8 @@ class ModelsDialog(QDialog):
         self.removable = set()
         for i, model in enumerate(self.models):
             name = model.name + (" (Optional: HTD / 2D)" if self.tool.key == "gvhmr" and model.key == "pva" else "")
+            if self.tool.key == "vidihand2" and model.key == "flow_vggt":
+                name += " (Automatic / Moving)"
             available = ready(model)
             files = self.inspect_model_files(model)
             if files and all(item is not None for item in files):
@@ -570,7 +584,7 @@ from .mamma_ui import MammaWorkspace
 from .prompthmr_ui import PromptHMRWorkspace
 from .preview_export_ui import PreviewExportWorkspace
 
-class MainWindow(PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,StreamWorkspace,FaceWorkspace,QMainWindow):
+class MainWindow(FirstPersonWorkspace,PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,StreamWorkspace,FaceWorkspace,QMainWindow):
     def __init__(self, video: Path | None = None):
         super().__init__()
         self.setWindowTitle("RGB MoCap | Motion Workspace")
@@ -686,12 +700,22 @@ class MainWindow(PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWo
         if tool.key=='flowhmr' and self.flow_sampling.currentData()==-1:required.discard('flow_vggt')
         if tool.key=='mamma' and self.mamma_camera_mode.currentData()=='manual':required.difference_update(('flow_vggt','pear_geocalib'))
         if tool.key=='prompthmr' and self.prompthmr_camera.currentData()=='moving':required.update(STAGE_REQUIREMENTS['prompthmr_camera_assets'])
+        if tool.key=='vidihand2' and self.first_person_camera.currentData()=='automatic':
+            required.update(STAGE_REQUIREMENTS['flow_camera'])
         unavailable = [BY_KEY[key] for key in sorted(required) if not ready(BY_KEY[key])]
         count = len(required) - len(unavailable)
-        text = f"{tool.label} required files ready: {count}/{len(required)}"
+        scope = "managed files" if tool.key == "vidihand2" else "required files"
+        text = f"{tool.label} {scope} ready: {count}/{len(required)}"
         if unavailable:
-            noun = "model" if len(unavailable) == 1 else "models"
-            text += f"\nWarning: {len(unavailable)} required {noun} missing.\nOpen Model Manager to download or import."
+            if tool.key == "vidihand2":
+                if any(model.key == 'flow_vggt' for model in unavailable):
+                    text += "\nAutomatic / Moving requires VGGT-Omega."
+                if any(model.key != 'flow_vggt' for model in unavailable):
+                    text += "\nExisting ViDiHand2 runtime checkpoints can also be used."
+                text += "\nOpen Model Manager to download or import."
+            else:
+                noun = "model" if len(unavailable) == 1 else "models"
+                text += f"\nWarning: {len(unavailable)} required {noun} missing.\nOpen Model Manager to download or import."
         set_appearance_style(self.readiness, "color:#ffb45c; font-weight:600;" if unavailable else "")
         self.readiness.setToolTip(tooltip_text("Missing required models:\n" + "\n".join(model.name for model in unavailable) if unavailable else ""))
         self.readiness.setText(text)
@@ -720,7 +744,12 @@ class MainWindow(PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWo
         character=self.selected_character()
         self.export_action.setText('Export Character...' if character else 'Export...')
         self.export_action.setEnabled(not self.busy and (bool(character.get('takes')) and not character.get('needs_retarget') if character else self.source_export_available()))
-        self.export_action.setToolTip(tooltip_text("Choose a character export format and whether to include its mesh. PMX characters also support VMD motion." if character else "Export the current take or all takes of checked people as FBX, BVH or a portable Blender project."))
+        export_tip = "Export the current take or all takes of checked people as FBX, BVH or a portable Blender project."
+        if character:
+            export_tip = "Choose a character export format and whether to include its mesh. PMX characters also support VMD motion."
+        elif tool.key == 'vidihand2':
+            export_tip = "Export the saved first-person skeleton as FBX."
+        self.export_action.setToolTip(tooltip_text(export_tip))
         self.play_button.setEnabled(self.info is not None and self.video_readable)
         for action in self.open_actions:
             action.setEnabled(not self.busy)
@@ -743,6 +772,7 @@ class MainWindow(PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWo
         self.sync_mamma_controls()
         self.sync_prompthmr_controls()
         self.sync_gemx_controls()
+        self.sync_first_person_controls()
         if hasattr(self,'camera_tools'):self.camera_tools.sync()
 
     def sync_correction_floor_preview(self):
@@ -812,6 +842,7 @@ class MainWindow(PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWo
         self.update_readiness()
 
     def selected_result(self, correction=None):
+        if self.model_choice.currentData()=="vidihand2":return "initial"
         gvhmr=self.model_choice.currentData()=='gvhmr'
         return result_kind(gvhmr and self.htd_refine.isChecked(),gvhmr and self.footmr_refine.isChecked(),
             self.motion_correction.isChecked() if correction is None else correction,
@@ -842,7 +873,7 @@ class MainWindow(PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWo
         if hasattr(self,'camera_tools'):self.camera_tools.canvas.update()
 
     def preview_preparation_available(self):
-        if self.model_choice.currentData()=='gemx':return False
+        if self.model_choice.currentData() in ('gemx','vidihand2'):return False
         if self.project is None or self.busy or self.contact_saving:return False
         if not (self.project/RESULTS[base_result(self.active_result)][0]).is_file():return False
         info=self.contact_tracks.get(base_result(self.active_result),{})
@@ -919,7 +950,10 @@ class MainWindow(PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWo
             self.clear_preview()
             self.reset_people()
             self.motion_view.auto_fit = True
+            self.clear_first_person_calibration()
             self.video_path, self.project, self.info = path, None, None
+            self._restore_arm_lengths_for=None
+            self.restore_arm_lengths()
             self._rife_source_fps = 0
             self.rife_interpolation.setChecked(False)
             self.setWindowTitle('RGB MoCap | Motion Workspace')
@@ -1016,6 +1050,8 @@ class MainWindow(PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWo
         self.stop_playback()
         self.clear_preview()
         self.motion_view.auto_fit = True
+        if not keep_current_options and project != self.project:
+            self.clear_first_person_calibration()
         self.project = project
         camera_background = self.camera_tools.background_options() if keep_current_options else {}
         self.camera_tools.restore_background(camera_background)
@@ -1024,6 +1060,12 @@ class MainWindow(PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWo
         saved_root=storage_root(project,manifest)
         self.setWindowTitle('RGB MoCap | '+(saved_root.name if saved_root else 'Motion Workspace'))
         pipeline = manifest.get("pipeline", {})
+        self._restore_arm_lengths_for=None
+        if pipeline.get("model")=="vidihand2" and not keep_current_options:
+            camera_mode=manifest.get("vidihand_camera_mode","automatic")
+            self.first_person_camera.setCurrentIndex(max(0,self.first_person_camera.findData(camera_mode)))
+            self._restore_arm_lengths_for=project
+            self.restore_arm_lengths()
         pending_result = (self.selected_result() if keep_current_options and
                           pipeline.get('model', 'gvhmr') == self._selected_tool else None)
         from .flow_camera import saved_camera_options
@@ -1110,6 +1152,8 @@ class MainWindow(PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWo
         return True
 
     def seek(self, index):
+        if index and self.motion_view.first_person_camera_edit is not None:
+            self.cancel_first_person_camera_edit()
         self.frame_number.blockSignals(True)
         self.frame_number.setValue(index + 1)
         self.frame_number.blockSignals(False)
@@ -1326,6 +1370,7 @@ class MainWindow(PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWo
         if tool.key=='mamma':return self.run_mamma()
         if tool.key=='prompthmr':return self.run_prompthmr()
         if tool.key=='gemx':return self.run_gemx()
+        if tool.key=='vidihand2':return self.run_first_person()
         if tool.key=='exmr' and self.people_root is not None:
             from .storage import atomic_json
             path=self.people_root/'project.json';state=json.loads(path.read_text(encoding='utf-8'))
@@ -1677,7 +1722,10 @@ class MainWindow(PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWo
         if stage=='gemx_reconstruct':
             self._batch_request=Path(arguments[arguments.index('--request')+1])
         try:
-            command = worker_command(stage, *arguments)
+            if stage in ("vidihand_track","vidihand_refit"):
+                command = self.first_person_command(self.job_project,refit=stage=="vidihand_refit")
+            else:
+                command = worker_command(stage, *arguments)
         except (OSError, ValueError, RuntimeError) as error:
             self.failed=True
             self.log.append(str(error))
@@ -1898,6 +1946,9 @@ class MainWindow(PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWo
             self.status.setText('Cancelling project save...')
             self.cancel_button.setEnabled(False)
             return
+        if self.current_stage in ('vidihand_track','vidihand_refit') and self.process is not None:
+            self.cancel_first_person()
+            return
         from shiboken6 import isValid
         pending=getattr(self,'cancel_process',None)
         if pending is not None and isValid(pending) and pending.state()!=QProcess.NotRunning:
@@ -1941,6 +1992,8 @@ class MainWindow(PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWo
                 self.apply_preview()
 
     def clear_preview(self):
+        if self.motion_view.first_person_camera_edit is not None:
+            self.cancel_first_person_camera_edit()
         self._face_overlay_key=None
         self.motion_view.face_archive=None
         self.motion_view.face_surfaces.clear()
@@ -1999,6 +2052,9 @@ class MainWindow(PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWo
             if not self.busy and signature!=self.preview_signature:self.refresh_results()
             return
         self.video_view.set_observations(data.arrays)
+        if self.model_choice.currentData()=="vidihand2":
+            self.apply_first_person_preview(data)
+            return
         display_kind=self.active_result
         corrected=display_kind.startswith('corrected_')
         native_soma=self.model_choice.currentData()=='gemx'
@@ -2131,6 +2187,11 @@ class MainWindow(PreviewExportWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWo
             self.export_character(self.selected_character());return
         if self.busy or not self.source_export_available():
             self.status.setText('Selected motion is unavailable or has pending correction edits. Apply Correction / Prepare Preview before exporting.');return
+        if self.model_choice.currentData()=="vidihand2":
+            from .person_names import export_stem
+            self._source_export_options={"format":"fbx"}
+            self.export_source_take(self.project,self.current_export(),export_stem("ViDiHand2 Arms"))
+            return
         from .source_export_dialog import SourceExportDialog
         people=self.checked_people() if self.people_state is not None else []
         take_count=sum(len(person.get('takes',[])) for person in self.people_state['people']) if self.people_state else 0

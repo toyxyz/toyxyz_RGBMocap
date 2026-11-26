@@ -45,15 +45,23 @@ def at(camera,time,translation_scale=0.):
         result=result.copy();result[:3,3]-=result[:3,:3]@(camera['displacement'][index]*translation_scale)
     return result
 
+def intrinsics_at(camera,time):
+    track=camera.get('intrinsics_track')
+    if track is None:return camera['K']
+    frame=round((time-camera['start'])*camera['fps'])
+    return track[max(0,min(len(track)-1,frame))]
+
+
 def centers(camera,scale=0.):
     m=camera['matrices'];ids=np.unique(np.linspace(0,len(m)-1,min(len(m),256),dtype=int))
     result=-np.einsum('tji,tj->ti',m[ids,:3,:3],m[ids,:3,3])
     if scale and camera['displacement'] is not None:result+=scale*camera['displacement'][ids]
     return result
 
-def geometry(camera,matrix,depth=.35):
+def geometry(camera,matrix,depth=.35,*,time=None):
     """CV +Z forward/+Y down, transported into the application's Y-up world."""
-    k=camera['K'];w,h=camera['size']
+    k=camera['K'] if time is None else intrinsics_at(camera,time)
+    w,h=camera['size']
     pixels=np.array([[0,0],[w,0],[w,h],[0,h],[w*.32,0],[w*.5,-h*.22],[w*.68,0]])
     local=np.c_[pixels,np.ones(7)]@np.linalg.inv(k).T
     local*=depth/local[:,2,None]
@@ -105,6 +113,33 @@ def load(project,group=None,cancelled=lambda:False,reference_cache=None):
         p=Path(p);dependencies[p]=file_stat(p);return p
     tracked(project/'project.json')
     model=state.get('pipeline',{}).get('model');group=Path(group).resolve() if group else None
+    if model=='vidihand2':
+        from .first_person.motion import TAKE_NAME,Y_UP
+        take=tracked(project/TAKE_NAME)
+        rotations=load_array(take,'camera_to_world')
+        locations=load_array(take,'camera_position')
+        intrinsics=load_array(take,'K')
+        size=load_array(take,'video_size')
+        n=state['frames']
+        if (rotations.shape!=(n,3,3) or locations.shape!=(n,3) or intrinsics.shape!=(n,3,3)
+                or not np.isfinite(intrinsics).all() or (intrinsics[:,[0,1],[0,1]]<=0).any()
+                or not np.allclose(intrinsics[:,2],[0,0,1])):
+            raise ValueError('Saved ViDiHand2 camera does not match this take.')
+        matrices=np.tile(np.eye(4),(n,1,1))
+        world_to_camera=(Y_UP@rotations).swapaxes(-1,-2)
+        matrices[:,:3,:3]=world_to_camera
+        matrices[:,:3,3]=-np.einsum('tij,tj->ti',world_to_camera,locations@Y_UP.T)
+        mode=state.get('vidihand_camera_mode','automatic')
+        note={'automatic':'Estimated VGGT-Omega camera used for the hands and head. Scale can drift.',
+              'fixed':'Fixed camera used for the hands and head.',
+              'manual':'Imported camera calibration used for the hands and head.'}.get(mode,'Saved first-person camera.')
+        item=record('Camera 1',intrinsics[0],size,matrices,state['start'],state['fps'],note)
+        item['intrinsics_track']=intrinsics
+        if cancelled():return None
+        if any(file_stat(path)!=stamp for path,stamp in dependencies.items()):
+            raise ValueError('Camera inputs changed while loading.')
+        return dict(cameras=[item],model=model,note=note,warning='',project=str(project),
+                    static_camera=mode=='fixed',camera_sources={str(path):stamp for path,stamp in dependencies.items()})
     had_scene=(project/'scene_camera.json').exists()
     camera=read_camera(project)
     if camera is None and group is None and model=='flowhmr' and not had_scene:

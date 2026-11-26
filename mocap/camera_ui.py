@@ -6,7 +6,7 @@ from PySide6.QtCore import QThread,Signal,Qt,QPointF
 from PySide6.QtGui import QPainter,QPen,QColor
 from PySide6.QtWidgets import QDoubleSpinBox
 from .viewer import VideoView
-from .camera_tracks import at,load,centers
+from .camera_tracks import at,load,centers,intrinsics_at
 
 BACKGROUND_HELP='Refine saved camera rotation using background features. Only validated corrections up to 2 degrees are applied. Unreliable samples retain the original camera. CPU processing; no motion re-inference or camera-position correction. Off keeps the original tracking.'
 
@@ -70,6 +70,18 @@ def actors(view):
             if 'rig' in take.arrays and take.target_asset is not None and 'parents' in take.target_asset:
                 p,parents=skeleton(take.arrays['rig'][index],take.target_asset)
                 yield p@take.transform[:3,:3].T+take.transform[:3,3],parents,view.scene_colors.get(take.ident,'#ffcf4a')
+    elif view.single_actor_visible and getattr(view,'first_person_hands',None) is not None:
+        from .first_person.motion import HAND_PARENTS
+        if 0<=view.index<len(view.first_person_hands):
+            for side,(points,color) in enumerate(zip(view.first_person_hands[view.index],('#44c5ec','#f0a04e'))):
+                if not np.isfinite(points).all():
+                    continue
+                arms=getattr(view,'first_person_arms',None)
+                arm=arms[view.index,side,:,:3,3] if arms is not None else None
+                if arm is not None and np.isfinite(arm).all():
+                    yield np.vstack((arm,points)),(-1,0,1,*(parent+2 for parent in HAND_PARENTS[1:])),color
+                else:
+                    yield points,HAND_PARENTS,color
     elif view.single_actor_visible and view.target_frames is not None and view.target_asset is not None and 'parents' in view.target_asset:
         if 0<=view.index<len(view.target_frames):
             p,parents=skeleton(view.target_frames[view.index],view.target_asset)
@@ -90,7 +102,7 @@ class CameraCanvas(VideoView):
         # Approximate displacement is a camera-gizmo aid, not a replacement for
         # the saved projection used to inspect the source/correction overlay.
         matrix=at(camera,view.scene_time,0)
-        self.pair=(camera,matrix,list(actors(view)) if ready else [])
+        self.pair=(camera,matrix,intrinsics_at(camera,view.scene_time),list(actors(view)) if ready else [])
         self.frame=source.frame;self.source_size=source.source_size;self.index=source.index;self.update();source.update()
     def paintEvent(self,event):
         super().paintEvent(event)
@@ -132,6 +144,7 @@ class CameraTools:
     def sync(self):
         w=self.w;view=w.motion_view
         native_soma=w.model_choice.currentData()=='gemx'
+        w.mano_overlay.setVisible(w.model_choice.currentData()=='vidihand2' and not self.preview())
         self.scale.setVisible(bool(self.data and view.show_cameras and not self.preview() and any(c['displacement'] is not None for c in self.data['cameras'])))
         item=w.view_choice.model().item(w.view_choice.findText('Camera Preview'))
         if item is not None:item.setEnabled(not native_soma)
@@ -181,6 +194,7 @@ class CameraTools:
     def paint_video_overlay(self,painter,rect):
         source=self.w.video_view
         if source.external_mode:return
+        if self.w.model_choice.currentData()=='vidihand2':return
         if source.frame is not None and self.data is None:
             self.paint_overlay(painter,rect,False);return
         if (source.frame is None or self.canvas.frame is None or self.canvas.index!=source.index
@@ -192,12 +206,12 @@ class CameraTools:
         painter.save()
         try:
             if self.canvas.frame is not None and pair:
-                camera,matrix,paired_actors=pair
+                camera,matrix,k,paired_actors=pair
                 if matrix is None:message='Outside saved camera timing.'
                 else:
                     if labels:message=camera['name']+' | saved camera / displayed source frame'
                     if bones:
-                        painter.setClipRect(rect);k=camera['K'];width,height=camera['size']
+                        painter.setClipRect(rect);width,height=camera['size']
                         for points,parents,color in paired_actors:
                             cam=points@matrix[:3,:3].T+matrix[:3,3]
                             painter.setPen(QPen(QColor(color),2,Qt.SolidLine,Qt.RoundCap))

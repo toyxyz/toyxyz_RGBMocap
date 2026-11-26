@@ -2,7 +2,8 @@
 
 No SDK, Blender runtime, third-party implementation or body data is embedded.
 Node defaults carry the registered rest pose; PreRotation carries its axes.
-Only Hips has animated translation. End markers preserve terminal lengths.
+Humanoid takes animate Hips translation. Tracked joint hierarchies can also
+animate local translations. End markers preserve terminal lengths.
 """
 import struct
 import warnings
@@ -99,20 +100,22 @@ def _arm_bind(names, parents, rest, basis, rest_pose):
 
 def write(path, names, parents, rest, rest_frames, display, tip_local, frames, fps,
           transform=None, progress=lambda *args:None, rig_name='SourceAnimation', prepend_tpose=False,symmetric_bind=None,
-          expected_bones=52, rest_pose=None):
+          expected_bones=52, rest_pose=None, animated_joint_positions=False):
     """Write one committed mapped take; working rotation arrays are one bone wide."""
     from .person_names import validate_name
     rig_name=validate_name(rig_name)
     n=len(frames);parents=np.asarray(parents);rest=np.asarray(rest,float)
     if n<1 or frames.shape!=(n,expected_bones,4,4) or not np.isfinite(fps) or fps<=0:
         raise ValueError('Invalid FBX frame dimensions/timing')
-    if len(names)!=expected_bones or len(set(names))!=expected_bones or names[0]!='Hips' or parents.shape!=(expected_bones,) or parents[0]!=-1:
-        raise ValueError(f'Expected {expected_bones}-bone Hips hierarchy')
+    if (len(names)!=expected_bones or len(set(names))!=expected_bones or parents.shape!=(expected_bones,)
+            or parents[0]!=-1 or (not animated_joint_positions and names[0]!='Hips')):
+        raise ValueError(f'Invalid {expected_bones}-bone FBX hierarchy')
     if any(not name.isascii() or any(c in name for c in ':\0\1') for name in names):
         raise ValueError('Invalid FBX bone name')
     if rest.shape!=(expected_bones,3) or np.shape(rest_frames)!=(expected_bones,3,3) or np.shape(display)!=(expected_bones,3,3) or np.shape(tip_local)!=(expected_bones,3):
         raise ValueError('Invalid FBX rest dimensions')
-    if any(not 0<=parents[j]<j for j in range(1,expected_bones)):
+    first_parent=-1 if animated_joint_positions else 0
+    if any(not first_parent<=parents[j]<j for j in range(1,expected_bones)):
         raise ValueError('Invalid FBX parents')
     for a in (rest,rest_frames,display,tip_local):
         if not np.isfinite(a).all():raise ValueError('Invalid FBX rest data')
@@ -162,7 +165,7 @@ def write(path, names, parents, rest, rest_frames, display, tip_local, frames, f
         objects.append(node('NodeAttribute',2000+j,names[j]+'\0\1NodeAttribute','LimbNode',children=[node('TypeFlags','Skeleton')]))
         link(2000+j,ids[j]);link(ids[j],900 if p<0 else ids[p])
     for j in range(expected_bones):
-        if j in parents:continue
+        if animated_joint_positions or j in parents:continue
         marker=3000+j
         objects.append(node('Model',marker,names[j]+'_end\0\1Model','LimbNode',children=[
             node('Version',232),properties(prop('Lcl Translation','Lcl Translation',*map(float,tip_local[j]),flags='A'))]))
@@ -212,7 +215,7 @@ def write(path, names, parents, rest, rest_frames, display, tip_local, frames, f
             world=np.asarray(frames[:,j,:3,:3],float)@display[j]
             if p<0:
                 local=transform[:3,:3]@world
-                positions=np.asarray(frames[:,0,:3,3],float)@transform[:3,:3].T+transform[:3,3]
+                positions=np.asarray(frames[:,j,:3,3],float)@transform[:3,:3].T+transform[:3,3]
                 if not np.isfinite(positions).all():raise ValueError('Non-finite FBX root')
                 if prepend_tpose:positions=np.concatenate((positions[:1],positions))
                 curves(j,'Lcl Translation',positions)
@@ -221,7 +224,11 @@ def write(path, names, parents, rest, rest_frames, display, tip_local, frames, f
                 local=parent.swapaxes(-1,-2)@world
                 source_parent=np.asarray(frames[:,p,:3,:3],float)@source_display[p]
                 actual=np.einsum('tji,tj->ti',source_parent,np.asarray(frames[:,j,:3,3],float)-frames[:,p,:3,3])
-                if not np.isfinite(actual).all() or np.max(abs(actual-source_offsets[j]))>2e-5:
+                if not np.isfinite(actual).all():
+                    raise ValueError('Non-finite FBX joint offset')
+                if animated_joint_positions:
+                    curves(j,'Lcl Translation',actual)
+                elif np.max(abs(actual-source_offsets[j]))>2e-5:
                     raise ValueError('Non-rigid bone offset in committed source animation')
             if not np.isfinite(local).all():raise ValueError('Non-finite FBX animation')
             if prepend_tpose and rest_pose is None:

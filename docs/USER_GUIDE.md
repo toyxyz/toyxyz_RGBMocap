@@ -13,6 +13,10 @@ video by default and optional moving-camera tracking through a separate
 Interaction Prompt option. It performs its own tracking and does not generate
 animated fingers. Standard correction, retargeting and FBX controls apply.
 
+For first-person video, [ViDiHand2](FIRST_PERSON_ARMS.md) captures hands and
+camera-driven head motion. It uses a separately configured CUDA runtime and
+offers optional arm IK and native skeleton FBX.
+
 ## Character retargeting
 
 Transfer a reconstructed person's motion to a character without running AI
@@ -396,7 +400,7 @@ other PCs; connection speed and storage performance affect the time.
 ### Installed size
 
 The measured model/runtime inventory, plus GeoCalib for automatic MAMMA gravity, totals approximately
-**77.8 GB (72.5 GiB)** with the six offline models and supported add-ons installed
+**77.8 GB (72.5 GiB)** with the six full-body workflows and supported add-ons installed
 and GEM-X CUDA file sharing available.
 Blender and FFmpeg are included. The inventory excludes projects, imported
 characters, exports, caches (including Python bytecode), retained download
@@ -409,7 +413,11 @@ Shared model files and hardlinks are counted once.
 | MAMMA additional files | 6.11 GiB | 3.53 GiB | 9.65 GiB |
 | PromptHMR additional files, Fixed Camera | 6.22 GiB | 6.13 GiB | 12.34 GiB |
 | GEM-X additional files, with CUDA sharing | 2.13 GiB | 7.11 GiB | 9.24 GiB |
-| **Six offline models** | **26.81 GiB** | **45.66 GiB** | **72.46 GiB** |
+| **Six full-body workflows** | **26.81 GiB** | **45.66 GiB** | **72.46 GiB** |
+
+The separate ViDiHand2 runtime and its roughly 6.1 GB of dedicated weights
+are outside this inventory. MANO Right and VGGT-Omega can be shared with
+the installed full-body workflows. [ViDiHand2 setup](FIRST_PERSON_ARMS.md#local-runtime-setup)
 
 The optional [SAM 3.1 tracker](models/SAM31.md#setup) adds about **1.75 GB**
 (**1.63 GiB**) for its checkpoint and about **25 MiB** for the runtime overlay
@@ -428,7 +436,7 @@ download archives can be reused without merging runtimes.
 
 The totals above exclude optional PromptHMR moving-camera support: its verified
 extension measured **18.6 MiB**, plus **1.55 GiB** of DroidCalib/Metric3D weights.
-Including these adds about **1.57 GiB**, bringing the six offline sets to about
+Including these adds about **1.57 GiB**, bringing the six full-body workflows to about
 **74.03 GiB** with GEM-X sharing. Allow a separate
 **6 GiB free during the native camera build**, excluding weights and compiler tools.
 
@@ -593,8 +601,9 @@ runtime is not installed. Opening a project restores its saved model. **Prepare 
 | **MAMMA** | Multi-view capture of human motion and interactions. Needs separate setup and overlapping synchronized views; outside the quality ranking above. | Included. |
 | **PromptHMR** | Can improve relative placement and interactions between multiple people in one video. Fixed Camera is the default; Moving Camera needs optional camera setup. Overall motion quality was lower than ExMR in our subjective tests; contacts and depth can still be wrong. | No finger tracking; fixed neutral pose. |
 | **GEM-X** | Fast processing with relatively low overall motion quality in our tests. One fixed-camera video and one automatically selected primary person. | Included. |
+| **ViDiHand2** (experimental) | One first-person video. Camera-driven head motion and optional shoulder/elbow IK. | Included. |
 
-All six offline models support contact correction and portable Blender bundles.
+All six full-body workflows support contact correction and portable Blender bundles.
 ExMR, FlowHMR and GVHMR offer **Find person** for explicit people selection.
 The tracker selector defaults to **Default**. Choose **SAM 3.1** to use a text
 prompt and optional markers on the displayed video frame. See the
@@ -603,6 +612,11 @@ MAMMA and PromptHMR track people during reconstruction. These five SMPL-based
 models offer a 52-bone overlay and FBX/BVH export. GEM-X uses the 77-bone SOMA
 rig for its overlay and FBX, BVH and Blender exports. See the
 [GEM-X guide](models/GEMX.md) for its setup, correction and retargeting workflow.
+
+For ViDiHand2, use the regular Movie Clip and 3D Viewport. Select a camera mode,
+reconstruct the clip, and adjust the first camera pose with the viewport gizmo.
+**Apply Arm IK** works on saved results and **Auto Arm Length** fits a single
+pair of segment lengths shared by both arms across the take. [ViDiHand2 workflow](FIRST_PERSON_ARMS.md)
 
 ### Treadmill and walking-pad motion
 
@@ -891,7 +905,7 @@ disabled in Low Memory; FlowHMR SAM also uses one-frame batches in that mode.
 
 With Resource Safety enabled, GPU allocator budgets use ComfyUI's external-use margin: 600 MiB on Windows,
 or 700 MiB on GPUs larger than 15 GiB, subtracted from currently free VRAM.
-All six offline model paths use this rule. FlowHMR and ExMR use the same margin. Inference working memory is
+All six full-body workflows use this rule. FlowHMR and ExMR use the same margin. Inference working memory is
 part of the allowed budget. This is not a guarantee of free VRAM: other apps
 and allocations outside PyTorch can still consume it.
 
@@ -993,6 +1007,8 @@ It uses the existing Blender runtime and does not include motion or the human me
 ## FBX and Blender
 
 **File → Export...** opens the options for the selected source model.
+For ViDiHand2, **File → Export...** saves the native first-person skeleton
+as FBX for import into Blender or another animation tool. [ViDiHand2 export behavior](FIRST_PERSON_ARMS.md#arm-ik)
 For SMPL-based motion, choose **FBX (.fbx)**, **BVH (.bvh)** or
 **Blender project + video (.blend)**. The optional leading reference frame defaults off.
 For **FBX profile → Generic / Blender**, choose **Rest pose → T-pose**

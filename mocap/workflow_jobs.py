@@ -44,7 +44,7 @@ def next_job(jobs, project):
     stage, arguments = remaining.pop(0)
     if arguments is None:
         arguments = ['--project', str(project)]
-    elif stage in RESULT_STAGES | {'sam31_people'} and '--project' not in arguments:
+    elif stage in RESULT_STAGES | {'sam31_people','vidihand_arms'} and '--project' not in arguments:
         arguments = ['--project', str(project), *arguments]
     return stage, arguments, remaining
 

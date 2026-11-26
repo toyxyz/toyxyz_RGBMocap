@@ -54,10 +54,12 @@ def write_bvh(path: Path, rest_joints: np.ndarray, root_positions: np.ndarray, l
 
 def export_project(project: Path, result="auto"):
     from .motion_tools import require_supported_project
-    require_supported_project(project)
+    if require_supported_project(project).key=="vidihand2":
+        raise ValueError("Export the ViDiHand2 first-person skeleton as FBX.")
     from .engines import activate, link_models
     import json
-    mamma=json.loads((project/"project.json").read_text(encoding="utf-8")).get("pipeline",{}).get("model")=="mamma"
+    model=json.loads((project/"project.json").read_text(encoding="utf-8")).get("pipeline",{}).get("model")
+    mamma=model=="mamma"
     if not mamma:
         root = activate("GVHMR")
         link_models(root)

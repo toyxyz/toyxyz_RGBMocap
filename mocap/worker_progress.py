@@ -69,6 +69,36 @@ def main():
     if stage=='character':
         from .retarget.worker import main as character_main
         return character_main(sys.argv[2:])
+    if stage=='vidihand_publish':
+        from .first_person.publish import main as publish_first_person
+        return publish_first_person(sys.argv[2:],emit)
+    if stage=='vidihand_arms':
+        from .first_person.arms_worker import main as estimate_first_person_arms
+        return estimate_first_person_arms(sys.argv[2:],emit)
+    if stage=='flow_vidihand_camera':
+        from pathlib import Path
+        import time
+        from .flow_backend import activate, camera
+        from .compute_policy import configure_worker_cpu
+        from .model_session import set_memory_budget
+        from .motion_tools import require_supported_project
+        configure_worker_cpu(stage)
+        started=time.monotonic()
+        try:
+            import torch
+            project=Path(sys.argv[sys.argv.index('--project')+1])
+            if require_supported_project(project).key!='vidihand2':
+                raise ValueError('Expected a ViDiHand2 project for camera estimation.')
+            if not torch.cuda.is_available():
+                raise RuntimeError('Moving camera estimation needs CUDA.')
+            set_memory_budget(*torch.cuda.mem_get_info())
+            activate()
+            output=camera(project,emit)
+        except (OSError,ValueError,RuntimeError,ImportError) as error:
+            emit('failed',stage=stage,message=str(error))
+            return 1
+        emit('complete',stage=stage,output=str(output),elapsed=time.monotonic()-started)
+        return 0
     if stage=='save_project':
         from .project_save import main as save_main
         sys.argv.pop(1)

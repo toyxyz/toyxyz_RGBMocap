@@ -2,6 +2,8 @@
 from argparse import BooleanOptionalAction
 from pathlib import Path
 
+from .motion_tools import MOTION_TOOLS
+
 
 def camera_refinement_flag(parser, help_text):
     parser.add_argument('--refine-camera-rotation', action=BooleanOptionalAction, help=help_text)
@@ -21,7 +23,7 @@ def option_parsers(commands, models, take_flags):
     models_parser = commands.add_parser('models', help='List and manage installed model files.')
     actions = models_parser.add_subparsers(dest='action', required=True)
     listing = actions.add_parser('list')
-    listing.add_argument('--workflow', choices=models)
+    listing.add_argument('--workflow', choices=tuple(MOTION_TOOLS))
     listing.add_argument('--installed', action='store_true')
     json_option(listing)
     for action in ('import','download'):

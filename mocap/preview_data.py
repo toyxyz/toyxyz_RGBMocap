@@ -123,7 +123,7 @@ def project_signature(project):
     """Small publication receipts, shared by the loader and its GUI consumer."""
     project=Path(project)
     names=dict.fromkeys(('tracking.npz','keypoints.npz','soma-result.json','soma-correction.json',
-        'flowhmr_pending.json','flow_camera_sources.json',
+        'flowhmr_pending.json','flow_camera_sources.json','vidihand_take.npz',
         *(value[0] for value in RESULTS.values()),
         *(f'{kind}_{suffix}' for kind in RESULTS for suffix in
           ('joints.npz','mesh.json','sources.json','artifacts.json','correction.json',
@@ -303,6 +303,12 @@ class PreviewDataLoader(QThread):
             result = ProjectPreview(project)
             cancelled = lambda: self.stopping or generation != self.generation
             try:
+                from .first_person.rig import is_project as is_first_person_take, open_preview as open_first_person
+                if is_first_person_take(project):
+                    open_first_person(result, cancelled)
+                    if cancelled():raise LoadCancelled()
+                    self.ready.emit(generation, result)
+                    continue
                 from .gemx_result import is_project, open_preview
                 if is_project(project):
                     open_preview(result, cancelled)

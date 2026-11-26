@@ -34,13 +34,45 @@ class InstalledModelTests(unittest.TestCase):
         self.alias.parent.mkdir(parents=True)
 
     def test_shared_workflows_use_actual_dependencies(self):
-        users = manager.model_consumers(manager.workflow_catalog())
+        catalog = manager.workflow_catalog()
+        users = manager.model_consumers(catalog)
         self.assertEqual(users['flow_sam'], ('flowhmr', 'exmr'))
         self.assertEqual(users['flowhmr'], ('flowhmr',))
-        self.assertEqual(set(users['flow_vggt']), {'flowhmr', 'mamma'})
+        self.assertEqual(set(users['flow_vggt']), {'flowhmr', 'mamma', 'vidihand2'})
+        self.assertEqual(users['vidihand2_vdm'], ('vidihand2',))
+        self.assertEqual(users['vidihand2_projector'], ('vidihand2',))
+        self.assertIn('vidihand2', users['mano_right'])
+        self.assertEqual(catalog['vidihand2'], {
+            'vidihand2_vdm', 'vidihand2_projector', 'mano_right', 'flow_vggt'})
         self.assertEqual(users['pear_geocalib'], ('mamma',))
         self.assertTrue({'pear', 'pear_geometry', 'pear_yolo'}.isdisjoint(users))
         self.assertEqual(set(users['sam31_people']), {'flowhmr', 'exmr', 'gvhmr'})
+
+    def test_vidihand2_official_checkpoints_require_verified_import(self):
+        from dataclasses import replace
+        from hashlib import sha256
+        from mocap.first_person.runtime import command
+
+        key = "vidihand2_projector"
+        model = models.BY_KEY[key]
+        payload = b"example projector"
+        fixture = replace(model, minimum_bytes=len(payload),
+                          expected_sha256=sha256(payload).hexdigest())
+        source = self.external
+        source.write_bytes(payload)
+        settings = dict(mode="native", python="python", upstream=str(self.root))
+        with patch.dict(models.BY_KEY, {key: fixture}):
+            self.assertNotIn("--managed-models", command(settings, "input", None, "out", "cancel"))
+            models.import_model_file(key, source)
+            self.assertTrue(models.ready(fixture))
+            args = command(settings, "input", None, "out", "cancel")
+            import json
+            self.assertEqual(json.loads(args[args.index("--managed-models")+1]),
+                             {key: str(fixture.path)})
+            fixture.path.write_bytes(payload+b"!")
+            self.assertFalse(models.ready(fixture))
+        self.assertIn("/blob/", models.manual_download_page(key))
+        self.assertIn("projector.safetensors", models.manual_instructions_html(key))
 
     def test_removes_known_links_but_keeps_import_source_and_unrelated_files(self):
         atomic_json(self.receipt, {'source': str(self.external)})

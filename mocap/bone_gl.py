@@ -12,11 +12,11 @@ class BoneRenderer(RigRenderer):
         self.vao.bind();self.edge_indices=self.buffer(asset['edges'],QOpenGLBuffer.IndexBuffer)
         self.edge_count=asset['edges'].size;self.indices.bind();self.vao.release()
 
-    def draw(self,*args,color=(.40,.64,.70),**kwargs):
+    def draw(self,*args,color=(.40,.64,.70),edge_color=(.36,.88,1.),**kwargs):
         self.gl.glEnable(0x8037);self.gl.glPolygonOffset(1,1)
         try:super().draw(*args,color=color,**kwargs)
         finally:self.gl.glDisable(0x8037)
-        self.surface.bind();self.surface.setUniformValue('bodyColor',QVector3D(.36,.88,1.))
+        self.surface.bind();self.surface.setUniformValue('bodyColor',QVector3D(*edge_color))
         self.gl.glEnable(0x0B71);self.gl.glDepthFunc(0x0203);self.gl.glDepthMask(False)
         self.vao.bind();self.edge_indices.bind()
         self.gl.glDrawElements(0x1,self.edge_count,0x1405,VoidPtr(0))

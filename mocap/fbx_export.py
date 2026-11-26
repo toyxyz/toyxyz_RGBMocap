@@ -11,6 +11,7 @@ def run(request, emit=lambda *a, **k:None):
     from .blend_support import build, cleanup, partial
     from .fbx_writer import write
     from .gemx_result import is_project
+    from .first_person.rig import is_project as is_first_person_take, export_rig, sampled
     from .scene_export import context
     request=Path(request)
     if request.stat().st_size>4*1024**2:raise ValueError('Export request is too large')
@@ -48,6 +49,27 @@ def run(request, emit=lambda *a, **k:None):
             output=temporary
             work=None
             compatible = row.get('fbx_compatibility', False)
+            if is_first_person_take(project):
+                if compatible or mannequin is not None:
+                    raise ValueError('ViDiHand2 exports its native first-person skeleton.')
+                if source.resolve() in destinations:
+                    raise ValueError('An export destination overlaps the saved take.')
+                stamp=file_stat(source)
+                staged.append((output,target,work))
+                committed.append((project,kind,[source,source],[stamp,stamp],None))
+                names,parents,frames,fps=export_rig(sampled(project))
+                count=len(names)
+                # Keep the forearm bind axis parent-aligned. Importers can
+                # otherwise weld a wrist on the tail and discard its gap keys.
+                bind_axes = frames[0, :, :3, :3].copy()
+                for joint, parent in enumerate(parents):
+                    if parent >= 0 and not names[joint].endswith('UpperArm') and names[joint] != 'Head':
+                        bind_axes[joint] = bind_axes[parent]
+                write(temporary,names,parents,frames[0,:,:3,3],bind_axes,
+                      np.broadcast_to(np.eye(3),(count,3,3)),np.zeros((count,3)),frames,fps,
+                      rig_name=row.get('rig_name','ViDiHand2'),expected_bones=count,
+                      animated_joint_positions=True)
+                continue
             if compatible or mannequin is not None:
                 work=temporary
                 work.mkdir()

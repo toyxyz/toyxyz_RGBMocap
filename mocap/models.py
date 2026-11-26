@@ -111,6 +111,7 @@ from .mamma_models import ASSETS as MAMMA_ASSETS, KEYS as MAMMA_KEYS, INSTRUCTIO
 MODELS_LIST.extend(Model(**entry) for entry in MAMMA_ASSETS)
 from .prompthmr_models import ASSETS as PHMR_ASSETS,KEYS as PHMR_KEYS,CAMERA_KEYS as PHMR_CAMERA_KEYS,INSTRUCTIONS as PHMR_INSTRUCTIONS
 from .gemx_models import ASSETS as GEMX_ASSETS,KEYS as GEMX_KEYS,INSTRUCTIONS as GEMX_INSTRUCTIONS
+from .first_person.assets import ASSETS as VIDIHAND2_ASSETS, KEYS as VIDIHAND2_KEYS
 # Keep the original storage key/path so existing GeoCalib weights and receipts work.
 MODELS_LIST.append(Model(
     'pear_geocalib', 'Scene Gravity / GeoCalib', 'pear/geocalib-pinhole.tar',
@@ -120,12 +121,13 @@ MODELS_LIST.append(Model(
 ))
 MODELS_LIST.extend(Model(**entry) for entry in PHMR_ASSETS)
 MODELS_LIST.extend(Model(**entry) for entry in GEMX_ASSETS)
+MODELS_LIST.extend(Model(**entry) for entry in VIDIHAND2_ASSETS)
 BY_KEY = {model.key: model for model in MODELS_LIST}
 if len(BY_KEY)!=len(MODELS_LIST):raise ValueError('Duplicate model identifiers in the model registry.')
 MANUAL_INSTRUCTIONS = {
     'flow_metadata': 'Download config.json from the root of the supported FlowHMR Hugging Face revision. Auto Download can fetch this small public file. Import the original JSON in this row. This checkpoint metadata is separate from flowhmr_latest/config.yml; do not replace the inference YAML with it.',
     'exmr_config': 'Download config.json using the Supported file link below. It is the official ExMR checkpoint metadata, pinned to the same revision as exmr.safetensors. Return to the ExMR configuration row and click Import. Import the original JSON file without editing or renaming it. Auto Download can obtain this small public file directly.',
-    'mano_right': '1. Open the Recommended download link below, or click Open Download Page. This opens the official download server for the exact archive. Sign in and accept the provider terms; register on the official MANO website if needed.\n2. Download mano_v1_2.zip. If browsing the MANO website instead, this is Models & Code > Models & Code.\n3. Extract the ZIP and open mano_v1_2/models.\n4. Return to Hand Model / MANO Right, click Import and select MANO_RIGHT.pkl. Keep this PKL file intact.\nHandFlow uses a right-hand canonical model for both hands, reflecting the left result back. The separate SMPL-H downloads cannot replace this hand model.',
+    'mano_right': '1. Open the Recommended download link below, or click Open Download Page. This opens the official download server for the exact archive. Sign in and accept the provider terms; register on the official MANO website if needed.\n2. Download mano_v1_2.zip. If browsing the MANO website instead, this is Models & Code > Models & Code.\n3. Extract the ZIP and open mano_v1_2/models.\n4. Return to Hand Model / MANO Right, click Import and select MANO_RIGHT.pkl. Keep this PKL file intact.\nHandFlow and ViDiHand2 use the right-hand model for both hands. The separate SMPL-H downloads cannot replace this hand model.',
     'smplx': '1. Open the SMPL-X download page below. Register or sign in and accept the provider terms.\n2. In the "SMPL-X Model" section, choose "Download SMPL-X v1.1 (NPZ+PKL, 830 MB)". Choose the standard v1.1 download listed above.\n3. Download models_smplx_v1_1.zip and extract the outer ZIP archive.\n4. Inside the extracted folder, open models, then smplx. Choose SMPLX_NEUTRAL.npz. Leave this NPZ file intact.\n5. Return to the Body Model / SMPL-X Neutral row and click Import. Select that single NPZ file; Missing changes to Ready after validation.',
 
     "pva": "Download pvanet.pt using the official Google Drive link below, then import that file here. Google Drive may temporarily limit downloads of this public file. If the limit also affects your browser, retry later. You can import a previously downloaded official copy. The app does not sign in or use account tokens.",
@@ -250,6 +252,7 @@ def manual_instructions_html(key: str) -> str:
 
 
 STAGE_REQUIREMENTS = {
+    'vidihand_track': VIDIHAND2_KEYS,
     'gemx_assets': GEMX_KEYS,
     'gemx_reconstruct': GEMX_KEYS,
     'prompthmr_camera_assets': PHMR_CAMERA_KEYS,
@@ -281,7 +284,7 @@ STAGE_REQUIREMENTS = {
 
 def ready(model: Model) -> bool:
     valid=model.path.is_file() and model.path.stat().st_size >= model.minimum_bytes
-    if valid and (model.key.startswith(('flow','hand','exmr','mamma','phmr','gemx','sam31','rife')) or model.key in ('smplh','mano_right','pear_geocalib')):
+    if valid and (model.key.startswith(('flow','hand','exmr','mamma','phmr','gemx','sam31','rife','vidihand2_')) or model.key in ('smplh','mano_right','pear_geocalib')):
         import json
         try:
             receipt=json.loads(model.path.with_suffix(model.path.suffix+'.receipt.json').read_text(encoding='utf-8'))

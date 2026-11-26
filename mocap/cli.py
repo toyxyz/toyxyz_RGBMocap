@@ -13,7 +13,7 @@ from .motion_tools import MOTION_TOOLS, RESULTS
 from .paths import ROOT
 
 COMMAND_SCHEMA = 1
-OFFLINE_MODELS = tuple(MOTION_TOOLS)
+OFFLINE_MODELS = tuple(key for key in MOTION_TOOLS if key != "vidihand2")
 
 
 def correction_flags(parser):

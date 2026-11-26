@@ -26,10 +26,13 @@ def workflow_catalog():
         if key == 'prompthmr':
             stages = (*stages, 'prompthmr_camera_assets')
         keys = {model for stage in stages for model in STAGE_REQUIREMENTS.get(stage, ())}
+        if key == 'vidihand2':
+            keys.update(STAGE_REQUIREMENTS['flow_camera'])
         if key == 'flowhmr':
             keys.update(('flow_metadata', *MODEL_KEYS))
-        from .rife_video import MODEL_KEY
-        keys.add(MODEL_KEY)
+        if key != 'vidihand2':
+            from .rife_video import MODEL_KEY
+            keys.add(MODEL_KEY)
         catalog[key] = keys
     return catalog
 

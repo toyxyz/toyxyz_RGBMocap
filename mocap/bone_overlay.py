@@ -3,6 +3,8 @@
 Blender's octahedral / joint / outline passes were studied as a visual reference.
 No Blender code or assets are embedded. Geometry never edits motion matrices.
 """
+from functools import lru_cache
+
 import numpy as np
 
 
@@ -144,3 +146,17 @@ def open_preview(project,kind,cancelled=lambda:False):
         except (OSError,ValueError,KeyError) as error:
             asset['bone_warning']='Export bone overlay unavailable: '+str(error)
     return result
+
+
+@lru_cache(maxsize=2)
+def segment_geometry(count):
+    """Reuse the SMPL octahedron for segments whose length changes per frame."""
+    unit=geometry(np.zeros((1,3)),np.array([-1]),np.array([[0.,1.,0.]]),('unit',),count=1)
+    vertices=unit['vertex_count']
+    packed=np.tile(unit['packed'],(count,1,1))
+    packed[:,:,6]=np.arange(count)[:,None]
+    offsets=np.arange(count,dtype=np.uint32)[:,None,None]*vertices
+    return dict(
+        packed=packed.reshape(-1,7),faces=(unit['faces']+offsets).reshape(-1,3),
+        edges=(unit['edges']+offsets).reshape(-1,2),vertex_count=count*vertices,
+        bone_count=count,mode='rig',key=('bone-segments-v1',count),octahedron=unit['octahedra'][0])

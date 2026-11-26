@@ -96,6 +96,7 @@ you use them, after the base installation:
 | MAMMA | `Setup_MAMMA.cmd` | [MAMMA guide](docs/MAMMA.md) |
 | PromptHMR | `Setup_PromptHMR.cmd` | [PromptHMR guide](docs/models/PROMPTHMR.md) |
 | GEM-X | `Setup_GEMX.cmd` | [GEM-X guide](docs/models/GEMX.md) |
+| ViDiHand2 (experimental) | Separate CUDA Python environment | [ViDiHand2 setup and workflow](docs/FIRST_PERSON_ARMS.md#local-runtime-setup) |
 
 MAMMA and PromptHMR require **Visual Studio 2022 C++ Build Tools**, the Windows SDK and
 **CUDA Toolkit 12.8** for local native builds. Close the app and review the
@@ -177,6 +178,7 @@ For scripted reconstruction, export and streaming, see the [command-line guide](
 - Preview and correct GEM-X's native SOMA motion, retarget to humanoid characters, and export the Native77 skeleton as FBX or BVH. The Blender bundle includes the evaluated surface and input video.
 - Save side-by-side input video and the current 3D viewport as MP4 with **File > Export Preview...** (offline models).
 - Inspect source-video/bone alignment in Camera Preview and display saved cameras in 3D, with optional background rotation refinement for FlowHMR/ExMR.
+- Capture hands and camera-driven head motion from first-person video with ViDiHand2. Preview MANO hands, optionally fit arms with IK, and export the first-person skeleton as FBX. [ViDiHand2 guide](docs/FIRST_PERSON_ARMS.md)
 - Save projects with separate results for each AI model.
 - Reduce FlowHMR memory use with query-batched attention and optional sparse hand sampling; optional HaMeR refines fingers. See [controls and trade-offs](docs/models/FLOWHMR.md#controls) and [measured time/memory comparisons](docs/PERFORMANCE.md#flowhmr-query-batches-and-four-frame-hands-2026-11-03).
 - Reduce camera-estimation VRAM with default-on **VGGT-Ω OPT** in FlowHMR and automatic MAMMA calibration. It also works in Low Memory mode. [Measured camera VRAM](docs/PERFORMANCE.md#vggt-camera-memory-with-opt)
@@ -216,13 +218,15 @@ motion quality was lower than **ExMR**. It does not support finger tracking.
 | [MAMMA](https://mamma.is.tue.mpg.de/) · multi-view motion capture | SMPL-X | Included | [MAMMA guide](docs/MAMMA.md) |
 | [PromptHMR](https://github.com/yufu-wang/PromptHMR) | SMPL-X | Not generated | [PromptHMR guide](docs/models/PROMPTHMR.md) |
 | [GEM-X](https://github.com/NVlabs/GEM-X) · fast processing, relatively low motion quality in our tests | SOMA Native77 | Included | [GEM-X guide](docs/models/GEMX.md) |
+| [ViDiHand2](https://github.com/NTUYWANG103/ViDiHand) · first-person capture | Hands and camera-driven head, optional arms | Included | [ViDiHand2 guide](docs/FIRST_PERSON_ARMS.md) |
 
 Requires 64-bit Windows, a compatible NVIDIA GPU/driver and OpenGL 4.3.
 Model files are acquired separately; some require registration and license acceptance.
 
 **Installed models and runtimes:** approximately **77.8 GB (72.5 GiB)** for the
-six offline models, including supported add-ons, Blender and FFmpeg, when the GEM-X CUDA files can be shared. Based on the measured inventory, excluding
+six full-body workflows, including supported add-ons, Blender and FFmpeg, when the GEM-X CUDA files can be shared. Based on the measured inventory, excluding
 projects, caches or retained downloads; shared files are counted once.
+ViDiHand2's separate runtime and checkpoints are outside this inventory.
 
 | Configuration | Runtime | Models | Total |
 | --- | ---: | ---: | ---: |
@@ -230,7 +234,7 @@ projects, caches or retained downloads; shared files are counted once.
 | MAMMA additional files | 6.11 GiB | 3.53 GiB | 9.65 GiB |
 | PromptHMR additional files, Fixed Camera | 6.22 GiB | 6.13 GiB | 12.34 GiB |
 | GEM-X additional files, with CUDA sharing | 2.13 GiB | 7.11 GiB | 9.24 GiB |
-| **Six offline models** | **26.81 GiB** | **45.66 GiB** | **72.46 GiB** |
+| **Six full-body workflows** | **26.81 GiB** | **45.66 GiB** | **72.46 GiB** |
 
 If GEM-X cannot share the verified CUDA DLLs, add about **2.95 GiB**.
 

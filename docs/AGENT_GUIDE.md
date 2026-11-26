@@ -78,6 +78,34 @@ offloads transformer blocks while keeping the selected precision and samples.
 Use the paired camera-stage measurements when describing VRAM savings.
 [VGGT OPT measurements in both resource modes](PERFORMANCE.md#vggt-camera-memory-with-opt)
 
+## ViDiHand2 first-person capture
+
+Select ViDiHand2 in the standard workspace. ExMR is the initial model.
+ViDiHand2 hand inference uses a separately configured CUDA runtime. Keep
+its native or WSL worker isolated from installed full-body workers.
+[ViDiHand2 setup and workflow](FIRST_PERSON_ARMS.md)
+Model Manager verifies the pinned ViDiHand2 video backbone and projector,
+and shares MANO Right with the body workflows. The worker reads managed
+assets directly on native and WSL installations, with a per-file fallback
+to the separately configured runtime's existing checkpoints. Keep these
+weights, MANO files, generated caches and optional shoulder-prior weights local.
+**Arm IK** is optional. It uses the saved camera and hands, applies image
+guidance, joint limits and elbow swivel smoothing, then atomically records
+the arm track in the same take. Auto Arm Length compares candidate fits
+across the take with fixed lengths shared by both arms. Prioritize valid
+elbow coverage, honor anatomical limits and preserve the tracked wrist
+positions. Check the solver without the optional local shoulder prior.
+The viewport and native FBX use the saved ViDiHand2 hands and camera-driven
+head. Version 1 caches already contain hand observations. Hold each
+hand's last world-space pose through tracking gaps. Validate the FBX by
+reimporting in Blender, including wrist keys and the hierarchy on missing-arm
+frames. BVH, body retargeting, portable Blender bundles and streaming are
+full-body workflows.
+The viewport skins the locally prepared MANO template to the same hand bones.
+Keep the preview template in the local setup cache and out of saved takes.
+Adjust Camera rigidly moves the saved camera, world-space hands and any arms together.
+Keep camera-space observations unchanged when aligning the first camera pose.
+
 ## Models and model files
 
 The unified Model Manager builds its workflow tabs and **Used by** labels from
@@ -951,6 +979,7 @@ The app uses separate runtime profiles to maintain compatibility, with bounded b
 - Model selection and loading: `mocap/motion_tools.py`, `models.py`, `model_guide.py`; worker routing and runtimes: `worker.py`, `worker_progress.py`, `runtime_registry.py`, `compute_policy.py`.
 - MAMMA inputs/UI: `mocap/mamma_inputs.py`, `mamma_ui.py`; processing: `mamma_pipeline.py`, `mamma_camera.py`, `mamma_publish.py`, `mamma_body.py`; runtime/assets: `mamma_runtime.py`, `mamma_manager.py`, `mamma_models.py`, `installer/mamma-runtime-lock.json`, `tools/setup_mamma.py`. Follow [the native-build runbook](MAMMA_AGENT_SETUP.md) instead of guessing module build commands.
 - PromptHMR UI/pipeline: `mocap/prompthmr_ui.py`, `prompthmr_pipeline.py`, `prompthmr_cache.py`, `prompthmr_publish.py`, `prompthmr_scene.py`; runtime/assets: `prompthmr_runtime.py`, `prompthmr_manager.py`, `prompthmr_models.py`, `prompthmr_worker_boot.py`, `installer/prompthmr-runtime-lock.json`, `installer/prompthmr_adapters.py`, `installer/verify_prompthmr.py`, `tools/setup_prompthmr.py`. Follow the separate setup/verification steps above.
+- ViDiHand2: `mocap/first_person/` owns runtime configuration, tracking, arm IK, camera alignment and the saved rig. Check the regular workspace, Model Manager and native FBX when changing the take format. [ViDiHand2 verification guidance](#vidihand2-first-person-capture)
 - Project storage: `project_storage.py`, `project_workspace.py`, `project_save.py`; contact correction: `correction.py`, `contact_trajectory.py`, `contact_pose_plan.py`, `contact_arm_plan.py`.
 - Source mesh / bone fit and preview: `source_animation.py`, `source_surface.py`, `surface_roll.py`, `preview_data.py`, `viewer.py`, `viewport.py`; source export: `fbx_export.py`, `fbx_writer.py`, `scene_export.py`.
 - Character pipeline: `mocap/retarget/` plus `character_data.py` and `character_ui.py`; Blender backend and model-specific constraints must be considered separately from source-person export.

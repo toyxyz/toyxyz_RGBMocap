@@ -54,6 +54,11 @@ def remember(controls, key, kept=None):
 
 
 def runtime_ready(model):
+    if model=='vidihand2':
+        from .first_person.runtime import load_settings
+        try:load_settings()
+        except (OSError,ValueError,TypeError):return False
+        return True
     if model not in OPTIONAL_RUNTIMES:return True
     from importlib import import_module
     try:import_module('.' + model + '_runtime', __package__).configuration()

@@ -18,6 +18,7 @@ BENCHMARKS = {
     'gemx': ('9.8s<br>1 video<br>1 person', '1m 44s', '3.48', '—'),
 }
 PROJECT_URLS = {
+    'vidihand2': 'https://github.com/NTUYWANG103/ViDiHand',
     'prompthmr': 'https://github.com/yufu-wang/PromptHMR',
     'mamma': 'https://mamma.is.tue.mpg.de/',
     'gvhmr': 'https://github.com/zju3dv/GVHMR',
@@ -26,6 +27,7 @@ PROJECT_URLS = {
     'gemx': 'https://github.com/NVlabs/GEM-X',
 }
 DESCRIPTIONS = {
+    'vidihand2': 'Tracks both hands and fingers in first-person video. Camera motion places the hands in 3D space and drives the head. See docs/FIRST_PERSON_ARMS.md.',
     'prompthmr': 'Reconstructs multiple people together from one video. In our subjective tests, it could give more accurate relative placement and interactions, but overall motion quality was lower than ExMR. Contacts, depth and intersections can still be wrong. Fixed Camera is the default; optional Moving Camera uses masked DroidCalib + Metric3D, with a separate camera build and two additional models. Estimated tracking/scale can drift. People defaults to 2; 0 detects automatically, up to 8. Find person is not needed. Interaction Prompt defaults on; off follows the official default video path. Body motion uses SMPL-X. No finger tracking; untracked fingers use a fixed neutral pose. Supports the usual optional foot/hand contact correction, retargeting and FBX/BVH/Blender export. Requires Setup_PromptHMR.cmd and separate weights. Non-commercial scientific research license. See docs/models/PROMPTHMR.md.',
     'mamma': 'Multi-view reconstruction of one or several people from two or more synchronized fixed-camera videos of the same performance. No fixed camera-count maximum; practical capacity depends on available RAM and VRAM. Detects people automatically; Find person is not needed. Uses SAM 2.1 masks and FP32 landmarks. Automatic cameras combine VGGT-Omega placement with GeoCalib background gravity before 3D fitting; manual calibration bypasses both. GeoCalib uses the base Flow support overlay and a shared checkpoint in Model Manager. Unreliable gravity needs manual calibration or clearer views; it does not fall back to the person as a vertical reference. Body and finger motion, original results and contact-corrected results are preserved. Best suited to views that complement each other; occlusion and bad masks can cause errors. Slower than single-video methods. Requires the separate Setup_MAMMA.cmd runtime and registered restricted-use models. See Model Manager > Runtime Setup and docs/MAMMA.md.',
     'gvhmr': 'Lowest overall motion quality in our tests, but sometimes better for unusual poses such as backflips. '
