@@ -81,13 +81,16 @@ Use the paired camera-stage measurements when describing VRAM savings.
 ## ViDiHand2 first-person capture
 
 Select ViDiHand2 in the standard workspace. ExMR is the initial model.
-ViDiHand2 hand inference uses a separately configured CUDA runtime. Keep
-its native or WSL worker isolated from installed full-body workers.
+`Setup_ViDiHand2.cmd` verifies CUDA and obtains the pinned source in
+`.setup/vidihand2-source/`. The default worker activates the installed
+FlowHMR profile in its own process. Keep the Chumpy compatibility aliases
+scoped to that process and leave installed package files intact. Explicit
+external Windows or WSL settings take precedence and survive this setup.
 [ViDiHand2 setup and workflow](FIRST_PERSON_ARMS.md)
 Model Manager verifies the pinned ViDiHand2 video backbone and projector,
 and shares MANO Right with the body workflows. The worker reads managed
-assets directly on native and WSL installations, with a per-file fallback
-to the separately configured runtime's existing checkpoints. Keep these
+assets directly on Windows and WSL, with a per-file fallback to an external
+installation's existing checkpoints. Keep these
 weights, MANO files, generated caches and optional shoulder-prior weights local.
 **Arm IK** is optional. It uses the saved camera and hands, applies image
 guidance, joint limits and elbow swivel smoothing, then atomically records

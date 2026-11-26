@@ -1,7 +1,7 @@
 # ViDiHand2 first-person hands, head and optional arms
 
 ViDiHand2 is an experimental desktop workflow for first-person hand and head
-capture. Set up the dedicated CUDA environment and model files below. Then
+capture. Prepare the ViDiHand2 source and model files below. Then
 choose **ViDiHand2** in **AI Motion Model**, open a first-person video, choose
 a camera mode and select **Reconstruct 3D**. Start with a short clip. The worker
 limits the decoded RGB sequence to 2 GiB, and CUDA memory requirements vary
@@ -95,17 +95,27 @@ bones and animation keys and can be imported into Blender.
 
 ## Local runtime setup
 
-Run RGB MoCap's `install.cmd` for its base Windows components. Create a
-separate Python 3.10 CUDA environment for ViDiHand2 and install the upstream
-requirements there. The Windows app was verified with the worker in WSL 2
-and upstream revision `23cf80c292f2fb2db20caa1dee96516a63ee30a7`.
-The runtime configuration and the external environment stay local when updating RGB MoCap.
-[Official ViDiHand installation](https://github.com/NTUYWANG103/ViDiHand/tree/23cf80c292f2fb2db20caa1dee96516a63ee30a7#installation)
+1. Run `install.cmd` to prepare the standard Windows components.
+2. Close RGB MoCap and run `Setup_ViDiHand2.cmd`. It fetches the pinned
+   ViDiHand2 source and checks CUDA using the installed FlowHMR runtime.
+3. Open RGB MoCap and prepare the checkpoints in **Model Manager > ViDiHand2**.
 
-Create `.setup/first-person-arms.json` in the RGB MoCap installation. For
-WSL, use the distro name shown by `wsl --list --verbose` and absolute paths
-inside that distro. Confirm `torch.cuda.is_available()` returns `True`
-with the configured Python.
+The default Windows worker shares the installed Python, PyTorch and CUDA
+packages with FlowHMR. Setup obtains only the upstream source. The pinned
+source and local settings stay in `.setup/` when updating RGB MoCap.
+[Official ViDiHand source](https://github.com/NTUYWANG103/ViDiHand/tree/23cf80c292f2fb2db20caa1dee96516a63ee30a7)
+
+### Optional external runtime
+
+An existing `.setup/first-person-arms.json` still selects its external
+Windows or WSL environment. To switch to the shared Windows runtime,
+back up the file and set its contents to `{"mode": "managed"}`.
+
+For an external WSL runtime, use the distro name shown by
+`wsl --list --verbose` and absolute paths inside that distro. Install the
+upstream requirements in that environment and confirm
+`torch.cuda.is_available()` returns `True`.
+[Official ViDiHand installation](https://github.com/NTUYWANG103/ViDiHand/tree/23cf80c292f2fb2db20caa1dee96516a63ee30a7#installation)
 
 ~~~json
 {
@@ -127,9 +137,8 @@ and repository paths for native mode.
 }
 ~~~
 
-Review the upstream model and MANO terms for your intended use. The installer
-provides the integration code. The external runtime and weights are acquired
-separately.
+Review the upstream model and MANO terms for your intended use. The
+checkpoints are obtained separately through Model Manager.
 
 ## Model Manager
 

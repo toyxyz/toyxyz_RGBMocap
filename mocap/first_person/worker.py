@@ -1,4 +1,4 @@
-"""Run an externally installed ViDiHand2 runtime and commit a hand and camera take."""
+"""Run ViDiHand2 inference and commit a hand and camera take."""
 from __future__ import annotations
 
 import argparse

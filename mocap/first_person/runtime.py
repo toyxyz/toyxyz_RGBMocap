@@ -1,4 +1,6 @@
-"""Launch a separately installed ViDiHand2 worker without changing base runtimes."""
+"""Launch ViDiHand2 with the installed FlowHMR profile or an external runtime."""
+import builtins
+import importlib
 from pathlib import Path
 import json
 import re
@@ -6,10 +8,19 @@ import re
 
 ROOT = Path(__file__).resolve().parents[2]
 SETTINGS = ROOT / ".setup" / "first-person-arms.json"
+SOURCE_URL = "https://github.com/NTUYWANG103/ViDiHand.git"
+SOURCE_REVISION = "23cf80c292f2fb2db20caa1dee96516a63ee30a7"
 NATIVE = """import os,runpy,sys
+from pathlib import Path
 os.environ.setdefault("OPENBLAS_NUM_THREADS","2")
 os.environ.setdefault("OMP_NUM_THREADS","4")
-sys.path.insert(0,sys.argv.pop(1))
+root=Path(sys.argv.pop(1))
+sys.path.insert(0,str(root))
+if sys.argv.pop(1) == "managed":
+    from mocap.runtime_registry import activate
+    from mocap.first_person.runtime import load_chumpy
+    activate(root,"flow")
+    load_chumpy()
 runpy.run_module('mocap.first_person.worker',run_name='__main__')
 """
 WSL = """import json,os,runpy,subprocess,sys
@@ -29,11 +40,54 @@ runpy.run_module('mocap.first_person.worker',run_name='__main__')
 """
 
 
-def load_settings(path=SETTINGS):
-    data = json.loads(path.read_text(encoding="utf-8-sig"))
+def source_path(root):
+    return root / ".setup" / "vidihand2-source" / SOURCE_REVISION
+
+
+def source_ready(path):
+    return all((path / name).is_file() for name in (
+        "vidihand_v2/inference.py", "vidihand_v2/config.yaml", "utils/io.py", "utils/mano.py"))
+
+
+def managed_settings(root):
+    from ..runtime_registry import PROFILES
+
+    profile = PROFILES["flow"]
+    python = root / PROFILES[profile["base"]]["folder"] / "python.exe"
+    if not python.is_file() or not (root / profile["folder"]).is_dir():
+        raise FileNotFoundError("Run install.cmd to prepare the shared FlowHMR runtime for ViDiHand2.")
+    upstream = source_path(root)
+    if not source_ready(upstream):
+        raise FileNotFoundError("Run Setup_ViDiHand2.cmd to prepare the ViDiHand2 source.")
+    return {"mode": "managed", "python": str(python), "upstream": str(upstream)}
+
+
+def load_chumpy():
+    """Provide the legacy aliases only while MANO's pickle dependency initializes."""
+    import numpy as np
+
+    aliases = {name: getattr(builtins, name) for name in ("bool", "int", "float", "complex", "object", "str")}
+    aliases["unicode"] = str
+    added = aliases.keys() - vars(np).keys()
+    try:
+        for name in added:
+            setattr(np, name, aliases[name])
+        importlib.import_module("chumpy")
+    finally:
+        for name in added:
+            delattr(np, name)
+
+
+def load_settings(path=SETTINGS, *, root=ROOT):
+    try:
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
+    except FileNotFoundError:
+        return managed_settings(root)
     if not isinstance(data,dict):
         raise ValueError("Expected a ViDiHand2 runtime settings object.")
     mode = data.get("mode","native")
+    if mode == "managed":
+        return managed_settings(root)
     for name in ("python","upstream"):
         value = data.get(name)
         if not isinstance(value,str) or not value.strip():
@@ -52,11 +106,15 @@ def load_settings(path=SETTINGS):
 
 
 def command(settings,video,camera,output,cancel,camera_start=0.,camera_tilt=0.,refit_from=None):
-    wsl=settings.get("mode")=="wsl"
+    mode = settings.get("mode", "native")
+    wsl = mode == "wsl"
     prefix=(["wsl.exe","--distribution",settings["distribution"],"--exec",settings["python"]]
             if wsl else [settings["python"]])
-    values=["-I","-X","utf8","-c",WSL if wsl else NATIVE,str(ROOT),"--upstream",settings["upstream"],
-            "--video",str(video),"--output",str(output),"--cancel",str(cancel)]
+    values=["-I","-X","utf8","-B","-c",WSL if wsl else NATIVE,str(ROOT)]
+    if not wsl:
+        values.append(mode)
+    values+=["--upstream",settings["upstream"],"--video",str(video),
+             "--output",str(output),"--cancel",str(cancel)]
     if camera is not None:
         values+=["--camera",str(camera),"--camera-start",str(camera_start)]
     if camera_tilt:

@@ -163,8 +163,12 @@ class FirstPersonWorkspace:
             return
         try:
             load_settings()
+        except FileNotFoundError as error:
+            self.status.setText(str(error))
+            self.log.append(str(error))
+            return
         except (OSError,ValueError) as error:
-            self.status.setText("Configure the ViDiHand2 runtime first. See docs/FIRST_PERSON_ARMS.md.")
+            self.status.setText("Check ViDiHand2 setup. See docs/FIRST_PERSON_ARMS.md.")
             self.log.append(str(error))
             return
         mode=self.first_person_camera.currentData()

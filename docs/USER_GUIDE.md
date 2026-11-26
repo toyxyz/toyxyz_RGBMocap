@@ -13,9 +13,9 @@ video by default and optional moving-camera tracking through a separate
 Interaction Prompt option. It performs its own tracking and does not generate
 animated fingers. Standard correction, retargeting and FBX controls apply.
 
-For first-person video, [ViDiHand2](FIRST_PERSON_ARMS.md) captures hands and
-camera-driven head motion. It uses a separately configured CUDA runtime and
-offers optional arm IK and native skeleton FBX.
+For first-person video, ViDiHand2 captures hands and camera-driven head motion.
+Run `Setup_ViDiHand2.cmd` to prepare its source for the installed FlowHMR
+runtime. It offers optional arm IK and native skeleton FBX. [ViDiHand2 guide](FIRST_PERSON_ARMS.md)
 
 ## Character retargeting
 
@@ -415,9 +415,9 @@ Shared model files and hardlinks are counted once.
 | GEM-X additional files, with CUDA sharing | 2.13 GiB | 7.11 GiB | 9.24 GiB |
 | **Six full-body workflows** | **26.81 GiB** | **45.66 GiB** | **72.46 GiB** |
 
-The separate ViDiHand2 runtime and its roughly 6.1 GB of dedicated weights
-are outside this inventory. MANO Right and VGGT-Omega can be shared with
-the installed full-body workflows. [ViDiHand2 setup](FIRST_PERSON_ARMS.md#local-runtime-setup)
+ViDiHand2 reuses the installed FlowHMR runtime. Its roughly 6.1 GB of
+dedicated weights are outside this inventory. MANO Right and VGGT-Omega can
+be shared with other workflows. [ViDiHand2 setup](FIRST_PERSON_ARMS.md#local-runtime-setup)
 
 The optional [SAM 3.1 tracker](models/SAM31.md#setup) adds about **1.75 GB**
 (**1.63 GiB**) for its checkpoint and about **25 MiB** for the runtime overlay

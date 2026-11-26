@@ -96,7 +96,7 @@ you use them, after the base installation:
 | MAMMA | `Setup_MAMMA.cmd` | [MAMMA guide](docs/MAMMA.md) |
 | PromptHMR | `Setup_PromptHMR.cmd` | [PromptHMR guide](docs/models/PROMPTHMR.md) |
 | GEM-X | `Setup_GEMX.cmd` | [GEM-X guide](docs/models/GEMX.md) |
-| ViDiHand2 (experimental) | Separate CUDA Python environment | [ViDiHand2 setup and workflow](docs/FIRST_PERSON_ARMS.md#local-runtime-setup) |
+| ViDiHand2 (experimental) | `Setup_ViDiHand2.cmd` (source only, reuses FlowHMR) | [ViDiHand2 setup and workflow](docs/FIRST_PERSON_ARMS.md#local-runtime-setup) |
 
 MAMMA and PromptHMR require **Visual Studio 2022 C++ Build Tools**, the Windows SDK and
 **CUDA Toolkit 12.8** for local native builds. Close the app and review the
@@ -226,7 +226,8 @@ Model files are acquired separately; some require registration and license accep
 **Installed models and runtimes:** approximately **77.8 GB (72.5 GiB)** for the
 six full-body workflows, including supported add-ons, Blender and FFmpeg, when the GEM-X CUDA files can be shared. Based on the measured inventory, excluding
 projects, caches or retained downloads; shared files are counted once.
-ViDiHand2's separate runtime and checkpoints are outside this inventory.
+ViDiHand2 reuses the installed FlowHMR runtime. Its source and checkpoints
+are outside this inventory.
 
 | Configuration | Runtime | Models | Total |
 | --- | ---: | ---: | ---: |

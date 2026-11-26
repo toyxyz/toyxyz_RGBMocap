@@ -2,14 +2,62 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
 from mocap.first_person.arm_ik import estimate_lengths
-from mocap.first_person.runtime import load_settings
+from mocap.first_person.runtime import command, load_chumpy, load_settings, source_path
 
 
 class FirstPersonTests(unittest.TestCase):
+    def test_managed_settings_use_the_flow_profile_and_pinned_source(self):
+        with TemporaryDirectory() as folder:
+            root = Path(folder)
+            settings = root / ".setup" / "first-person-arms.json"
+            with self.assertRaisesRegex(FileNotFoundError, "install.cmd"):
+                load_settings(settings, root=root)
+            python = root / "runtime" / "python.exe"
+            python.parent.mkdir()
+            python.touch()
+            (root / "runtime_flow").mkdir()
+            with self.assertRaisesRegex(FileNotFoundError, "Setup_ViDiHand2.cmd"):
+                load_settings(settings, root=root)
+
+            source = source_path(root)
+            for name in ("vidihand_v2/inference.py", "vidihand_v2/config.yaml", "utils/io.py", "utils/mano.py"):
+                entry = source / name
+                entry.parent.mkdir(parents=True, exist_ok=True)
+                entry.touch()
+            managed = load_settings(settings, root=root)
+            self.assertEqual(managed, {"mode": "managed", "python": str(python), "upstream": str(source)})
+            options = command(managed, Path("clip.mp4"), None, Path("out.npz"), Path("cancel"),
+                              refit_from=Path("old.npz"))
+            self.assertEqual(options[0], str(python))
+            self.assertEqual(options[options.index("--upstream") - 1], "managed")
+
+            settings.write_text(json.dumps({"mode":"wsl", "distribution":"Ubuntu",
+                                            "python":"/venv/bin/python", "upstream":"/src/ViDiHand"}),
+                                encoding="utf-8")
+            self.assertEqual(load_settings(settings, root=root)["mode"], "wsl")
+            settings.write_text('{"mode":"managed"}', encoding="utf-8")
+            self.assertEqual(load_settings(settings, root=root), managed)
+
+    def test_chumpy_import_preserves_existing_numpy_aliases(self):
+        keys = ("bool", "int", "float", "complex", "object", "str", "unicode")
+        before = {key: vars(np)[key] for key in keys if key in vars(np)}
+
+        def import_chumpy(name):
+            self.assertEqual(name, "chumpy")
+            for alias in keys:
+                self.assertIn(alias, vars(np))
+            raise ImportError("broken dependency")
+
+        with patch("mocap.first_person.runtime.importlib.import_module", side_effect=import_chumpy):
+            with self.assertRaisesRegex(ImportError, "broken dependency"):
+                load_chumpy()
+        self.assertEqual({key: vars(np)[key] for key in keys if key in vars(np)}, before)
+
     def test_cli_lists_first_person_models(self):
         from mocap.cli import parser
 
