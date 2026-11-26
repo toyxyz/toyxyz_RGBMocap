@@ -95,6 +95,9 @@ class SimpleVO:
         for frame in tqdm(frames[1:], desc="Visual odometry", disable=not self.progress):
             prev, features = features, self._features(frame)
             pts0, pts1 = _match(prev, features)
+            if len(pts0) < options.min_num_inliers:
+                T_w2c.append(T_w2c[-1].copy())
+                continue
             matches = np.stack([np.arange(len(pts0)), np.arange(len(pts0))], axis=-1)
             answer = pycolmap.estimate_calibrated_two_view_geometry(
                 camera, pts0.astype(np.float64), camera, pts1.astype(np.float64),
@@ -116,8 +119,15 @@ def _match(features0, features1):
     """FLANN matches of two images' SIFT features with Lowe's ratio test -> (N, 2), (N, 2)
     float32 points."""
     (kp0, des0), (kp1, des1) = features0, features1
+    if des0 is None or des1 is None or len(des0) < 2 or len(des1) < 2:
+        empty = np.empty((0, 2), dtype=np.float32)
+        return empty, empty
     flann = cv2.FlannBasedMatcher(dict(algorithm=1, trees=5), dict(checks=50))  # KD-tree
-    good = [m for m, n in flann.knnMatch(des0, des1, k=2) if m.distance < 0.7 * n.distance]
+    good = [
+        pair[0]
+        for pair in flann.knnMatch(des0, des1, k=2)
+        if len(pair) == 2 and pair[0].distance < 0.7 * pair[1].distance
+    ]
     pts0 = np.float32([kp0[m.queryIdx].pt for m in good]).reshape(-1, 2)
     pts1 = np.float32([kp1[m.trainIdx].pt for m in good]).reshape(-1, 2)
     return pts0, pts1
