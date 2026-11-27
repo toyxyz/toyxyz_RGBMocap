@@ -34,6 +34,8 @@ private:
     FQuat Alignment = FQuat::Identity;
     double Gain = 1.;
     int32 SP = INDEX_NONE, TP = INDEX_NONE;
+    int32 ClavicleTargets[2]{INDEX_NONE, INDEX_NONE};
+    FQuat ClavicleReferences[2]{FQuat::Identity, FQuat::Identity};
     int32 SL[2][4]{}, TL[2][4]{};
     double Lengths[2][2]{};
     FVector Markers[2][2];

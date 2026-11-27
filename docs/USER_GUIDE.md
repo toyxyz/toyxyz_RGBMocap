@@ -44,6 +44,11 @@ above both. **Name** shows the list name above each visible person or character,
 including characters still in their rest pose. Names stay upright and the same
 screen size; crowded labels are separated. These controls change the preview only.
 
+When retargeting SMPL-family motion, the target's clavicles follow the
+captured movement relative to the chest. A target with lower rest arms can
+receive a small clavicle lift based on the two rigs' rest angles. After
+updating, run **Retarget** again to apply the change to a saved character.
+
 Retargeting uses the selected source motion and its applied contact timings.
 **Apply Correction** also refreshes characters linked to the corrected source,
 including hidden characters. After other source changes, run **Retarget** again.

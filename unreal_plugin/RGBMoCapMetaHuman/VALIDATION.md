@@ -1,5 +1,18 @@
 # Verification scope
 
+## 0.5.1 clavicle rest calibration
+
+The offline measurement used a 495-frame FlowHMR take with a T-pose Mixamo
+target and a 2,267-frame take with an A-pose PMX target. Blender baked both.
+The T-pose result matched the previous chest-relative transfer. The A-pose
+target received about 3.2 degrees of reference lift. In both takes the tested
+pelvis, spine and leg joint positions matched the baseline.
+
+A UE 5.8.4 commandlet compared 248 saved poses on each stock mannequin and
+a T-pose control. The geometry-derived lift was about 7.9 degrees for Manny
+and 7.1 degrees for Quinn. A 12-degree one-sided shrug remained 12 degrees.
+The T-pose control and tested leg channels matched the baseline.
+
 ## Prebuilt Windows bundles
 
 Clean app and Unreal projects loaded the paired archives on Epic Games Launcher

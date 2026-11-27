@@ -3,7 +3,7 @@ import os,time,json
 from pathlib import Path
 import numpy as np
 from . import solver as m, stabilize as stab, surface, measured as t, foot_calibration
-from .calibration import desired,reorient_pose
+from .calibration import clavicle_rotations,desired,reorient_pose
 
 def run(folder,kind):
  original_safe=m.source_safe_reach;original_two=m.two_bone
@@ -31,6 +31,7 @@ def _run(folder,kind):
  root=source['points'][:,0]*ratio;root[:,1]+=rest[0,1]-source['rest'][0,1]*ratio;p,w=m.fk(local,rest,root)
  raw=dict(local=local,root=root,points=p,world=w,rest=rest,names=target['names'],ratio=ratio,**cal)
  base,_=m.characterize(raw,raw,source,native);want=desired(source['world'],neutral,rest)
+ base['world'][:,[13,14]]=clavicle_rotations(source['world'],neutral,base['world'][:,9],source['rest'],rest)
  for j in [1,2,4,5]:base['world'][:,j]=want[:,j]
  base['local']=m.local_from_world(base['world']);base['points'],base['world']=m.fk(base['local'],rest,base['root'])
  # Store a rotation-only control before contact correction, same calibration.

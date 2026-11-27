@@ -19,7 +19,7 @@ remains available.
 3. Open the project and enable **RGB MoCap Connect**, **Live Link** and
    **UDP Messaging** if necessary. Restart when requested.
 
-The bundles target Epic Games Launcher UE **5.6.1**, **5.7.4** and **5.8.4**
+The 0.5.1 bundles target Epic Games Launcher UE **5.6.1**, **5.7.4** and **5.8.4**
 on Win64. The receiver ZIP contains source and authored DLLs. Use your own
 Unreal project and character assets.
 
@@ -89,7 +89,10 @@ scale. A standalone mannequin mesh may leave **Anim Class** empty. Manny and
 Quinn use the UE5 mannequin skeleton and its standard IK guides. The solver
 measures actual target rest lengths, transfers rest-relative rotations and limb
 directions, scales travel and calculates leg reach. On mannequins it preserves
-scaled ankle spacing and updates the hand and foot IK guides.
+scaled ankle spacing and updates the hand and foot IK guides. The clavicles
+follow source movement relative to the chest. For a target with lower rest
+arms, the solver partially compensates the shoulder drop using the clavicle
+and upper-arm angles in both reference skeletons.
 Ground Contact and Floor Offset on the connection component control an estimated
 flat floor in component-space centimetres. This does not trace world geometry,
 solve uneven terrain, add temporal sticky foot locks or remove existing source

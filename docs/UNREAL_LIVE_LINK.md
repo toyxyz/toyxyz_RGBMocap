@@ -10,15 +10,15 @@ For file-based animation on stock Manny or Quinn, see
 
 ## Prebuilt downloads
 
-Each Windows 64-bit bundle contains the RGB MoCap Connect 0.5.0 receiver,
+Each Windows 64-bit bundle contains the RGB MoCap Connect 0.5.1 receiver,
 the RGB MoCap sender, install instructions and checksums. Match the exact
 Epic Games Launcher engine build.
 
 | Unreal Engine | BuildId | Download |
 | --- | ---: | --- |
-| 5.6.1 | `43139311` | [Bundle](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.0/RGBMoCapLiveLink_UE5.6.1_Win64.zip) · [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.0/RGBMoCapLiveLink_UE5.6.1_Win64.zip.sha256) |
-| 5.7.4 | `47537391` | [Bundle](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.0/RGBMoCapLiveLink_UE5.7.4_Win64.zip) · [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.0/RGBMoCapLiveLink_UE5.7.4_Win64.zip.sha256) |
-| 5.8.4 | `55116800` | [Bundle](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.0/RGBMoCapLiveLink_UE5.8.4_Win64.zip) · [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.0/RGBMoCapLiveLink_UE5.8.4_Win64.zip.sha256) |
+| 5.6.1 | `43139311` | [Bundle](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.1/RGBMoCapLiveLink_UE5.6.1_Win64.zip) · [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.1/RGBMoCapLiveLink_UE5.6.1_Win64.zip.sha256) |
+| 5.7.4 | `47537391` | [Bundle](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.1/RGBMoCapLiveLink_UE5.7.4_Win64.zip) · [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.1/RGBMoCapLiveLink_UE5.7.4_Win64.zip.sha256) |
+| 5.8.4 | `55116800` | [Bundle](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.1/RGBMoCapLiveLink_UE5.8.4_Win64.zip) · [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.1/RGBMoCapLiveLink_UE5.8.4_Win64.zip.sha256) |
 
 These packages use your installed Unreal Editor. The prebuilt route runs
 without a local C++ build. For a different Unreal build, use
@@ -52,8 +52,12 @@ The old sample project is no longer distributed.
    Changing **Target type** sets the type for the next connection. **Disconnect
    source** restores the original animation for the actors on that row.
 
-The plugin reads the selected mesh's rest pose and bone lengths. It drives
-body, fingers and the mannequin's hand and foot IK guides directly. **Ground
+The plugin reads the selected mesh's rest pose and bone lengths. RGB MoCap
+Connect 0.5.1 transfers clavicle movement relative to the source chest. When
+the target's rest arms hang lower than the source's, it can lift the clavicle
+reference to account for the A-pose difference. The reference is computed
+from both rigs once. The plugin drives body, fingers and the mannequin's
+hand and foot IK guides directly. **Ground
 Contact** uses an estimated flat floor in component space. The mannequin
 receives body motion only. On a shared source row, **Face** applies to the
 connected MetaHumans. The receive-side setting does not change which Live Link
@@ -65,7 +69,7 @@ subjects the app publishes.
 
 Use the current RGB MoCap `main` checkout and complete the normal
 `install.cmd` setup. For an existing installation, close the app and run
-`update.cmd` first to get `--prebuilt` support. Extract the outer bundle and
+`update.cmd` first. Extract the matching 0.5.1 outer bundle and
 keep the inner sender ZIP intact. Open PowerShell in the RGB MoCap app folder
 and run the following, adjusting the path for your extracted sender ZIP.
 

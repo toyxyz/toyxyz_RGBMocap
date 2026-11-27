@@ -485,7 +485,7 @@ See the [installation steps and controls](USER_GUIDE.md#stream-bones-to-blender)
 
 ### Unreal Live Link body streaming
 
-RGB MoCap Connect 0.5.0 supports MetaHuman and UE5 mannequin targets. The
+RGB MoCap Connect 0.5.1 supports MetaHuman and UE5 mannequin targets. The
 [Unreal installation and controls guide](UNREAL_LIVE_LINK.md) covers both
 connection types. The main README links to the prebuilt Windows receiver
 and sender bundles for stock UE 5.6.1, 5.7.4 and 5.8.4.
@@ -501,7 +501,10 @@ for older maps and Blueprint callers. Resolve the primary Character mesh or
 one compatible mannequin mesh. Share validation between the editor and runtime.
 Keep source-qualified body and reference sampling unchanged. For mannequins,
 read the target rest skeleton, use a shared horizontal ankle offset and drive
-the stock hand and foot IK guides. Verify editor save and disconnect restore
+the stock hand and foot IK guides. In `RGBMoCapSolver.cpp`, calibrate the two
+clavicle references at solver initialization from rest clavicle and upper-arm
+vectors. Keep the source clavicle delta relative to its own chest. Transfer it
+onto the calibrated target reference in target parent space. Verify editor save and disconnect restore
 the target's original animation and preview tick settings.
 
 Stream target 2 is Unreal Live Link. Target 0 is None and target 1 is Blender.
@@ -781,6 +784,7 @@ Qt palette, fonts, widget styles, and timeline geometry when the user clicks
 
 - **File > Import Character...** accepts Mixamo-style FBX, VRM and PMX, and adds the character in rest pose below people. Up to eight characters per project are supported.
 - Right-click the character and choose **Retarget > [source person]**. Review via timeline; row checkboxes control visibility. Custom bone mapping is not implemented. Unsupported or incomplete mappings must not be silently relabeled.
+- Standard SMPL-family retargeting computes clavicle motion relative to the chest in `mocap/retarget/calibration.py`. The rig-based A-pose correction uses the source and target rest geometry once per take. Keep the target bind and source caches intact. Verify a T-pose, an A-pose, a torso rotation and an asymmetric shrug. Rerun **Retarget** to update existing baked characters.
 - The source's applied contact timings are used. **Apply Correction** refreshes linked characters; after other source changes retarget again. Targets that cannot be reached do not cause bone stretching. Different limb lengths can change travel distance, and editing may be required in a 3D tool.
 - **Export Character...** offers FBX with or without character mesh, and VMD for PMX characters. VMD is sampled at 30 fps for the same PMX model; facial motion and hair/clothing physics are not generated. Character FBX preserves its imported rest hierarchy and keys body bones, not the armature object. The character viewport uses original-resolution base-color textures with simplified lighting. Texture caches are prepared off the GUI thread, independently of motion; existing characters prepare them on first display.
 - A separate Blender runtime is used for character import, rig evaluation and baking/export; the user need not open Blender for the app workflow. Mixamo FBX import uses Blender 4.5's `bpy.ops.wm.fbx_import` for both binary and ASCII files, including FBX 6.1. Preserve upstream licenses and the bundled Blender environment. See [character retargeting](USER_GUIDE.md#character-retargeting) and [FBX/Blender](USER_GUIDE.md#fbx-and-blender).

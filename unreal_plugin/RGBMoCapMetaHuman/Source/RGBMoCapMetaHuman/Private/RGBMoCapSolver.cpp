@@ -13,6 +13,18 @@ FQuat Basis(const FVector& Right,const FVector& Up) {
     FVector Z=FVector::UpVector,Y=Right;Y.Z=0.;Y.Normalize();
     return FRotationMatrix::MakeFromYZ(Y,Z).ToQuat();
 }
+FQuat ClavicleRestLift(const FVector& SourceClavicle,const FVector& SourceArm,
+                      const FVector& TargetClavicle,const FVector& TargetArm) {
+    if (SourceClavicle.IsNearlyZero() || SourceArm.IsNearlyZero() || TargetClavicle.IsNearlyZero() || TargetArm.IsNearlyZero())
+        return FQuat::Identity;
+    const auto Elevation=[](const FVector& V) { return FMath::Atan2(V.Z,V.Size2D()); };
+    const FVector Axis=FVector::CrossProduct(TargetClavicle,FVector::UpVector).GetSafeNormal();
+    if (Axis.IsNearlyZero()) return FQuat::Identity;
+    // Match the offline tolerance and horizontal-projection ramp.
+    const double Drop=FMath::Clamp(-Elevation(TargetArm)-FMath::Max(FMath::DegreesToRadians(10.),-Elevation(SourceArm)),0.,UE_HALF_PI);
+    const double Gap=FMath::Max(0.,Elevation(SourceClavicle)-Elevation(TargetClavicle));
+    return FQuat(Axis,(1.-FMath::Cos(Drop))*Gap);
+}
 void Compose(const FSkeleton& Skeleton,const TArray<FTransform>& Local,TArray<FTransform>& World) {
     World.SetNum(Local.Num());
     for (int32 I=0;I<Local.Num();++I) World[I]=Skeleton.Parents[I]<0?Local[I]:Local[I]*World[Skeleton.Parents[I]];
@@ -105,7 +117,22 @@ bool FSolver::Initialize(const FSkeleton& InSource,const FSkeleton& InTarget,FSt
     Map(TEXT("neck_01"),Native?TEXT("Neck1"):TEXT("Neck"));Map(TEXT("neck_02"),Native?TEXT("Neck2"):TEXT("Neck"));Map(TEXT("head"),TEXT("Head"));
     for (int32 Side=0;Side<2;++Side) {
         FString P=Side==0?TEXT("Left"):TEXT("Right"),S=Side==0?TEXT("_l"):TEXT("_r");
-        Map(TEXT("clavicle")+S,P+TEXT("Shoulder"),TEXT("upperarm")+S,P+TEXT("Arm"));
+        Map(TEXT("clavicle")+S,P+TEXT("Shoulder"));
+        const int32 TC=Target.Find(*(TEXT("clavicle")+S)),SC=Source.Find(*(P+TEXT("Shoulder")));
+        ClavicleTargets[Side]=TC;
+        if (TC>0) {
+            ClavicleReferences[Side]=Target.Local[TC].GetRotation();
+            const int32 SA=Source.Find(*(P+TEXT("Arm"))),SE=Source.Find(*(P+TEXT("ForeArm")));
+            const int32 TA=Target.Find(*(TEXT("upperarm")+S)),TE=Target.Find(*(TEXT("lowerarm")+S));
+            if (SC>=0 && SA>=0 && SE>=0 && TA>=0 && TE>=0) {
+                const FQuat Lift=ClavicleRestLift(SR[SA].GetTranslation()-SR[SC].GetTranslation(),
+                                                SR[SE].GetTranslation()-SR[SA].GetTranslation(),
+                                                TR[TA].GetTranslation()-TR[TC].GetTranslation(),
+                                                TR[TE].GetTranslation()-TR[TA].GetTranslation());
+                const FQuat Parent=TR[Target.Parents[TC]].GetRotation();
+                ClavicleReferences[Side]=(Parent.Inverse()*Lift*Parent*ClavicleReferences[Side]).GetNormalized();
+            }
+        }
         Map(TEXT("upperarm")+S,P+TEXT("Arm"),TEXT("lowerarm")+S,P+TEXT("ForeArm"));
         Map(TEXT("lowerarm")+S,P+TEXT("ForeArm"),TEXT("hand")+S,P+TEXT("Hand"));
         Map(TEXT("hand")+S,P+TEXT("Hand"));
@@ -200,7 +227,14 @@ bool FSolver::Evaluate(const TArray<FTransform>& SourceLocal,const FSettings& Se
     Compose(Target,Output,W);
     for (int32 I=1;I<W.Num();++I) {
         int32 P=Target.Parents[I],SI=Mapping[I];
-        if (SI>=0) {
+        const int32 ClavicleSide=I==ClavicleTargets[0]?0:I==ClavicleTargets[1]?1:INDEX_NONE;
+        if (SI>=0 && Source.Parents[SI]>=0 && ClavicleSide!=INDEX_NONE) {
+            // Express the captured local change in the target chest axes,
+            // then apply it to the target clavicle's own reference rotation.
+            const FQuat Bridge=TR[P].GetRotation().Inverse()*Alignment*SR[Source.Parents[SI]].GetRotation();
+            const FQuat Delta=SourceLocal[SI].GetRotation()*Source.Local[SI].GetRotation().Inverse();
+            Output[I].SetRotation((Bridge*Delta*Bridge.Inverse()*ClavicleReferences[ClavicleSide]).GetNormalized());
+        } else if (SI>=0) {
             FQuat Delta=Alignment*SW[SI].GetRotation()*SR[SI].GetRotation().Inverse()*Alignment.Inverse();
             if (BlendSource[I]>=0) {
                 int32 Other=BlendSource[I];FQuat D2=Alignment*SW[Other].GetRotation()*SR[Other].GetRotation().Inverse()*Alignment.Inverse();
