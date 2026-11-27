@@ -13,6 +13,12 @@ https://github.com/user-attachments/assets/b948dd8c-43b9-493a-9d7f-2fae0317695e
 
 [Download original sample](docs/samples/motion-capture.mp4)
 
+### ViDiHand2 first-person motion capture
+
+https://github.com/user-attachments/assets/df3928a9-fed5-4a81-9100-e1e31747a1a5
+
+[Download original sample](docs/samples/vidihand2-first-person.mp4)
+
 ### Character retargeting
 
 https://github.com/user-attachments/assets/1759f1bf-a0d0-409f-84d8-dde9409cfe6f

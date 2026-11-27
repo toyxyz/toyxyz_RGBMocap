@@ -103,6 +103,11 @@
       "sha256": "82fce160b6290916382edd21012b99952be92323b245a04f2f3fd2af0268b5e5"
     },
     {
+      "path": "docs/samples/vidihand2-first-person.mp4",
+      "bytes": 16370138,
+      "sha256": "19356ceb47fdbd4e9dcf4215ad1569821c17e9c6ef358eeeef928ca4dcb7bb25"
+    },
+    {
       "path": "docs/samples/walking-pad-locomotion.mp4",
       "bytes": 5301088,
       "sha256": "348d215813af924a2658454821e735e756261eb3ed361d8a5cea2b805cec7963"
