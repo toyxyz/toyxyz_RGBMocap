@@ -231,7 +231,8 @@ def main(args):
         if fmt=='vmd':
             if kind!='pmx':raise ValueError('VMD export requires a PMX character')
             from .vmd_export import export_vmd
-            export_vmd(folder,target,transform,rest[3])
+            export_vmd(folder, target, transform, rest[3], options.get('vmd_placement', 'original'),
+                       options.get('vmd_root_bone', 'root'))
             return
         bpy.ops.wm.open_mainfile(filepath=io_path(folder/'animation.blend'),load_ui=False)
         arm=next(o for o in bpy.context.scene.objects if o.type=='ARMATURE')

@@ -70,6 +70,21 @@ Hair, clothing and secondary physics are not simulated.
 | **FBX, mesh unchecked** | Skeleton and animation only. |
 | **VMD (PMX characters only)** | Body/finger motion sampled at 30 fps for the same PMX model in MMD. Facial animation and physics are not generated. |
 
+VMD **Position** defaults to **Keep original position**. **Place at origin**
+centers the first frame horizontally and retains subsequent travel. **In Place**
+centers the root horizontally throughout the take. Both modes retain height,
+heading and bone animation. Each exported VMD uses its own starting position.
+
+VMD **Root Motion Bone** defaults to **Current root**. On compatible PMX rigs,
+**Center (センター)** moves the root translation and rotation into the Center bone.
+The VMD contains no master-root keys, so you can use that bone to place the
+character in MMD. This works with any **Position** setting. If the model lacks a
+compatible Center hierarchy, select **Current root**.
+
+In Blender, import the Center VMD into a freshly imported PMX to verify the
+master root is free. MMD Tools can reuse the current Action and keep
+`全ての親` keys from a previously imported VMD.
+
 Separate takes produce separate files. Both FBX options preserve the imported
 character's original bone hierarchy and rest pose separately from its animation;
 the first animation frame does not replace the rest pose. Existing retargeted
@@ -1066,6 +1081,7 @@ at the same frame rate.
 **Place at origin** and **Symmetrical rest pose** default off and apply only to
 source-skeleton FBX/BVH exports, including both BVH profiles. They are unavailable
 for Blender project exports and do not change imported-character exports.
+PMX character export offers its own [VMD position control](#character-retargeting).
 
 - **Place at origin:** move each person's first exported root position to X=0,
   Z=0, preserving its height, facing and subsequent travel. People are centered

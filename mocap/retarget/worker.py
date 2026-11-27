@@ -41,6 +41,9 @@ def main(args):
             report(f'Exporting character take {i+1}/{len(job["takes"])}')
             folder=Path(job['animation'])/take['folder']
             options=dict(format=job.get('format','fbx'),include_mesh=job.get('include_mesh',True))
+            if options['format'] == 'vmd':
+                options['vmd_placement'] = job.get('vmd_placement', 'original')
+                options['vmd_root_bone'] = job.get('vmd_root_bone', 'root')
             invoke('export',out,folder,target,json.dumps(take.get('transform')),job['source_name'],json.dumps(options))
         if job.get('export_face'):
             from ..face_export import publish

@@ -117,8 +117,15 @@ Camera centers, body motion, and the source camera files stay unchanged.
   default. `export --raw-face` selects raw curves. The export result lists
   face files and reports any face-export errors alongside saved body files.
 - `character` retargets one take to an FBX, VRM or PMX character. The output
-  extension selects FBX or, for a PMX character, VMD. `reference-fbx` exports
-  the body streaming reference rig.
+  extension selects FBX or, for a PMX character, VMD. For VMD, use
+  `--vmd-placement origin` to center the start and keep travel, or
+  `--vmd-placement in-place` to remove horizontal travel. The default keeps the
+  original placement. Use `--vmd-root-bone center` to put root translation and
+  rotation on センター and leave the master root free for placement in MMD.
+  This requires a compatible PMX hierarchy. The default is `root`.
+  See the [VMD import notes](USER_GUIDE.md#character-retargeting) when verifying
+  the master root in Blender.
+  `reference-fbx` exports the body streaming reference rig.
 - Use `stream --target blender` with the Blender receiver. `--port` overrides
   the Blender port. The receiver can request a bake of the saved take. Use
   `stream --target unreal` with the Live Link sender and receiver, and add

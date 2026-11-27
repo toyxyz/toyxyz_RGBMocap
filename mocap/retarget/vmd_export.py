@@ -49,7 +49,62 @@ def rotation_carrier(arm, root, compensate):
     return waist, chain
 
 
-def export_vmd(folder,target,transform,label):
+def identity_basis(bone):
+    basis = bone.matrix_basis
+    return all(abs(basis[row][col] - float(row == col)) <= 1e-5
+               for row in range(4) for col in range(4))
+
+
+def center_motion_bone(arm, root, names):
+    error = 'Cannot export with Center (センター). Choose Current root for this PMX model.'
+    candidates = [pb for pb in arm.pose.bones
+                  if not pb.is_mmd_shadow_bone and (pb.mmd_bone.name_j or pb.name) == 'センター']
+    if len(candidates) != 1 or root.parent is not None:
+        raise ValueError(error)
+    center = candidates[0]
+    if center == root or center.bone.hide:
+        raise ValueError(error)
+    chain = []
+    parent = center.parent
+    while parent is not None and parent != root:
+        chain.append(parent)
+        parent = parent.parent
+    if parent != root:
+        raise ValueError(error)
+    for pb in [root, center, *chain]:
+        meta = pb.mmd_bone
+        if (meta.has_additional_rotation or meta.has_additional_location
+                or any(not c.mute and c.influence > 0 for c in pb.constraints)):
+            raise ValueError(error)
+    affected = {center.name, *(pb.name for pb in center.children_recursive)}
+    if names - affected - {root.name}:
+        raise ValueError(error)
+    # Any vertex influenced by a bone outside Center would lose the root transform.
+    for obj in bpy.context.scene.objects:
+        if obj.type != 'MESH' or not any(m.type == 'ARMATURE' and m.object == arm for m in obj.modifiers):
+            continue
+        outside = {group.index for group in obj.vertex_groups
+                   if group.name in arm.data.bones and group.name not in affected
+                   and arm.data.bones[group.name].use_deform}
+        if outside and any(weight.group in outside and weight.weight > 0
+                           for vertex in obj.data.vertices for weight in vertex.groups):
+            raise ValueError(error)
+    # Native grants read channels directly. Moving those channels would also
+    # change the grant, even when its recipient is already beneath Center.
+    for pb in arm.pose.bones:
+        meta = pb.mmd_bone
+        if (meta.additional_transform_bone in {root.name, center.name}
+                and (meta.has_additional_rotation or meta.has_additional_location)
+                and abs(meta.additional_transform_influence) > 1e-6):
+            raise ValueError(error)
+    return center, chain
+
+
+def export_vmd(folder, target, transform, label, placement='original', root_bone='root'):
+    if placement not in ('original', 'origin', 'in-place'):
+        raise ValueError('Unsupported VMD placement option.')
+    if root_bone not in ('root', 'center'):
+        raise ValueError('Unsupported VMD root bone option.')
     sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'third_party/character_import'))
     addon_utils.enable('mmd_tools',default_set=False,persistent=False)
     from mmd_tools.core.vmd.importer import BoneConverter
@@ -68,6 +123,10 @@ def export_vmd(folder,target,transform,label):
             if pb.mmd_bone.additional_transform_bone:
                 names.add(pb.name);compensate[pb.name]=muted
     root=arm.pose.bones[rig['trajectory_root']]
+    root_rest = root.bone.matrix_local.copy()
+    inverse_root_rest = root_rest.inverted()
+    inverse_root_axes = inverse_root_rest.to_3x3()
+    planar_offset = None
     waist, carrier_chain = rotation_carrier(arm, root, compensate)
     if waist is not None:
         names.add(root.name)
@@ -78,6 +137,15 @@ def export_vmd(folder,target,transform,label):
             if arm.data.bones[name].hide:
                 compensate.pop(name)
                 names.discard(name)
+    center = None
+    if root_bone == 'center':
+        center, center_chain = center_motion_bone(arm, root, names)
+        center_rest = center.bone.matrix_local.copy()
+        root_to_center = center_rest.inverted() @ root_rest
+        center_to_root = inverse_root_rest @ center_rest
+        center_has_keys = center.name in names
+        names.discard(root.name)
+        names.add(center.name)
     bones=[pb for pb in arm.pose.bones if pb.name in names and not pb.is_mmd_shadow_bone]
     encoded=[name_bytes(pb.mmd_bone.name_j or pb.name,15) for pb in bones]
     if len(set(encoded))!=len(encoded):raise ValueError('Duplicate PMX names cannot be exported to VMD')
@@ -91,6 +159,10 @@ def export_vmd(folder,target,transform,label):
         for c in pb.constraints:
             if c.type=='IK' and c.subtarget in arm.pose.bones:
                 b=arm.pose.bones[c.subtarget];ik.add(b.mmd_bone.name_j or b.name)
+    if center is not None:
+        root_label = root.mmd_bone.name_j or root.name
+        if root_label in ik or any((pb.mmd_bone.name_j or pb.name) == root_label for pb in bones):
+            raise ValueError('This PMX requires keys with the original root name. Choose Current root.')
     ik_names=[name_bytes(n,20) for n in sorted(ik)]
     scene=bpy.context.scene;fps=scene.render.fps/scene.render.fps_base
     start,end=scene.frame_start,scene.frame_end
@@ -117,17 +189,34 @@ def export_vmd(folder,target,transform,label):
                 if waist is not None:
                     # A static, identity chain is required so that relocating
                     # the turn preserves every body pivot, not just orientation.
-                    for pb in carrier_chain:
-                        if max(abs(pb.matrix_basis[r][c] - (1. if r == c else 0.)) for r in range(4) for c in range(4)) > 1e-5:
-                            raise ValueError('Animated PMX controls between root and waist require a separate VMD solve.')
+                    if any(not identity_basis(pb) for pb in carrier_chain):
+                        raise ValueError('Animated PMX controls between root and waist require a separate VMD solve.')
                     deform = world @ waist.matrix @ waist.bone.matrix_local.inverted()
-                    carrier_basis = root.bone.matrix_local.inverted() @ deform @ root.bone.matrix_local
+                    carrier_basis = inverse_root_rest @ deform @ root_rest
+                root_basis = carrier_basis if carrier_basis is not None else inverse_root_rest @ world @ root.matrix
+                if placement != 'original':
+                    # Measure the final root after scene placement and waist grant compensation.
+                    if planar_offset is None or placement == 'in-place':
+                        planar_offset = (root_rest @ root_basis).translation
+                        planar_offset.z = 0.0
+                    root_basis.translation = root_basis.translation - inverse_root_axes @ planar_offset
+                if center is not None:
+                    if any(not identity_basis(pb) for pb in center_chain):
+                        raise ValueError('Animated PMX controls above Center prevent transfer. Choose Current root.')
+                    # VMD stores translation and rotation only.
+                    root_motion = Matrix.LocRotScale(root_basis.translation, root_basis.to_quaternion().normalized(), None)
+                    center_basis = root_to_center @ root_motion @ center_to_root
+                    if center_has_keys:
+                        center_basis = center_basis @ center.matrix_basis
                 values={}
                 for pb in sample_bones:
                     basis=pb.matrix_basis
                     if pb==root:
-                        basis=pb.bone.matrix_local.inverted()@world@pb.matrix
-                        if carrier_basis is not None:basis=carrier_basis
+                        basis=root_basis
+                    elif pb==center:
+                        # Re-express the root transform around the Center pivot,
+                        # then compose with Center's own animation.
+                        basis=center_basis
                     elif pb==waist:
                         basis=Matrix.Identity(4)
                     q=basis.to_quaternion().normalized();conv=converters[pb.name]

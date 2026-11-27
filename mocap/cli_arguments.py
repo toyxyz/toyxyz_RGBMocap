@@ -86,6 +86,10 @@ def option_parsers(commands, models, take_flags):
     character.add_argument('--asset', type=Path, required=True, help='FBX, VRM or PMX character.')
     character.add_argument('--output', type=Path, required=True, help='New FBX or VMD output.')
     character.add_argument('--no-mesh', action='store_true')
+    character.add_argument('--vmd-placement', choices=('original', 'origin', 'in-place'),
+                           help='Select horizontal root placement for VMD exports.')
+    character.add_argument('--vmd-root-bone', choices=('root', 'center'),
+                           help='Keep motion on the current root (default) or move it to Center for VMD.')
     dry(character)
     json_option(character)
 

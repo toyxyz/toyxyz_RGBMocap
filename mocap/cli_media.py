@@ -34,6 +34,13 @@ def character(args, report):
         raise ValueError('Choose a new FBX or VMD in an existing directory.')
     if fmt == 'vmd' and asset.suffix.lower() != '.pmx':
         raise ValueError('VMD export requires a PMX character.')
+    placement = args.vmd_placement
+    root_bone = args.vmd_root_bone
+    if fmt != 'vmd':
+        if placement is not None:
+            raise ValueError('--vmd-placement requires VMD output.')
+        if root_bone is not None:
+            raise ValueError('--vmd-root-bone requires VMD output.')
     kind = selected_kind(take, args.result)
     if selected_export(take, kind) is None:
         raise ValueError('Prepare the selected source motion before retargeting.')
@@ -60,7 +67,8 @@ def character(args, report):
             result = json.loads((animation / 'complete.json').read_text(encoding='utf-8'))
             process(dict(mode='export', output=str(work), animation=str(animation), takes=result['takes'],
                          files=[str(temporary)], source_name=person['name'], format=fmt,
-                         include_mesh=not args.no_mesh))
+                         include_mesh=not args.no_mesh, vmd_placement=placement or 'original',
+                         vmd_root_bone=root_bone or 'root'))
         publish_output(temporary, target, replace=False)
     finally:
         temporary.unlink(missing_ok=True)
