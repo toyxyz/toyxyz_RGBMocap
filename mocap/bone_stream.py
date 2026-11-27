@@ -10,6 +10,8 @@ from threading import Event, Thread
 
 import numpy as np
 
+from .export_options import align_auto_floor
+
 
 PORT = 49168
 LIMIT = 1024 * 1024
@@ -19,9 +21,10 @@ Y_TO_Z = np.array(((1, 0, 0), (0, 0, -1), (0, 1, 0)), dtype=np.float32)
 
 
 class StreamRig:
-    def __init__(self, names, parents, heads, bind, display, lengths):
+    def __init__(self, names, parents, heads, bind, display, lengths, floor=None):
         rest = Y_TO_Z @ np.concatenate((bind, heads[..., None]), axis=-1)
         self.display = np.asarray(display, dtype=np.float32)
+        self.floor = floor
         self.bones = [
             [name, int(parent), matrix.ravel().tolist(), float(length)]
             for name, parent, matrix, length in zip(names, parents, rest, lengths)
@@ -30,7 +33,7 @@ class StreamRig:
         self.key = sha256(raw.encode('utf-8')).hexdigest()
 
     @classmethod
-    def mixamo(cls, names, asset):
+    def mixamo(cls, names, asset, floor=None):
         parents, heads, bind, display, tips = (asset[key] for key in (
             'parents', 'fbx_rest', 'fbx_rest_frames', 'fbx_display_frames', 'fbx_tip_local'))
         lengths = np.linalg.norm(tips, axis=1)
@@ -38,7 +41,7 @@ class StreamRig:
             children = heads[parents == index]
             if len(children):
                 lengths[index] = np.linalg.norm(children.mean(axis=0) - heads[index])
-        return cls(names, parents, heads, bind, display, np.maximum(lengths, .01))
+        return cls(names, parents, heads, bind, display, np.maximum(lengths, .01), floor=floor)
 
     @classmethod
     def soma(cls, asset):
@@ -60,6 +63,7 @@ class StreamRig:
                    np.linalg.norm(directions, axis=1))
 
     def pose(self, world, transform):
+        transform = align_auto_floor(transform, self.floor)
         pose = world[:, :3, :4].copy()
         pose[:, :, :3] = pose[:, :, :3] @ self.display
         if transform is not None:

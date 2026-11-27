@@ -102,7 +102,8 @@ def prepare_take(take, bundle, emit, camera_cache, videos, *, index=None, first=
     nested = work / 'fbx-request.json'
     nested.write_text(json.dumps([{**row, 'target': str(work / fbx_name), 'place_at_origin': False,
                                   'symmetric_rest': False, 'prepend_tpose': prepend}]), encoding='utf-8')
-    export_fbx(nested, emit)
+    # Keep motion, synchronized mesh and camera in their recorded coordinates.
+    export_fbx(nested, emit, align_floor=False)
 
     moving = animate and not np.array_equal(track, np.broadcast_to(track[0], track.shape))
     camera_track = f'camera{name_suffix}.npy' if moving else None

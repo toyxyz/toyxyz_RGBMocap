@@ -1,10 +1,13 @@
 """Numerical and protocol checks without Unreal, GPU, projects or model data."""
 import json
+from pathlib import Path
 import struct
+from tempfile import TemporaryDirectory
 import unittest
 import numpy as np
 
 from mocap.bone_stream import StreamRig, Y_TO_Z
+from mocap.export_options import align_auto_floor, recorded_auto_floor
 from mocap.unreal_stream import (SOURCE_TO_UE, YAW, local_transforms, rig_schema,
                                 snapshot, subject_name, encode, LIMIT)
 
@@ -57,6 +60,50 @@ class LiveLinkTests(unittest.TestCase):
         np.testing.assert_allclose(a['lengths'],[100,20])
         self.assertEqual(a['frame'],80)
         self.assertEqual(a['rest'],b['rest'])
+
+    def test_auto_floor_moves_stream_motion_once_with_the_same_reference(self):
+        rig = self.rig()
+        world = np.tile(np.eye(4), (2, 1, 1))
+        world[:, 1, 3] = [1., 2.]
+        transform = np.eye(4)
+        transform[:3, 3] = [3., .28, 4.]
+        actor = 'a' * 64
+        raw = snapshot(((actor, 'Person', rig, 0, world, transform),), {})['actors'][0]
+        for floor in (-.018, .009):
+            with self.subTest(floor=floor):
+                rig.floor = (0., floor)
+                shifted = snapshot(((actor, 'Person', rig, 0, world, transform),), {})['actors'][0]
+                expected = np.zeros((2, 7))
+                expected[0, 2] = -floor * 100.
+                np.testing.assert_allclose(np.array(shifted['pose']) - raw['pose'], expected, atol=2e-5)
+                self.assertEqual((shifted['rig'], shifted['rest']), (raw['rig'], raw['rest']))
+                self.assertAlmostEqual(transform[1, 3], .28)
+
+    def test_auto_floor_reading_preserves_explicit_height_and_uses_shared_world(self):
+        with TemporaryDirectory() as tmp:
+            p = Path(tmp) / 'corrected_initial_correction.json'
+            report = dict(floor=-.018, segment_count=3, options=dict(mode='flat', auto_floor=True))
+
+            def floor_for(kind='corrected_initial'):
+                p.write_text(json.dumps(report), encoding='utf-8')
+                return recorded_auto_floor(tmp, kind)
+
+            self.assertEqual(floor_for(), (-.018, -.018))
+            self.assertIsNone(floor_for('initial'))
+            report['options']['auto_floor'] = False
+            self.assertIsNone(floor_for())
+            report['options'].update(auto_floor=True, mode='multi_level')
+            self.assertIsNone(floor_for())
+            report['options']['mode'] = 'flat'
+            report['segment_count'] = 0
+            self.assertIsNone(floor_for())
+            report['shared_floor'] = dict(local_plane_height=-.11, local_plane_normal=[0, 1, 0])
+            transform = np.eye(4)
+            transform[1, 3] = .15
+            self.assertAlmostEqual(align_auto_floor(transform, floor_for())[1, 3], .168)
+            self.assertAlmostEqual(align_auto_floor(None, floor_for())[1, 3], .11)
+            report['shared_floor']['local_plane_normal'] = [0, .8, .6]
+            self.assertIsNone(align_auto_floor(None, floor_for()))
 
     def test_invalid_rig_and_nonrigid_inputs(self):
         rig=self.rig()

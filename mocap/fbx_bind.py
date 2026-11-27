@@ -29,7 +29,9 @@ def prepare(rig, source_rest, vertices, topology, fps):
             delta = delta + [0., .1, 0.]
         display.append(reference_frame(delta))
     display = np.asarray(display)
-    target -= [target[[7,8],0].mean(), target[[10,11],1].min(), target[[7,8],2].mean()]
+    # Stand the rest pose on the soles, as the motion does: the foot joints sit above the floor.
+    sole = rest[[10,11],1].min() - np.asarray(vertices)[:,1].min()
+    target -= [target[[7,8],0].mean(), target[[10,11],1].min() - sole, target[[7,8],2].mean()]
     neutral_frames = conversion.swapaxes(-1,-2) @ display
     # These translations must be constant in each parent's physical bone frame.
     for j, p in enumerate(parents):

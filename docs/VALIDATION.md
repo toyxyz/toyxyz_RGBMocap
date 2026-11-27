@@ -2,6 +2,25 @@
 
 Historical PEAR results below describe earlier versions. For current real-time tracking, use [RGB MoCap Live](https://github.com/toyxyz/rgbmocap_live).
 
+## Automatic floor alignment for FBX and streaming
+
+- Rebuilt prepared FBX references for existing FlowHMR and ExMR takes at
+  opposite automatic floor heights. Generic, symmetrical Generic and Manny FBX
+  were checked against the same takes corrected at explicit Y=0. The source
+  animation and shared scene placement remain recorded in the project.
+  After Blender reimport, sampled bone positions differed by at most 0.12 mm
+  from the explicit-zero outputs. The 999-frame PMX skeleton FBX roundtrip
+  measured at most 0.35 mm for the animated body and its dependent bones.
+- Tested the automatic-height scenario with Manny and Quinn in Blender and
+  in UE 5.7.4 Legacy and Interchange. Verified native UE 5.8.4 Live Link
+  reception and the Blender add-on with the same reference transforms and a
+  single outgoing translation. PMX character retargeting and VMD reimport
+  were checked across a 999-frame take.
+- Contact is still approximate after retargeting to a different foot geometry.
+  In the measured FlowHMR → Manny and ExMR → Quinn clips, the median locked
+  sole remained roughly 3 mm and 6 mm below the floor respectively for both
+  automatic-aligned and explicit-zero output.
+
 ## RGB MoCap Live separation
 
 - On Windows with an RTX 5090, ran ExMR, FlowHMR, GVHMR, PromptHMR and

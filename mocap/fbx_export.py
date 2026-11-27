@@ -7,12 +7,13 @@ from .motion_tools import selected_export
 from .result_artifacts import file_stat
 
 
-def run(request, emit=lambda *a, **k:None):
+def run(request, emit=lambda *a, **k:None, *, align_floor=True):
     from .blend_support import build, cleanup, partial
     from .fbx_writer import write
     from .gemx_result import is_project
     from .first_person.rig import is_project as is_first_person_take, export_rig, sampled
     from .scene_export import context
+    from .export_options import align_auto_floor, centered_transform, recorded_auto_floor
     request=Path(request)
     if request.stat().st_size>4*1024**2:raise ValueError('Export request is too large')
     rows=json.loads(request.read_text(encoding='utf-8'))
@@ -101,6 +102,9 @@ def run(request, emit=lambda *a, **k:None):
             for key in ('asset_file','frames_file'):
                 if Path(info[key]).name!=info[key]:raise ValueError('Invalid committed file path')
                 paths.append(project/info[key])
+            floor_receipt = project / f'{kind}_correction.json'
+            if align_floor and kind.startswith('corrected_') and floor_receipt.is_file():
+                paths.append(floor_receipt)
             if destinations.intersection(p.resolve() for p in paths):raise ValueError('An export destination overlaps a committed source file.')
             stamps=[file_stat(p) for p in paths]
             scene=row.get('scene')
@@ -117,9 +121,11 @@ def run(request, emit=lambda *a, **k:None):
                     symmetric=dict(rest=data['rest'],ends=data['ends'])
             frames=np.load(project/info['frames_file'],mmap_mode='r',allow_pickle=False)
             try:
-                transform=np.eye(4) if scene is None else np.asarray(scene['transform'],float)
+                transform = None if scene is None else scene['transform']
+                if align_floor:
+                    transform = align_auto_floor(transform, recorded_auto_floor(project, kind))
+                transform = np.eye(4) if transform is None else np.asarray(transform, dtype=float)
                 if row.get('place_at_origin',False):
-                    from .export_options import centered_transform
                     transform=centered_transform(transform,frames[0,0,:3,3],origins,row.get('origin_group',str(project)))
                 def progress(done,total):
                     emit('progress', stage='save_fbx', current=i*total+done, total=len(rows)*total,

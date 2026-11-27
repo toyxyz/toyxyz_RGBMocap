@@ -44,6 +44,48 @@ def symmetric_rest(names, parents, rest, ends):
     return result,tips
 
 
+def recorded_auto_floor(project, kind):
+    """Return the local and shared Y heights of an applied automatic flat floor."""
+    import json
+    from pathlib import Path
+
+    if not kind or not kind.startswith('corrected_'):
+        return None
+    try:
+        path = Path(project) / f'{kind}_correction.json'
+        report = json.loads(path.read_text(encoding='utf-8'))
+        options = report['options']
+        if not options.get('auto_floor') or options.get('mode', report.get('mode', 'flat')) != 'flat':
+            return None
+        shared = report.get('shared_floor')
+        height = float(report['floor'])
+        if not np.isfinite(height):
+            return None
+        if not shared:
+            return (height, height) if options.get('foot_lock', True) and report.get('segment_count', 0) else None
+        # In a shared scene the same translation must also apply to actors with
+        # no contacts. A tilted plane cannot be flattened in a standalone take.
+        normal = shared['local_plane_normal']
+        local_height = float(shared['local_plane_height'])
+        local = local_height if np.isfinite(local_height) and np.allclose(normal, [0, 1, 0], atol=1e-6) else 0.
+        return local, height
+    except (OSError, TypeError, ValueError, KeyError):
+        return None
+
+
+def align_auto_floor(transform, floor):
+    """Apply a single constant vertical translation in the output coordinate frame."""
+    if floor is None:
+        return transform
+    local_height, shared_height = floor
+    height = local_height if transform is None else shared_height
+    if not height:
+        return transform
+    output = np.eye(4) if transform is None else np.array(transform, dtype=float, copy=True)
+    output[1, 3] -= height
+    return output
+
+
 def centered_transform(transform, first_root, origins, group):
     """Keep one XZ offset per actor across its ordered visible takes."""
     matrix=np.asarray(transform,float).copy()

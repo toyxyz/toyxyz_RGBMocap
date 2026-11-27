@@ -44,7 +44,24 @@ def main(args):
             if options['format'] == 'vmd':
                 options['vmd_placement'] = job.get('vmd_placement', 'original')
                 options['vmd_root_bone'] = job.get('vmd_root_bone', 'root')
-            invoke('export',out,folder,target,json.dumps(take.get('transform')),job['source_name'],json.dumps(options))
+            transform = take.get('transform')
+            receipt_path = folder / 'receipt.json'
+            if take.get('source') and receipt_path.is_file():
+                from ..export_options import align_auto_floor, recorded_auto_floor
+                from ..result_artifacts import file_stat
+
+                receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
+                kind = receipt.get('result')
+                source = Path(take['source'])
+                correction_report = source / f'{kind}_correction.json'
+                expected = receipt.get('source_stats', {}).get(str(correction_report))
+                if expected is not None and correction_report.is_file():
+                    if file_stat(correction_report) != expected:
+                        raise ValueError('Motion Correction changed. Retarget the character again before exporting.')
+                    aligned = align_auto_floor(transform, recorded_auto_floor(source, kind))
+                    if aligned is not transform:
+                        transform = aligned.tolist()
+            invoke('export',out,folder,target,json.dumps(transform),job['source_name'],json.dumps(options))
         if job.get('export_face'):
             from ..face_export import publish
             rows=[(dict(project=take['source'],target=target,rig_name=job['source_name'],

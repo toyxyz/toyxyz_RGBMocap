@@ -713,6 +713,24 @@ both enabled and disabled. See the
 [bind pose and foot spacing checks](VALIDATION.md#ue5-mannequin-bind-pose-and-foot-spacing-2026-11-20)
 and [original mesh export checks](VALIDATION.md#ue5-mannequin-fbx-with-optional-mesh-2026-11-20).
 
+### SMPL floor alignment for export and streaming
+
+`fbx_bind.prepare` anchors the static FBX/streaming source bind to the rest
+sole. Rebuild older prepared previews after this bind change. At publish time,
+`export_options.recorded_auto_floor` reads the applied correction result.
+For flat automatic floors, subtract this height once from the outgoing
+motion's Y translation. Use the shared height after actor placement in a
+people scene, and the take-local height for standalone export. Keep explicit
+manual, multilevel and raw motion placement. Blender and Unreal live and baked
+streams use the same `StreamRig.pose` path and keep the reference rig identity
+independent of the motion offset.
+
+Apply the offset to standalone FBX and character FBX/VMD, including UE5
+Mannequin retargeting's source motion. Keep portable Blender bundle motion in
+its original coordinate system with the matching mesh and camera. BVH keeps
+its existing bind and placement. Verify positive and negative automatic floor
+heights against fixed zero, frames, bind transforms and shared actor offsets.
+
 ### Portable Blender export implementation
 
 Source FBX/BVH requests accept default-off `place_at_origin` and `symmetric_rest`.

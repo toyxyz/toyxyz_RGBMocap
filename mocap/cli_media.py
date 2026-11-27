@@ -128,8 +128,9 @@ def stream_take(path, result, root, stack):
         for field in ('asset_file','frames_file'):
             if Path(receipt[field]).name != receipt[field]:
                 raise ValueError('Invalid stream artifact name.')
+        from .export_options import recorded_auto_floor
         with np.load(path / receipt['asset_file'], allow_pickle=False) as asset:
-            rig = StreamRig.mixamo(receipt['names'], asset)
+            rig = StreamRig.mixamo(receipt['names'], asset, recorded_auto_floor(path, result))
         source = path / receipt['frames_file']
     frames = np.load(source, mmap_mode='r', allow_pickle=False)
     stack.callback(frames._mmap.close)

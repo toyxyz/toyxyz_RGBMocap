@@ -126,6 +126,10 @@ Camera centers, body motion, and the source camera files stay unchanged.
   See the [VMD import notes](USER_GUIDE.md#character-retargeting) when verifying
   the master root in Blender.
   `reference-fbx` exports the body streaming reference rig.
+- For SMPL takes corrected with Flat Ground and Auto Floor Height, FBX/VMD
+  export and streaming align the estimated motion floor to zero. Manual floor
+  height retains its placement. Use Prepare Preview on older takes to rebuild
+  their FBX/source reference from existing motion.
 - Use `stream --target blender` with the Blender receiver. `--port` overrides
   the Blender port. The receiver can request a bake of the saved take. Use
   `stream --target unreal` with the Live Link sender and receiver, and add

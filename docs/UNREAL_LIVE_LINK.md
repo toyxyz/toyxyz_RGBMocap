@@ -211,6 +211,11 @@ project handles its own target character and retarget settings.
    Keep one reference per different rig/rest. Different people, shapes, models
    or takes can have different references. Export again if the rig changes.
 
+The reference rig uses the neutral mesh's sole height. On SMPL takes corrected
+with Flat Ground and Auto Floor Height, the stream places the estimated
+motion floor at world zero with a single vertical offset. Use **Prepare Preview**
+to refresh reference rigs built by an older version.
+
 SMPL-based prepared streams use 52 bones. GEM-X preserves SOMA Native77,
 including its original terminal joints; the exporter adds no extra end bones.
 Do not reuse a 52-bone source mesh for Native77. The **_Reference** Subject and

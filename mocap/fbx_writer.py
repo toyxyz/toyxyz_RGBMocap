@@ -127,7 +127,9 @@ def write(path, names, parents, rest, rest_frames, display, tip_local, frames, f
     if symmetric_bind is not None:
         from .export_options import symmetric_rest
         from .bone_overlay import reference_frame
+        sole_offset = rest[[names.index('LeftToeBase'), names.index('RightToeBase')], 1].min()
         rest,ends=symmetric_rest(names,parents,symmetric_bind['rest'],symmetric_bind['ends'])
+        rest[:, 1] += sole_offset
         display=[]
         for j in range(52):
             children=np.flatnonzero(parents==j)

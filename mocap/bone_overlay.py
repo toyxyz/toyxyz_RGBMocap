@@ -138,8 +138,9 @@ def open_preview(project,kind,cancelled=lambda:False):
                 asset['bones']=geometry(source['rest'],source['parents'],source['ends'],asset['key'])
                 asset['parents']=source['parents'].copy()
                 from .bone_stream import StreamRig
+                from .export_options import recorded_auto_floor
                 try:
-                    asset['stream_rig']=StreamRig.mixamo(info['names'],source)
+                    asset['stream_rig'] = StreamRig.mixamo(info['names'], source, recorded_auto_floor(project, kind))
                 except (OSError,ValueError,KeyError,TypeError):
                     # Old preview assets may lack the full export bind.
                     pass

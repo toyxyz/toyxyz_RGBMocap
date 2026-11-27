@@ -70,6 +70,10 @@ Hair, clothing and secondary physics are not simulated.
 | **FBX, mesh unchecked** | Skeleton and animation only. |
 | **VMD (PMX characters only)** | Body/finger motion sampled at 30 fps for the same PMX model in MMD. Facial animation and physics are not generated. |
 
+For a take corrected with **Flat Ground** and **Auto Floor Height**, character
+FBX/VMD export places the estimated floor at world zero using one constant
+vertical motion offset. Explicit manual floor heights retain their placement.
+
 VMD **Position** defaults to **Keep original position**. **Place at origin**
 centers the first frame horizontally and retains subsequent travel. **In Place**
 centers the root horizontally throughout the take. Both modes retain height,
@@ -943,7 +947,7 @@ defaults off. Existing projects retain saved selections.
 | **Correction Mode → Multi Level** | Keep contacts at their inferred heights for stairs, slopes and changing levels. The single floor controls are inactive. Terrain geometry is not reconstructed. |
 | **Foot / Hand** | Correct only checked contact types. Disabling one retains its saved timing edits. Hand correction adjusts the arm for support contacts while retaining hand orientation. |
 | **Lock Preset** | Weak allows more original movement; Normal balances holding and smooth transitions; Strong holds more uncertain contacts and may resist intentional sliding. |
-| **Auto Floor Height** | Estimate the contact floor. Turn off to enter a manual height. |
+| **Auto Floor Height** | Estimate the contact floor from the animated foot soles. Turn off to enter a manual height. |
 | **Floor Height (World Y)** | Floor height in metres along the vertical axis. Higher values raise the correction floor; the gray reference grid stays at zero. |
 | **Pelvis Height Offset (from Auto)** | Zero keeps automatic hip adjustment. Positive values undo some automatic lowering; negative values lower the hips further during contact. Raising can weaken foot locks. |
 | **Apply Correction** | Commit current settings and timeline timings, update the source preview/export, and recalculate linked characters. |
@@ -1152,6 +1156,21 @@ video preview determine detail, with the combined image bounded to 3840 × 2160.
 Progress and Cancel are available during saving. Completion/cancellation restores
 the original frame and view; an incomplete export does not replace an existing
 destination.
+
+### FBX and streaming floor height
+
+SMPL-based FBX and streaming reference rigs use the rest body's lowest sole
+vertex to set the rig's floor. For a take corrected with **Flat Ground** and
+**Auto Floor Height**, standalone Generic and UE5 Mannequin FBX exports and
+Blender/Unreal streaming place the estimated motion floor at world zero.
+The same constant offset is used for all corrected actors sharing a scene
+floor. This preserves vertical motion and contact timing. **Auto Floor Height**
+off keeps the explicit manual floor height. The viewport and synchronized
+portable Blender projects use the recorded scene coordinates.
+
+For older takes, use **Prepare Preview** to rebuild the reference rig from
+existing motion. The final character's foot shape and retarget settings can
+still leave a small contact error.
 
 ### Portable Blender projects
 
