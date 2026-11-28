@@ -1009,6 +1009,12 @@ Relative depth and contacts between people are estimates; collision avoidance is
 3. In RGB MoCap, open a project with prepared offline motion. In the left **Stream** tab, choose **Blender** and check the people to send. The default target is **None**. The Stream checkboxes are separate from the People tab's visibility checkboxes.
 4. In Blender's 3D Viewport, press **N**, open **RGB MoCap > RGB MoCap Bone Stream**, and click **Connect**. The default port is **49168**. Play or scrub the RGB MoCap timeline to update the armatures. The stream is tied to the Blender scene and view layer used when connecting. Returning to them resumes the preview.
 
+![Blender viewport with a streamed armature and the RGB MoCap Bone Stream panel showing Port, Disconnect, Bake, and Clean](images/blender-bone-stream-ui.png)
+
+*The Blender sidebar after connecting one person. **Port** matches RGB MoCap,
+**Disconnect** ends the connection, **Bake** saves the motion as a Blender
+Action, and **Clean** reviews inactive stream rigs.*
+
 If the port is already in use, choose another **Port** in RGB MoCap's **Stream** tab and enter the same number in Blender. Press Enter or leave the RGB MoCap port field to apply. **Reset** restores **49168** if available. Changing the active port requires reconnecting in Blender. If the new port is unavailable, an existing stream keeps its old port. The app returns to the default when relaunched.
 
 The add-on receives live bone poses, including root motion, with each person's rest skeleton. It updates the viewport without creating keyframes. The connection is local to this computer and supports offline people.

@@ -35,6 +35,14 @@ project's `Plugins` folder. Replace the entire existing plugin folder when upgra
 **Tools > RGB MoCap Connect**. Set **Target type** to **MetaHuman** in 0.5.0
 or later, select a source row and one MetaHuman actor, then click **Connect
 selected actor**. Each row displays its targets and Face switch.
+
+![RGB MoCap Connect with a live source, a connected MetaHuman, the Face checkbox, and the Bake button](images/unreal-live-link-connect-ui.png)
+
+*A connected MetaHuman in RGB MoCap Connect. The **Stream** column shows
+**Live**, **Connected targets** identifies the receiving actor, and **Bake...**
+saves the active take. **Face** applies tracked expressions to the MetaHuman.
+The example shows **No tracked face at this time** while the body stream is live.*
+
 The later reference-FBX/IK instructions describe the optional manual workflow.
 The old sample project is no longer distributed.
 
