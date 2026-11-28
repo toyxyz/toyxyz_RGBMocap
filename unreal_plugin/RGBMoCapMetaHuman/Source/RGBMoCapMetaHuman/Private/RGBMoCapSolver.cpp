@@ -20,10 +20,14 @@ FQuat ClavicleRestLift(const FVector& SourceClavicle,const FVector& SourceArm,
     const auto Elevation=[](const FVector& V) { return FMath::Atan2(V.Z,V.Size2D()); };
     const FVector Axis=FVector::CrossProduct(TargetClavicle,FVector::UpVector).GetSafeNormal();
     if (Axis.IsNearlyZero()) return FQuat::Identity;
-    // Match the offline tolerance and horizontal-projection ramp.
-    const double Drop=FMath::Clamp(-Elevation(TargetArm)-FMath::Max(FMath::DegreesToRadians(10.),-Elevation(SourceArm)),0.,UE_HALF_PI);
+    // Blend from near-horizontal rests to full alignment for an A-pose.
+    // Use rest geometry only so animated arm movement cannot drive the clavicle.
+    const double Tolerance=FMath::DegreesToRadians(10.);
+    const double FullBlend=FMath::DegreesToRadians(30.);
+    const double Drop=-Elevation(TargetArm)-FMath::Max(Tolerance,-Elevation(SourceArm));
+    const double Weight=FMath::SmoothStep(0.,FullBlend,Drop);
     const double Gap=FMath::Max(0.,Elevation(SourceClavicle)-Elevation(TargetClavicle));
-    return FQuat(Axis,(1.-FMath::Cos(Drop))*Gap);
+    return FQuat(Axis,Weight*Gap);
 }
 void Compose(const FSkeleton& Skeleton,const TArray<FTransform>& Local,TArray<FTransform>& World) {
     World.SetNum(Local.Num());
@@ -117,10 +121,13 @@ bool FSolver::Initialize(const FSkeleton& InSource,const FSkeleton& InTarget,FSt
     Map(TEXT("neck_01"),Native?TEXT("Neck1"):TEXT("Neck"));Map(TEXT("neck_02"),Native?TEXT("Neck2"):TEXT("Neck"));Map(TEXT("head"),TEXT("Head"));
     for (int32 Side=0;Side<2;++Side) {
         FString P=Side==0?TEXT("Left"):TEXT("Right"),S=Side==0?TEXT("_l"):TEXT("_r");
-        Map(TEXT("clavicle")+S,P+TEXT("Shoulder"));
+        // Native77 supplies the shoulder segment direction directly. Its
+        // horizontal rest clavicle can differ from both A- and T-pose targets.
+        if (Native) Map(TEXT("clavicle")+S,P+TEXT("Shoulder"),TEXT("upperarm")+S,P+TEXT("Arm"));
+        else Map(TEXT("clavicle")+S,P+TEXT("Shoulder"));
         const int32 TC=Target.Find(*(TEXT("clavicle")+S)),SC=Source.Find(*(P+TEXT("Shoulder")));
-        ClavicleTargets[Side]=TC;
-        if (TC>0) {
+        ClavicleTargets[Side]=Native?INDEX_NONE:TC;
+        if (!Native && TC>0) {
             ClavicleReferences[Side]=Target.Local[TC].GetRotation();
             const int32 SA=Source.Find(*(P+TEXT("Arm"))),SE=Source.Find(*(P+TEXT("ForeArm")));
             const int32 TA=Target.Find(*(TEXT("upperarm")+S)),TE=Target.Find(*(TEXT("lowerarm")+S));

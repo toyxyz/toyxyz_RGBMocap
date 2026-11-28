@@ -45,9 +45,12 @@ including characters still in their rest pose. Names stay upright and the same
 screen size; crowded labels are separated. These controls change the preview only.
 
 When retargeting SMPL-family motion, the target's clavicles follow the
-captured movement relative to the chest. A target with lower rest arms can
-receive a small clavicle lift based on the two rigs' rest angles. After
+captured movement relative to the chest. For an A-pose target, the app
+aligns the clavicle reference using the upper-arm and clavicle angles of
+both rigs. Targets closer to a T-pose receive less or no adjustment. After
 updating, run **Retarget** again to apply the change to a saved character.
+GEM-X Native77 follows the tracked shoulder segment on either rest pose
+and uses the character's original clavicle length.
 
 Retargeting uses the selected source motion and its applied contact timings.
 **Apply Correction** also refreshes characters linked to the corrected source,

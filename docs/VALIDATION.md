@@ -2,6 +2,25 @@
 
 Historical PEAR results below describe earlier versions. For current real-time tracking, use [RGB MoCap Live](https://github.com/toyxyz/rgbmocap_live).
 
+## Clavicle retargeting and motion export round trips
+
+- Re-baked a 1,675-frame FlowHMR take to PMX, Mixamo and VRM targets in
+  Blender 4.5. At frame 233, the PMX A-pose target changed from 43–45 to
+  15–16 degrees below horizontal. The Warrok T-pose clavicle angles
+  matched its previous bake throughout the clip.
+- A 294-frame GEM-X Native77 take was re-baked to the same A- and T-pose
+  targets. The old shoulder-direction errors of about 15–18 degrees
+  at the median fell below 0.01 degrees at each tested frame.
+- Round trips in Blender covered source FBX (A/T and Maya compatibility),
+  Generic and Biped BVH, and portable Blender bundles. Character FBX
+  covered PMX and Mixamo with and without meshes, plus VRM with a mesh.
+  VMD Root and Center modes were reimported through MMD Tools. Sampled
+  shoulder and arm angles in the FlowHMR round trips agreed within 0.01 degrees.
+- Also reimported Native77 FBX, BVH and Blender, and ViDiHand2 FBX with
+  300 frames and keyed wrists. Unreal 5.8.4 imported skinned Manny and
+  Quinn plus Native77-to-Manny FBX using Legacy and Interchange. Legacy
+  also imported the animation-only files onto the respective skeletons.
+
 ## BVH sole and automatic floor alignment
 
 - Exported 64 combinations from a 999-frame FlowHMR take and a 326-frame ExMR

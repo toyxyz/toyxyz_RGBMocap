@@ -9,7 +9,7 @@ import numpy as np
 
 from mocap.gemx_result import FPS, MESH, POSE, load_rig
 from mocap.gemx_retarget import BODY, finger_mapping
-from .blender_bake import A, curves, key_values, rotation
+from .blender_bake import A, align, curves, key_values, rotation
 from .file_paths import io_path, save_blend
 from .mapping import body_trajectory_root
 
@@ -50,6 +50,13 @@ def bake(out, kind, project, motion=None):
     target_lateral = heads[targets[1]] - heads[targets[2]]
     yaw = np.arctan2(target_lateral[1], target_lateral[0]) - np.arctan2(source_lateral[1], source_lateral[0])
     axes_map = np.array(Matrix.Rotation(float(yaw), 3, 'Z')) @ A
+    clavicles = {}
+    for collar, upper in ((13, 16), (14, 17)):
+        shoulder, arm_joint = targets[collar], targets[upper]
+        source_collar, source_arm = (source_indices[BODY[i]] for i in (collar, upper))
+        rest_direction = heads[arm_joint] - heads[shoulder]
+        tracked = (native[:, source_arm, :3, 3] - native[:, source_collar, :3, 3]) @ axes_map.T
+        clavicles[shoulder] = rest_direction, tracked
     target_length = sum(np.linalg.norm(heads[targets[a]] - heads[targets[b]]) for a, b in ((1, 4), (4, 7), (2, 5), (5, 8)))
     source_length = sum(np.linalg.norm(source_rest[source_indices[BODY[a]], :3, 3] -
                                        source_rest[source_indices[BODY[b]], :3, 3]) for a, b in ((1, 4), (4, 7), (2, 5), (5, 8)))
@@ -78,7 +85,14 @@ def bake(out, kind, project, motion=None):
             continue
         j = source_indices[mapping[name]]
         delta = native[:, j, :3, :3] @ source_rest[j, :3, :3].T
-        world[name] = axes_map @ delta @ axes_map.T @ axes[name]
+        desired = axes_map @ delta @ axes_map.T
+        if name in clavicles:
+            rest_direction, tracked = clavicles[name]
+            # Preserve the source roll while aiming the target shoulder segment.
+            # The native T-pose clavicle can differ from either target rest pose.
+            swing = np.stack([align(old, actual) for old, actual in zip(desired @ rest_direction, tracked)])
+            desired = swing @ desired
+        world[name] = desired @ axes[name]
         local = pre.swapaxes(-1, -2) @ world[name]
         q = np.array([tuple(Matrix(m.tolist()).to_quaternion().normalized()) for m in local])
         for frame in range(1, n):

@@ -37,10 +37,28 @@ class ClavicleRetargetTests(unittest.TestCase):
         source[0, 13] = chest @ shrug @ neutral[13]
         reference, target = rest_pose(0, 18), rest_pose(-55, -9)
         lift = clavicle_rest_lift(reference, target)
-        part = 27 * (1 - np.cos(np.radians(45)))
-        np.testing.assert_allclose(lift, Rotation.from_euler('z', [part, -part], degrees=True).as_matrix(), atol=1e-12)
+        expected_lift = Rotation.from_euler('z', [27, -27], degrees=True).as_matrix()
+        np.testing.assert_allclose(lift, expected_lift, atol=1e-12)
         result = clavicle_rotations(source, neutral, chest[None], reference, target)
         np.testing.assert_allclose(result[0], np.stack([chest @ shrug @ lift[0], chest @ lift[1]]), atol=1e-12)
+
+    def test_lowered_clavicles_follow_source_elevation_on_an_a_pose(self):
+        reference = rest_pose(0, 18)
+        target = rest_pose(-38, -16)
+        neutral = np.repeat(np.eye(3)[None], 22, axis=0)
+        source = neutral[None].copy()
+        source[0, 13:15] = Rotation.from_euler('z', [-33, 33], degrees=True).as_matrix()
+
+        result = clavicle_rotations(source, neutral, np.eye(3)[None], reference, target)
+        directions = (result[0] @ (target[[16, 17]] - target[[13, 14]])[..., None])[..., 0]
+        elevations = np.degrees(np.arctan2(directions[:, 1], np.linalg.norm(directions[:, [0, 2]], axis=1)))
+        # The 38-degree arm is just below the full-alignment threshold.
+        np.testing.assert_allclose(elevations, [-15, -15], atol=.5)
+
+    def test_intermediate_rest_pose_blends_the_lift(self):
+        result = clavicle_rest_lift(rest_pose(0, 18), rest_pose(-25, -9))
+        expected = Rotation.from_euler('z', [13.5, -13.5], degrees=True).as_matrix()
+        np.testing.assert_allclose(result, expected, atol=1e-12)
 
     def test_matching_a_poses_do_not_add_a_lift(self):
         result = clavicle_rest_lift(rest_pose(-55, 3), rest_pose(-55, -9))

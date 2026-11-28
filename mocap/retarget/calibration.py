@@ -31,7 +31,7 @@ def desired(source_world,neutral,rest):
     return out
 
 def clavicle_rest_lift(source_rest, target_rest):
-    """Partially offset the lower clavicle reference when the target has lowered arms."""
+    """Align the clavicle reference for a target with lower rest arms."""
     clavicles, upper_arms, elbows = [13, 14], [16, 17], [18, 19]
     source_collar = source_rest[upper_arms] - source_rest[clavicles]
     target_collar = target_rest[upper_arms] - target_rest[clavicles]
@@ -41,14 +41,16 @@ def clavicle_rest_lift(source_rest, target_rest):
     def elevation(direction):
         return np.arctan2(direction[:, 1], np.linalg.norm(direction[:, [0, 2]], axis=1))
 
-    # Upper arms within ten degrees of horizontal count as T-pose. Beyond
-    # that, use the change in horizontal projection to ramp the rest lift.
-    drop = np.clip(-elevation(target_arm) - np.maximum(np.radians(10), -elevation(source_arm)), 0., np.pi / 2)
+    # Keep the Unreal receiver's rest-pose blend. Near-horizontal targets
+    # retain their reference. A clear A-pose gets the full positive gap.
+    drop = -elevation(target_arm) - np.maximum(np.radians(10), -elevation(source_arm))
+    blend = np.clip(drop / np.radians(30), 0., 1.)
+    weight = blend * blend * (3. - 2. * blend)
     gap = np.maximum(0., elevation(source_collar) - elevation(target_collar))
     axis = unit(np.cross(target_collar, [0., 1., 0.]))
     valid = np.logical_and.reduce([np.linalg.norm(v, axis=1) > 1e-6
                                    for v in (source_collar, target_collar, source_arm, target_arm)])
-    return R.from_rotvec(axis * ((1. - np.cos(drop)) * gap * valid)[:, None]).as_matrix()
+    return R.from_rotvec(axis * (weight * gap * valid)[:, None]).as_matrix()
 
 
 def clavicle_rotations(source_world, neutral, target_chest, source_rest, target_rest):

@@ -52,11 +52,11 @@ The old sample project is no longer distributed.
    Changing **Target type** sets the type for the next connection. **Disconnect
    source** restores the original animation for the actors on that row.
 
-The plugin reads the selected mesh's rest pose and bone lengths. RGB MoCap
-Connect 0.5.1 transfers clavicle movement relative to the source chest. When
-the target's rest arms hang lower than the source's, it can lift the clavicle
-reference to account for the A-pose difference. The reference is computed
-from both rigs once. The plugin drives body, fingers and the mannequin's
+The plugin reads the selected mesh's rest pose and bone lengths. Receiver
+version 0.5.2 aligns the SMPL clavicle reference for a clear A-pose using
+the two rigs' rest geometry, then transfers the source's chest-relative
+motion. Native77 follows the tracked shoulder segment direction for
+either rest pose. The plugin drives body, fingers and the mannequin's
 hand and foot IK guides directly. **Ground
 Contact** uses an estimated flat floor in component space. The mannequin
 receives body motion only. On a shared source row, **Face** applies to the

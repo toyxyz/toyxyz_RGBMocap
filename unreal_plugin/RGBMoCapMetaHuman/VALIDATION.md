@@ -1,5 +1,26 @@
 # Verification scope
 
+## 0.5.2 A-pose clavicle rest alignment
+
+UE 5.8.4 evaluated both receivers on the same MetaHuman body reference
+skeleton and 1,675 saved FlowHMR frames. At a representative lowered-arm
+frame, the source clavicles sat about 8 degrees below horizontal. Version
+0.5.1 placed them about 26 degrees below horizontal and moved the shoulder
+joints about 4.3 cm below the A-pose in chest space. Version 0.5.2 recovered
+approximately 8 degrees below horizontal and kept both joints within 0.2 cm
+of their A-pose height in that frame.
+
+A 12-degree one-sided clavicle rotation was preserved on MetaHuman and
+Manny. Lowering the upper arms by 70 degrees in isolation did not move
+either clavicle. Rotating the source root did not change the target's
+chest-relative clavicle angles. A T-pose target produced the same transforms
+before and after the change over 22 test poses.
+
+A separate native solver test used 294 saved GEM-X frames on the same
+MetaHuman asset, Manny and a T-pose target. Native77 clavicle elevations
+matched the source within 0.01 degrees on all three. The SMPL replay and
+controls produced identical transforms after the Native77 change.
+
 ## 0.5.1 clavicle rest calibration
 
 The offline measurement used a 495-frame FlowHMR take with a T-pose Mixamo
