@@ -48,6 +48,60 @@ class SharedWorkflowTests(unittest.TestCase):
             self.assertEqual([stage for stage, _ in queue], ['exmr_batch', 'correct', 'export', 'correct', 'export'])
 
 
+class BvhFloorExportTests(unittest.TestCase):
+    def test_reference_and_applied_floor_in_both_profiles(self):
+        import numpy as np
+
+        from mocap.biped_bvh import bone_names
+        from mocap.export_copy import run
+        from mocap.export_options import read_header
+        from mocap.source_bvh import write_channels
+
+        kind = 'corrected_initial'
+        with TemporaryDirectory() as directory:
+            project = Path(directory)
+            source = project / 'source.bvh'
+            names = list(bone_names())
+            rest = np.zeros((52, 3))
+            rest[0, 1] = 1.
+            positions = np.array([[2., .97, 4.], [2., .99, 4.1]])
+            angles = np.zeros((2, 52, 3))
+            angles[:, 0, 0] = [365., 366.]
+            write_channels(source, names, np.array([-1] + [0] * 51), rest, np.zeros_like(rest),
+                           positions, angles, ['XYZ'] * 52, 30.)
+            original = source.read_bytes()
+            fbx_rest = rest.copy()
+            fbx_rest[[10, 11], 1] = [.017, .018]
+            np.savez(project / 'rig.npz', fbx_rest=fbx_rest)
+            atomic_json(project / f'{kind}_mixamo.json', {'asset_file': 'rig.npz'})
+            for profile in ('generic', 'biped'):
+                for auto_floor in (False, True):
+                    with self.subTest(profile=profile, auto_floor=auto_floor):
+                        atomic_json(project / f'{kind}_correction.json', {
+                            'floor': -.023, 'segment_count': 1,
+                            'options': {'mode': 'flat', 'auto_floor': auto_floor, 'foot_lock': True},
+                        })
+                        request = project / 'request.json'
+                        target = project / f'{profile}-{auto_floor}.bvh'
+                        atomic_json(request, [{
+                            'project': str(project), 'source': str(source), 'target': str(target),
+                            'kind': kind, 'bvh_profile': profile,
+                        }])
+                        with patch('mocap.export_copy.selected_export', return_value=source):
+                            self.assertEqual(run(request), 1)
+                        with target.open('rb') as exported:
+                            header, _ = read_header(exported)
+                            self.assertAlmostEqual(float(header[3].split()[2]), 1.017)
+                            self.assertEqual(exported.readline().strip(), b'Frames: 2')
+                            self.assertEqual(exported.readline().strip(), b'Frame Time: 0.0333333333')
+                            motion = np.loadtxt(exported)
+                        shift = .023 if auto_floor else 0.
+                        np.testing.assert_allclose(motion[:, :3], positions + [0., shift, 0.], atol=1e-9)
+                        if profile == 'generic':
+                            np.testing.assert_array_equal(motion[:, 3], angles[:, 0, 0])
+                        self.assertEqual(source.read_bytes(), original)
+
+
 class ExmrCliTests(unittest.TestCase):
     def test_reject_different_source_and_changed_file_at_same_path(self):
         with TemporaryDirectory() as directory:

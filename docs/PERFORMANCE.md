@@ -59,6 +59,8 @@ running jobs retain their starting setting.
 | GVHMR and add-ons | Use existing adaptive image batches and bounded processing. Preserve full-context FP32 attention; use the validated query split only when dense attention does not fit or after its supported OOM recovery. |
 | MAMMA | Offload the VGGT camera transformer blocks. Masks, FP32 landmarks and 3D fitting keep their current settings; this is not full-MAMMA model offloading. |
 | PromptHMR | Retains one-image batches and full temporal context; additional block offloading is not implemented. |
+| GEM-X | Uses one image per batch. Automatic selects up to four images when GPU memory is sufficient and can retry at a smaller batch after a CUDA OOM. |
+| ViDiHand2 | Automatic / Moving camera estimation can offload VGGT-Omega blocks. ViDiHand2 hand inference keeps its own decoded sequence limit and model memory requirements. [First-person resource limits](FIRST_PERSON_ARMS.md) |
 | SAM 3.1 Find person | Store track history and mask caches in CPU RAM. Automatic compares the GPU budget with the estimated workload and retries a fast CUDA OOM once in a fresh worker. Keep the existing video resolution, frames and batch settings. |
 
 ## Measured memory savings

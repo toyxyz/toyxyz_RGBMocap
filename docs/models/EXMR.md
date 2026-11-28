@@ -148,7 +148,10 @@ The viewport Camera switch can show estimated movement for Moving Camera mode.
 Camera rotation comes from the stored SimpleVO track; approximate displacement
 is derived from the ORIGINAL paired world/camera body-root predictions, without
 rerunning inference. Body prediction errors can appear as camera movement.
-Static Camera retains a fixed position. Motion x controls the gizmo/path distance
+When SimpleVO finds too few usable features, it holds the previous camera
+transform for that frame. Long stretches of blurred or featureless footage can
+therefore produce an estimated path that stalls. Static Camera retains a fixed
+position. Motion x controls the gizmo/path distance
 scale (default 1; 0 fixes the center), independently of the video overlay and
 exported animation. A full-video reference take is required for displacement;
 otherwise a notice identifies rotation-only display.
@@ -167,5 +170,7 @@ gizmos. It runs when a camera display is needed and does not rerun motion infere
 or modify original tracking files, camera centers, motion/contact results or
 FBX/BVH animation. Off restores the original saved camera path. Workspace view
 settings preserve the checkbox; verified session results can be reused. No extra
-runtime/models are needed. Progress, accepted counts and time are reported in the
-app/Console/CMD. See [the camera preview guide](../USER_GUIDE.md#saved-cameras-and-camera-preview).
+runtime/models are needed. For portable Blender export, the export dialog's
+**Refine Camera Rotation** option includes this orientation when **Export
+saved camera tracking** is enabled. Progress, accepted counts and time are
+reported in the app Console and CMD window. See [the camera preview guide](../USER_GUIDE.md#saved-cameras-and-camera-preview).

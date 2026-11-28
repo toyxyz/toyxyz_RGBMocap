@@ -35,6 +35,11 @@ before publishing the environment. Only allowlisted identical CUDA DLLs are
 shared. See the [GEM-X guide](models/GEMX.md#setup) before changing the locks
 or working on its native preview, retarget and Blender paths.
 
+Optional ViDiHand2 setup fetches pinned upstream source with Git on PATH and
+runs a CUDA BF16 attention check in the managed FlowHMR environment. Its weights
+are separate Model Manager entries. Follow the [ViDiHand2 setup guide](FIRST_PERSON_ARMS.md#local-runtime-setup)
+and keep any legacy external runtime configuration when updating.
+
 ## Optional Unreal Live Link sender
 
 On Windows, **Setup_UnrealStream.cmd --prebuilt** installs a matching sender
@@ -100,12 +105,12 @@ profile processes; C++ changes require rebuilding the native correction module.
 Keep source inference, contact correction and derived preview/export generations
 consistent. A change to painting or labels should not silently rerun inference.
 
-Character import/baking runs in Blender's own Python, separately from the five AI
-profiles. For development, point `RGBMOCAP_BLENDER` to its executable:
+Character import and baking run in Blender's bundled Python independently of the
+AI runtime profiles. For development, point `RGBMOCAP_BLENDER` to its executable:
 
 ```powershell
 $env:RGBMOCAP_BLENDER = 'C:\Tools\Blender-4.5\blender.exe'
-.venv\Scripts\python.exe app.py
+.\.venv\Scripts\python.exe app.py
 ```
 
 Character UI and processing live in `mocap/character_ui.py`, `character_data.py`
@@ -160,6 +165,15 @@ The core currently uses AVX compiler options; do not claim compatibility with
 processors that have not been checked.
 
 ## Before publishing source changes
+
+Run the tracked regression suite from the repository root with the installed
+Windows runtime. Activate the GUI profile so viewport and Qt tests can import
+PySide6. Redirect generated test outputs to a scratch folder when using saved
+projects for manual checks.
+
+```powershell
+.\runtime\python.exe -X utf8 -B -c "from pathlib import Path; from mocap.runtime_registry import activate; activate(Path.cwd(), 'gui'); import unittest; unittest.main(module=None, argv=['unittest', 'discover', '-s', 'tests'])"
+```
 
 Test `install.cmd`, `RGBMoCap.cmd`, and `update.cmd` in a separate writable
 checkout. Check failure/retry, local edits, model preservation, a short clip

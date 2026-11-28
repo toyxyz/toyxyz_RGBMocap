@@ -3,7 +3,8 @@
 Run `RGBMoCapCLI.cmd` from the installed Windows distribution. It uses the
 desktop's workers, saved settings and project results. Run `install.cmd`
 first for ExMR, FlowHMR and GVHMR. GEM-X, PromptHMR, MAMMA, SAM 3.1 and Unreal
-Live Link have separate setup commands. See the [user guide](USER_GUIDE.md)
+Live Link have separate setup commands. Run ViDiHand2 reconstruction in the
+desktop after its optional source setup. See the [user guide](USER_GUIDE.md)
 and [model guides](models/README.md) for setup and required files.
 
 ## Reconstruct and inspect
@@ -20,7 +21,7 @@ and [model guides](models/README.md) for setup and required files.
 | Model key | Reconstruction options |
 | --- | --- |
 | `exmr` | Static or moving camera, smoothing and motion correction. |
-| `flowhmr` | Camera mode, sampling every 1, 2, 5, 10 or 30 frames, Fast SAM and HaMeR finger refinement. |
+| `flowhmr` | Static or moving camera, automatic or explicit camera sampling, Fast SAM and HaMeR finger refinement. |
 | `gvhmr` | Fixed camera, with optional HTD, FootMR and HandFlow. |
 | `gemx` | Native SOMA reconstruction and motion correction in the dedicated runtime. |
 | `prompthmr` | People count, interaction and camera mode. Moving camera requires the optional PromptHMR camera runtime. |
@@ -63,17 +64,23 @@ the marker time and repeat `--sam31-point X Y` for normalized image points.
   Run `correct` after setting or resetting manual contacts.
 - `export` uses the saved motion result unless you specify `--result`.
   `--output` names one output and `--output-dir` generates filenames for
-  individual takes. `--format blend` writes a Blender bundle directory.
-  Add `--combined` for a shared timeline or `--whole-scene` for a native
-  MAMMA scene. FBX and BVH use file paths. Existing export destinations
-  require `--overwrite`. The export plan reports unavailable takes and
-  how to prepare them.
+  individual takes. `--format blend --output D:\out\walk.blend` creates a
+  new `D:\out\walk\` bundle containing `walk.blend` and its companion files.
+  Use `--combined` for a shared timeline or `--whole-scene` for a native MAMMA
+  scene. Both require `--output`. `--overwrite` is for existing FBX and BVH
+  files. A Blender bundle always needs a new directory. Use `--dry-run` to
+  check planned paths and resolve unavailable takes.
 - `prepare-preview` refreshes saved rig and scene data. `preview PROJECT
   --output PREVIEW.mp4` renders the desktop viewport. It needs an
   OpenGL-capable Windows session and accepts an optional `--frames` limit.
   `project copy PROJECT --output NEW_FOLDER` copies the workspace and media.
 
-## Refine camera rotation
+## Camera estimation and rotation refinement
+
+For FlowHMR, `--camera static` or `--camera-interval -1` skips VGGT-Omega.
+Use `--camera-interval 0` for automatic moving-camera sampling, or select
+`1`, `2`, `5`, `10` or `30`. This sets the camera sample interval. Motion
+reconstruction still uses the full 30 fps working sequence.
 
 Use `--vggt-opt` or `--no-vggt-opt` to set the lower-memory VGGT-Omega camera
 path for FlowHMR and MAMMA. The built-in default is on. FlowHMR Static Camera
@@ -126,16 +133,19 @@ Camera centers, body motion, and the source camera files stay unchanged.
   See the [VMD import notes](USER_GUIDE.md#character-retargeting) when verifying
   the master root in Blender.
   `reference-fbx` exports the body streaming reference rig.
-- For SMPL takes corrected with Flat Ground and Auto Floor Height, FBX/VMD
-  export and streaming align the estimated motion floor to zero. Manual floor
-  height retains its placement. Use Prepare Preview on older takes to rebuild
-  their FBX/source reference from existing motion.
+- For SMPL takes corrected with Flat Ground and Auto Floor Height, FBX, BVH
+  and VMD export and streaming align the estimated motion floor to zero. Manual floor
+  height retains its placement. To choose a floor for a saved take, use `correct
+  PROJECT --mode flat --auto-floor` or `correct PROJECT --mode flat --floor 0`,
+  with the take's `--model`. Include `--foot-lock` if foot correction is off.
+  Use `prepare-preview` to rebuild an older FBX/source reference from existing motion.
 - Use `stream --target blender` with the Blender receiver. `--port` overrides
   the Blender port. The receiver can request a bake of the saved take. Use
   `stream --target unreal` with the Live Link sender and receiver, and add
   `--face` for actors with face data. `--wait` allows time to connect and
   `--seconds` limits the run. Ctrl+C stops a loop. See the
-  [desktop streaming setup](USER_GUIDE.md).
+  [Blender streaming guide](USER_GUIDE.md#stream-bones-to-blender) and
+  [Unreal setup and engine compatibility](UNREAL_LIVE_LINK.md).
 
 The former `pear` command now points to [RGB MoCap Live](https://github.com/toyxyz/rgbmocap_live)
 for real-time tracking.
@@ -169,7 +179,8 @@ Commands with `--dry-run` plan their operations without writing project or
 output files. `--json` emits a result with `schema_version` and `ok`.
 Progress and worker logs go to stderr. Exit status is 0 for success, 1 for
 a runtime or processing failure, 2 for invalid arguments or inputs, and 130
-for Ctrl+C.
+for Ctrl+C after a command starts. Argument parser errors can occur before
+JSON output is available.
 
 Writing operations share the desktop and setup lock. Close the desktop
 before starting one from the same installation. Use a single installation

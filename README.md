@@ -44,17 +44,19 @@ https://github.com/user-attachments/assets/3353f5ca-6393-40af-822f-210a77f51003
 ## Install and run
 
 The steps below cover Windows. For the experimental x86-64 Linux AppImage and
-source installation, see the [Linux guide](https://github.com/toyxyz/toyxyz_RGBMocap/blob/linux_support/docs/LINUX.md#test-the-appimage-on-linux-mint).
-The AppImage was tested on WSL 2. Native Linux Mint testing is welcome.
+source installation, follow the [Linux support branch guide](https://github.com/toyxyz/toyxyz_RGBMocap/blob/linux_support/docs/LINUX.md).
+The AppImage was tested on WSL 2. For experimental Apple Silicon setup and
+its supported workflows, follow the [macOS support branch guide](https://github.com/toyxyz/toyxyz_RGBMocap/blob/macos_support/docs/MACOS.md).
 
 > [!IMPORTANT]
 > On Windows 11, Smart App Control in **On** mode may block the unsigned private
 > Python runtime used by RGB MoCap. This can stop installation or launch.
 > See [Smart App Control troubleshooting](docs/USER_GUIDE.md#smart-app-control-on-windows-11).
 
-1. Install [Git for Windows](https://git-scm.com/download/win). Use a short, writable
-   installation path such as `C:\RGBMoCap`. Open **Command Prompt** to clone
-   the repository. Adjust the path if you need a different folder.
+1. Install [Git for Windows](https://git-scm.com/download/win). Choose the setup
+   option that makes Git available to Command Prompt and third-party programs.
+   Open a new **Command Prompt** and confirm `git --version` works. Clone into
+   a short, writable folder such as `C:\RGBMoCap`.
 
    ```cmd
    git clone https://github.com/toyxyz/toyxyz_RGBMocap.git C:\RGBMoCap
@@ -102,7 +104,7 @@ you use them, after the base installation:
 | MAMMA | `Setup_MAMMA.cmd` | [MAMMA guide](docs/MAMMA.md) |
 | PromptHMR | `Setup_PromptHMR.cmd` | [PromptHMR guide](docs/models/PROMPTHMR.md) |
 | GEM-X | `Setup_GEMX.cmd` | [GEM-X guide](docs/models/GEMX.md) |
-| ViDiHand2 (experimental) | `Setup_ViDiHand2.cmd` (source only, reuses FlowHMR) | [ViDiHand2 setup and workflow](docs/FIRST_PERSON_ARMS.md#local-runtime-setup) |
+| ViDiHand2 (experimental) | `Setup_ViDiHand2.cmd` (requires Git, reuses FlowHMR) | [ViDiHand2 setup and troubleshooting](docs/FIRST_PERSON_ARMS.md#local-runtime-setup) |
 
 MAMMA and PromptHMR require **Visual Studio 2022 C++ Build Tools**, the Windows SDK and
 **CUDA Toolkit 12.8** for local native builds. Close the app and review the

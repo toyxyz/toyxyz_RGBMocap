@@ -96,9 +96,19 @@ bones and animation keys and can be imported into Blender.
 ## Local runtime setup
 
 1. Run `install.cmd` to prepare the standard Windows components.
-2. Close RGB MoCap and run `Setup_ViDiHand2.cmd`. It fetches the pinned
-   ViDiHand2 source and checks CUDA using the installed FlowHMR runtime.
-3. Open RGB MoCap and prepare the checkpoints in **Model Manager > ViDiHand2**.
+2. In a new Command Prompt, run `git --version`. If Git is unavailable, install
+   Git for Windows with command-line PATH support and open a new terminal.
+   [Git for Windows](https://git-scm.com/download/win)
+3. Close RGB MoCap and run `Setup_ViDiHand2.cmd` from the app folder. Setup
+   fetches the pinned ViDiHand2 source with Git and checks CUDA BF16 attention
+   through the installed FlowHMR runtime.
+4. Open RGB MoCap and prepare the checkpoints in **Model Manager > ViDiHand2**.
+
+If fresh setup reports **WinError 2**, first confirm `git --version` and
+`where.exe git` in the same terminal, then retry setup. A base installation can
+succeed even if Git is unavailable to this terminal. If Git works, read the
+final setup error to distinguish a failed source download from a CUDA check.
+Rerun `install.cmd` if setup reports a missing FlowHMR profile.
 
 The default Windows worker shares the installed Python, PyTorch and CUDA
 packages with FlowHMR. Setup obtains only the upstream source. The pinned
@@ -139,6 +149,7 @@ and repository paths for native mode.
 
 Review the upstream model and MANO terms for your intended use. The
 checkpoints are obtained separately through Model Manager.
+[Third-party notices](../THIRD_PARTY_NOTICES.md#ai-tools-and-models) · [Citation](CITATIONS.md#vidihand2)
 
 ## Model Manager
 

@@ -130,9 +130,10 @@ have not yet been verified; compatibility reports are welcome.
 On Windows 11 with Smart App Control set to **On**, see
 [Smart App Control troubleshooting](#smart-app-control-on-windows-11) before running setup.
 
-1. Install [Git for Windows](https://git-scm.com/download/win). Open **Command
-   Prompt** and clone into a short, writable installation path such as
-   `C:\RGBMoCap`. Adjust the path if you need a different folder.
+1. Install [Git for Windows](https://git-scm.com/download/win) with the option
+   that makes Git available to Command Prompt and third-party programs. Open a
+   new **Command Prompt** and check `git --version`. Clone into a short,
+   writable folder such as `C:\RGBMoCap`.
 
    ```cmd
    git clone https://github.com/toyxyz/toyxyz_RGBMocap.git C:\RGBMoCap
@@ -306,8 +307,13 @@ it detects an incomplete update or a dependency mismatch.
 If a download or installation fails, read the console message, check the internet
 connection and free disk space, and rerun `install.cmd`. A completed download may
 be reused. Do not delete `models`, `projects` or the remaining `.setup` state to
-retry. If Git reports a conflict or local changes, resolve or back them up before
-running `update.cmd` again.
+retry. If Git reports tracked local changes, run `git status --short`,
+`git diff --name-only` and `git diff --cached --name-only` from the app folder
+before updating. Preserve edits you want to keep. If you need a clean checkout,
+clone into a separate folder and use the [model reuse steps](#reuse-models-in-a-new-installation).
+Open your existing projects from their saved locations. `update.cmd` needs a Git
+checkout on `main`; use `install.cmd` on a fresh clone if your original copy came
+from a source ZIP.
 
 The updater keeps completion/error reporting in Python and buffers its final CMD
 commands before Git can replace the launcher. Successful installation therefore
@@ -552,7 +558,8 @@ their location. **Save Project As** (`Ctrl+Shift+S`) creates a new named project
 folder at your chosen location and switches to that copy. It includes the video,
 motion, people and contact edits for every model, including all MAMMA input videos
 when present. Open its `project.json` to return to it. Each project manages
-`exmr`, `gvhmr`, `flowhmr`, `mamma` and `prompthmr` result folders as needed. Selecting a model
+`exmr`, `gvhmr`, `flowhmr`, `mamma`, `prompthmr`, `gemx` and `vidihand2` result
+folders as needed. Selecting a model
 loads its saved motion; if it has no result, **Reconstruct 3D** creates its data in
 that folder. Result selections, contact edits and settings stay separate by model.
 New ExMR/FlowHMR/GVHMR processing ranges stay under that model's `clips` folder;
@@ -591,9 +598,10 @@ to create a 30 fps working clip from a video below 30 fps before finding people
 or reconstructing. Inputs at 30 fps or higher still use the standard converter.
 The original video and audio are preserved.
 
-In **Model Manager**, open an offline model tab and use **Auto Download** on
+In **Model Manager**, open a full-body model tab and use **Auto Download** on
 **RIFE 4.9 / Frame Interpolation (Optional)**. One approximately 21 MB model is
-shared by all offline workflows and verified with SHA-256. It requires the
+shared by the full-body workflows and verified with SHA-256. ViDiHand2 uses
+standard 30 fps preparation. It requires the
 existing NVIDIA CUDA runtime and is excluded from **Download All**. You can
 also download the pinned model manually and use **Import...** on the same row.
 
@@ -604,10 +612,9 @@ and places them on the common trim's 30 fps grid.
 
 ## Choose a model
 
-Each model has a [detailed guide](models/README.md): [ExMR](models/EXMR.md),
-[FlowHMR](models/FLOWHMR.md), [GVHMR](models/GVHMR.md), [MAMMA](MAMMA.md)
-and [PromptHMR](models/PROMPTHMR.md). For real-time tracking, use [RGB MoCap Live](https://github.com/toyxyz/rgbmocap_live).
-These cover required files, settings, defaults and workflow limitations.
+The [model guide index](models/README.md) covers all seven workflows, including
+required files, controls and supported exports. For real-time tracking, use
+[RGB MoCap Live](https://github.com/toyxyz/rgbmocap_live).
 
 These quality comparisons are **subjective observations from our test videos**,
 not accuracy scores or a universal ranking. See the in-app **Model Guide** for
@@ -846,7 +853,8 @@ selected result is missing, reconstruct it; the app reports it as unavailable.
 and the next app launch. The confirmation window lists GVHMR's **HTD Refine**,
 **FootMR** and **HandFlow**, FlowHMR's sampling, Fast SAM and HaMeR options, ExMR's
 camera and smoothing, both models' **Refine Camera Rotation**, PromptHMR's camera
-and interaction, correction mode and locks, **Track Face** and **Resource Mode**.
+and interaction, **VGGT-Ω OPT** for FlowHMR and MAMMA, correction mode and locks,
+**Track Face** and **Resource Mode**.
 The saved **Automatic** or **Low Memory** mode applies to new MAMMA inputs too.
 Project data such as trim, floor height, pelvis offset, people counts and MAMMA
 calibration belong to the project. Its saved model settings and result selections
@@ -1157,12 +1165,14 @@ Progress and Cancel are available during saving. Completion/cancellation restore
 the original frame and view; an incomplete export does not replace an existing
 destination.
 
-### FBX and streaming floor height
+<a name="fbx-and-streaming-floor-height"></a>
 
-SMPL-based FBX and streaming reference rigs use the rest body's lowest sole
-vertex to set the rig's floor. For a take corrected with **Flat Ground** and
-**Auto Floor Height**, standalone Generic and UE5 Mannequin FBX exports and
-Blender/Unreal streaming place the estimated motion floor at world zero.
+### FBX, BVH and streaming floor height
+
+SMPL-based FBX, Generic and Biped BVH, and streaming reference rigs use the
+rest body's lowest sole vertex to set the rig's floor. For a take corrected
+with **Flat Ground** and **Auto Floor Height**, standalone FBX/BVH exports
+and Blender/Unreal streaming place the estimated motion floor at world zero.
 The same constant offset is used for all corrected actors sharing a scene
 floor. This preserves vertical motion and contact timing. **Auto Floor Height**
 off keeps the explicit manual floor height. The viewport and synchronized
@@ -1353,9 +1363,11 @@ Validated results are reused within the session while input stamps remain curren
 The checkbox is kept in workspace view settings when the workspace is saved.
 No extra models, packages or runtime installation are required.
 
-Refinement affects the video bone overlay, Camera Preview and displayed camera
-orientation only. Camera centers/movement scale, original camera files, source
-poses, contact correction and FBX/BVH animation remain unchanged. With the option
+Refinement affects the video bone overlay, Camera Preview and viewport camera
+orientation. For a portable Blender project, enable **Export saved camera
+tracking** and **Refine Camera Rotation** in the export dialog to include the
+refined orientation. Camera centers, the saved camera track, source poses,
+contact correction and FBX/BVH animation retain their original values. With the option
 off, FlowHMR retains its saved VGGT-Omega tracking and ExMR its saved SimpleVO
 tracking without this additional operation. Failures keep the original camera
 and display a notice.

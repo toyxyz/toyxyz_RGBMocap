@@ -6,6 +6,12 @@ These references do not change the separate licenses or permissions for code,
 model weights, body data or input footage. Supporting models retain their own
 upstream acknowledgements; see [third-party notices](../THIRD_PARTY_NOTICES.md).
 
+## ViDiHand2
+
+Wang et al. (2026), *ViDiHand2: Unifying Video Diffusion Priors and Hand
+Geometry for 3D Hand Motion Reconstruction in the Wild*.
+[arXiv:2611.30597](https://arxiv.org/abs/2611.30597) · [Project page and citation](https://vidihand2.github.io/)
+
 ## GEM-X and SOMA-X
 
 [GEM-X model card](https://huggingface.co/nvidia/GEM-X) · [Referenced GENMO paper](https://arxiv.org/abs/2505.01425)

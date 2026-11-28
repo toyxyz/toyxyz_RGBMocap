@@ -7,6 +7,12 @@ retained license files and provider agreements contain the full terms.
 
 ## AI tools and models
 
+ViDiHand2 setup fetches the [pinned upstream source](https://github.com/NTUYWANG103/ViDiHand/tree/23cf80c292f2fb2db20caa1dee96516a63ee30a7).
+Model Manager obtains the [pinned checkpoints](https://huggingface.co/WANG-XIXI/ViDiHand/tree/5117c7a34939cd6a2af0da12859237a38ede4276/vidihand_v2)
+separately. Confirm source and checkpoint permissions with the provider for your
+intended use. MANO and the optional VGGT-Omega camera checkpoint retain their
+own terms. [ViDiHand2 setup](docs/FIRST_PERSON_ARMS.md) · [Research citation](docs/CITATIONS.md#vidihand2)
+
 Optional RIFE frame interpolation uses an inference-only adaptation of the
 [ComfyUI-Frame-Interpolation RIFE network](https://github.com/Fannovel16/ComfyUI-Frame-Interpolation/tree/26545cc2dd95bc3d27f056016300673bdeee78f5/vfi_models/rife).
 The [upstream MIT license](third_party/RIFE/LICENSE) is retained. Model Manager

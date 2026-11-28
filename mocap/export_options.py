@@ -96,7 +96,7 @@ def centered_transform(transform, first_root, origins, group):
     return matrix
 
 
-def read_header(inp, symmetric=False):
+def read_header(inp, symmetric=False, sole_clearance=0.):
     """Read a bounded, strict source BVH header and optionally replace offsets."""
     lines=[];names=[];parents=[];offsets=[];ends=[];offset_lines={};end_lines={}
     stack=[];pending=None;channels=0;root_order=None;orders=[];header_bytes=0
@@ -142,10 +142,16 @@ def read_header(inp, symmetric=False):
         for j,p in enumerate(parents):
             if p>=0:rest[j]+=rest[p]
         rest,tips=symmetric_rest(names,parents,rest,np.asarray(ends))
+        rest[:, 1] += sole_clearance
         for j,index in offset_lines.items():
             value=rest[j] if parents[j]<0 else rest[j]-rest[parents[j]]
             lines[index]=b'  OFFSET '+(' '.join(f'{v:.9f}' for v in value)).encode('ascii')+b'\n'
         for j,index in end_lines.items():lines[index]=b'    OFFSET '+(' '.join(f'{v:.9f}' for v in tips[j])).encode('ascii')+b'\n'
+    elif sole_clearance:
+        index = offset_lines[0]
+        parts = lines[index].split()
+        parts[2] = format(offsets[0][1] + sole_clearance, '.9f').encode('ascii')
+        lines[index] = b'  ' + b' '.join(parts) + b'\n'
     return lines,root_order
 
 

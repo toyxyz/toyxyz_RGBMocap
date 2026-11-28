@@ -13,8 +13,18 @@ GUI dependencies into model workers or change their numerical defaults.
 
 ## Start and update
 
+Use the Windows commands on `main`. For platform-specific setup and current
+support scope, read the guide in [linux_support](https://github.com/toyxyz/toyxyz_RGBMocap/blob/linux_support/docs/LINUX.md)
+or [macos_support](https://github.com/toyxyz/toyxyz_RGBMocap/blob/macos_support/docs/MACOS.md).
+
+- Verify `git --version` from the shell used for cloning, updating or optional
+  Git-based setup. An installation from a ZIP can launch the base installer
+  without proving Git is available on PATH. For an updater refusal, inspect
+  `git status --short` and the tracked diff before making changes. Preserve
+  staged and unstaged work as well as untracked user data. A plain source
+  archive needs a Git checkout to use `update.cmd`.
 - Windows 64-bit, compatible NVIDIA GPU/driver and OpenGL 4.3 are required for the documented inference workflow. Other systems and GPUs were not comprehensively verified; see [validation](VALIDATION.md).
-- In a writable checkout, run `install.cmd` once. It sets up separate pinned profiles for ExMR, FlowHMR and GVHMR and their supported add-ons, MAMMA camera alignment support over the Flow runtime, Blender 4.5, FFmpeg and the prebuilt native motion-correction module. It does not install only the selected model's runtime or obtain AI weights/body data. Downloading and disk space are required. Models are obtained separately. Optional MAMMA, PromptHMR and GEM-X have separate setup commands.
+- In a writable checkout, run `install.cmd` once. It sets up separate pinned profiles for ExMR, FlowHMR and GVHMR and their supported add-ons, MAMMA camera alignment support over the Flow runtime, Blender 4.5, FFmpeg and the prebuilt native motion-correction module. It does not install only the selected model's runtime or obtain AI weights/body data. Downloading and disk space are required. Models are obtained separately. MAMMA, PromptHMR, GEM-X and ViDiHand2 have separate setup commands.
 - Run `RGBMoCap.cmd`. Keep its command window open; launch errors, processing messages and app Console output are also sent there, but long messages can be truncated and a saturated output queue can drop messages. Within the GUI, **Help > Check System** checks the system.
 - On Windows 11, Smart App Control in **On** mode can block the unsigned app-local Python at setup or launch. Check the blocked filename and CodeIntegrity events **3077** and **3089**. See the [installation troubleshooting guide](USER_GUIDE.md#smart-app-control-on-windows-11).
 - Base worker commands use explicit `-X utf8`, including isolated `-I` launches. Isolated mode ignores `PYTHONIOENCODING`/`PYTHONUTF8` from the parent environment. Any redirected/discarded text log stream must also specify UTF-8.
@@ -31,7 +41,7 @@ GUI dependencies into model workers or change their numerical defaults.
 - Base completion and optional MAMMA camera-alignment readiness are separate. A post-commit support failure reports completion with warnings; it must not recreate the global base pending marker. Inspect `.setup/git-components.json` and the actual capability configuration. The support check requires CUDA. For GPU warnings, check driver detection with `nvidia-smi` and verify CUDA in **Help > Check System** before retrying `install.cmd`. Camera-alignment preparation supports MAMMA automatic gravity. Mandatory base failures and unresolved promotion journals remain blocking. Never delete a pending marker blindly.
 - Recent full runtime checks are reused for up to seven days with matching group/verifier identities and an unchanged bounded file inventory, including additions/removals. Reuse does not refresh the full-check date. `install.cmd --verify-all` or `update.cmd --verify-all` forces the existing RECORD hashes/import checks. Missing/expired metadata, dependency changes and detected file changes trigger full checks for affected groups/dependents. Metadata is a change-detection heuristic, not an authenticity guarantee. Do not mark a runtime verified without an actual successful check.
 - `tools/pinned_download.py` supplies bounded HTTPS retries/resume for support archives. Keep certificate verification, HTTPS redirects, exact size and SHA-256, validated Content-Range, cancellation propagation and finite attempt/time limits. Ordinary base wheel downloads and optional package fetching retain their own paths; do not claim this replaces every network call. Source contracts are frozen/rechecked during base installation. A failed Git pull must preserve any pre-existing incomplete-install marker.
-- Base installation currently estimates at least 32.4 GiB free before models; ExMR/FlowHMR/GVHMR and add-ons were previously measured around 29 GiB of weights. Optional MAMMA, PromptHMR and GEM-X add separate runtimes and model files. With GEM-X CUDA sharing, the six offline model/runtime sets total about **72.46 GiB (77.8 GB)** before optional PromptHMR moving-camera support, excluding caches, projects, downloads and compiler tools, counting shared files once. Camera support adds about **1.57 GiB** (18.6 MiB modules and 1.55 GiB weights). See the [installed-size table](USER_GUIDE.md#installed-size); installed size and temporary setup headroom are different. Measurements are not guarantees.
+- Base installation currently estimates at least 32.4 GiB free before models; ExMR/FlowHMR/GVHMR and add-ons were previously measured around 29 GiB of weights. MAMMA, PromptHMR and GEM-X add optional runtime and model files. The measured **72.46 GiB (77.8 GB)** total covers the six full-body workflows with GEM-X CUDA sharing, before optional PromptHMR moving-camera support and ViDiHand2. It excludes caches, projects, downloads and compiler tools and counts shared files once. Camera support adds about **1.57 GiB** (18.6 MiB modules and 1.55 GiB weights). See the [installed-size table](USER_GUIDE.md#installed-size); installed size and temporary setup headroom are different. Measurements are not guarantees.
 
 Multi-person reconstruction groups supported ExMR, FlowHMR and GVHMR phases
 into sequential, bounded worker requests. `mocap/queue_groups.py` builds the queue;
@@ -80,15 +90,18 @@ Use the paired camera-stage measurements when describing VRAM savings.
 
 ## ViDiHand2 first-person capture
 
-Select ViDiHand2 in the standard workspace. ExMR is the initial model.
-`Setup_ViDiHand2.cmd` verifies CUDA and obtains the pinned source in
-`.setup/vidihand2-source/`. The default worker activates the installed
-FlowHMR profile in its own process. Keep the Chumpy compatibility aliases
+Select ViDiHand2 in the standard workspace. ExMR is the first-launch default.
+`Setup_ViDiHand2.cmd` uses Git on PATH to fetch the pinned source into
+`.setup/vidihand2-source/` and exercises CUDA BF16 attention. Check `git --version`
+in a fresh terminal if source setup reports WinError 2. An existing global or
+local PyTorch import alone is insufficient to verify this setup. The default
+worker activates the installed FlowHMR profile in its own process. Keep the Chumpy compatibility aliases
 scoped to that process and leave installed package files intact. Explicit
 external Windows or WSL settings take precedence and survive this setup.
 [ViDiHand2 setup and workflow](FIRST_PERSON_ARMS.md)
-Model Manager verifies the pinned ViDiHand2 video backbone and projector,
-and shares MANO Right with the body workflows. The worker reads managed
+Model Manager verifies the pinned ViDiHand2 video backbone and projector.
+ViDiHand2 shares MANO Right with the body workflows and requires the shared
+VGGT-Omega checkpoint in Automatic / Moving mode. The worker reads managed
 assets directly on Windows and WSL, with a per-file fallback to an external
 installation's existing checkpoints. Keep these
 weights, MANO files, generated caches and optional shoulder-prior weights local.
@@ -129,7 +142,9 @@ displacement to 0.03 m per axis. RGB MoCap passes `normalize_world=False` throug
 an explicit local option to preserve the existing world/camera frame. SimpleVO
 uses a documented frame-reader/count adapter over the canonical working video;
 do not switch it to JPEG pixels or extract duplicate frames just for camera
-enumeration. Keep the app's shared contact policy and manual timing precedence:
+enumeration. If SIFT descriptors or matches are insufficient, keep the previous
+camera transform for that frame and preserve the frame count. Keep the app's
+shared contact policy and manual timing precedence:
 upstream `foot_contacts` is not connected to correction. API/solver source hashes
 and provenance are part of stage receipts. Model Manager also downloads the
 official `models/exmr/config.json` (180 bytes) from the same pinned Hugging Face
@@ -165,7 +180,9 @@ Use **Model Manager** for the selected model and add-ons. Automatic download may
 | `Setup_PromptHMR.cmd` | Optional independent PromptHMR runtime | Same build tools, separate provider license review; MAMMA/SDF not required |
 | `Setup_GEMX.cmd` | Optional GEM-X Windows runtime | Reuses the pinned ExMR CPython and compatible CUDA DLLs, keeps its own inference packages, verifies CUDA. No compiler required. |
 | `Setup_SAM31.cmd` | Optional SAM 3.1 Find person tracker for ExMR, FlowHMR and GVHMR on Windows | Base ExMR profile, Git, internet, upstream terms review and NVIDIA CUDA with native bfloat16. Uses pinned wheels and a separate overlay. |
-| `update.cmd` | Source update and base runtime verification | Close the app and preserve tracked edits; it does not install the optional runtimes |
+| `Setup_ViDiHand2.cmd` | Optional first-person tracking source | Installed FlowHMR profile, Git on PATH, Internet access for the source and working CUDA BF16 attention. Checkpoints are managed separately. |
+| `Setup_UnrealStream.cmd` | Optional sender for saved-motion streaming | Matching Win64 prebuilt sender and stock engine BuildId, or a supported installed engine and C++/Windows SDK tools for a local build. |
+| `update.cmd` | Windows `main` source update and base runtime verification | Close the app. Preserve tracked edits and use the setup commands for optional components. |
 
 ### GEM-X support
 
@@ -415,8 +432,9 @@ change is needed. Paired 7/14.2-second mask tests cut time 17–21%, changed RAM
 
 The optional **RIFE Frame Interpolation** control under Movie Clip defaults
 off. Enable it before **Find person** or **Reconstruct 3D** on footage below
-30 fps. Confirm the shared RIFE 4.9 model in Model Manager. Model Manager
-verifies the checkpoint separately and **Download All** skips it. The
+30 fps in a full-body workflow. ViDiHand2 hides this control and uses standard
+video preparation. Confirm the shared RIFE 4.9 checkpoint in Model Manager.
+It is verified separately and **Download All** skips it. The
 converter uses source presentation timestamps, avoids interpolating across
 detected cuts and streams adjacent frames. Keep the original media and its
 timeline intact. Key prepared clips and detection caches by the interpolation
@@ -583,7 +601,11 @@ and reject overlong bone identities rather than truncating them.
 `mocap/camera_tracks.py` adapts committed camera receipts without inference or
 body-based camera refitting. Single-person FlowHMR may have no
 `scene_camera.json`; use its validated `flow_world.json` basis/height and native
-`flow_camera.npz` without creating a scene receipt or fitting the corrected pose. MAMMA native Z-up calibration is transported to the
+`flow_camera.npz` without creating a scene receipt or fitting the corrected pose. Moving FlowHMR
+uses one shared median of valid original-pixel VGGT intrinsics for SAM feature
+extraction and scene placement. FlowHMR's motion generator receives relative
+camera rotations. Static FlowHMR bypasses VGGT and retains the focal estimate
+from frame dimensions. Keep camera and feature receipts consistent. MAMMA native Z-up calibration is transported to the
 app's Y-up world. FlowHMR/ExMR use saved rotation tracks. Flow gizmos additionally display
 unscaled VGGT displacement; moving-camera ExMR gizmos use estimated displacement
 from ORIGINAL paired world/camera root positions, never corrected poses.
@@ -644,11 +666,11 @@ and frame/image/camera pairing separately.
 `mocap/source_export_dialog.py` supplies source export options.
 `biped_bvh.py` adapts PR #18's Character Studio naming and uniform ZXY
 conversion for all 52 joints, including fingers. `bvh_profile` propagates through
-every person/take export request; reject unknown profiles. Generic output remains
-a byte copy when no placement/T-pose preparation is needed. Biped uses bounded
-128-frame batches; only placement/T-pose preparation needs a temporary intermediate
-file, which is closed on success/error/cancellation. Preserve original offsets,
-units, timing, physical keyed rotations and source caches. Uniform Euler order can
+every person/take export request. Generic output can stream original motion
+rows when only the rest offsets change. Biped uses bounded 128-frame batches
+and a temporary intermediate when rest, floor, placement or first-frame options
+change the exported copy. Close the intermediate on success, failure and
+cancellation. Preserve units, timing, physical keyed rotations and source caches. Uniform Euler order can
 change fractional interpolation; do not claim identical between-key motion or
 verified 3ds Max behavior from the Blender/numerical checks alone.
 
@@ -725,11 +747,16 @@ manual, multilevel and raw motion placement. Blender and Unreal live and baked
 streams use the same `StreamRig.pose` path and keep the reference rig identity
 independent of the motion offset.
 
-Apply the offset to standalone FBX and character FBX/VMD, including UE5
-Mannequin retargeting's source motion. Keep portable Blender bundle motion in
-its original coordinate system with the matching mesh and camera. BVH keeps
-its existing bind and placement. Verify positive and negative automatic floor
-heights against fixed zero, frames, bind transforms and shared actor offsets.
+Apply the offset to standalone FBX and BVH and to character FBX/VMD,
+including UE5 Mannequin retargeting's source motion. In `export_copy.py`, use
+the toe clearance from the committed `fbx_rest` to raise the root OFFSET of
+the exported BVH hierarchy. Apply this clearance after building symmetrical
+rest offsets and before Biped conversion. Keep exact Euler keys for shifts
+without rotation, and revalidate source files and the correction report before
+publishing. Keep the internal BVH cache and native SOMA path independent.
+Portable Blender bundle motion uses its recorded coordinates with the matching
+mesh and camera. Verify positive and negative automatic floor heights against
+fixed zero, frames, bind transforms and shared actor offsets.
 
 ### Portable Blender export implementation
 
@@ -745,8 +772,9 @@ Generic export preserves MOTION bytes. FBX uses the same canonical reference
 geometry with new proper display/rest bases and corresponding terminal markers.
 Validate input rigid offsets against the original committed bind, not the new
 lengths. Do not materialize a full new animation or rerun inference/contacts.
-Changed proportions intentionally change animated endpoints. Both options off
-retain the existing bind/output. `blend_export.py` explicitly clears both flags
+Changed proportions intentionally change animated endpoints. With both options
+off, preserve the source proportions and horizontal placement. The standard
+sole and automatic floor rules still apply. `blend_export.py` explicitly clears both flags
 before its nested FBX export; MAMMA whole-scene requests never propagate them.
 Keep source results/receipts immutable, stream bounded BVH blocks, and validate
 ordinary Blender imports, profiles, T-pose combinations and independent actors.
@@ -818,7 +846,7 @@ recheck the space budget before falling back to copying. Keep project manifests
 independent so staging can rewrite location metadata. Character index writes
 preserve unreadable input files before committing a replacement.
 
-- Default projects live under `<installation>/projects/`; **Save Project As** creates and switches to a copy at a user-selected location. Open the saved `project.json` using **File > Open Project**. A project contains model-specific `exmr`, `flowhmr`, `gvhmr`, `mamma` or `prompthmr` result folders; model switching loads existing results when available. For MAMMA, **Save Project As** copies the original camera inputs into the saved project. People, takes, contact edits and imported characters are project data.
+- Default projects live under `<installation>/projects/`; **Save Project As** creates and switches to a copy at a user-selected location. Open the saved `project.json` using **File > Open Project**. A project may contain `exmr`, `flowhmr`, `gvhmr`, `mamma`, `prompthmr`, `gemx` and `vidihand2` result folders; model switching loads existing results when available. For MAMMA, **Save Project As** copies the original camera inputs into the saved project. People, takes, contact edits and imported characters are project data.
 - A saved MAMMA take restores camera thumbnails and switching from the prepared clips in the project, including when originals are missing. Keep camera order and the saved take offset. Disable a view when both its prepared clip and original are unavailable. Keep original input paths and metadata for reconstruction. See [MAMMA playback](MAMMA.md#reconstruct-and-export).
 - `models/`, `projects/`, `cache/`, `character_scenes/`, `runtime*/` and `.setup/` are local data, not source artifacts. User project folders can also be outside the checkout. Never assume `.gitignore` protects a path that was already tracked or will be force-added. Check `git status` and tracked files before committing; do not upload model weights, video, personal data, credentials, generated motion or caches. Explicitly approved README sample assets are exceptions.
 - Preserve source videos, registered weights and project data. Do not delete project subfolders, results or receipts to fix a problem: they can be referenced by saved metadata. Cache cleanup and setup-download cleanup are distinct from deleting saved work; see [storage and cleanup](USER_GUIDE.md#storage-and-cleanup). Obtain authorization for destructive cleanup.
@@ -854,9 +882,9 @@ choices confirmed in each export window, under the request option names; take
 scope, chosen takes and Blender project settings are excluded. `motion_model`
 holds the last offline model picked in the selector. Only user picks are saved. Opening a project restores its own model without
 writing the file. Missing, malformed or unoffered values fall back to the window
-defaults; a saved MAMMA, PromptHMR or GEM-X model without a configured runtime
-starts ExMR. These are not project data or inference identities, and they do not
-change what an export writes for given options. **Defaults** restores each
+defaults. A saved optional model falls back to ExMR when its configured runtime
+is unavailable, including when ViDiHand2 source setup is missing. The choices
+are local to the installation and independent of project or inference identity. **Defaults** restores each
 dialog's initial export controls, including the Blender controls in the source
 dialog. Preserve the current take selection and scope. Discard retained
 unavailable choices on reset and persist the restored preferences only when
@@ -868,9 +896,9 @@ lists the proposed values and updates local settings only after **OK**.
 `project_workspace_ui.DEFAULT_SETTINGS` maps the stored keys to the editor controls
 and display labels. Starting options include GVHMR add-ons, FlowHMR and ExMR
 options and camera rotation refinement, PromptHMR camera and interaction,
-correction mode/preset/locks, Track Face and Resource Mode. MainWindow startup
-and new single- or multi-camera inputs apply these preferences after the built-in
-resets. An explicit reset restores **Automatic** for the next clip alongside the
+VGGT-Ω OPT for FlowHMR and MAMMA, correction mode/preset/locks, Track Face and
+Resource Mode. MainWindow startup and new single- or multi-camera inputs apply
+these preferences after the built-in resets. An explicit reset restores **Automatic** for the next clip alongside the
 other built-in values. Resource Mode stays local and is passed to workers as
 `RGB_MOCAP_COMPUTE_MODE`. Resource Safety has its own local preference.
 Trim, floor, pelvis offset, people counts and MAMMA calibration belong to the
@@ -1099,9 +1127,10 @@ face initialization or restoration, and retain the original recovery baseline.
 Validate body transforms and facial deformation across seeks and continuous
 Face-enabled playback.
 
-Receiver 0.5.0 uses the 0.4.0 sender protocol. When upgrading from an older
-sender, update the app and rerun `Setup_UnrealStream.cmd`. Close Unreal before
-replacing the project plugin folder.
+For a new receiver/sender installation, use the paired release for the exact
+engine build. When the app reports stale sender support, update the app and
+rerun `Setup_UnrealStream.cmd` with the matching build or bundle. Close Unreal
+before replacing the project plugin folder.
 
 
 ### Shared face playback smoothing

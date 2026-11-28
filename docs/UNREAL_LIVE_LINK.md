@@ -386,9 +386,9 @@ its followers. Reapply the connection's owned preview tick settings after face
 initialization/restoration; retain the original recovery baseline. Validate
 actual body transforms across seeks and continuous Face-enabled playback,
 plus facial deformation, rather than relying on Streaming status alone.
-Receiver 0.5.0 uses the same sender protocol as 0.4.0. If upgrading from
-an older sender, update RGB MoCap and rerun `Setup_UnrealStream.cmd`.
-Close Unreal before replacing the project plugin folder.
+For upgrades, use the receiver and sender from the matching engine bundle or
+build both for your engine. Close Unreal before replacing the project plugin
+folder. See [prebuilt downloads](#prebuilt-downloads).
 
 
 ### Smoothed face playback

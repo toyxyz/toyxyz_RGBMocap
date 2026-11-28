@@ -2,6 +2,21 @@
 
 Historical PEAR results below describe earlier versions. For current real-time tracking, use [RGB MoCap Live](https://github.com/toyxyz/rgbmocap_live).
 
+## BVH sole and automatic floor alignment
+
+- Exported 64 combinations from a 999-frame FlowHMR take and a 326-frame ExMR
+  take. Covered automatic and manual zero floors, Generic and Biped profiles,
+  symmetric rest, a leading T-pose and horizontal origin placement.
+- Blender 4.5 reimport matched the expected poses within 0.032 mm at sampled
+  frames and subframes. Contact-frame ankle height relative to the rest
+  reference (10th percentile) differed from FBX by 0.20 mm for FlowHMR and
+  0.79 mm for ExMR.
+- All 64 local exporter outputs matched the Blender-tested files byte for byte.
+  Also checked eight exports through the Windows CLI, matching both profiles
+  and floor modes. Policy checks used simulated shared scene transforms and
+  checked that an in-flight correction receipt change blocked publication.
+  Biped files were reimported in Blender. 3ds Max import remains unverified.
+
 ## Automatic floor alignment for FBX and streaming
 
 - Rebuilt prepared FBX references for existing FlowHMR and ExMR takes at

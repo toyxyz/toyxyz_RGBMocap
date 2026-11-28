@@ -56,6 +56,12 @@ It works in both Automatic and Low Memory. Low Memory adds CPU block offload
 while keeping the chosen VGGT inference mode.
 [Camera-stage VRAM with OPT on and off](../PERFORMANCE.md#vggt-camera-memory-with-opt)
 
+Moving-camera SAM features and scene placement share one calibration built from
+the median of valid VGGT-Omega intrinsics at the original video resolution. The
+motion model uses relative camera rotations. The viewport and Blender camera
+can show an estimated translation path, whose monocular scale is approximate.
+Static Camera keeps the focal estimate from the image dimensions.
+
 These options apply on **Reconstruct 3D**. Fast SAM is an extraction option,
 not MAMMA's SAM 2.1 masks, PromptHMR's SAM2 tiny tracker or the standalone
 SAM 3.1 experiments. Those checkpoints are not interchangeable.
@@ -281,5 +287,7 @@ gizmos. It runs when a camera display is needed and does not rerun motion infere
 or modify original tracking files, camera centers, motion/contact results or
 FBX/BVH animation. Off restores the original saved camera path. Workspace view
 settings preserve the checkbox; verified session results can be reused. No extra
-runtime/models are needed. Progress, accepted counts and time are reported in the
-app/Console/CMD. See [the camera preview guide](../USER_GUIDE.md#saved-cameras-and-camera-preview).
+runtime/models are needed. For portable Blender export, the export dialog's
+**Refine Camera Rotation** option includes this orientation when **Export
+saved camera tracking** is enabled. Progress, accepted counts and time are
+reported in the app Console and CMD window. See [the camera preview guide](../USER_GUIDE.md#saved-cameras-and-camera-preview).

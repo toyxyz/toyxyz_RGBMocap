@@ -1,8 +1,9 @@
 # AI model guides
 
 Choose a model in **AI Motion Model** before preparing its files or opening
-videos. ExMR is the default for new work; reopening a project restores its
-saved selection. Only implemented tools appear in the list.
+videos. The app starts with the last model picked in the selector when its
+runtime is available. ExMR is the first-launch fallback. Reopening a project
+restores its saved selection.
 
 | Model | Input and body | Fingers | Detailed guide |
 | --- | --- | --- | --- |
@@ -57,13 +58,19 @@ MAMMA uses synchronized views in a separate multi-view workflow.
    GEM-X uses [Setup_GEMX.cmd](GEMX.md#setup), which reuses the ExMR Python
    base and needs no local native build. The optional SAM 3.1 **Find person**
    tracker for ExMR, FlowHMR and GVHMR uses [Setup_SAM31.cmd](SAM31.md#setup)
-   and a separate Model Manager download.
+   and a separate Model Manager download. ViDiHand2 uses
+   [Setup_ViDiHand2.cmd](../FIRST_PERSON_ARMS.md#local-runtime-setup) to fetch
+   source with Git and verify the installed FlowHMR CUDA environment.
 3. Run `RGBMoCap.cmd`, select the model and use **Model Manager**. Follow each
    row's exact download/import instructions. Some files require registration
    and license acceptance; Google Drive downloads may need manual import.
-4. Open footage, trim, reconstruct and review. Contact correction defaults on;
+4. Open footage, trim, reconstruct and review. For full-body models contact correction defaults on;
    Foot defaults on and Hand off. Edit contact timings and **Apply Correction**
    without rerunning AI inference. **File > Export...** offers FBX, BVH or a portable Blender project for the displayed applied motion. MAMMA also offers checked bodies and all cameras in one Blender scene; see [export options](../USER_GUIDE.md#fbx-and-blender).
+
+ViDiHand2 offers camera alignment and optional Arm IK in the desktop. Export its
+hands, head and any solved arms as native skeleton FBX. See the
+[first-person workflow and export details](../FIRST_PERSON_ARMS.md#arm-ik).
 
 GEM-X uses its native SOMA result for preview, foot and hand correction,
 and character retargeting. **File > Export...** offers Native77 FBX and BVH for

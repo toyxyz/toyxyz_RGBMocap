@@ -54,18 +54,19 @@ def context(root,project):
                 sources=camera['sources'],anchor_sources=anchor['sources'],model=camera.get('model'))
 
 
-def transform_motion(inp,out,transform,progress=lambda:None,prepend_tpose=False,symmetric_rest=False):
+def transform_motion(inp,out,transform,progress=lambda:None,prepend_tpose=False,symmetric_rest=False,sole_clearance=0.):
     """Stream root transforms; optionally replace only exported rest offsets."""
     from scipy.spatial.transform import Rotation
     import warnings
     transform=validate_transform(transform);rotation=transform[:3,:3];translation=transform[:3,3]
     channels=0;root_seen=False;root_order=None
-    if symmetric_rest:
+    rewrite_rest = symmetric_rest or sole_clearance != 0.
+    if rewrite_rest:
         from .export_options import read_header
-        lines,root_order=read_header(inp,symmetric=True)
+        lines,root_order=read_header(inp,symmetric=symmetric_rest,sole_clearance=sole_clearance)
         out.writelines(lines);channels=159;root_seen=True
     for _ in range(4096):
-        if symmetric_rest:break
+        if rewrite_rest:break
         line=inp.readline(65537)
         if not line or len(line)>65536:raise ValueError('Invalid BVH hierarchy')
         out.write(line);tokens=line.split()
@@ -86,7 +87,7 @@ def transform_motion(inp,out,transform,progress=lambda:None,prepend_tpose=False,
     if count<1 or not np.isfinite(step) or step<=0:raise ValueError('Invalid BVH timing')
     out.write(f'Frames: {count+1}\n'.encode('ascii') if prepend_tpose else count_line)
     out.write(time_line);previous=np.zeros(3)
-    if symmetric_rest and not prepend_tpose and np.array_equal(transform,np.eye(4)):
+    if rewrite_rest and not prepend_tpose and np.array_equal(transform,np.eye(4)):
         # Rest-only exports retain the committed motion encoding byte-for-byte.
         for first in range(0,count,128):
             for _ in range(min(128,count-first)):
@@ -96,6 +97,7 @@ def transform_motion(inp,out,transform,progress=lambda:None,prepend_tpose=False,
             progress()
         if inp.read(1):raise ValueError('Unexpected trailing BVH data')
         return
+    rotation_unchanged = np.array_equal(rotation,np.eye(3))
     for first in range(0,count,128):
         rows=[]
         for _ in range(min(128,count-first)):
@@ -107,9 +109,10 @@ def transform_motion(inp,out,transform,progress=lambda:None,prepend_tpose=False,
             if not np.isfinite(values).all():raise ValueError('Non-finite BVH motion')
             rows.append((fields,values[:6]))
         values=np.asarray([v for _,v in rows]);positions=values[:,:3]@rotation.T+translation
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore',message='Gimbal lock detected')
-            angles=Rotation.from_matrix(rotation@Rotation.from_euler(root_order,values[:,3:6],degrees=True).as_matrix()).as_euler(root_order)
+        if not rotation_unchanged:
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore',message='Gimbal lock detected')
+                angles=Rotation.from_matrix(rotation@Rotation.from_euler(root_order,values[:,3:6],degrees=True).as_matrix()).as_euler(root_order)
         if first==0 and prepend_tpose:
             with warnings.catch_warnings():
                 warnings.filterwarnings('ignore',message='Gimbal lock detected')
@@ -118,6 +121,10 @@ def transform_motion(inp,out,transform,progress=lambda:None,prepend_tpose=False,
             out.write((' '.join(f'{v:.9f}' for v in pose)+'\n').encode('ascii'))
             previous=reference
         for index,(fields,_) in enumerate(rows):
+            if rotation_unchanged:
+                root = ' '.join(f'{v:.9f}' for v in positions[index]).encode('ascii')
+                out.write(root + b' ' + b' '.join(fields[3:]) + b'\n')
+                continue
             aa=angles[index].copy();bb=aa.copy();bb[0]+=np.pi;bb[1]=np.pi-bb[1];bb[2]+=np.pi
             aa+=2*np.pi*np.round((previous-aa)/(2*np.pi));bb+=2*np.pi*np.round((previous-bb)/(2*np.pi))
             previous=bb if np.sum((bb-previous)**2)<np.sum((aa-previous)**2) else aa
