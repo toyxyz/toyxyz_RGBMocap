@@ -1034,6 +1034,12 @@ MetaHumans or UE5 Manny and Quinn. Select **Target type** for each new
 connection. Face applies to MetaHumans. The mannequin uses body motion.
 See the [full setup, network and retarget guide](UNREAL_LIVE_LINK.md).
 
+Use **Bake...** in RGB MoCap Connect to save the connected take directly to an
+Unreal Animation Sequence. The clip can stay paused. With **Face** enabled on
+a MetaHuman and saved **Track Face** results, the plugin also saves a
+synchronized `_Face` sequence. Put both assets on the matching Sequencer tracks.
+See [Bake and Face playback](UNREAL_LIVE_LINK.md#bake-a-connected-take).
+
 Use **Export Reference FBX...** for the highlighted person at a ready timeline
 frame to create a matching source Skeletal Mesh for Unreal IK retargeting.
 The reference preserves the current 52-bone or SOMA Native77 rest skeleton.

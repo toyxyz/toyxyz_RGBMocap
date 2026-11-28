@@ -1,3 +1,4 @@
+#line 1 "Source/RGBMoCapLiveLink/RGBMoCapLiveLink.cpp"
 // RGB MoCap authored sender. Uses the installed engine's official provider.
 // No receiver plugin, inference, editor asset creation, or mesh transfer.
 #include "Modules/ModuleManager.h"
@@ -17,7 +18,8 @@
 
 class FRGBMoCapLiveLink : public IModuleInterface {
     struct FActor {
-        FString Rig, Label;
+        FString Rig, Label, BakeTake, BakeToken;
+        int32 BakePort=0;
         TArray<FName> Names;
         TArray<int32> Parents;
         TArray<FTransform> Rest, Pose;
@@ -65,6 +67,11 @@ class FRGBMoCapLiveLink : public IModuleInterface {
         const TArray<TSharedPtr<FJsonValue>>* People = nullptr;
         if (!Root->TryGetNumberField(TEXT("version"), Version) || Version != 1
             || !Root->TryGetArrayField(TEXT("actors"), People) || People->Num() > 128) return false;
+        double BakePort=0;
+        FString BakeToken;
+        Root->TryGetNumberField(TEXT("bake_port"),BakePort);
+        Root->TryGetStringField(TEXT("bake_token"),BakeToken);
+        const bool BakeAvailable=BakePort>=1 && BakePort<=65535 && BakePort==FMath::FloorToDouble(BakePort) && BakeToken.Len()==64;
         TMap<FName, FActor> Next;
         for (const auto& Item : *People) {
             const TSharedPtr<FJsonObject>* O = nullptr;
@@ -85,6 +92,10 @@ class FRGBMoCapLiveLink : public IModuleInterface {
             if (Next.Contains(Key)) return false;
             FActor A;
             A.Rig = Rig; A.Label = Label; A.Frame = (int32)Frame;
+            if (BakeAvailable && (*O)->TryGetStringField(TEXT("bake_take"),A.BakeTake) && A.BakeTake.Len()==64) {
+                A.BakePort=(int32)BakePort;
+                A.BakeToken=BakeToken;
+            }
             for (int32 I = 0; I < Names->Num(); ++I) {
                 FString Name; double Parent=0, Length=0;
                 if (!(*Names)[I]->TryGetString(Name) || Name.IsEmpty() || Name.Len() > 120
@@ -150,6 +161,11 @@ class FRGBMoCapLiveLink : public IModuleInterface {
         D->MetaData.StringMetaData.Add(TEXT("Person"), A.Label);
         D->MetaData.StringMetaData.Add(TEXT("FaceAvailable"), A.Face.Num()==52?TEXT("1"):TEXT("0"));
         D->MetaData.StringMetaData.Add(TEXT("Units"), TEXT("centimetres"));
+        if (!Reference && A.BakePort) {
+            D->MetaData.StringMetaData.Add(TEXT("RGBBakePort"),FString::FromInt(A.BakePort));
+            D->MetaData.StringMetaData.Add(TEXT("RGBBakeToken"),A.BakeToken);
+            D->MetaData.StringMetaData.Add(TEXT("RGBBakeTake"),A.BakeTake);
+        }
         Provider->UpdateSubjectFrameData(Name, MoveTemp(Data));
     }
     void DeclareFace(FName BodyName) {

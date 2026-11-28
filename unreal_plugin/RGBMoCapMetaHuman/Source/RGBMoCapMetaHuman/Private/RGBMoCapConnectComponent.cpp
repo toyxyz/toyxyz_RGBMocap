@@ -25,6 +25,54 @@ bool Read(const FLiveLinkSubjectFrameData& Frame,RGBMoCap::FSkeleton& Out) {
     Out.Names=S->BoneNames;Out.Parents=S->BoneParents;Out.Local=D->Transforms;
     return true;
 }
+bool ReadBodyFrames(FName Subject,FGuid& MotionSource,FLiveLinkSubjectFrameData& Motion,
+                    FLiveLinkSubjectFrameData& Reference,FString& Error) {
+    auto* C=Client();
+    FGuid ReferenceSource;
+    int32 MotionMatches=0,ReferenceMatches=0;
+    const FName RefName(*(Subject.ToString()+TEXT("_Reference")));
+    if (C) for (const auto& Key:C->GetSubjectsSupportingRole(ULiveLinkAnimationRole::StaticClass(),false,false)) {
+        if (!C->IsSubjectEnabled(Key,true)) continue;
+        if (Key.SubjectName==Subject) {MotionSource=Key.Source;++MotionMatches;}
+        if (Key.SubjectName==RefName) {ReferenceSource=Key.Source;++ReferenceMatches;}
+    }
+    if (!C || MotionMatches!=1 || ReferenceMatches!=1 || MotionSource!=ReferenceSource) {
+        MotionSource.Invalidate();
+        Error=TEXT("Waiting for one matching motion/reference pair from the same provider.");
+        return false;
+    }
+    const auto Role=ULiveLinkAnimationRole::StaticClass();
+    if (!C->EvaluateFrameFromSource_AnyThread(FLiveLinkSubjectKey(MotionSource,Subject),Role,Motion)
+        || !C->EvaluateFrameFromSource_AnyThread(FLiveLinkSubjectKey(ReferenceSource,RefName),Role,Reference)) {
+        Error=TEXT("Waiting for motion/reference. Check the app and Live Link source.");
+        return false;
+    }
+    const auto* Frame=Motion.FrameData.Cast<FLiveLinkAnimationFrameData>();
+    const auto* RefFrame=Reference.FrameData.Cast<FLiveLinkAnimationFrameData>();
+    const auto Fresh=[](const FLiveLinkAnimationFrameData* F) {
+        if (!F) return false;
+        const double Stamp=F->ArrivalTime.WorldTime>0.?F->ArrivalTime.WorldTime:F->WorldTime.GetOffsettedTime();
+        const double Age=FPlatformTime::Seconds()-Stamp;
+        return FMath::IsFinite(Age) && Age>=-1. && Age<=2.;
+    };
+    if (!Fresh(Frame) || !Fresh(RefFrame)) {
+        Error=TEXT("Stream is stale; holding last pose. Reconnect the Live Link source if needed.");
+        return false;
+    }
+    const FString* A=Frame->MetaData.StringMetaData.Find(TEXT("RigId"));
+    const FString* B=RefFrame->MetaData.StringMetaData.Find(TEXT("RigId"));
+    if (!A || !B || A->IsEmpty() || *A!=*B) {
+        Error=TEXT("Waiting for matching motion/reference rig revisions.");
+        return false;
+    }
+    return true;
+}
+RGBMoCap::FSkeleton TargetSkeleton(const FReferenceSkeleton& Ref) {
+    RGBMoCap::FSkeleton Out;
+    Out.Local=Ref.GetRefBonePose();
+    for (int32 I=0;I<Ref.GetNum();++I) {Out.Names.Add(Ref.GetBoneName(I));Out.Parents.Add(Ref.GetParentIndex(I));}
+    return Out;
+}
 bool Same(const RGBMoCap::FSkeleton& A,const RGBMoCap::FSkeleton& B) {
     if (A.Names!=B.Names || A.Parents!=B.Parents || A.Local.Num()!=B.Local.Num()) return false;
     for (int32 I=0;I<A.Local.Num();++I) if (!A.Local[I].Equals(B.Local[I],1.e-5)) return false;
@@ -302,41 +350,20 @@ bool URGBMoCapConnectComponent::SamplePose(USkeletalMeshComponent* Mesh,TArray<F
     bool TargetChanged=CachedTargetRest.Num()!=TargetRest.Num();
     for (int32 I=0;!TargetChanged && I<TargetRest.Num();++I) TargetChanged=!CachedTargetRest[I].Equals(TargetRest[I],1.e-5);
     if (CachedSubject!=Subject || CachedMesh!=Asset || !CachedScale.Equals(Scale,1.e-5) || TargetChanged) { Solver.Reset();LastPose.Reset(); }
-    auto* C=Client();FLiveLinkSubjectFrameData Reference,Motion;
-    FGuid MotionSource,ReferenceSource;int32 MotionMatches=0,ReferenceMatches=0;
-    if (C) for (const auto& Key:C->GetSubjectsSupportingRole(ULiveLinkAnimationRole::StaticClass(),false,false)) {
-        if (!C->IsSubjectEnabled(Key,true)) continue;
-        if (Key.SubjectName==Subject) {MotionSource=Key.Source;++MotionMatches;}
-        if (Key.SubjectName==FName(*(Subject.ToString()+TEXT("_Reference")))) {ReferenceSource=Key.Source;++ReferenceMatches;}
+    FLiveLinkSubjectFrameData Reference,Motion;
+    FGuid MotionSource;
+    const bool Ready=ReadBodyFrames(Subject,MotionSource,Motion,Reference,Status);
+    if (MotionSource.IsValid() && CachedSourceId.IsValid() && CachedSourceId!=MotionSource) {
+        Solver.Reset();LastPose.Reset();
     }
-    if (MotionMatches!=1 || ReferenceMatches!=1 || MotionSource!=ReferenceSource) {
-        Status=TEXT("Waiting for one matching motion/reference pair from the same provider.");Pose=LastPose;return !Pose.IsEmpty();
-    }
-    if (CachedSourceId.IsValid() && CachedSourceId!=MotionSource) {Solver.Reset();LastPose.Reset();}
-    if (!C || !C->EvaluateFrameFromSource_AnyThread(FLiveLinkSubjectKey(MotionSource,Subject),ULiveLinkAnimationRole::StaticClass(),Motion)
-        || !C->EvaluateFrameFromSource_AnyThread(FLiveLinkSubjectKey(ReferenceSource,FName(*(Subject.ToString()+TEXT("_Reference")))),ULiveLinkAnimationRole::StaticClass(),Reference)) {
-        Status=TEXT("Waiting for motion/reference. Check the app and Live Link source.");Pose=LastPose;return !Pose.IsEmpty();
-    }
-    const auto* Frame=Motion.FrameData.Cast<FLiveLinkAnimationFrameData>();
-    const auto* RefFrame=Reference.FrameData.Cast<FLiveLinkAnimationFrameData>();
-    auto Age=[](const FLiveLinkAnimationFrameData* F) {return F?FPlatformTime::Seconds()-(F->ArrivalTime.WorldTime>0.?F->ArrivalTime.WorldTime:F->WorldTime.GetOffsettedTime()):DBL_MAX;};
-    if (!Frame || !RefFrame || !FMath::IsFinite(Age(Frame)) || !FMath::IsFinite(Age(RefFrame)) || Age(Frame)<-1. || Age(RefFrame)<-1. || Age(Frame)>2. || Age(RefFrame)>2.) {
-        Status=TEXT("Stream is stale; holding last pose. Reconnect the Live Link source if needed.");Pose=LastPose;return !Pose.IsEmpty();
-    }
-    const FString* MotionRig=Frame->MetaData.StringMetaData.Find(TEXT("RigId"));
-    const FString* ReferenceRig=RefFrame->MetaData.StringMetaData.Find(TEXT("RigId"));
-    if (!MotionRig || !ReferenceRig || MotionRig->IsEmpty() || *MotionRig!=*ReferenceRig) {
-        Status=TEXT("Waiting for matching motion/reference rig revisions.");Pose=LastPose;return !Pose.IsEmpty();
-    }
+    if (!Ready) {Pose=LastPose;return !Pose.IsEmpty();}
     RGBMoCap::FSkeleton S,M;
     if (!Read(Reference,S) || !Read(Motion,M) || S.Names!=M.Names || S.Parents!=M.Parents) {
         Status=TEXT("Waiting for matching motion/reference skeletons.");Solver.Reset();LastPose.Reset();return false;
     }
     if (!Solver || CachedMesh!=Asset || CachedSubject!=Subject || !Same(CachedSource,S)) {
         Solver.Reset();LastPose.Reset();
-        RGBMoCap::FSkeleton T;const auto& Ref=Asset->GetRefSkeleton();
-        T.Local=Ref.GetRefBonePose();
-        for (int32 I=0;I<Ref.GetNum();++I) { T.Names.Add(Ref.GetBoneName(I));T.Parents.Add(Ref.GetParentIndex(I)); }
+        const auto T=TargetSkeleton(Asset->GetRefSkeleton());
         auto NewSolver=MakeUnique<RGBMoCap::FSolver>();
         if (!NewSolver->Initialize(S,T,Status,TargetType==ERGBMoCapTargetType::Mannequin)) return false;
         Solver=MoveTemp(NewSolver);CachedSource=MoveTemp(S);CachedMesh=Asset;CachedSubject=Subject;
@@ -350,3 +377,58 @@ bool URGBMoCapConnectComponent::SamplePose(USkeletalMeshComponent* Mesh,TArray<F
     Status=Diagnostics.ReachError>.5?TEXT("Streaming - foot reach limited by target proportions."):
         TEXT("Streaming - direct body retarget; flat-floor sole geometry is estimated.");return true;
 }
+
+
+#if WITH_EDITOR
+bool URGBMoCapConnectComponent::MatchesBakeTarget(const FRGBMoCapBakeContext& Context) const {
+    return Enabled && !Saving && IsValid(ActiveBody) && ActiveTargetType==TargetType && Subject==Context.Subject
+        && ActiveBody->GetSkeletalMeshAsset()==Context.Mesh.Get()
+        && (TargetType==ERGBMoCapTargetType::Mannequin)==Context.Mannequin;
+}
+
+bool URGBMoCapConnectComponent::CaptureBake(FRGBMoCapBakeContext& Context,FString& Error) {
+    if (!Enabled || Saving || !IsValid(ActiveBody) || TargetType!=ActiveTargetType) {
+        Error=TEXT("Connect a target before baking.");return false;
+    }
+    auto* Mesh=ActiveBody->GetSkeletalMeshAsset();
+    const auto Scale=ActiveBody->GetComponentScale();
+    if (!Mesh || !Mesh->GetSkeleton() || !Scale.AllComponentsEqual(1.e-4) || Scale.X<=0. || !FMath::IsFinite(FloorOffset)) {
+        Error=TEXT("The target needs a skeletal mesh with uniform positive scale and a finite floor offset.");return false;
+    }
+    FLiveLinkSubjectFrameData Motion,Reference;
+    FGuid Provider;
+    if (!ReadBodyFrames(Subject,Provider,Motion,Reference,Error)) return false;
+    RGBMoCap::FSkeleton Current;
+    if (!Read(Reference,Context.Source) || !Read(Motion,Current) || Context.Source.Names!=Current.Names
+        || Context.Source.Parents!=Current.Parents) {
+        Error=TEXT("Waiting for matching motion/reference skeletons.");return false;
+    }
+    const auto& Meta=Motion.FrameData.Cast<FLiveLinkAnimationFrameData>()->MetaData.StringMetaData;
+    const auto* Port=Meta.Find(TEXT("RGBBakePort"));
+    const auto* Token=Meta.Find(TEXT("RGBBakeToken"));
+    const auto* Take=Meta.Find(TEXT("RGBBakeTake"));
+    const auto IsHex=[](const FString* S) {
+        if (!S || S->Len()!=64) return false;
+        for (TCHAR Ch:*S) if (!FChar::IsHexDigit(Ch)) return false;
+        return true;
+    };
+    int32 Number=0;
+    if (!Port || !LexTryParseString(Number,**Port) || Number<1 || Number>65535
+        || !IsHex(Token) || !IsHex(Take)) {
+        Error=TEXT("Bake needs an updated RGB MoCap app and sender running on this PC.");return false;
+    }
+    Context.Subject=Subject;
+    Context.Rig=Meta.FindChecked(TEXT("RigId"));
+    Context.Take=*Take;
+    Context.Token=*Token;
+    Context.Port=Number;
+    Context.Mesh=Mesh;
+    Context.RawBones=Mesh->GetRefSkeleton().GetRawBoneNum();
+    Context.Target=TargetSkeleton(Mesh->GetRefSkeleton());
+    Context.Mannequin=TargetType==ERGBMoCapTargetType::Mannequin;
+    Context.Settings.Ground=GroundContact;
+    Context.Settings.FloorOffset=FloorOffset;
+    CaptureFaceBake(Context);
+    return true;
+}
+#endif

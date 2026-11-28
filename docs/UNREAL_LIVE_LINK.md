@@ -10,15 +10,15 @@ For file-based animation on stock Manny or Quinn, see
 
 ## Prebuilt downloads
 
-Each Windows 64-bit bundle contains the RGB MoCap Connect 0.5.1 receiver,
+Each Windows 64-bit bundle contains the RGB MoCap Connect 0.6.1 receiver,
 the RGB MoCap sender, install instructions and checksums. Match the exact
 Epic Games Launcher engine build.
 
 | Unreal Engine | BuildId | Download |
 | --- | ---: | --- |
-| 5.6.1 | `43139311` | [Bundle](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.1/RGBMoCapLiveLink_UE5.6.1_Win64.zip) · [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.1/RGBMoCapLiveLink_UE5.6.1_Win64.zip.sha256) |
-| 5.7.4 | `47537391` | [Bundle](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.1/RGBMoCapLiveLink_UE5.7.4_Win64.zip) · [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.1/RGBMoCapLiveLink_UE5.7.4_Win64.zip.sha256) |
-| 5.8.4 | `55116800` | [Bundle](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.1/RGBMoCapLiveLink_UE5.8.4_Win64.zip) · [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.5.1/RGBMoCapLiveLink_UE5.8.4_Win64.zip.sha256) |
+| 5.6.1 | `43139311` | [Bundle](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.6.1/RGBMoCapLiveLink_UE5.6.1_Win64.zip) · [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.6.1/RGBMoCapLiveLink_UE5.6.1_Win64.zip.sha256) |
+| 5.7.4 | `47537391` | [Bundle](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.6.1/RGBMoCapLiveLink_UE5.7.4_Win64.zip) · [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.6.1/RGBMoCapLiveLink_UE5.7.4_Win64.zip.sha256) |
+| 5.8.4 | `55116800` | [Bundle](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.6.1/RGBMoCapLiveLink_UE5.8.4_Win64.zip) · [SHA-256](https://github.com/toyxyz/toyxyz_RGBMocap/releases/download/unreal-live-link-win64-v0.6.1/RGBMoCapLiveLink_UE5.8.4_Win64.zip.sha256) |
 
 These packages use your installed Unreal Editor. The prebuilt route runs
 without a local C++ build. For a different Unreal build, use
@@ -63,13 +63,52 @@ receives body motion only. On a shared source row, **Face** applies to the
 connected MetaHumans. The receive-side setting does not change which Live Link
 subjects the app publishes.
 
+## Bake a connected take
+
+RGB MoCap Connect 0.6.1 and the matching sender can save a connected body
+take directly to an Unreal Animation Sequence. Keep RGB MoCap streaming
+the person on the same PC. The source can stay paused.
+
+1. In **RGB MoCap Connect**, select the source row with a connected MetaHuman
+   or SK Mannequin. If the row has several targets, select one of those actors
+   in the level.
+2. Click **Bake...**. Choose a Content Browser folder under **Game**, enter an
+   unused animation name, and save.
+3. Open the Animation Sequence selected by the Content Browser when the bake
+   finishes. It uses the connected skeletal mesh's Skeleton asset and the
+   connection's current ground contact and floor settings.
+
+Bake uses the active prepared take at the time of the request. If the person
+has multiple takes, place the playhead on the take you want to save. It writes
+body and finger animation. Keep the connection open until the asset is saved.
+
+Enable **Face** on the connected MetaHuman to
+include previously saved **Track Face** data. The bake also saves
+`<AnimationName>_Face` in the chosen folder, using the target's Face
+Skeleton and the same mapped expression curves as Live Link. Both assets
+have the same start, duration and frame rate. In Sequencer, put them on the
+MetaHuman's **Body** and **Face** animation tracks with the same start time.
+Keep the MetaHuman Face post-process blueprint enabled for RigLogic and
+disconnect the live preview when playing the saved animation.
+
+If the body plays but the expression stays neutral, right-click the
+`_Face` animation section and enable **Properties > Animation > Playback >
+Force Custom Mode**. On UE 5.8.4 this lets Sequencer feed the expression curves
+directly to the Face component instead of playing the clip through the default
+slot of its active Animation Blueprint. Set this on the Face section only and
+save the Level Sequence.
+
+With Face off or on Manny/Quinn, the bake writes the body asset. If Face is
+enabled but its mesh, mapping or saved samples are unavailable, the body
+still saves and the connection panel reports why the face was skipped.
+
 ## Prepare once
 
 ### Install a prebuilt sender
 
 Use the current RGB MoCap `main` checkout and complete the normal
 `install.cmd` setup. For an existing installation, close the app and run
-`update.cmd` first. Extract the matching 0.5.1 outer bundle and
+`update.cmd` first. Extract the matching 0.6.1 outer bundle and
 keep the inner sender ZIP intact. Open PowerShell in the RGB MoCap app folder
 and run the following, adjusting the path for your extracted sender ZIP.
 

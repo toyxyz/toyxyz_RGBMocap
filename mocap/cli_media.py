@@ -143,6 +143,7 @@ def stream_take(path, result, root, stack):
 
 def stream(args, report):
     from .bone_stream import BoneStream, PORT
+    from .unreal_bake import BakeFace, BakeTake
     from .cli_workflows import select_takes, selected_kind
     from .motion_tools import selected_export
 
@@ -160,7 +161,11 @@ def stream(args, report):
         from .face_data import FaceArchive
         from .face_neutral import expression_values
         archive = FaceArchive(root)
-        filtered = {ident: expression_values(archive, archive.index[ident], smooth=True) for ident in archive.ids}
+        values = archive.values.copy()
+        for slot in range(len(archive.ids)):
+            values[slot] = expression_values(archive, slot, smooth=True)
+        values.setflags(write=False)
+        archive.values = values
     with ExitStack() as stack:
         takes = []
         for _, path, person in rows:
@@ -200,7 +205,7 @@ def stream(args, report):
             if wait > 0:
                 time.sleep(wait)
             now = first+(ticks % total)/fps
-            actors, faces = {}, {}
+            actors, faces, bake_takes = {}, {}, {}
             received |= sender.connected
             for path, person, state, rig, frames, transform in takes:
                 frame = math.floor((now-state['start'])*state['fps'] + 1e-6)
@@ -209,13 +214,18 @@ def stream(args, report):
                 ident = person['id']
                 key = keys[ident]
                 actors[key] = (key, person['name'], rig, frame, frames[frame].copy(), transform)
-                if archive is not None and ident in filtered:
+                if args.target == 'unreal':
+                    bake_face = (BakeFace(archive, ident, float(state['start']), float(state['fps']))
+                                 if archive is not None and ident in archive.index else None)
+                    bake_takes[key] = BakeTake(Path(frames.filename), len(frames), state['fps'],
+                                               rig, transform, bake_face)
+                if archive is not None and ident in archive.index:
                     slot, sample, source = archive.resolve(path, frame, person=ident, state=state)
                     if sample >= 0:
-                        faces[key] = dict(values=filtered[ident][sample].tolist(), sample=sample,
+                        faces[key] = dict(values=archive.values[slot,sample].tolist(), sample=sample,
                                           source_frame=source, tracked=bool(archive.valid[slot,source]))
             if args.target == 'unreal':
-                sender.publish(tuple(actors.values()), faces=faces)
+                sender.publish(tuple(actors.values()), faces=faces, takes=bake_takes)
             else:
                 sender.publish(tuple(actors.values()), tuple(keys.values()))
                 from queue import Empty

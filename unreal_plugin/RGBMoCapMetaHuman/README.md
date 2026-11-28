@@ -7,6 +7,11 @@ receiving project's existing character meshes. The [manual Live Link
 workflow](https://github.com/toyxyz/toyxyz_RGBMocap/blob/main/docs/UNREAL_LIVE_LINK.md)
 remains available.
 
+**Bake...** saves the connected take to an Animation Sequence in the editor.
+In Connect 0.6.1, a MetaHuman connection with **Face** enabled and saved
+**Track Face** data also writes a synchronized `<AnimationName>_Face` sequence.
+See [Bake a connected take](../../docs/UNREAL_LIVE_LINK.md#bake-a-connected-take).
+
 ## Install
 
 1. Download the [prebuilt bundle](https://github.com/toyxyz/toyxyz_RGBMocap/blob/main/docs/UNREAL_LIVE_LINK.md#prebuilt-downloads)
@@ -19,7 +24,7 @@ remains available.
 3. Open the project and enable **RGB MoCap Connect**, **Live Link** and
    **UDP Messaging** if necessary. Restart when requested.
 
-The 0.5.1 bundles target Epic Games Launcher UE **5.6.1**, **5.7.4** and **5.8.4**
+The 0.6.1 bundles target Epic Games Launcher UE **5.6.1**, **5.7.4** and **5.8.4**
 on Win64. The receiver ZIP contains source and authored DLLs. Use your own
 Unreal project and character assets.
 

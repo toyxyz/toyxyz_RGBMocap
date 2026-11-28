@@ -26,6 +26,7 @@ private:
     TSharedPtr<SListView<TSharedPtr<FRGBMoCapSourceRow>>> List;
     TSharedPtr<FRGBMoCapSourceRow> Selected;
     FString Message;
+    bool Baking=false;
     ERGBMoCapTargetType TargetType=ERGBMoCapTargetType::MetaHuman;
     TArray<TSharedPtr<ERGBMoCapTargetType>> TargetTypes;
     EActiveTimerReturnType Poll(double Time,float Delta);
@@ -34,6 +35,9 @@ private:
     void SetFace(ECheckBoxState State,TSharedPtr<FRGBMoCapSourceRow> Row);
     bool CanConnect() const;
     bool CanDisconnect() const;
+    URGBMoCapConnectComponent* BakeTarget() const;
+    bool CanBake() const;
+    FReply Bake();
     FReply Refresh();
     FReply Reconnect();
     FReply Connect();

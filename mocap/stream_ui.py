@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (QComboBox, QFileDialog, QHBoxLayout, QLabel, QLis
 from .bone_stream import BoneStream, MAX_ACTORS, MAX_BAKE_FRAMES, PORT
 from .paths import ROOT
 from .unreal_stream import UnrealStream, subject_name
+from .unreal_bake import BakeFace, BakeTake
 
 
 def stream_rig(asset):
@@ -337,9 +338,7 @@ class StreamWorkspace:
             sender.bake_reply = connection, reply
             sender.changed.set()
 
-    def stream_face_at_playhead(self, ident):
-        """Read existing Track Face data only; never start capture from streaming."""
-        import numpy as np
+    def stream_face_source(self, project):
         from .face_data import manifest
 
         root = self.face_project()
@@ -349,6 +348,17 @@ class StreamWorkspace:
         if archive is not getattr(self, '_stream_face_archive', None):
             self._stream_face_archive = archive
             self._stream_face_states = {}
+        state_key = (project, (project / 'project.json').stat().st_mtime_ns)
+        if state_key not in self._stream_face_states:
+            if len(self._stream_face_states) >= 256:
+                self._stream_face_states.clear()
+            self._stream_face_states[state_key] = manifest(project)
+        return archive, self._stream_face_states[state_key]
+
+    def stream_face_at_playhead(self, ident):
+        """Read existing Track Face data only; never start capture from streaming."""
+        import numpy as np
+
         project, frame = self.project, self.motion_view.index
         if self.people_state:
             current = self.scene_data.take_at(ident, self.motion_view.scene_time, self.project)
@@ -356,13 +366,11 @@ class StreamWorkspace:
                 return None
             take, frame = current
             project = take.project
-        state_key = (project, (project / 'project.json').stat().st_mtime_ns)
-        if state_key not in self._stream_face_states:
-            if len(self._stream_face_states) >= 256:
-                self._stream_face_states.clear()
-            self._stream_face_states[state_key] = manifest(project)
-        slot, sample, source = archive.resolve(project, frame, person=ident,
-                                               state=self._stream_face_states[state_key])
+        source_state = self.stream_face_source(project)
+        if source_state is None:
+            return None
+        archive, state = source_state
+        slot, sample, source = archive.resolve(project, frame, person=ident, state=state)
         if sample < 0:
             return None
         values = archive.values[slot, sample]
@@ -446,7 +454,26 @@ class StreamWorkspace:
                             if warning != getattr(self, '_stream_face_warning', None):
                                 self.log.append('Face stream unavailable: ' + warning)
                                 self._stream_face_warning = warning
-                    sender.publish(actors, faces=faces)
+                    takes = {}
+                    for ident, _, rig, frames, _, transform in sources:
+                        project = self.project
+                        if self.people_state:
+                            take, _ = self.scene_data.take_at(ident, self.motion_view.scene_time, self.project)
+                            project, fps = take.project, take.fps
+                        else:
+                            fps = float(self.info['fps'])
+                        bake_face = None
+                        try:
+                            source_state = self.stream_face_source(project)
+                            if source_state is not None:
+                                archive, state = source_state
+                                if ident in archive.index:
+                                    bake_face = BakeFace(archive, ident, float(state['start']), float(state['fps']))
+                        except (OSError, ValueError, KeyError, IndexError, TypeError):
+                            pass  # Face archive failures are already reported by the preview path.
+                        takes[selected[ident]] = BakeTake(getattr(frames, 'path', frames), len(frames),
+                                                          fps, rig, transform, bake_face)
+                    sender.publish(actors, faces=faces, takes=takes)
                 else:
                     sender.publish(actors, tuple(selected.values()) if checked is not None else None)
                 self._stream_frame = key

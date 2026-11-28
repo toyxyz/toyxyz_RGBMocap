@@ -1,5 +1,9 @@
 #line 1 "Source/RGBMoCapMetaHumanEditor/Private/RGBMoCapConnections.cpp"
 #include "RGBMoCapConnections.h"
+#include "RGBMoCapBake.h"
+#include "Animation/AnimSequence.h"
+#include "ContentBrowserModule.h"
+#include "IContentBrowserSingleton.h"
 #include "RGBMoCapConnectComponent.h"
 #include "Editor.h"
 #include "Engine/Selection.h"
@@ -191,6 +195,10 @@ void SRGBMoCapConnections::Construct(const FArguments&) {
         +SVerticalBox::Slot().AutoHeight()
         [SNew(SHorizontalBox)
             +SHorizontalBox::Slot().AutoWidth().Padding(0,0,8,0)[SNew(SButton).Tag(TEXT("RGBMoCapConnectActor")).Text(FText::FromString(TEXT("Connect selected actor"))).IsEnabled(this,&SRGBMoCapConnections::CanConnect).OnClicked(this,&SRGBMoCapConnections::Connect)]
+            +SHorizontalBox::Slot().AutoWidth().Padding(0,0,8,0)
+            [SNew(SButton).Tag(TEXT("RGBMoCapBake")).Text(FText::FromString(TEXT("Bake...")))
+                .ToolTipText(FText::FromString(TEXT("Save the connected take as an Animation Sequence. If several actors are connected, select one in the level.")))
+                .IsEnabled(this,&SRGBMoCapConnections::CanBake).OnClicked(this,&SRGBMoCapConnections::Bake)]
             +SHorizontalBox::Slot().AutoWidth()[SNew(SButton).Tag(TEXT("RGBMoCapDisconnectSource")).Text(FText::FromString(TEXT("Disconnect source"))).ToolTipText(FText::FromString(TEXT("Disconnect all actors listed on the selected source row and restore their animation."))).IsEnabled(this,&SRGBMoCapConnections::CanDisconnect).OnClicked(this,&SRGBMoCapConnections::Disconnect)]]
         +SVerticalBox::Slot().AutoHeight().Padding(0,8,0,0)[SNew(STextBlock).Text_Lambda([this](){return FText::FromString(Message);}).AutoWrapText(true)]
     ]];
@@ -246,6 +254,79 @@ FReply SRGBMoCapConnections::Connect() {
     Message=Component && Component->Enabled?TEXT("Connected ")+Selected->Label+TEXT(" to ")+A->GetActorLabel()+TEXT("."):(Component?Component->Status:TEXT("Could not connect the selected actor."));
     UpdateSources();GEditor->RedrawLevelEditingViewports();return FReply::Handled();
 }
+URGBMoCapConnectComponent* SRGBMoCapConnections::BakeTarget() const {
+    if (!Selected || !Selected->Ready || !GEditor || GEditor->PlayWorld) return nullptr;
+    URGBMoCapConnectComponent* Only=nullptr;
+    URGBMoCapConnectComponent* Chosen=nullptr;
+    int32 Count=0,SelectedCount=0;
+    for (const auto& Weak:Selected->Connections) if (auto* C=Weak.Get();C && C->Enabled && IsValid(C->GetOwner())) {
+        Only=C;++Count;
+        if (C->GetOwner()->IsSelectedInEditor()) {Chosen=C;++SelectedCount;}
+    }
+    return Count==1?Only:SelectedCount==1?Chosen:nullptr;
+}
+
+bool SRGBMoCapConnections::CanBake() const {return !Baking && BakeTarget()!=nullptr;}
+
+FReply SRGBMoCapConnections::Bake() {
+    auto* Target=BakeTarget();
+    if (!Target || Baking) return FReply::Handled();
+    FRGBMoCapBakeContext Context;
+    if (!Target->CaptureBake(Context,Message)) return FReply::Handled();
+    const auto Connection=TWeakObjectPtr<URGBMoCapConnectComponent>(Target);
+    FSaveAssetDialogConfig Config;
+    Config.DialogTitleOverride=FText::FromString(TEXT("Save Retargeted Animation"));
+    Config.DefaultPath=TEXT("/Game");
+    Config.DefaultAssetName=Context.Subject.ToString()+TEXT("_Animation");
+    Config.AssetClassNames.Add(UAnimSequence::StaticClass()->GetClassPathName());
+    auto& Browser=FModuleManager::LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser")).Get();
+    const FString Path=Browser.CreateModalSaveAssetDialog(Config);
+    if (Path.IsEmpty()) return FReply::Handled();
+    if (!Connection.IsValid() || !Connection->MatchesBakeTarget(Context)) {
+        Message=TEXT("The target connection changed. Select Bake again.");return FReply::Handled();
+    }
+    Message=Context.FaceRequested?TEXT("Baking the connected motion and available face data..."):
+        TEXT("Baking the connected body motion...");
+    Baking=true;
+    const TWeakPtr<SRGBMoCapConnections> Widget=SharedThis(this);
+    RGBMoCap::RequestBake(Context,[Widget,Connection,Context,Path](RGBMoCap::FBakedTracks Tracks,FString Error) {
+        const auto Self=Widget.Pin();
+        if (!Self) return;
+        Self->Baking=false;
+        if (!Error.IsEmpty()) {Self->Message=MoveTemp(Error);return;}
+        if (!GEditor || GEditor->PlayWorld || !Connection.IsValid() || !Connection->MatchesBakeTarget(Context)) {
+            Self->Message=TEXT("The target connection changed before the bake completed.");return;
+        }
+        FString FacePath;
+        if (!Tracks.FaceKeys.IsEmpty()) {
+            if (Connection->MatchesFaceBakeTarget(Context)) {
+                FacePath=RGBMoCap::FaceBakePath(Path);
+                FString Filename;
+                if (!RGBMoCap::CheckBakeDestination(FacePath,Filename,Error)) {
+                    Self->Message=MoveTemp(Error);return;
+                }
+            } else {
+                Tracks.FaceWarning=TEXT("The Face target or setting changed during the bake.");
+            }
+        }
+        auto* Asset=RGBMoCap::SaveBake(Context,Tracks,Path,Error);
+        if (!Asset) {Self->Message=MoveTemp(Error);return;}
+        Self->Message=FString::Printf(TEXT("Saved %s (%d samples)."),*Path,Tracks.Frames);
+        TArray<UObject*> Assets{Asset};
+        if (!FacePath.IsEmpty()) {
+            if (auto* Face=RGBMoCap::SaveBake(Context,Tracks,FacePath,Error,true)) {
+                Assets.Add(Face);
+                Self->Message+=TEXT(" Face saved to ")+FacePath+TEXT(".");
+            } else {
+                Tracks.FaceWarning=MoveTemp(Error);
+            }
+        }
+        if (!Tracks.FaceWarning.IsEmpty()) Self->Message+=TEXT(" Face skipped: ")+Tracks.FaceWarning;
+        FModuleManager::LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser")).Get().SyncBrowserToAssets(Assets);
+    });
+    return FReply::Handled();
+}
+
 FReply SRGBMoCapConnections::Disconnect() {
     UpdateSources();if (!CanDisconnect()) return FReply::Handled();
     FScopedTransaction Transaction(FText::FromString(TEXT("Disconnect RGB MoCap source")));

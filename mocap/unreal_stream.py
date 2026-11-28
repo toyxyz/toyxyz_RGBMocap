@@ -15,6 +15,7 @@ import time
 import numpy as np
 
 from .bone_stream import MAX_ACTORS, Y_TO_Z
+from .unreal_bake import BakeServer
 
 
 LIMIT = 4 * 1024 * 1024
@@ -185,7 +186,7 @@ class UnrealStream:
         self.connected = False
         self.ready = False
         self.errors = Queue(maxsize=1)
-        self.latest = ((), {})
+        self.latest = ((), {}, {})
         self.changed = Event()
         self.stopping = Event()
         self.listener = socket.socket()
@@ -214,12 +215,31 @@ class UnrealStream:
             self.listener.close()
             self.log.close()
             raise
+        try:
+            self.bake = BakeServer(local_transforms, self.stopping)
+        except OSError:
+            self.bake = None  # The live transport can still work.
         # Normal interpreter shutdown must wait for owned-process cleanup.
         self.thread = Thread(target=self._serve, args=(token,), name='Unreal Live Link', daemon=False)
         self.thread.start()
 
-    def publish(self, actors, selected=None, faces=None):
-        self.latest = (actors, faces or {})
+    def publish(self, actors, selected=None, faces=None, takes=None):
+        offers = {}
+        if self.bake:
+            registered = {}
+            for actor, name, rig, *_ in actors:
+                take = (takes or {}).get(actor)
+                if take is None:
+                    continue
+                subject = subject_name(actor, name)
+                source = str(take.frames) if isinstance(take.frames, (str, Path)) else id(take.frames)
+                identity = (self.bake.token, source, id(take.transform), take.count, take.fps,
+                            take.face.revision if take.face else None)
+                revision = sha256(repr(identity).encode()).hexdigest()
+                offers[subject] = revision
+                registered[subject, rig.key, revision] = take
+            self.bake.takes = registered
+        self.latest = (actors, faces or {}, offers)
         self.changed.set()
 
     def error(self):
@@ -272,6 +292,9 @@ class UnrealStream:
         finally:
             self.ready = self.connected = False
             self.listener.close()
+            self.stopping.set()
+            if self.bake:
+                self.bake.stop()
             if self.process.poll() is None:
                 self.process.terminate()
             try:
@@ -288,7 +311,13 @@ class UnrealStream:
             self.changed.clear()
             latest = self.latest
             if latest is not last:
-                encoded = encode(snapshot(latest[0], schemas, latest[1]))
+                data = snapshot(latest[0], schemas, latest[1])
+                if self.bake and latest[2]:
+                    data.update(bake_port=self.bake.server_port, bake_token=self.bake.token)
+                    for row in data['actors']:
+                        if row['subject'] in latest[2]:
+                            row['bake_take'] = latest[2][row['subject']]
+                encoded = encode(data)
                 last = latest
             now = time.monotonic()
             if encoded is not None and (now-sent > 1. or latest is not getattr(self, '_sent', None)):

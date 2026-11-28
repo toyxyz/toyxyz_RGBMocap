@@ -1,7 +1,7 @@
 {
   "FileVersion": 3,
-  "Version": 11,
-  "VersionName": "0.5.2",
+  "Version": 13,
+  "VersionName": "0.6.1",
   "FriendlyName": "RGB MoCap Connect",
   "Description": "Live Link body retargeting for MetaHumans and UE5 Manny or Quinn, with optional MetaHuman facial expressions.",
   "Category": "Animation",

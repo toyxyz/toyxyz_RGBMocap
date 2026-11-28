@@ -207,7 +207,7 @@ New-Item -ItemType Directory -Path $work -ErrorAction Stop | Out-Null
 Copy-Item -LiteralPath 'unreal_plugin\RGBMoCapMetaHuman' -Destination $work -Recurse
 & "$engine\Engine\Build\BatchFiles\RunUAT.bat" BuildPlugin "-Plugin=$work\RGBMoCapMetaHuman\RGBMoCapMetaHuman.uplugin" "-Package=$work\package" -HostPlatforms=Win64 -NoTargetPlatforms -NoP4 -Unattended
 if ($LASTEXITCODE -ne 0) { throw 'Unreal receiver build failed' }
-.\runtime\python.exe -I -X utf8 -B tools\package_unreal_plugin.py --build-plugin "$work\package" --engine-version 5.6.1 --output "$work\RGBMoCapConnect_UE5.6.1_Win64_v0.5.1.zip"
+.\runtime\python.exe -I -X utf8 -B tools\package_unreal_plugin.py --build-plugin "$work\package" --engine-version 5.6.1 --output "$work\RGBMoCapConnect_UE5.6.1_Win64_v0.6.1.zip"
 ```
 
 The build folder contains temporary files. Share the resulting ZIP and its

@@ -1,5 +1,19 @@
 # Verification scope
 
+## 0.6.1 connected-take bake
+
+UE 5.8.4 baked an actual paused 1,675-sample take to the connected MetaHuman
+and Manny skeletons. A separate 100-sample MetaHuman take used saved face
+tracking. Its body and face sequences both reopened with 100 samples at
+30 fps. The Face Skeleton sequence had 216 curves, and RigLogic moved the
+facial bones when it played. With Face off, missing saved expressions or
+a Manny target, the body asset still saved by itself.
+
+A 33.9-second MetaHuman take also played through an actual Level Sequence.
+Setting **Force Custom Mode** on the Face animation section restored eye
+blink and jaw motion in the assembled character. See
+[Bake and Face playback](../../docs/UNREAL_LIVE_LINK.md#bake-a-connected-take).
+
 ## 0.5.2 A-pose clavicle rest alignment
 
 UE 5.8.4 evaluated both receivers on the same MetaHuman body reference

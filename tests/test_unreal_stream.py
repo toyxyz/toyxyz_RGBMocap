@@ -19,6 +19,74 @@ def quat_matrix(q):
                      (2*(x*z-y*w),2*(y*z+x*w),1-2*(x*x+y*y))))
 
 
+
+class UnrealBakeTests(unittest.TestCase):
+    def test_take_payload_keeps_sample_count_and_order(self):
+        from threading import Event
+        from mocap.unreal_bake import BakeTake, HEADER
+        from types import SimpleNamespace
+        frames = np.repeat(np.eye(4)[None,None], 3, axis=0)
+        frames[:,0,0,3] = [0., 1., 4.]
+        rig = SimpleNamespace(bones=[('root', -1)],
+                              pose=lambda row, _: np.asarray(row[:, :3], dtype='<f4').tobytes())
+        take = BakeTake(frames, 3, 30000/1001, rig, None)
+        def convert(world, parents):
+            return [[world[0,0,3], 0, 0, 0, 0, 0, 1]]
+        encoded = take.encode(convert, Event())
+        length, head = next(encoded)
+        body = b''.join(encoded)
+        self.assertEqual(HEADER.unpack(head), (b'RMB1', 30000, 1001, 3, 1))
+        self.assertEqual(length, len(head)+len(body))
+        np.testing.assert_equal(np.frombuffer(body, dtype='<f4').reshape(3,7)[:,0], [0,1,4])
+
+    def test_bake_rejects_changed_frame_count(self):
+        from threading import Event
+        from mocap.unreal_bake import BakeTake
+        from types import SimpleNamespace
+        take = BakeTake(np.zeros((3,1,4,4)), 4, 30., SimpleNamespace(bones=[('root', -1)]), None)
+        with self.assertRaisesRegex(ValueError, 'take changed'):
+            next(take.encode(None, Event()))
+
+    def test_face_is_opt_in_and_matches_the_take_clock(self):
+        from http.client import HTTPConnection
+        from threading import Event
+        from types import SimpleNamespace
+        from mocap.unreal_bake import BakeFace, BakeServer, BakeTake, HEADER
+
+        def resolve(_project, frame, *, person, state):
+            self.assertEqual((person, state), (2, {'start': 1.25, 'fps': 30.}))
+            return 0, [-1, 0, 0, 1][frame], frame+5
+
+        archive = SimpleNamespace(resolve=resolve, index={2: 0}, values=np.zeros((1, 2, 52)))
+        archive.values[0, :, 23] = [.25, .75]
+        frames = np.tile(np.eye(4), (4, 1, 1, 1))
+        rig = SimpleNamespace(bones=[('root', -1)],
+                              pose=lambda row, _: np.asarray(row[:, :3], dtype='<f4').tobytes())
+        take = BakeTake(frames, 4, 30., rig, None, BakeFace(archive, 2, 1.25, 30.))
+        server = BakeServer(lambda *_: [[0, 0, 0, 0, 0, 0, 1]], Event())
+        self.addCleanup(server.stop)
+        server.takes = {('Actor', 'Rig', 'Take'): take}
+        connection = HTTPConnection('127.0.0.1', server.server_port, timeout=3)
+        self.addCleanup(connection.close)
+        url = '/take?subject=Actor&rig=Rig&take=Take'
+
+        def get(headers):
+            connection.request('GET', url, headers=headers)
+            response = connection.getresponse()
+            return response.status, response.read()
+
+        self.assertEqual(get({'X-RGBMoCap-Face': '1'})[0], 403)
+        auth = {'Authorization': 'Bearer ' + server.token}
+        status, body = get(auth)
+        self.assertEqual(status, 200)
+        self.assertEqual(HEADER.unpack_from(body), (b'RMB1', 30, 1, 4, 1))
+        status, face = get(auth | {'X-RGBMoCap-Face': '1'})
+        self.assertEqual(status, 200)
+        self.assertEqual(HEADER.unpack_from(face), (b'RMB2', 30, 1, 4, 1))
+        samples = np.frombuffer(face, offset=HEADER.size, dtype='<f4').reshape(4, 59)
+        np.testing.assert_array_equal(samples[:, :7], np.frombuffer(body, offset=HEADER.size, dtype='<f4').reshape(4, 7))
+        np.testing.assert_array_equal(samples[:, 7+23], [0., .25, .25, .75])
+
 class LiveLinkTests(unittest.TestCase):
     def test_parent_local_roundtrip_and_handedness(self):
         rng=np.random.default_rng(42)

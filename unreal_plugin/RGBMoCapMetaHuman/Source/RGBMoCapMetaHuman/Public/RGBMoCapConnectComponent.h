@@ -8,6 +8,21 @@
 
 class UPoseAsset;
 
+struct FRGBMoCapBakeContext {
+    RGBMoCap::FSkeleton Source, Target;
+    RGBMoCap::FSettings Settings;
+    TWeakObjectPtr<USkeletalMesh> Mesh;
+    TWeakObjectPtr<USkeletalMesh> FaceMesh;
+    TArray<FName> FaceCurveNames;
+    TArray<float> FaceMatrix;
+    FString FaceWarning;
+    FName Subject;
+    FString Rig, Take, Token;
+    int32 Port=0, RawBones=0;
+    bool Mannequin=false;
+    bool FaceRequested=false;
+};
+
 UENUM(BlueprintType)
 enum class ERGBMoCapTargetType : uint8 {
     MetaHuman,
@@ -58,6 +73,7 @@ public:
     TSoftObjectPtr<UPoseAsset> FaceMappingPose;
     UFUNCTION(BlueprintCallable,Category="RGB MoCap|Face") void SetFaceEnabled(bool EnabledFace);
     bool SampleFace(USkeletalMeshComponent* Mesh,TArray<FName>& Names,TArray<float>& Values);
+    static void MapFace(TConstArrayView<float> Coefficients,TConstArrayView<float> Matrix,TArrayView<float> Values);
     UFUNCTION(BlueprintCallable,CallInEditor,Category="RGB MoCap") void Connect();
     UFUNCTION(BlueprintCallable,CallInEditor,Category="RGB MoCap") void Disconnect();
     UFUNCTION() TArray<FString> GetSubjects() const;
@@ -71,6 +87,11 @@ public:
         ERGBMoCapTargetType Type);
     static USkeletalMeshComponent* FindTargetMesh(const AActor* Actor,ERGBMoCapTargetType Type,FString& Reason);
     bool SamplePose(USkeletalMeshComponent* Mesh, TArray<FTransform>& Pose);
+#if WITH_EDITOR
+    bool CaptureBake(FRGBMoCapBakeContext& Context,FString& Error);
+    bool MatchesBakeTarget(const FRGBMoCapBakeContext& Context) const;
+    bool MatchesFaceBakeTarget(const FRGBMoCapBakeContext& Context) const;
+#endif
     virtual void TickComponent(float DeltaTime,ELevelTick TickType,FActorComponentTickFunction* Tick) override;
     virtual void OnUnregister() override;
 #if WITH_EDITOR
@@ -113,6 +134,9 @@ private:
     TArray<float> FaceMatrix,FaceCurves;
     FName FaceSubject;FGuid FaceProvider;
     void UpdateFace();void RestoreFace();bool PrepareFaceMapping();bool ReadFace();
+#if WITH_EDITOR
+    void CaptureFaceBake(FRGBMoCapBakeContext& Context);
+#endif
     void Restore();
     bool RepairReconstructedReferences();
     void MaintainPreviewTicks();

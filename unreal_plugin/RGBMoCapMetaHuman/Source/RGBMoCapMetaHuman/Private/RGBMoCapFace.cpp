@@ -150,7 +150,63 @@ void URGBMoCapConnectComponent::UpdateFace() {
 bool URGBMoCapConnectComponent::SampleFace(USkeletalMeshComponent* Mesh,TArray<FName>& Names,TArray<float>& Values) {
     if (!Enabled || !SupportsFace() || !FaceEnabled || !FaceHasBackup || Mesh!=FaceMesh(GetOwner()) || !PrepareFaceMapping()) return false;
     Names=FaceCurveNames;Values.Init(0.f,Names.Num());
-    if (FaceCurves.Num()==52) for (int32 C=0;C<52;++C) for (int32 I=0;I<Names.Num();++I) Values[I]+=FaceCurves[C]*FaceMatrix[C*Names.Num()+I];
+    MapFace(FaceCurves,FaceMatrix,Values);
     // Body handles head/neck motion; facial ARKit input never adds head IK.
     Names.Add(TEXT("HeadControlSwitch"));Values.Add(0.f);return true;
 }
+
+void URGBMoCapConnectComponent::MapFace(TConstArrayView<float> Coefficients,TConstArrayView<float> Matrix,
+                                        TArrayView<float> Values) {
+    if (Coefficients.Num()!=52) return;
+    for (int32 Channel=0;Channel<52;++Channel) {
+        const float Weight=Coefficients[Channel];
+        if (Weight==0.f) continue;
+        const int32 Offset=Channel*Values.Num();
+        for (int32 Curve=0;Curve<Values.Num();++Curve) Values[Curve]+=Weight*Matrix[Offset+Curve];
+    }
+}
+
+#if WITH_EDITOR
+void URGBMoCapConnectComponent::CaptureFaceBake(FRGBMoCapBakeContext& Context) {
+    Context.FaceRequested=SupportsFace() && FaceEnabled;
+    Context.FaceMesh.Reset();
+    Context.FaceCurveNames.Reset();
+    Context.FaceMatrix.Reset();
+    Context.FaceWarning.Reset();
+    if (!Context.FaceRequested) return;
+    auto* Face=FaceMesh(GetOwner());
+    auto* Mesh=Face?Face->GetSkeletalMeshAsset():nullptr;
+    if (!Mesh || !Mesh->GetSkeleton()) {
+        Context.FaceWarning=TEXT("Target has no Face mesh with a Skeleton asset.");return;
+    }
+    if (!PrepareFaceMapping()) {
+        Context.FaceWarning=FaceStatus;return;
+    }
+    // Unmapped rig controls remain at their neutral default. Keep only the
+    // controls the additive ARKit poses can actually drive.
+    TArray<int32> DrivenCurves;
+    const int32 CurveCount=FaceCurveNames.Num();
+    for (int32 Curve=0;Curve<CurveCount;++Curve) {
+        if (FaceCurveNames[Curve]==TEXT("HeadControlSwitch")) continue;
+        for (int32 Channel=0;Channel<52;++Channel) {
+            if (FaceMatrix[Channel*CurveCount+Curve]!=0.f) {
+                DrivenCurves.Add(Curve);
+                Context.FaceCurveNames.Add(FaceCurveNames[Curve]);
+                break;
+            }
+        }
+    }
+    if (DrivenCurves.IsEmpty()) {
+        Context.FaceWarning=TEXT("MetaHuman ARKit mapping drives no face controls.");return;
+    }
+    Context.FaceMatrix.Reserve(52*DrivenCurves.Num());
+    for (int32 Channel=0;Channel<52;++Channel)
+        for (int32 Curve:DrivenCurves) Context.FaceMatrix.Add(FaceMatrix[Channel*CurveCount+Curve]);
+    Context.FaceMesh=Mesh;
+}
+
+bool URGBMoCapConnectComponent::MatchesFaceBakeTarget(const FRGBMoCapBakeContext& Context) const {
+    auto* Face=FaceMesh(GetOwner());
+    return SupportsFace() && FaceEnabled && Face && Face->GetSkeletalMeshAsset()==Context.FaceMesh.Get();
+}
+#endif

@@ -503,7 +503,7 @@ See the [installation steps and controls](USER_GUIDE.md#stream-bones-to-blender)
 
 ### Unreal Live Link body streaming
 
-RGB MoCap Connect 0.5.1 supports MetaHuman and UE5 mannequin targets. The
+RGB MoCap Connect 0.6.1 supports MetaHuman and UE5 mannequin targets. The
 [Unreal installation and controls guide](UNREAL_LIVE_LINK.md) covers both
 connection types. The main README links to the prebuilt Windows receiver
 and sender bundles for stock UE 5.6.1, 5.7.4 and 5.8.4.
@@ -524,6 +524,26 @@ clavicle references at solver initialization from rest clavicle and upper-arm
 vectors. Keep the source clavicle delta relative to its own chest. Transfer it
 onto the calibrated target reference in target parent space. Verify editor save and disconnect restore
 the target's original animation and preview tick settings.
+
+In Connect 0.6.0, **Bake...** requests the active prepared take on a
+token-scoped loopback endpoint advertised by the sender's body subject.
+Keep the live-subject and reference pairing, immutable take selection and
+regular axis/scale conversion. Retarget offline with the same solver and
+connection settings, then create an Animation Sequence on the editor
+thread for the connected mesh's Skeleton. Validate the payload and save a
+new Content Browser asset without overwriting an existing package.
+Connect 0.6.1 requests optional per-frame ARKit samples from the same immutable
+take through the loopback endpoint. Keep the original body payload for older
+receivers and for body-only requests. Reuse the verified, smoothed and
+neutral-calibrated FaceArchive and its source-time resolution. The editor uses
+the same target ARKit mapping as live preview, stores the mapped float curves
+in a separate `<AnimationName>_Face` asset on the MetaHuman Face Skeleton, and
+leaves head motion in Body. Keep face failures and missing samples visible
+while preserving the body bake, and check both assets after reopening.
+Validate both the saved face curves and Sequencer playback. On UE 5.8.4, the
+stock MetaHuman Face Animation Blueprint can ignore a standard animation
+section's default slot. Enable **Force Custom Mode** on the `_Face` section
+so Sequencer evaluates its curves while the Face post-process runs RigLogic.
 
 Stream target 2 is Unreal Live Link. Target 0 is None and target 1 is Blender.
 `Setup_UnrealStream.cmd` / `tools/setup_unreal_stream.py` verify commandlet
@@ -1196,6 +1216,8 @@ matching sender ZIP. Publish paired ZIPs and checksums through Releases.
 Exercise the exact public bundle in a clean app copy and Unreal project. Check
 that the sender startup authenticates, the editor loads the receiver, body,
 reference and face subjects connect, and the prebuilt sender invokes no UBT.
+Keep version-specific build/load checks distinct from actual actor bake and
+Sequencer tests.
 No engine/MetaHuman assets, private diagnostic modules, PDBs, screenshots of
 private projects, personal paths, capture arrays or local logs belong in the
 source or package. Logical #line filenames keep authored assertion diagnostics
